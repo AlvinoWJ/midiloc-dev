@@ -13,9 +13,10 @@ export const signUpSchema = z.object({
     .string()
     .min(2, "Nama minimal 2 karakter")
     .max(255, "Nama maksimal 255 karakter"),
-  branch_id: z.string().uuid("Branch harus dipilih"),
-  position_id: z.string().uuid("Position harus dipilih"),
-  role_id: z.string().uuid("Role harus dipilih"),
+    
+  branch_id: z.string().min(1, "Branch harus dipilih"),
+  position_id: z.string().min(1, "Position harus dipilih"),
+  role_id: z.string().min(1, "Role harus dipilih"),
 });
 
 export type SignUpFormData = z.infer<typeof signUpSchema>;
