@@ -1,9 +1,7 @@
 import { z } from "zod";
 
 export const signUpSchema = z.object({
-  email: z
-    .email("Format email tidak valid")
-    .min(1, "Email wajib diisi"),
+  email: z.string().email("Format email tidak valid"),
   password: z
     .string()
     .min(6, "Password minimal 6 karakter")
@@ -15,13 +13,9 @@ export const signUpSchema = z.object({
     .string()
     .min(2, "Nama minimal 2 karakter")
     .max(255, "Nama maksimal 255 karakter"),
-  branch_id: z
-    .uuid("Branch harus dipilih")
-    .min(1, "Branch wajib dipilih"),
-  position_id: z
-    .uuid("Position harus dipilih")
-    .min(1, "Position wajib dipilih"),
-  role_id: z.uuid("Role harus dipilih").min(1, "Role wajib dipilih"),
+  branch_id: z.string().uuid("Branch harus dipilih"),
+  position_id: z.string().uuid("Position harus dipilih"),
+  role_id: z.string().uuid("Role harus dipilih"),
 });
 
 export type SignUpFormData = z.infer<typeof signUpSchema>;
