@@ -1,49 +1,33 @@
 import { NextRequest, NextResponse } from "next/server";
-import bcrypt from "bcryptjs";
 import { createClient } from "@/lib/supabase/server";
 import { signUpSchema } from "@/lib/validations/auth";
 import type { SignUpResponse } from "@/types/auth";
 
-// GET - Untuk mengambil data options (branch, position, role)
+// GET function (tidak ada perubahan)...
 export async function GET() {
   try {
     const supabase = await createClient();
-    // Fetch semua data aktif dari tables seeder
     const [branchesResult, positionsResult, rolesResult] = await Promise.all([
       supabase
         .from("branch")
-        .select("id, nama, alamat, latitude, longitude, is_active")
+        .select("id, nama")
         .eq("is_active", true)
         .order("nama", { ascending: true }),
-
       supabase
         .from("position")
-        .select("id, nama, is_active, created_at")
+        .select("id, nama")
         .eq("is_active", true)
         .order("nama", { ascending: true }),
-
       supabase
         .from("role")
-        .select("id, nama, is_active, created_at")
+        .select("id, nama")
         .eq("is_active", true)
         .order("nama", { ascending: true }),
     ]);
 
-    // Check for errors
-    if (branchesResult.error) {
-      console.error("Error fetching branches:", branchesResult.error);
-      throw new Error("Failed to fetch branches");
-    }
-
-    if (positionsResult.error) {
-      console.error("Error fetching positions:", positionsResult.error);
-      throw new Error("Failed to fetch positions");
-    }
-
-    if (rolesResult.error) {
-      console.error("Error fetching roles:", rolesResult.error);
-      throw new Error("Failed to fetch roles");
-    }
+    if (branchesResult.error) throw new Error("Gagal mengambil data branch");
+    if (positionsResult.error) throw new Error("Gagal mengambil data posisi");
+    if (rolesResult.error) throw new Error("Gagal mengambil data role");
 
     return NextResponse.json({
       success: true,
@@ -53,26 +37,13 @@ export async function GET() {
         positions: positionsResult.data || [],
         roles: rolesResult.data || [],
       },
-      meta: {
-        branches_count: branchesResult.data?.length || 0,
-        positions_count: positionsResult.data?.length || 0,
-        roles_count: rolesResult.data?.length || 0,
-        fetched_at: new Date().toISOString(),
-        fetched_by: "signup-api",
-      },
     });
   } catch (error) {
-    console.error("Error fetching signup options:", error);
     return NextResponse.json(
       {
         success: false,
         message: "Gagal mengambil data options",
         error: error instanceof Error ? error.message : "Unknown error",
-        data: {
-          branches: [],
-          positions: [],
-          roles: [],
-        },
       },
       { status: 500 }
     );
@@ -85,15 +56,17 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient();
     const body = await request.json();
 
-    // Validate input data
     const validationResult = signUpSchema.safeParse(body);
     if (!validationResult.success) {
+      const fieldErrors = validationResult.error.flatten().fieldErrors;
+      const errorMessage = Object.entries(fieldErrors)
+        .map(
+          ([field, errors]) =>
+            `${field.replace("_id", "")}: ${errors?.join(", ")}`
+        )
+        .join("\n");
       return NextResponse.json<SignUpResponse>(
-        {
-          success: false,
-          message: "Data tidak valid",
-          error: validationResult.error.message,
-        },
+        { success: false, message: "Data tidak valid", error: errorMessage },
         { status: 400 }
       );
     }
@@ -101,13 +74,11 @@ export async function POST(request: NextRequest) {
     const { email, password, nama, branch_id, position_id, role_id } =
       validationResult.data;
 
-    // Check if user already exists
     const { data: existingUser } = await supabase
       .from("users")
       .select("email")
       .eq("email", email)
       .single();
-
     if (existingUser) {
       return NextResponse.json<SignUpResponse>(
         {
@@ -119,101 +90,69 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate foreign keys exist in database
-    const [branchCheck, positionCheck, roleCheck] = await Promise.all([
-      supabase
-        .from("branch")
-        .select("id, nama")
-        .eq("id", branch_id)
-        .eq("is_active", true)
-        .single(),
-      supabase
-        .from("position")
-        .select("id, nama")
-        .eq("id", position_id)
-        .eq("is_active", true)
-        .single(),
-      supabase
-        .from("role")
-        .select("id, nama")
-        .eq("id", role_id)
-        .eq("is_active", true)
-        .single(),
-    ]);
-
-    if (branchCheck.error) {
+    // --- PERUBAHAN UTAMA: Pengecekan berurutan ---
+    console.log(`[SERVER LOG] Memvalidasi Branch ID: ${branch_id}`);
+    const { error: branchError } = await supabase
+      .from("branch")
+      .select("id")
+      .eq("id", branch_id)
+      .single();
+    if (branchError) {
+      console.error("[SERVER LOG] Validasi Branch Gagal:", branchError);
       return NextResponse.json<SignUpResponse>(
-        {
-          success: false,
-          message: "Branch yang dipilih tidak valid atau tidak aktif",
-          error: "Invalid branch_id",
-        },
+        { success: false, message: "Branch ID tidak valid" },
         { status: 400 }
       );
     }
+    console.log("[SERVER LOG] Validasi Branch Berhasil.");
+    console.log("TESTTTTTTTTTTTTTTTTTT");
 
-    if (positionCheck.error) {
+    console.log(`[SERVER LOG] Memvalidasi Position ID: ${position_id}`);
+    const { error: positionError } = await supabase
+      .from("position")
+      .select("id")
+      .eq("id", position_id)
+      .single();
+    if (positionError) {
+      console.error("[SERVER LOG] Validasi Posisi Gagal:", positionError);
       return NextResponse.json<SignUpResponse>(
-        {
-          success: false,
-          message: "Position yang dipilih tidak valid atau tidak aktif",
-          error: "Invalid position_id",
-        },
+        { success: false, message: "Position ID tidak valid" },
         { status: 400 }
       );
     }
+    console.log("[SERVER LOG] Validasi Posisi Berhasil.");
 
-    if (roleCheck.error) {
+    console.log(`[SERVER LOG] Memvalidasi Role ID: ${role_id}`);
+    const { error: roleError } = await supabase
+      .from("role")
+      .select("id")
+      .eq("id", role_id)
+      .single();
+    if (roleError) {
+      console.error("[SERVER LOG] Validasi Role Gagal:", roleError);
       return NextResponse.json<SignUpResponse>(
-        {
-          success: false,
-          message: "Role yang dipilih tidak valid atau tidak aktif",
-          error: "Invalid role_id",
-        },
+        { success: false, message: "Role ID tidak valid" },
         { status: 400 }
       );
     }
+    console.log("[SERVER LOG] Validasi Role Berhasil.");
+    // --- AKHIR DARI PERUBAHAN ---
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 12);
-
-    // Sign up user with Supabase Auth
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
-      options: {
-        data: {
-          nama: nama,
-          branch_name: branchCheck.data.nama,
-          position_name: positionCheck.data.nama,
-          role_name: roleCheck.data.nama,
-        },
-      },
     });
-
-    if (authError) {
+    if (authError)
       return NextResponse.json<SignUpResponse>(
-        {
-          success: false,
-          message: "Gagal membuat akun auth",
-          error: authError.message,
-        },
+        { success: false, message: authError.message },
         { status: 400 }
       );
-    }
-
-    if (!authData.user) {
+    if (!authData.user)
       return NextResponse.json<SignUpResponse>(
-        {
-          success: false,
-          message: "Gagal membuat user auth",
-          error: "Failed to create auth user",
-        },
+        { success: false, message: "Gagal membuat user auth" },
         { status: 400 }
       );
-    }
 
-    // Insert user data into users table
     const { data: userData, error: userError } = await supabase
       .from("users")
       .insert({
@@ -223,30 +162,15 @@ export async function POST(request: NextRequest) {
         role_id,
         nama,
         email,
-        password: hashedPassword,
-        is_active: true,
-        created_at: new Date().toISOString(),
         created_by: authData.user.id,
       })
       .select(
-        `
-        id,
-        branch_id,
-        position_id,
-        role_id,
-        nama,
-        email,
-        is_active,
-        created_at
-      `
+        `id, branch_id, position_id, role_id, nama, email, is_active, created_at`
       )
       .single();
 
     if (userError) {
-      // If user insertion fails, delete the auth user
       await supabase.auth.admin.deleteUser(authData.user.id);
-
-      console.error("User insertion error:", userError);
       return NextResponse.json<SignUpResponse>(
         {
           success: false,
@@ -258,11 +182,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json<SignUpResponse>(
-      {
-        success: true,
-        message: "Akun berhasil dibuat",
-        user: userData,
-      },
+      { success: true, message: "Akun berhasil dibuat!", user: userData },
       { status: 201 }
     );
   } catch (error) {
