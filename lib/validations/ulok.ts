@@ -1,0 +1,77 @@
+import { z } from 'zod';
+
+// Enum mengikuti DB
+export const KategoriApprovalEnum = z.enum(['IN PROGRESS', 'OK', 'NOK']);
+
+function toYMD(d: Date) {
+  const yyyy = d.getUTCFullYear();
+  const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const dd = String(d.getUTCDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+// Normalisasi tanggal (YYYY-MM-DD)
+const DateYMD = z.preprocess((val) => {
+  if (val instanceof Date) return toYMD(val);
+  if (typeof val === 'string') {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(val)) return val;
+    const d = new Date(val);
+    if (!isNaN(d.getTime())) return toYMD(d);
+  }
+  return val;
+}, z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD'));
+
+// Normalisasi timestamp (ISO)
+const TimestampISO = z.preprocess((val) => {
+  if (val instanceof Date) return val.toISOString();
+  if (typeof val === 'string') {
+    const d = new Date(val);
+    if (!isNaN(d.getTime())) return d.toISOString();
+  }
+  return val;
+}, z.string().datetime());
+
+export const UlokBaseSchema = z
+  .object({
+    users_id: z.string().uuid(),
+    nama_ulok: z.string().min(1),
+    latitude: z.coerce.number().min(-90).max(90),
+    longitude: z.coerce.number().min(-180).max(180),
+    desa_kelurahan: z.string().min(1),
+    kecamatan: z.string().min(1),
+    kabupaten: z.string().min(1),
+    provinsi: z.string().min(1),
+    alamat: z.string().min(1),
+    tanggal_ulok: DateYMD,
+    format_store: z.string().min(1),
+    bentuk_objek: z.string().min(1),
+    alas_hak: z.coerce.boolean().default(false).optional(),
+    jumlah_lantai: z.coerce.number().int().min(1),
+    lebar_depan: z.coerce.number(),
+    panjang: z.coerce.number(),
+    luas: z.coerce.number(),
+    harga_sewa: z.coerce.number(),
+    nama_pemilik: z.string().min(1),
+    kontak_pemilik: z.string().min(1),
+  })
+  .strict();
+
+export const UlokCreateSchema = UlokBaseSchema.extend({
+  approval_intip: KategoriApprovalEnum.optional(),
+  tanggal_approval_intip: DateYMD.optional(),
+  file_intip: z.string().optional(),
+  approval_status: KategoriApprovalEnum.optional(),
+  approved_at: TimestampISO.optional(),
+  approved_by: z.string().uuid().optional(),
+  is_active: z.coerce.boolean().optional(),
+  created_by: z.string().uuid().optional(),
+});
+
+export const UlokUpdateSchema = UlokCreateSchema.partial()
+  .extend({
+    updated_by: z.string().uuid().optional(),
+  })
+  .strict();
+
+export type UlokCreateInput = z.infer<typeof UlokCreateSchema>;
+export type UlokUpdateInput = z.infer<typeof UlokUpdateSchema>;
