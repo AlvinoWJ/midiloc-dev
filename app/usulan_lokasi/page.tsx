@@ -3,7 +3,7 @@
 import { useSidebar } from "@/components/ui/sidebarcontext";
 import Sidebar from "@/components/sidebar";
 import Navbar from "@/components/navbar";
-import { InfoCard } from "@/components/listcard";
+import { InfoCard } from "@/components/infocard";
 import SearchBar from "@/components/ui/searchbar";
 import Tabs from "@/components/ui/tabs";
 import AddButton from "@/components/ui/addbutton";
@@ -15,7 +15,6 @@ export default function UlokPage() {
 
   return (
     <div className="flex">
-      {/* Sidebar */}
       <Sidebar />
 
       {/* Konten utama */}
@@ -39,12 +38,12 @@ export default function UlokPage() {
               tabs={["Recent", "History"]}
               onTabChange={(tab) => console.log(tab)}
             />
-            <AddButton onClick={() => router.push("/tambah_ulok")} />
+            <AddButton onClick={() => router.push("/usulan_lokasi/tambah")} />
           </div>
 
           {/* Grid Card */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {Array.from({ length: 24 }).map((_, i) => (
+            {Array.from({ length: 100 }).map((_, i) => (
               <InfoCard key={i} />
             ))}
           </div>
