@@ -3,6 +3,7 @@
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
+import Image from "next/image";
 import {
   Card,
   CardContent,
@@ -62,7 +63,13 @@ export function ForgotPasswordForm({
       ) : (
         <Card>
           <CardHeader>
-            <CardTitle className="text-2xl">Reset Your Password</CardTitle>
+            <Image
+              src="/alfamidi-logo.png"
+              alt="Alfamidi Logo"
+              width={395}
+              height={90}
+              priority
+            />
             <CardDescription>
               Type in your email and we&apos;ll send you a link to reset your
               password
