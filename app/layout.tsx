@@ -1,7 +1,14 @@
 import type { Metadata } from "next";
-import { Geist } from "next/font/google";
 import { ThemeProvider } from "next-themes";
+import { Poppins } from "next/font/google";
+import { SidebarProvider } from "@/components/ui/sidebarcontext";
 import "./globals.css";
+
+// Pakai Poppins
+const poppins = Poppins({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+});
 
 const defaultUrl = process.env.VERCEL_URL
   ? `https://${process.env.VERCEL_URL}`
@@ -13,27 +20,21 @@ export const metadata: Metadata = {
   description: "The fastest way to build apps with Next.js and Supabase",
 };
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  display: "swap",
-  subsets: ["latin"],
-});
-
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.className} antialiased`}>
+      <body className={`${poppins.className} antialiased`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
           enableSystem
           disableTransitionOnChange
         >
-          {children}
+          <SidebarProvider>{children}</SidebarProvider>
         </ThemeProvider>
       </body>
     </html>
