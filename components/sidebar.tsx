@@ -23,7 +23,7 @@ export default function Sidebar() {
 
   return (
     <aside
-      className={`fixed left-0 top-0 h-screen bg-white shadow-md flex flex-col transition-all duration-300 
+      className={`fixed left-0 top-0 h-screen bg-white shadow-[1px_1px_6px_rgba(0,0,0,0.25)] flex flex-col transition-all duration-300 
         ${isCollapsed ? "w-20" : "w-[270px]"}`}
     >
       {/* Logo */}
@@ -48,7 +48,7 @@ export default function Sidebar() {
       ) : (
         <div className="flex flex-col items-center gap-2 py-6">
           <User className="h-12 w-12 rounded-full border p-2" />
-          <p className="font-semibold text-black text-center">
+          <p className="font-semibold text-foreground text-center">
             Alvino Dwi Nengku Wijaya
           </p>
         </div>
@@ -64,7 +64,7 @@ export default function Sidebar() {
               pathname.startsWith(item.href) &&
               (pathname.length === item.href.length ||
                 pathname.charAt(item.href.length) === "/")
-                ? "bg-red-600 text-white"
+                ? "bg-primary text-primary-foreground"
                 : "text-gray-700 hover:bg-gray-100"
             } flex ${
               isCollapsed
