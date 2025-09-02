@@ -33,7 +33,6 @@ const TimestampISO = z.preprocess((val) => {
 
 export const UlokBaseSchema = z
   .object({
-    users_id: z.string().uuid(),
     nama_ulok: z.string().min(1),
     latitude: z.coerce.number().min(-90).max(90),
     longitude: z.coerce.number().min(-180).max(180),
@@ -42,7 +41,6 @@ export const UlokBaseSchema = z
     kabupaten: z.string().min(1),
     provinsi: z.string().min(1),
     alamat: z.string().min(1),
-    tanggal_ulok: DateYMD,
     format_store: z.string().min(1),
     bentuk_objek: z.string().min(1),
     alas_hak: z.coerce.boolean().default(false).optional(),
@@ -64,7 +62,6 @@ export const UlokCreateSchema = UlokBaseSchema.extend({
   approved_at: TimestampISO.optional(),
   approved_by: z.string().uuid().optional(),
   is_active: z.coerce.boolean().optional(),
-  created_by: z.string().uuid().optional(),
 });
 
 export const UlokUpdateSchema = UlokCreateSchema.partial()
