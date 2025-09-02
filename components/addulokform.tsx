@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { MapPin } from "lucide-react";
 import CustomSelect from "@/components/ui/customselect";
+import { Button } from "@/components/ui/button";
 
 const AddUlokForm: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -426,6 +427,15 @@ const AddUlokForm: React.FC = () => {
           </div>
         </div>
       </form>
+      <div className="flex justify-end mt-6">
+        <Button
+          variant="submit"
+          className="w-full sm:w-[200px] md:w-[268px] h-[42px] hover:bg-[hsl(145.44,63.2%,42%)]"
+          onClick={handleSubmit}
+        >
+          Submit
+        </Button>
+      </div>
     </div>
   );
 };

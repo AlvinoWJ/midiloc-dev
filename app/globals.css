@@ -9,18 +9,18 @@ body {
 
 @layer base {
   :root {
-    --background: 210, 16.67%, 97.65%;
-    --foreground: 0 0% 0%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 0%;
+    --background: 210, 16.67%, 97.65%; /*#f8f9fa*/
+    --foreground: 0 0% 0%; /*hitam*/
+    --card: 0 0% 100%; /*#ffffff*/
+    --card-foreground: 0 0% 0%; /*hitam*/
     --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 352 80% 46%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
+    --popover-foreground: 0 0% 98%; /*#fafafa*/
+    --primary: 352 80% 46%; /*merah*/
+    --primary-foreground: 0 0% 100%; /*#ffffff*/
+    --secondary: 215.68, 53.62%, 40.59%; /*#305D9F*/
+    --secondary-foreground: 0 0% 98%; /*#fafafa*/
     --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
+    --muted-foreground: 0 0% 63.9%; /*#a3a3a3*/
     --accent: 0 0% 14.9%;
     --accent-foreground: 0 0% 98%;
     --destructive: 0 62.8% 30.6%;
@@ -28,11 +28,8 @@ body {
     --border: 0 0% 14.9%;
     --input: 0 0% 14.9%;
     --ring: 0 0% 83.1%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    --submit: 145.44, 63.2%, 49.02%; /*#2ECC71*/
+    --submit-foreground: 0 0% 100%; /*#ffffff*/
   }
 }
 
