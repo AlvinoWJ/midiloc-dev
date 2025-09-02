@@ -225,7 +225,7 @@ export async function PATCH(
       .single();
 
     if (updateError) {
-      return NextResponse.json({ error: "Not Found" }, { status: 404 });
+      return NextResponse.json({ error: updateError.message }, { status: 404 });
     }
 
     return NextResponse.json({ data: updated });

@@ -61,8 +61,8 @@ export async function GET(request: Request) {
 // POST /api/ulok
 export async function POST(request: Request) {
   const supabase = await createClient();
-
   const user = await getCurrentUser();
+
   if (!user)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!canUlok("create", user))
@@ -81,10 +81,6 @@ export async function POST(request: Request) {
     );
   }
 
-  // Ambil user sesi (RLS akan menegakkan policy sebagai user)
-  const { data: authData } = await supabase.auth.getUser();
-  const authUserId = authData?.user?.id ?? null;
-
   //   const id = crypto.randomUUID();
 
   const insertData = {
@@ -92,12 +88,15 @@ export async function POST(request: Request) {
     ...validationResult.data,
     // Opsional: jika Anda ingin created_by diisi otomatis dengan auth user id
     // pastikan mapping id auth == users.id Anda
-    created_by: validationResult.data.created_by ?? authUserId ?? null,
   };
 
   const { data, error } = await supabase
     .from("ulok")
-    .insert(insertData)
+    .insert({
+      users_id: user.id,
+      branch_id: user.branch_id,
+      ...insertData
+    })
     .select("*")
     .single();
 

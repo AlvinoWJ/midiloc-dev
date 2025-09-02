@@ -14,6 +14,7 @@ export const signUpSchema = z.object({
     .min(2, "Nama minimal 2 karakter")
     .max(255, "Nama maksimal 255 karakter"),
     
+  nik: z.int().min(1,"nik harus diisi"),
   branch_id: z.string().min(1, "Branch harus dipilih"),
   position_id: z.string().min(1, "Position harus dipilih"),
   role_id: z.string().min(1, "Role harus dipilih"),
