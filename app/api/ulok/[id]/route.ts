@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/client";
 import { getCurrentUser, canUlok } from "@/lib/auth/acl";
+import { UlokUpdateSchema } from "@/lib/validations/ulok";
 
 type AnyObj = Record<string, unknown>;
 function pick<T extends AnyObj>(obj: T, keys: readonly string[]): Partial<T> {
@@ -125,6 +126,25 @@ export async function PATCH(
       );
     }
 
+    const validationResult = UlokUpdateSchema.safeParse(allowedPayload);
+    if (!validationResult.success) {
+      const fieldErrors = validationResult.error.flatten().fieldErrors;
+      const errorMessage = Object.entries(fieldErrors)
+        .map(([field, errors]) => `${field}: ${errors?.join(", ")}`)
+        .join("; ");
+
+      return NextResponse.json(
+        {
+          error: "Validation failed",
+          details: errorMessage,
+          fieldErrors,
+        },
+        { status: 422 }
+      );
+    }
+
+    const validatedPayload = validationResult.data;
+
     const touchingApproval =
       "approval_status" in allowedPayload ||
       "approval_intip" in allowedPayload ||
@@ -144,6 +164,7 @@ export async function PATCH(
         { status: 403 }
       );
     }
+
     const { data: check, error: checkErr } = await supabase
       .from("ulok")
       .select("id")
@@ -158,7 +179,7 @@ export async function PATCH(
     const { data: updated, error: updateError } = await supabase
       .from("ulok")
       .update({
-        ...allowedPayload,
+        ...validatedPayload,
         updated_by: user.id,
         updated_at: new Date().toISOString(),
       })
@@ -212,10 +233,30 @@ export async function PATCH(
       );
     }
 
+    // Validate the allowed payload with Zod schema
+    const validationResult = UlokUpdateSchema.safeParse(allowedPayload);
+    if (!validationResult.success) {
+      const fieldErrors = validationResult.error.flatten().fieldErrors;
+      const errorMessage = Object.entries(fieldErrors)
+        .map(([field, errors]) => `${field}: ${errors?.join(', ')}`)
+        .join('; ');
+      
+      return NextResponse.json(
+        {
+          error: "Validation failed",
+          details: errorMessage,
+          fieldErrors
+        },
+        { status: 422 }
+      );
+    }
+
+    const validatedPayload = validationResult.data;
+
     const { data: updated, error: updateError } = await supabase
       .from("ulok")
       .update({
-        ...allowedPayload,
+        ...validatedPayload,
         updated_by: user.id,
         updated_at: new Date().toISOString(),
       })
@@ -260,7 +301,7 @@ export async function DELETE(
       .delete()
       .eq("id", id)
       .eq("users_id", user.id)
-      .eq("branch_id",user.branch_id)
+      .eq("branch_id", user.branch_id)
       .select("id")
       .single();
 

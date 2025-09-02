@@ -1,30 +1,27 @@
-import { z } from 'zod';
-
-// Enum mengikuti DB
-export const KategoriApprovalEnum = z.enum(['IN PROGRESS', 'OK', 'NOK']);
+import { string, z } from "zod";
 
 function toYMD(d: Date) {
   const yyyy = d.getUTCFullYear();
-  const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
-  const dd = String(d.getUTCDate()).padStart(2, '0');
+  const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(d.getUTCDate()).padStart(2, "0");
   return `${yyyy}-${mm}-${dd}`;
 }
 
 // Normalisasi tanggal (YYYY-MM-DD)
 const DateYMD = z.preprocess((val) => {
   if (val instanceof Date) return toYMD(val);
-  if (typeof val === 'string') {
+  if (typeof val === "string") {
     if (/^\d{4}-\d{2}-\d{2}$/.test(val)) return val;
     const d = new Date(val);
     if (!isNaN(d.getTime())) return toYMD(d);
   }
   return val;
-}, z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD'));
+}, z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD"));
 
 // Normalisasi timestamp (ISO)
 const TimestampISO = z.preprocess((val) => {
   if (val instanceof Date) return val.toISOString();
-  if (typeof val === 'string') {
+  if (typeof val === "string") {
     const d = new Date(val);
     if (!isNaN(d.getTime())) return d.toISOString();
   }
@@ -55,18 +52,18 @@ export const UlokBaseSchema = z
   .strict();
 
 export const UlokCreateSchema = UlokBaseSchema.extend({
-  approval_intip: KategoriApprovalEnum.optional(),
+  approval_intip: z.string().optional(),
   tanggal_approval_intip: DateYMD.optional(),
   file_intip: z.string().optional(),
-  approval_status: KategoriApprovalEnum.optional(),
+  approval_status: string().optional(),
   approved_at: TimestampISO.optional(),
-  approved_by: z.string().uuid().optional(),
+  approved_by: z.uuid().optional(),
   is_active: z.coerce.boolean().optional(),
 });
 
 export const UlokUpdateSchema = UlokCreateSchema.partial()
   .extend({
-    updated_by: z.string().uuid().optional(),
+    updated_by: z.uuid().optional(),
   })
   .strict();
 
