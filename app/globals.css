@@ -30,6 +30,7 @@ body {
     --ring: 0 0% 83.1%;
     --submit: 145.44, 63.2%, 49.02%; /*#2ECC71*/
     --submit-foreground: 0 0% 100%; /*#ffffff*/
+    --progress: 45, 100%, 51.37%; /*#FFC107*/
   }
 }
 

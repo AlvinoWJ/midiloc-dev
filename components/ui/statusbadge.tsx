@@ -1,7 +1,7 @@
 import React from "react";
 import { cn } from "@/lib/utils";
 
-type Status = "In Progress" | "OK" | "NOK";
+type Status = string;
 
 interface StatusBadgeProps {
   status: Status;
@@ -9,16 +9,16 @@ interface StatusBadgeProps {
 }
 
 const statusColors: Record<Status, string> = {
-  "In Progress": "bg-yellow-400 text-black",
-  OK: "bg-green-500 text-white",
-  NOK: "bg-red-500 text-white",
+  "In Progress": "bg-progress text-primary-foreground",
+  OK: "bg-submit text-primary-foreground",
+  NOK: "bg-primary text-primary-foreground",
 };
 
 export function StatusBadge({ status, className }: StatusBadgeProps) {
   return (
     <span
       className={cn(
-        "px-3 py-1 text-sm font-medium rounded",
+        "px-3 py-1 text-sm font-medium text-center inline-block rounded w-28",
         statusColors[status],
         className
       )}
