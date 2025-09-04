@@ -3,7 +3,6 @@
 import { useSidebar } from "@/components/ui/sidebarcontext";
 import Sidebar from "@/components/sidebar";
 import Navbar from "@/components/navbar";
-import addulokform from "@/components/addulokform";
 import AddUlokForm from "@/components/addulokform";
 
 export default function TambahUlokPage() {

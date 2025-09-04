@@ -49,7 +49,8 @@ export function canUlok(
   user: CurrentUser
 ) {
   if (user.position_nama === "location specialist") return true;
-  if (user.position_nama === "location manager") return action === "read" || action === "update";
+  if (user.position_nama === "location manager")
+    return action === "read" || action === "update";
   return false;
 }
 

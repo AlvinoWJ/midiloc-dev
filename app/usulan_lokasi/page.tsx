@@ -9,6 +9,7 @@ import AddButton from "@/components/ui/addbutton";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import SearchWithFilter from "@/components/searchwithfilter";
+import { userInfo } from "os";
 
 type Ulok = {
   id: string;
@@ -16,6 +17,16 @@ type Ulok = {
   alamat: string;
   created_at: string;
   approval_status: string;
+};
+
+type CurrentUser = {
+  id: string;
+  email: string | null;
+  nama: string | null;
+  branch_id: string | null;
+  branch_nama: string | null;
+  position_id: string | null;
+  position_nama: string | null;
 };
 
 export default function UlokPage() {
@@ -27,8 +38,21 @@ export default function UlokPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterMonth, setFilterMonth] = useState("");
   const [filterYear, setFilterYear] = useState("");
+  const [activeTab, setActiveTab] = useState("Recent");
+  const [user, setUser] = useState<CurrentUser | null>(null);
 
   useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const response = await fetch(`http://localhost:3000/api/me`);
+        const userData = await response.json();
+        setUser(userData.user);
+      } catch (error) {
+        console.error("Terjadi error saat fetch:", error);
+        setUser(null);
+      }
+    };
+
     const fetchUlok = async () => {
       try {
         setIsLoading(true);
@@ -55,6 +79,7 @@ export default function UlokPage() {
       }
     };
 
+    fetchUserData();
     fetchUlok();
   }, []);
 
@@ -73,23 +98,33 @@ export default function UlokPage() {
     Desember: "12",
   };
 
-  const filteredUlok = ulokData.filter((ulok) => {
-    // Search
-    const matchSearch =
-      ulok.nama_ulok.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      ulok.alamat.toLowerCase().includes(searchQuery.toLowerCase());
+  const isLocationSpecialist = () => {
+    return user?.position_nama?.trim().toLowerCase() === "location specialist";
+  };
 
-    // Ambil bulan & tahun dari created_at
-    const date = new Date(ulok.created_at);
-    const ulokMonth = (date.getMonth() + 1).toString().padStart(2, "0"); // "01"-"12"
-    const ulokYear = date.getFullYear().toString();
+  const filteredUlok = ulokData
+    .filter((ulok) => {
+      const matchSearch =
+        ulok.nama_ulok.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        ulok.alamat.toLowerCase().includes(searchQuery.toLowerCase());
+      const date = new Date(ulok.created_at);
+      const ulokMonth = (date.getMonth() + 1).toString().padStart(2, "0"); // "01"-"12"
+      const ulokYear = date.getFullYear().toString();
+      const matchMonth = filterMonth ? ulokMonth === filterMonth : true;
+      const matchYear = filterYear ? ulokYear === filterYear : true;
 
-    // Langsung bandingkan karena value bulan di dropdown sudah "01", "02", dst
-    const matchMonth = filterMonth ? ulokMonth === filterMonth : true;
-    const matchYear = filterYear ? ulokYear === filterYear : true;
-
-    return matchSearch && matchMonth && matchYear;
-  });
+      return matchSearch && matchMonth && matchYear;
+    })
+    .filter((ulok) => {
+      // Tambahkan filter kedua berdasarkan tab yang aktif
+      if (activeTab === "Recent") {
+        return ulok.approval_status === "In Progress";
+      }
+      if (activeTab === "History") {
+        return ulok.approval_status === "OK" || ulok.approval_status === "NOK";
+      }
+      return true; // Default, jika ada tab lain
+    });
 
   return (
     <div className="flex">
@@ -120,9 +155,12 @@ export default function UlokPage() {
           <div className="flex items-center justify-between">
             <Tabs
               tabs={["Recent", "History"]}
-              onTabChange={(tab) => console.log(tab)}
+              onTabChange={setActiveTab} // Mengubah state saat tab di-klik
+              activeTab={activeTab}
             />
-            <AddButton onClick={() => router.push("/usulan_lokasi/tambah")} />
+            {isLocationSpecialist() && (
+              <AddButton onClick={() => router.push("/usulan_lokasi/tambah")} />
+            )}
           </div>
 
           {/* Info Card */}

@@ -1,18 +1,17 @@
 "use client";
 
-import { useState } from "react";
+// Tidak perlu lagi `useState` di sini
 
 interface TabsProps {
   tabs: string[];
-  onTabChange?: (tab: string) => void;
+  onTabChange: (tab: string) => void; // Dibuat menjadi wajib, bukan opsional
+  activeTab: string; // Menerima tab yang aktif dari parent
 }
 
-export default function Tabs({ tabs, onTabChange }: TabsProps) {
-  const [activeTab, setActiveTab] = useState(tabs[0]);
-
+export default function Tabs({ tabs, onTabChange, activeTab }: TabsProps) {
+  // `handleClick` bisa disederhanakan atau langsung dipanggil di onClick
   const handleClick = (tab: string) => {
-    setActiveTab(tab);
-    if (onTabChange) onTabChange(tab);
+    onTabChange(tab); // Hanya memanggil fungsi dari parent
   };
 
   return (
@@ -21,6 +20,7 @@ export default function Tabs({ tabs, onTabChange }: TabsProps) {
         <button
           key={tab}
           onClick={() => handleClick(tab)}
+          // Logika className sekarang menggunakan `activeTab` dari props
           className={`flex-1 h-[40px] text-sm font-semibold rounded-xl transition-all duration-200 ${
             activeTab === tab
               ? "bg-primary text-primary-foreground shadow"

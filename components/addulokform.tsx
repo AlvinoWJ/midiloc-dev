@@ -1,10 +1,12 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { MapPin } from "lucide-react";
 import CustomSelect from "@/components/ui/customselect";
 import { Button } from "@/components/ui/button";
+import { UlokCreateSchema } from "@/lib/validations/ulok";
+import { useRouter } from "next/navigation";
 
 const AddUlokForm: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -15,7 +17,6 @@ const AddUlokForm: React.FC = () => {
     kelurahan: "",
     alamat: "",
     latlong: "",
-    tanggalUlok: "",
     formatStore: "",
     bentukObjek: "",
     alasHak: "",
@@ -30,6 +31,7 @@ const AddUlokForm: React.FC = () => {
 
   const formatStoreOptions = ["Reguler", "Super", "Spesifik", "Franchise"];
   const bentukObjekOptions = ["Tanah", "Bangunan"];
+  const router = useRouter();
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -42,42 +44,173 @@ const AddUlokForm: React.FC = () => {
     setFormData({ ...formData, [name]: value });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const newErrors: Record<string, string> = {};
-    const requiredFields = [
-      "namaUlok",
-      "provinsi",
-      "kabupaten",
-      "kecamatan",
-      "kelurahan",
-      "alamat",
-      "latlong",
-      "tanggalUlok",
-      "formatStore",
-      "bentukObjek",
-      "alasHak",
+    setErrors({});
+    const requiredFields = {
+      namaUlok: "Nama ULOK wajib diisi",
+      provinsi: "Provinsi wajib diisi",
+      kabupaten: "Kabupaten wajib diisi",
+      kecamatan: "Kecamatan wajib diisi",
+      kelurahan: "Kelurahan wajib diisi",
+      alamat: "Alamat wajib diisi",
+      latlong: "Koordinat wajib diisi",
+      formatStore: "Format Store wajib dipilih",
+      bentukObjek: "Bentuk Objek wajib dipilih",
+      alasHak: "Alas Hak wajib dipilih",
+      jumlahlantai: "Jumlah Lantai wajib diisi",
+      lebardepan: "Lebar Depan wajib diisi",
+      panjang: "Panjang wajib diisi",
+      luas: "Luas wajib diisi",
+      hargasewa: "Harga Sewa wajib diisi",
+      namapemilik: "Nama Pemilik wajib diisi",
+      kontakpemilik: "Kontak Pemilik wajib diisi",
+    };
+    const fieldErrors: Record<string, string> = {};
+
+    Object.keys(requiredFields).forEach((field) => {
+      const value = formData[field as keyof typeof formData];
+      if (!value || value.toString().trim() === "") {
+        fieldErrors[field] =
+          requiredFields[field as keyof typeof requiredFields];
+      }
+    });
+
+    if (formData.latlong && !formData.latlong.includes(",")) {
+      fieldErrors.latlong = "Format koordinat harus: latitude,longitude";
+    }
+
+    const numericFields = [
       "jumlahlantai",
       "lebardepan",
       "panjang",
       "luas",
       "hargasewa",
-      "namapemilik",
-      "kontakpemilik",
     ];
-
-    requiredFields.forEach((field) => {
-      if (!formData[field as keyof typeof formData]) {
-        newErrors[field] = "Kolom ini harus diisi.";
+    numericFields.forEach((field) => {
+      const value = formData[field as keyof typeof formData];
+      if (value && isNaN(Number(value))) {
+        fieldErrors[field] = `${field} harus berupa angka`;
+      }
+      if (value && Number(value) <= 0) {
+        fieldErrors[field] = `${field} harus lebih dari 0`;
       }
     });
 
-    setErrors(newErrors);
+    // Jika ada error dari validasi manual, tampilkan dan stop
+    if (Object.keys(fieldErrors).length > 0) {
+      setErrors(fieldErrors);
+      console.error("❌ Validasi manual gagal:", fieldErrors);
+      return;
+    }
 
-    if (Object.keys(newErrors).length === 0) {
-      // Jika tidak ada error, data bisa dikirim
-      console.log("Submitted:", formData);
+    const parsedInput = {
+      nama_ulok: formData.namaUlok,
+      provinsi: formData.provinsi,
+      kabupaten: formData.kabupaten,
+      kecamatan: formData.kecamatan,
+      desa_kelurahan: formData.kelurahan,
+      alamat: formData.alamat,
+      latitude: Number(formData.latlong.split(",")[0]) || 0,
+      longitude: Number(formData.latlong.split(",")[1]) || 0,
+      format_store: formData.formatStore,
+      bentuk_objek: formData.bentukObjek,
+      alas_hak: formData.alasHak === "true",
+      jumlah_lantai: Number(formData.jumlahlantai),
+      lebar_depan: Number(formData.lebardepan),
+      panjang: Number(formData.panjang),
+      luas: Number(formData.luas),
+      harga_sewa: Number(formData.hargasewa),
+      nama_pemilik: formData.namapemilik,
+      kontak_pemilik: formData.kontakpemilik,
+    };
+
+    const result = UlokCreateSchema.safeParse(parsedInput);
+
+    if (!result.success) {
+      // Map error dari schema ke nama field di form
+      const schemaFieldMap: Record<string, string> = {
+        nama_ulok: "namaUlok",
+        provinsi: "provinsi",
+        kabupaten: "kabupaten",
+        kecamatan: "kecamatan",
+        desa_kelurahan: "kelurahan",
+        alamat: "alamat",
+        latitude: "latlong",
+        longitude: "latlong",
+        format_store: "formatStore",
+        bentuk_objek: "bentukObjek",
+        alas_hak: "alasHak",
+        jumlah_lantai: "jumlahlantai",
+        lebar_depan: "lebardepan",
+        panjang: "panjang",
+        luas: "luas",
+        harga_sewa: "hargasewa",
+        nama_pemilik: "namapemilik",
+        kontak_pemilik: "kontakpemilik",
+      };
+
+      const schemaErrors: Record<string, string> = {};
+      result.error.issues.forEach((err) => {
+        const schemaField = err.path[0] as string;
+        const formField = schemaFieldMap[schemaField] || schemaField;
+        schemaErrors[formField] = err.message;
+      });
+
+      setErrors(schemaErrors);
+      console.error("❌ Schema validasi gagal:", schemaErrors);
+      console.log("Detail issues:", result.error.issues);
+      return;
+    }
+
+    // Jika semua validasi berhasil, submit data
+    console.log("✅ Data valid:", result.data);
+    setErrors({});
+
+    try {
+      const response = await fetch("/api/ulok", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(result.data),
+      });
+
+      const resJson = await response.json();
+
+      if (!response.ok) {
+        console.error("❌ Gagal submit:", resJson.error || resJson);
+        alert(resJson.error || "Terjadi kesalahan");
+      } else {
+        console.log("✅ Berhasil submit:", resJson.data);
+        alert("Data berhasil disimpan");
+        router.push("/usulan_lokasi");
+
+        // Reset form setelah berhasil submit
+        setFormData({
+          namaUlok: "",
+          provinsi: "",
+          kabupaten: "",
+          kecamatan: "",
+          kelurahan: "",
+          alamat: "",
+          latlong: "",
+          formatStore: "",
+          bentukObjek: "",
+          alasHak: "",
+          jumlahlantai: "",
+          lebardepan: "",
+          panjang: "",
+          luas: "",
+          hargasewa: "",
+          namapemilik: "",
+          kontakpemilik: "",
+        });
+      }
+    } catch (err) {
+      console.error("❌ Error fetch:", err);
+      alert("Gagal menghubungi server");
     }
   };
 
@@ -218,28 +351,6 @@ const AddUlokForm: React.FC = () => {
                 <p className="text-red-500 text-sm mt-1">{errors.latlong}</p>
               )}
             </div>
-
-            {/* Tanggal */}
-            <div>
-              <label htmlFor="tanggalUlok" className="block font-bold mb-1">
-                Tanggal ULOK <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                {/* Mengganti input type="text" kembali ke type="date" */}
-                <Input
-                  type="date"
-                  id="tanggalUlok"
-                  name="tanggalUlok"
-                  value={formData.tanggalUlok}
-                  onChange={handleChange}
-                />
-              </div>
-              {errors.tanggalUlok && (
-                <p className="text-red-500 text-sm mt-1">
-                  {errors.tanggalUlok}
-                </p>
-              )}
-            </div>
           </div>
         </div>
       </form>
@@ -338,7 +449,7 @@ const AddUlokForm: React.FC = () => {
               </label>
               <Input
                 id="Panjang"
-                name="Panjang"
+                name="panjang"
                 placeholder="Masukkan Panjang"
                 value={formData.panjang}
                 onChange={handleChange}
