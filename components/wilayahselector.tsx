@@ -161,7 +161,6 @@ const WilayahSelector: React.FC<WilayahSelectorProps> = ({
     onWilayahChange("kelurahan", code ? name : "");
   };
 
-  // --- JSX (Tidak perlu diubah, sudah benar) ---
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 md:grid-rows-2 gap-4">
       {/* Provinsi */}
