@@ -7,6 +7,7 @@ import CustomSelect from "@/components/ui/customselect";
 import { Button } from "@/components/ui/button";
 import { UlokCreateSchema } from "@/lib/validations/ulok";
 import { useRouter } from "next/navigation";
+import WilayahSelector from "@/components/wilayahselector";
 
 const AddUlokForm: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -28,6 +29,30 @@ const AddUlokForm: React.FC = () => {
     namapemilik: "",
     kontakpemilik: "",
   });
+
+  // Fungsi khusus untuk WilayahSelector agar bisa menyimpan NAMA wilayah
+  const handleWilayahChange = (field: string, name: string) => {
+    const updatedData: Record<string, any> = { [field]: name };
+
+    // Saat provinsi berubah, reset semua field di bawahnya
+    if (field === "provinsi") {
+      updatedData.kabupaten = "";
+      updatedData.kecamatan = "";
+      updatedData.kelurahan = "";
+    }
+    // Saat kabupaten berubah, reset field kecamatan dan kelurahan
+    else if (field === "kabupaten") {
+      updatedData.kecamatan = "";
+      updatedData.kelurahan = "";
+    }
+    // Saat kecamatan berubah, reset field kelurahan
+    else if (field === "kecamatan") {
+      updatedData.kelurahan = "";
+    }
+
+    // Gabungkan data yang diperbarui dengan state formData sebelumnya
+    setFormData((prev) => ({ ...prev, ...updatedData }));
+  };
 
   const formatStoreOptions = ["Reguler", "Super", "Spesifik", "Franchise"];
   const bentukObjekOptions = ["Tanah", "Bangunan"];
@@ -238,76 +263,10 @@ const AddUlokForm: React.FC = () => {
             )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 md:grid-rows-2 gap-4">
-            {/* Provinsi */}
-            <div>
-              <label htmlFor="provinsi" className="block font-bold mb-1">
-                Provinsi <span className="text-red-500">*</span>
-              </label>
-              <Input
-                id="provinsi"
-                name="provinsi"
-                placeholder="Masukkan provinsi"
-                value={formData.provinsi}
-                onChange={handleChange}
-              />
-              {errors.provinsi && (
-                <p className="text-red-500 text-sm mt-1">{errors.provinsi}</p>
-              )}
-            </div>
-
-            {/* Kabupaten/Kota */}
-            <div>
-              <label htmlFor="kabupaten" className="block font-bold mb-1">
-                Kabupaten/Kota <span className="text-red-500">*</span>
-              </label>
-              <Input
-                id="kabupaten"
-                name="kabupaten"
-                placeholder="Masukkan kabupaten/kota"
-                value={formData.kabupaten}
-                onChange={handleChange}
-              />
-              {errors.kabupaten && (
-                <p className="text-red-500 text-sm mt-1">{errors.kabupaten}</p>
-              )}
-            </div>
-
-            {/* Kecamatan */}
-            <div>
-              <label htmlFor="kecamatan" className="block font-bold mb-1">
-                Kecamatan <span className="text-red-500">*</span>
-              </label>
-              <Input
-                id="kecamatan"
-                name="kecamatan"
-                placeholder="Masukkan kecamatan"
-                value={formData.kecamatan}
-                onChange={handleChange}
-              />
-              {errors.kecamatan && (
-                <p className="text-red-500 text-sm mt-1">{errors.kecamatan}</p>
-              )}
-            </div>
-
-            {/* Kelurahan */}
-            <div>
-              <label htmlFor="kelurahan" className="block font-bold mb-1">
-                Kelurahan/Desa <span className="text-red-500">*</span>
-              </label>
-              <Input
-                id="kelurahan"
-                name="kelurahan"
-                placeholder="Masukkan kelurahan/desa"
-                value={formData.kelurahan}
-                onChange={handleChange}
-              />
-              {errors.kelurahan && (
-                <p className="text-red-500 text-sm mt-1">{errors.kelurahan}</p>
-              )}
-            </div>
-          </div>
-
+          <WilayahSelector
+            onWilayahChange={handleWilayahChange}
+            errors={errors}
+          />
           {/* Alamat */}
           <div>
             <label htmlFor="alamat" className="block font-semibold mb-1">
@@ -550,5 +509,4 @@ const AddUlokForm: React.FC = () => {
     </div>
   );
 };
-
 export default AddUlokForm;
