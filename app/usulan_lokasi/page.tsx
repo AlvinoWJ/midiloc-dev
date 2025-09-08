@@ -9,7 +9,6 @@ import AddButton from "@/components/ui/addbutton";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import SearchWithFilter from "@/components/searchwithfilter";
-import { userInfo } from "os";
 
 type Ulok = {
   id: string;

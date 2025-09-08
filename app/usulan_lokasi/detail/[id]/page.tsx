@@ -8,6 +8,7 @@ import DetailUlok from "@/components/detailulok";
 import { useSidebar } from "@/components/ui/sidebarcontext";
 
 interface UlokDataForUI {
+  id: string;
   namaUlok: string;
   provinsi: string;
   kabupaten: string;
@@ -58,6 +59,7 @@ export default function DetailPage() {
         }
 
         setUlokData({
+          id: apiData.id,
           namaUlok: apiData.nama_ulok,
           provinsi: apiData.provinsi,
           kabupaten: apiData.kabupaten,
@@ -92,16 +94,16 @@ export default function DetailPage() {
       <Sidebar />
       <div
         className={`flex-1 flex flex-col bg-gray-50 min-h-screen transition-all duration-300 ${
-          isCollapsed ? "ml-[80px]" : "ml-[270px]"
+          isCollapsed ? "pl-[80px]" : "pl-[270px]"
         }`}
       >
         <Navbar />
-        <main className="flex-1 p-6">
+        <main className="flex-1">
           {isLoading && <p className="text-center">Loading data...</p>}
           {errorMessage && (
             <p className="text-center text-red-500">{errorMessage}</p>
           )}
-          {ulokData && !isLoading && <DetailUlok data={ulokData} />}
+          {ulokData && !isLoading && <DetailUlok initialData={ulokData} />}
         </main>
       </div>
     </div>
