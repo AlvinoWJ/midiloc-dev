@@ -30,10 +30,12 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  const { data } = await supabase.auth.getClaims();
-  const user = data?.claims;
+  const isApi = request.nextUrl.pathname.startsWith("/api");
 
-  // Cek login
+  const { data: auth } = await supabase.auth.getUser();
+  const user = auth.user;
+
+  // Gate umum: blokir jika belum login, kecuali rute login/auth tertentu
   if (
     request.nextUrl.pathname !== "/" &&
     !user &&
@@ -41,24 +43,41 @@ export async function updateSession(request: NextRequest) {
     !request.nextUrl.pathname.startsWith("/auth") &&
     !request.nextUrl.pathname.startsWith("/api/login")
   ) {
+    if (isApi) {
+      // Untuk API, balas JSON 401 agar klien tidak dilempar ke halaman HTML
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     const url = request.nextUrl.clone();
     url.pathname = "/auth/login";
     return NextResponse.redirect(url);
   }
 
   // Cek role superadmin untuk halaman signup
-  if (request.nextUrl.pathname.startsWith("/admin/signup") && user) {
-    // Ambil user id/email dari claims
-    const userId = user.sub; // atau user.id/email sesuai isi claims
-
-    // Query role dari database
-    const { data: userData } = await supabase
+  if (request.nextUrl.pathname.startsWith("/api/signUp") && user) {
+    // Opsi A (aman terhadap sinkronisasi role): baca dari DB (join role_id -> role.nama)
+    const { data: userRow, error } = await supabase
       .from("users")
-      .select("role")
-      .eq("id", userId)
-      .single();
+      .select("role:role_id (nama)")
+      .eq("id", user.id)
+      .maybeSingle();
 
-    if (userData?.role !== "superadmin") {
+    //NOTE: TYPESCRIPT PROBLEM SOLVE Property 'nama' does not exist on type '{ nama: any; }[]'.
+    const userRole = userRow?.role as { nama: string } | undefined;
+    const roleName = userRole?.nama?.toLowerCase() ?? "";
+
+    // return NextResponse.json({
+    //   source: "Middleware Debug",
+    //   timestamp: new Date().toISOString(),
+    //   debugData: {
+    //     userRow: roleName,
+    //     error: error,
+    //   },
+    // });
+
+    if (error || roleName !== "superadmin") {
+      if (isApi) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
       return NextResponse.redirect(new URL("/unauthorized", request.url));
     }
   }

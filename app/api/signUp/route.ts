@@ -71,8 +71,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { email, password, nama, branch_id, position_id, role_id } =
-      validationResult.data;
+    const { email, password, nama, nik, branch_id, position_id, role_id } = validationResult.data;
 
     const { data: existingUser } = await supabase
       .from("users")
@@ -89,54 +88,6 @@ export async function POST(request: NextRequest) {
         { status: 409 }
       );
     }
-
-    // --- PERUBAHAN UTAMA: Pengecekan berurutan ---
-    console.log(`[SERVER LOG] Memvalidasi Branch ID: ${branch_id}`);
-    const { error: branchError } = await supabase
-      .from("branch")
-      .select("id")
-      .eq("id", branch_id)
-      .single();
-    if (branchError) {
-      console.error("[SERVER LOG] Validasi Branch Gagal:", branchError);
-      return NextResponse.json<SignUpResponse>(
-        { success: false, message: "Branch ID tidak valid" },
-        { status: 400 }
-      );
-    }
-    console.log("[SERVER LOG] Validasi Branch Berhasil.");
-    console.log("TESTTTTTTTTTTTTTTTTTT");
-
-    console.log(`[SERVER LOG] Memvalidasi Position ID: ${position_id}`);
-    const { error: positionError } = await supabase
-      .from("position")
-      .select("id")
-      .eq("id", position_id)
-      .single();
-    if (positionError) {
-      console.error("[SERVER LOG] Validasi Posisi Gagal:", positionError);
-      return NextResponse.json<SignUpResponse>(
-        { success: false, message: "Position ID tidak valid" },
-        { status: 400 }
-      );
-    }
-    console.log("[SERVER LOG] Validasi Posisi Berhasil.");
-
-    console.log(`[SERVER LOG] Memvalidasi Role ID: ${role_id}`);
-    const { error: roleError } = await supabase
-      .from("role")
-      .select("id")
-      .eq("id", role_id)
-      .single();
-    if (roleError) {
-      console.error("[SERVER LOG] Validasi Role Gagal:", roleError);
-      return NextResponse.json<SignUpResponse>(
-        { success: false, message: "Role ID tidak valid" },
-        { status: 400 }
-      );
-    }
-    console.log("[SERVER LOG] Validasi Role Berhasil.");
-    // --- AKHIR DARI PERUBAHAN ---
 
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
@@ -161,11 +112,12 @@ export async function POST(request: NextRequest) {
         position_id,
         role_id,
         nama,
+        nik,
         email,
         created_by: authData.user.id,
       })
       .select(
-        `id, branch_id, position_id, role_id, nama, email, is_active, created_at`
+        `id, branch_id, position_id, role_id, nama,nik, email, is_active, created_at`
       )
       .single();
 

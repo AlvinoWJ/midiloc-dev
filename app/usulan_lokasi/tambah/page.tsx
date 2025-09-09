@@ -3,6 +3,7 @@
 import { useSidebar } from "@/components/ui/sidebarcontext";
 import Sidebar from "@/components/sidebar";
 import Navbar from "@/components/navbar";
+import AddUlokForm from "@/components/addulokform";
 
 export default function TambahUlokPage() {
   // Mengambil state isCollapsed dari context
@@ -22,8 +23,10 @@ export default function TambahUlokPage() {
         <Navbar />
 
         {/* Konten halaman */}
-        <main className="flex-1 p-6">
-          <h1 className="mt-3 text-2xl font-bold">Your Performance</h1>
+        <main className="flex-1 p-6 mt-3 ">
+          <AddUlokForm />
+
+          {/* Tombol */}
         </main>
       </div>
     </div>
