@@ -1,32 +1,67 @@
 "use client";
 
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useSidebar } from "@/components/ui/sidebarcontext";
 import Sidebar from "@/components/sidebar";
 import Navbar from "@/components/navbar";
-import AddUlokForm from "@/components/addulokform";
+import TambahUlokForm from "@/components/addulokform";
+import { UlokCreateInput } from "@/lib/validations/ulok";
 
 export default function TambahUlokPage() {
-  // Mengambil state isCollapsed dari context
   const { isCollapsed } = useSidebar();
+  const router = useRouter();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // --- (BARU) Fungsi "pintar" untuk menangani fetch API ---
+  const handleFormSubmit = async (data: UlokCreateInput) => {
+    setIsSubmitting(true);
+    try {
+      const response = await fetch("/api/ulok", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+
+      const resJson = await response.json();
+
+      if (!response.ok) {
+        console.error("❌ Gagal submit:", resJson.error || resJson);
+        alert(resJson.error || "Terjadi kesalahan saat menyimpan data.");
+      } else {
+        console.log("✅ Berhasil submit:", resJson.data);
+        alert("Data berhasil disimpan!");
+        router.push("/usulan_lokasi"); // Arahkan pengguna setelah berhasil
+      }
+    } catch (err) {
+      console.error("❌ Error fetch:", err);
+      alert("Gagal menghubungi server. Silakan coba lagi.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="flex">
-      {/* Sidebar */}
       <Sidebar />
-
-      {/* Konten utama yang memiliki margin kiri dinamis sesuai sidebar */}
       <div
         className={`flex-1 flex flex-col bg-gray-50 min-h-screen transition-all duration-300 ${
           isCollapsed ? "ml-[80px]" : "ml-[270px]"
         }`}
       >
         <Navbar />
+        <main className="flex-1 p-6 mt-3">
+          <h1 className="text-2xl font-bold mb-6 text-gray-800">
+            Tambah Usulan Lokasi Baru
+          </h1>
 
-        {/* Konten halaman */}
-        <main className="flex-1 p-6 mt-3 ">
-          <AddUlokForm />
-
-          {/* Tombol */}
+          {/* Komponen form sekarang menerima props */}
+          <TambahUlokForm
+            onSubmit={handleFormSubmit}
+            isSubmitting={isSubmitting}
+          />
         </main>
       </div>
     </div>

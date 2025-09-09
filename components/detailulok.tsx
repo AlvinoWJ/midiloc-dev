@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
-import { UlokUpdateSchema } from "@/lib/validations/ulok";
+import { UlokUpdateSchema, UlokUpdateInput } from "@/lib/validations/ulok"; // <-- Impor tipe Zod
 import { MapPin } from "lucide-react";
 
 interface UlokData {
@@ -27,7 +27,24 @@ interface UlokData {
   hargasewa: string;
   namapemilik: string;
   kontakpemilik: string;
+  approval_status: string; // <-- Tambahkan field status untuk logika tombol
+  file_intip: string | null; // <-- Tambahkan untuk logika tombol intip
 }
+
+interface DetailUlokProps {
+  initialData: UlokData;
+  onSave: (data: UlokUpdateInput) => Promise<boolean>;
+  isSubmitting: boolean;
+  onOpenIntipForm: () => void;
+  onApprove?: (status: "OK" | "Rejected") => void;
+  user?: CurrentUser | null; // ✅ ditambahkan
+}
+
+type CurrentUser = {
+  id: string;
+  nama: string;
+  position_nama: string;
+};
 
 const DetailField = ({
   label,
@@ -65,35 +82,45 @@ const DetailField = ({
   </div>
 );
 
-export default function DetailUlok({ initialData }: { initialData: UlokData }) {
+export default function DetailUlok({
+  initialData,
+  onSave,
+  isSubmitting,
+  onOpenIntipForm,
+  onApprove,
+  user,
+}: DetailUlokProps) {
   const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
   const [editedData, setEditedData] = useState(initialData);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string | undefined>>({});
 
-  // Sinkronkan state jika prop dari parent berubah
   useEffect(() => {
     setEditedData(initialData);
   }, [initialData]);
+
+  if (!user) {
+    return <div>Loading user data...</div>; // Teks ini akan muncul sesaat
+  }
+
+  const canApprove = () =>
+    user?.position_nama?.toLowerCase().trim() === "Location Manager";
+  const isLocationManagerintip = () =>
+    user?.position_nama?.toLowerCase().trim() === "location manager";
+  const isLocationSpecialist = () =>
+    user?.position_nama?.toLowerCase().trim() === "location specialist";
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
-    setEditedData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setEditedData((prev) => ({ ...prev, [name]: value }));
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: undefined }));
     }
   };
 
-  const handleSave = async () => {
-    setIsSubmitting(true);
-
-    // PENTING: Ubah data kembali ke format API (snake_case) sebelum mengirim
+  const handleSaveWrapper = async () => {
     const dataToValidate = {
       nama_ulok: editedData.namaUlok,
       desa_kelurahan: editedData.kelurahan,
@@ -112,6 +139,7 @@ export default function DetailUlok({ initialData }: { initialData: UlokData }) {
       nama_pemilik: editedData.namapemilik,
       kontak_pemilik: editedData.kontakpemilik,
     };
+
     const validationResult = UlokUpdateSchema.safeParse(dataToValidate);
 
     if (!validationResult.success) {
@@ -123,79 +151,59 @@ export default function DetailUlok({ initialData }: { initialData: UlokData }) {
       }
       setErrors(formattedErrors);
       console.error("Validation Errors:", formattedErrors);
-      return; // Hentikan proses simpan
+      return;
     }
+    const success = await onSave(validationResult.data);
 
-    // --- Jika validasi berhasil, lanjutkan proses fetch ---
-    setIsSubmitting(true);
-
-    try {
-      const response = await fetch(
-        `http://localhost:3000/api/ulok/${initialData.id}`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          // Kirim data yang sudah bersih dan divalidasi oleh Zod
-          body: JSON.stringify(validationResult.data),
-        }
-      );
-
-      if (!response.ok) throw new Error("Gagal menyimpan pembaruan.");
-
-      alert("Data berhasil diperbarui!");
+    if (success) {
       setIsEditing(false);
-      router.refresh();
-    } catch (error) {
-      console.error(error);
-      alert((error as Error).message);
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
   const handleCancel = () => {
     setEditedData(initialData);
-    setErrors({}); // Bersihkan juga error saat batal
+    setErrors({});
     setIsEditing(false);
   };
 
   return (
     <div className="bg-gray-50 min-h-screen">
-      {/* Content Area */}
-      <div className="max-w-6xl mx-auto p-6">
-        {/* Header dengan tombol Back dan Edit */}
+      <div className="max-w-6xl mx-auto p-2">
         <div className="flex justify-between items-center mb-6">
           <Button
             onClick={() => router.back()}
-            className="bg-red-600 hover:bg-red-700 text-white rounded-full px-8 py-2 font-medium"
+            className="rounded-full w-20 h-10"
           >
             Back
           </Button>
-
           <div className="flex gap-3">
-            {isEditing ? (
+            {isLocationSpecialist() && (
               <>
-                <Button
-                  variant="outline"
-                  onClick={handleCancel}
-                  className="text-priamry-foreground rounded-full px-6 py-2"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleSave}
-                  className="bg-green-600 hover:bg-green-700 text-white rounded-full px-6 py-2"
-                >
-                  Save
-                </Button>
+                {isEditing ? (
+                  <>
+                    <Button
+                      variant="outline"
+                      onClick={handleCancel}
+                      className="rounded-full px-6"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={handleSaveWrapper}
+                      className="bg-submit hover:bg-green-600 text-white rounded-full px-6"
+                    >
+                      Save
+                    </Button>
+                  </>
+                ) : (
+                  <Button
+                    onClick={() => setIsEditing(true)}
+                    className="bg-red-600 hover:bg-red-700 text-white rounded-full px-8 py-2 font-medium"
+                  >
+                    Edit
+                  </Button>
+                )}
               </>
-            ) : (
-              <Button
-                onClick={() => setIsEditing(true)}
-                className="bg-red-600 hover:bg-red-700 text-white rounded-full px-8 py-2 font-medium"
-              >
-                Edit
-              </Button>
             )}
           </div>
         </div>
@@ -239,7 +247,6 @@ export default function DetailUlok({ initialData }: { initialData: UlokData }) {
             </div>
           </div>
         </div>
-
         {/* Data Usulan Lokasi Card */}
         <div className="bg-white rounded-xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)] mb-8">
           <div className="border-b border-gray-200 px-6 py-4">
@@ -304,7 +311,6 @@ export default function DetailUlok({ initialData }: { initialData: UlokData }) {
             </div>
           </div>
         </div>
-
         {/* Data Store Card */}
         <div className="bg-white rounded-xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)] mb-8">
           <div className="border-b border-gray-200 px-6 py-4">
@@ -396,9 +402,8 @@ export default function DetailUlok({ initialData }: { initialData: UlokData }) {
             </div>
           </div>
         </div>
-
         {/* Data Pemilik Card */}
-        <div className="bg-white rounded-xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)] mb-4">
+        <div className="bg-white rounded-xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)] mb-8">
           <div className="border-b border-gray-200 px-6 py-4">
             <div className="flex items-center">
               <img
@@ -432,6 +437,48 @@ export default function DetailUlok({ initialData }: { initialData: UlokData }) {
             </div>
           </div>
         </div>
+
+        {isLocationManagerintip() && !initialData.file_intip && (
+          <button
+            onClick={onOpenIntipForm} // ✅ panggil props, bukan langsung state
+            className="mt-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded flex items-center gap-2 transition-colors duration-200"
+            disabled={isSubmitting}
+          >
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+              />
+            </svg>
+            Input Data Intip
+          </button>
+        )}
+        {/* ✅ Tombol Approve/Tolak */}
+        {canApprove() && initialData.file_intip && (
+          <div className="flex gap-3 mt-4">
+            <Button
+              onClick={() => onApprove && onApprove("OK")}
+              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md"
+              disabled={isSubmitting}
+            >
+              Setujui
+            </Button>
+            <Button
+              onClick={() => onApprove && onApprove("Rejected")}
+              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md"
+              disabled={isSubmitting}
+            >
+              Tolak
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );
