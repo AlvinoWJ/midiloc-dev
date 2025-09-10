@@ -196,19 +196,16 @@ export default function TambahUlokForm({
       title: "Konfirmasi Simpan Data",
       message:
         "Apakah Anda yakin semua data yang diisi sudah benar dan ingin menyimpannya?",
-      type: "info",
+      type: "success",
       confirmText: "Ya, Simpan",
       cancelText: "Batal",
     });
 
-    // Hanya lanjutkan jika pengguna mengonfirmasi
     if (isConfirmed) {
       try {
         await onSubmit(result.data);
-        // Notifikasi sukses akan ditangani oleh komponen induk setelah redirect
       } catch (error) {
         console.error("❌ Gagal submit:", error);
-        // 6. (BARU) Tampilkan notifikasi toast jika terjadi error saat submit
         showToast({
           type: "error",
           title: "Proses Gagal",

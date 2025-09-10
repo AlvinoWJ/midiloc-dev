@@ -4,20 +4,18 @@ import Image from "next/image";
 export default function Page() {
   return (
     <div className="grid min-h-screen w-full grid-cols-1 md:grid-cols-2">
-      {/* Bagian kiri */}
-      <div className="flex flex-col items-center justify-center bg-red-600 p-6 text-white">
+      <div className="relative flex flex-col items-center justify-center p-6 text-white">
         <Image
-          src="/Location.jpg" // ganti sesuai path gambar kamu
-          alt="Location Illustration"
-          width={400}
-          height={400}
+          src="/bg_alfamidi2.svg"
+          alt="Alfamidi Background"
+          fill
+          className="object-cover"
           priority
         />
-        <h1 className="mt-4 text-2xl font-bold">HIIIII akuu albyyy</h1>
+        <div className="absolute inset-0 bg-red-800 opacity-40"></div>
+        <div className="relative z-10 text-center"></div>
       </div>
-
-      {/* Bagian kanan */}
-      <div className="flex items-center justify-center bg-white p-6">
+      <div className="flex items-center justify-center bg-gray-100 p-6">
         <div className="w-full max-w-sm">
           <LoginForm />
         </div>

@@ -41,7 +41,7 @@ export default function SearchWithFilter({
 
       <button
         onClick={() => setShowFilter(!showFilter)}
-        className="flex items-center justify-center bg-white shadow rounded-xl w-[46px] h-[46px] p-2 hover:bg-gray-100"
+        className="flex items-center justify-center bg-white shadow-[1px_1px_6px_rgba(0,0,0,0.25)] rounded-xl w-[46px] h-[46px] p-2 hover:bg-gray-100"
       >
         <Filter className="text-red-600 w-[18px] h-[18px]" />
       </button>
