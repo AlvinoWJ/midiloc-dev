@@ -7,6 +7,7 @@ import CustomSelect from "@/components/ui/customselect";
 import { Button } from "@/components/ui/button";
 import WilayahSelector from "@/components/wilayahselector";
 import { UlokCreateSchema, UlokCreateInput } from "@/lib/validations/ulok";
+import { useAlert } from "@/components/alertcontext";
 
 interface TambahUlokFormProps {
   onSubmit: (data: UlokCreateInput) => Promise<void>;
@@ -17,6 +18,7 @@ export default function TambahUlokForm({
   onSubmit,
   isSubmitting,
 }: TambahUlokFormProps) {
+  const { showConfirmation, showToast } = useAlert();
   const [formData, setFormData] = useState({
     namaUlok: "",
     provinsi: "",
@@ -48,6 +50,14 @@ export default function TambahUlokForm({
   ) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
+    // Hapus error untuk field yang sedang diubah
+    if (errors[name]) {
+      setErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
   };
 
   const handleWilayahChange = (field: string, name: string) => {
@@ -122,7 +132,6 @@ export default function TambahUlokForm({
     // Jika ada error dari validasi manual, tampilkan dan stop
     if (Object.keys(fieldErrors).length > 0) {
       setErrors(fieldErrors);
-      console.error("❌ Validasi manual gagal:", fieldErrors);
       return;
     }
 
@@ -173,10 +182,43 @@ export default function TambahUlokForm({
         schemaErrors[formField] = err.message;
       });
       setErrors(schemaErrors);
+      showToast({
+        type: "error",
+        title: "Validasi Gagal",
+        message:
+          "Beberapa data yang Anda masukkan tidak valid. Silakan periksa kembali.",
+      });
       console.error("❌ Schema validasi gagal:", schemaErrors);
       return;
     }
-    await onSubmit(result.data);
+    // 5. (BARU) Tampilkan dialog konfirmasi sebelum mengirim data
+    const isConfirmed = await showConfirmation({
+      title: "Konfirmasi Simpan Data",
+      message:
+        "Apakah Anda yakin semua data yang diisi sudah benar dan ingin menyimpannya?",
+      type: "info",
+      confirmText: "Ya, Simpan",
+      cancelText: "Batal",
+    });
+
+    // Hanya lanjutkan jika pengguna mengonfirmasi
+    if (isConfirmed) {
+      try {
+        await onSubmit(result.data);
+        // Notifikasi sukses akan ditangani oleh komponen induk setelah redirect
+      } catch (error) {
+        console.error("❌ Gagal submit:", error);
+        // 6. (BARU) Tampilkan notifikasi toast jika terjadi error saat submit
+        showToast({
+          type: "error",
+          title: "Proses Gagal",
+          message:
+            error instanceof Error
+              ? error.message
+              : "Terjadi kesalahan saat mengirim data.",
+        });
+      }
+    }
   };
 
   return (

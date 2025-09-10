@@ -402,7 +402,7 @@ export default function DetailUlok({
           </div>
         </div>
         {/* Data Pemilik Card */}
-        <div className="bg-white rounded-xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)] mb-8">
+        <div className="bg-white rounded-xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)] mb-4">
           <div className="border-b border-gray-200 px-6 py-4">
             <div className="flex items-center">
               <img
@@ -437,49 +437,51 @@ export default function DetailUlok({
           </div>
         </div>
 
-        {isLocationManagerintip() &&
-          !initialData.file_intip &&
-          initialData.approval_status === "In Progress" && (
-            <button
-              onClick={onOpenIntipForm} // ✅ panggil props, bukan langsung state
-              className="mt-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded flex items-center gap-2 transition-colors duration-200"
-              disabled={isSubmitting}
-            >
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+        <div className="flex justify-end">
+          {isLocationManagerintip() &&
+            !initialData.file_intip &&
+            initialData.approval_status === "In Progress" && (
+              <button
+                onClick={onOpenIntipForm} // ✅ panggil props, bukan langsung state
+                className="mt-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded flex items-center gap-2 transition-colors duration-200"
+                disabled={isSubmitting}
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                />
-              </svg>
-              Input Data Intip
-            </button>
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                  />
+                </svg>
+                Input Data Intip
+              </button>
+            )}
+          {/* ✅ Tombol Approve/Tolak */}
+          {canApprove() && initialData.file_intip && (
+            <div className="flex gap-3 mt-4">
+              <Button
+                onClick={() => onApprove && onApprove("OK")}
+                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md"
+                disabled={isSubmitting}
+              >
+                Setujui
+              </Button>
+              <Button
+                onClick={() => onApprove && onApprove("Rejected")}
+                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md"
+                disabled={isSubmitting}
+              >
+                Tolak
+              </Button>
+            </div>
           )}
-        {/* ✅ Tombol Approve/Tolak */}
-        {canApprove() && initialData.file_intip && (
-          <div className="flex gap-3 mt-4">
-            <Button
-              onClick={() => onApprove && onApprove("OK")}
-              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md"
-              disabled={isSubmitting}
-            >
-              Setujui
-            </Button>
-            <Button
-              onClick={() => onApprove && onApprove("Rejected")}
-              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md"
-              disabled={isSubmitting}
-            >
-              Tolak
-            </Button>
-          </div>
-        )}
+        </div>
       </div>
     </div>
   );

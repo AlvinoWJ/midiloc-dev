@@ -3,6 +3,8 @@
 import React, { useState } from "react";
 import { Upload, Calendar, FileText } from "lucide-react";
 import CustomSelect from "@/components/ui/customselect"; // Import CustomSelect component
+import { Button } from "@/components/ui/button";
+import { useAlert } from "@/components/alertcontext";
 
 // Tipe untuk props yang akan diterima komponen ini
 interface InputIntipFormProps {
@@ -22,7 +24,6 @@ interface DetailFieldProps {
   options?: string[];
 }
 
-// Komponen helper kecil untuk field, bisa ditaruh di file terpisah jika mau
 const DetailField = ({
   label,
   value,
@@ -101,9 +102,6 @@ const DetailField = ({
           name={name}
           className="w-full p-3 border border-gray-300 rounded focus:ring-2 focus:ring-red-500 focus:border-red-500"
         />
-        {type === "date" && (
-          <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-        )}
       </div>
     </div>
   );
@@ -114,12 +112,13 @@ export default function InputIntipForm({
   onClose,
   isSubmitting,
 }: InputIntipFormProps) {
+  const { showAlert, showToast, showConfirmation } = useAlert();
   const [formData, setFormData] = useState<{
     statusIntip: string;
     tanggalApproval: string;
     buktiApproval: File | null;
   }>({
-    statusIntip: "OK", // Default value
+    statusIntip: "Status INTIP",
     tanggalApproval: "",
     buktiApproval: null,
   });
@@ -137,24 +136,111 @@ export default function InputIntipForm({
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    // Validasi sederhana
     if (
       !formData.statusIntip ||
+      formData.statusIntip === "Status INTIP" ||
       !formData.tanggalApproval ||
       !formData.buktiApproval
     ) {
-      alert("Semua field wajib diisi.");
+      showAlert({
+        type: "error",
+        title: "Validasi Gagal",
+        message:
+          "Semua field wajib diisi dengan benar. Pastikan status INTIP dipilih, tanggal diisi, dan file diupload.",
+        duration: 5000,
+      });
       return;
     }
 
-    // PENTING: Gunakan FormData untuk mengirim file
-    const dataToSend = new FormData();
-    dataToSend.append("approval_intip", formData.statusIntip);
-    dataToSend.append("tanggal_approval_intip", formData.tanggalApproval);
-    dataToSend.append("file_intip", formData.buktiApproval);
+    // Validasi ukuran file (Max 10MB)
+    if (
+      formData.buktiApproval &&
+      formData.buktiApproval.size > 10 * 1024 * 1024
+    ) {
+      showAlert({
+        type: "error",
+        title: "File Terlalu Besar",
+        message:
+          "Ukuran file maksimal 10MB. Silakan pilih file yang lebih kecil.",
+        duration: 5000,
+      });
+      return;
+    }
 
-    // Panggil fungsi onSubmit dari props dengan data yang sudah siap
-    await onSubmit(dataToSend);
+    const confirmed = await showConfirmation({
+      title: "Konfirmasi Submit Data INTIP",
+      message: `Apakah Anda yakin ingin menyimpan data INTIP dengan status "${formData.statusIntip}"? Pastikan semua data sudah benar.`,
+      confirmText: "Ya, Simpan Data",
+      cancelText: "Periksa Kembali",
+      type: "info",
+    });
+
+    if (!confirmed) {
+      // User membatalkan submit
+      showToast({
+        type: "info",
+        message: "Submit data dibatalkan. Silakan periksa kembali data Anda.",
+        duration: 3000,
+      });
+      return;
+    }
+
+    try {
+      // PENTING: Gunakan FormData untuk mengirim file
+      const dataToSend = new FormData();
+      dataToSend.append("approval_intip", formData.statusIntip);
+      dataToSend.append("tanggal_approval_intip", formData.tanggalApproval);
+      dataToSend.append("file_intip", formData.buktiApproval);
+
+      // Panggil fungsi onSubmit dari props dengan data yang sudah siap
+      await onSubmit(dataToSend);
+
+      // Success notification
+      showToast({
+        type: "success",
+        title: "Berhasil Disimpan!",
+        message: "Data INTIP berhasil disimpan ke sistem.",
+        duration: 4000,
+      });
+
+      // Close modal setelah berhasil
+      onClose();
+    } catch (error) {
+      // Error handling dengan alert profesional
+      console.error("Error submitting INTIP data:", error);
+
+      showAlert({
+        type: "error",
+        title: "Terjadi Kesalahan",
+        message:
+          "Gagal menyimpan data INTIP. Silakan periksa koneksi internet Anda dan coba lagi.",
+        duration: 6000,
+      });
+    }
+  };
+
+  const handleCancel = async () => {
+    // Jika ada data yang sudah diisi, konfirmasi sebelum cancel
+    if (
+      formData.statusIntip !== "Status INTIP" ||
+      formData.tanggalApproval ||
+      formData.buktiApproval
+    ) {
+      const confirmed = await showConfirmation({
+        title: "Konfirmasi Submit",
+        message: "Yakin ingin menyimpan?",
+        confirmText: "Ya, Simpan",
+        cancelText: "Batal",
+        type: "info",
+      });
+
+      if (confirmed) {
+        onClose();
+      }
+    } else {
+      // Jika belum ada data, langsung close
+      onClose();
+    }
   };
 
   const statusOptions = ["Status Intip", "OK", "Not OK"];
@@ -200,21 +286,23 @@ export default function InputIntipForm({
         </div>
 
         {/* Footer dengan tombol aksi */}
-        <div className="flex justify-end gap-3 bg-gray-50 p-3 border-t">
-          <button
+        <div className="flex justify-end gap-3 p-4 rounded-b-xl">
+          <Button
             type="button"
-            onClick={onClose}
-            className="px-4 py-2 text-sm font-medium bg-white border rounded-md hover:bg-gray-100"
+            variant="outline"
+            onClick={handleCancel}
+            className="rounded-full px-6"
+            disabled={isSubmitting}
           >
-            Batal
-          </button>
-          <button
+            Cancel
+          </Button>
+          <Button
             type="submit"
             disabled={isSubmitting}
-            className="px-4 py-2 text-sm font-medium text-white bg-red-600 border rounded-md hover:bg-red-700 disabled:bg-red-300"
+            className="bg-submit hover:bg-green-600 text-white rounded-full px-6"
           >
-            {isSubmitting ? "Menyimpan..." : "Simpan"}
-          </button>
+            {isSubmitting ? "Menyimpan..." : "Save"}
+          </Button>
         </div>
       </form>
     </div>
