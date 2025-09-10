@@ -43,7 +43,6 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
     position_nama: positionName ?? null,
   };
 }
-
 export function canUlok(
   action: "read" | "create" | "update" | "delete",
   user: CurrentUser

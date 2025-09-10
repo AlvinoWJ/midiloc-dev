@@ -1,108 +1,194 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/client";
 import { UlokCreateSchema } from "@/lib/validations/ulok";
 import { getCurrentUser, canUlok } from "@/lib/auth/acl";
 
+// (Opsional) tipe respons umum
+type UlokSuccessResponse<T = any> = {
+  success: true;
+  data: T;
+  message?: string;
+  pagination?: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+  // Bisa tambahkan meta kalau perlu
+  meta?: any;
+};
+
+type UlokErrorResponse = {
+  success: false;
+  message: string;
+  error: string | any;
+};
+
+// Helper kirim error ringkas ala signUp
+function errorResponse(status: number, message: string, error: string | any) {
+  const body: UlokErrorResponse = {
+    success: false,
+    message,
+    error,
+  };
+  return NextResponse.json(body, { status });
+}
+
+// Helper kirim sukses
+function successResponse<T>(
+  status: number,
+  data: T,
+  opts?: {
+    message?: string;
+    pagination?: UlokSuccessResponse["pagination"];
+    meta?: any;
+  }
+) {
+  const body: UlokSuccessResponse<T> = {
+    success: true,
+    data,
+    ...(opts?.message ? { message: opts.message } : {}),
+    ...(opts?.pagination ? { pagination: opts.pagination } : {}),
+    ...(opts?.meta ? { meta: opts.meta } : {}),
+  };
+  return NextResponse.json(body, { status });
+}
 
 // GET /api/ulok?page=1&limit=10
 export async function GET(request: Request) {
+  try {
+    const supabase = await createClient();
+    const user = await getCurrentUser();
 
-  const supabase = await createClient();
-  const user = await getCurrentUser();
+    if (!user) {
+      return errorResponse(401, "Unauthorized", "User must login");
+    }
+    if (!canUlok("read", user)) {
+      return errorResponse(403, "Forbidden", "Access denied");
+    }
+    if (!user.branch_id) {
+      return errorResponse(403, "Forbidden", "User has no branch");
+    }
 
-  if (!user)
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!canUlok("read", user))
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    const { searchParams } = new URL(request.url);
+    const page = Number(searchParams.get("page") ?? "1");
+    const limit = Number(searchParams.get("limit") ?? "10");
+    const safePage = Number.isFinite(page) && page > 0 ? page : 1;
+    const safeLimit = Number.isFinite(limit) && limit > 0 ? limit : 10;
 
-  // Wajib punya branch_id agar bisa lihat data per-branch
-  if (!user.branch_id) {
-    return NextResponse.json(
-      { error: "Forbidden: user has no branch" },
-      { status: 403 }
+    const from = (safePage - 1) * safeLimit;
+    const to = from + safeLimit - 1;
+
+    let query = supabase
+      .from("ulok")
+      .select("*", { count: "exact" })
+      .eq("branch_id", user.branch_id)
+      .order("created_at", { ascending: false })
+      .range(from, to);
+
+    if (user.position_nama === "location specialist") {
+      query = query.eq("users_id", user.id);
+    }
+
+    const { data, error, count } = await query;
+
+    if (error) {
+      return errorResponse(500, "Gagal mengambil data ULOK", error.message);
+    }
+
+    const total = count ?? 0;
+    const pagination = {
+      page: safePage,
+      limit: safeLimit,
+      total,
+      totalPages: total ? Math.ceil(total / safeLimit) : 0,
+    };
+
+    return successResponse(200, data, {
+      pagination,
+      meta: {
+        user: {
+          id: user.id,
+          nama: user.nama,
+          branch_nama: user.branch_nama,
+          position_nama: user.position_nama,
+        },
+      },
+    });
+  } catch (err: any) {
+    // Fallback internal error
+    return errorResponse(
+      500,
+      "Terjadi kesalahan server internal",
+      process.env.NODE_ENV === "development"
+        ? err?.message ?? String(err)
+        : "Internal server error"
     );
   }
-
-  const { searchParams } = new URL(request.url);
-  const page = Number(searchParams.get("page") ?? "1");
-  const limit = Number(searchParams.get("limit") ?? "10");
-  const from = (page - 1) * limit;
-  const to = from + limit - 1;
-
-  // Bangun query dengan filter branch
-  let query = supabase
-    .from("ulok")
-    .select("*", { count: "exact" })
-    .eq("branch_id", user.branch_id)
-    .order("created_at", { ascending: false })
-    .range(from, to);
-
-  // Jika role adalah location specialist, tambahkan filter created_by=dirinya
-  if (user.position_nama === "location specialist") {
-    query = query.eq("users_id", user.id);
-  }
-
-  const { data, error, count } = await query;
-  if (error)
-    return NextResponse.json({ error: error.message }, { status: 500 });
-
-  return NextResponse.json({
-    user,
-    data,
-    pagination: {
-      page,
-      limit,
-      total: count ?? 0,
-      totalPages: count ? Math.ceil(count / limit) : 0,
-    },
-  });
 }
 
 // POST /api/ulok
 export async function POST(request: Request) {
-  const supabase = await createClient();
-  const user = await getCurrentUser();
+  try {
+    const supabase = await createClient();
+    const user = await getCurrentUser();
 
-  if (!user)
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!canUlok("create", user))
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (!user) {
+      return errorResponse(401, "Unauthorized", "User must login");
+    }
+    if (!canUlok("create", user)) {
+      return errorResponse(403, "Forbidden", "Access denied");
+    }
 
-  const body = await request.json().catch(() => null);
-  if (!body) {
-    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
-  }
+    const body = await request.json().catch(() => null);
+    if (!body) {
+      return errorResponse(400, "Request body invalid", "Invalid JSON body");
+    }
 
-  const validationResult = UlokCreateSchema.safeParse(body);
-  if (!validationResult.success) {
-    return NextResponse.json(
-      { error: validationResult.error.issues },
-      { status: 422 }
+    const parsed = UlokCreateSchema.safeParse(body);
+    if (!parsed.success) {
+      // Kamu bisa pilih apakah mau hanya string ringkas atau seluruh issues
+      return NextResponse.json<UlokErrorResponse>(
+        {
+          success: false,
+          message: "Validasi gagal",
+          error: parsed.error.issues, // front-end bisa mapping sendiri
+        },
+        { status: 422 }
+      );
+    }
+
+    const payload = parsed.data;
+
+    const { data, error } = await supabase
+      .from("ulok")
+      .insert({
+        users_id: user.id,
+        branch_id: user.branch_id,
+        ...payload,
+      })
+      .select("*")
+      .single();
+
+    if (error) {
+      // Mapping beberapa kode Postgres umum (opsional)
+      if (error.code === "23505") {
+        return errorResponse(409, "Konflik data", "Data sudah terdaftar");
+      }
+      return errorResponse(500, "Gagal membuat data ULOK", error.message);
+    }
+
+    return successResponse(201, data, {
+      message: "Data ULOK berhasil dibuat",
+    });
+  } catch (err: any) {
+    return errorResponse(
+      500,
+      "Terjadi kesalahan server internal",
+      process.env.NODE_ENV === "development"
+        ? err?.message ?? String(err)
+        : "Internal server error"
     );
   }
-
-  //   const id = crypto.randomUUID();
-
-  const insertData = {
-    // id,
-    ...validationResult.data,
-    // Opsional: jika Anda ingin created_by diisi otomatis dengan auth user id
-    // pastikan mapping id auth == users.id Anda
-  };
-
-  const { data, error } = await supabase
-    .from("ulok")
-    .insert({
-      users_id: user.id,
-      branch_id: user.branch_id,
-      ...insertData
-    })
-    .select("*")
-    .single();
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
-  }
-
-  return NextResponse.json({ data }, { status: 201 });
 }
