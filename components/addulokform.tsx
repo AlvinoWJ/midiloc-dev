@@ -1,15 +1,22 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { MapPin } from "lucide-react";
 import CustomSelect from "@/components/ui/customselect";
 import { Button } from "@/components/ui/button";
-import { UlokCreateSchema } from "@/lib/validations/ulok";
-import { useRouter } from "next/navigation";
 import WilayahSelector from "@/components/wilayahselector";
+import { UlokCreateSchema, UlokCreateInput } from "@/lib/validations/ulok";
 
-const AddUlokForm: React.FC = () => {
+interface TambahUlokFormProps {
+  onSubmit: (data: UlokCreateInput) => Promise<void>;
+  isSubmitting: boolean;
+}
+
+export default function TambahUlokForm({
+  onSubmit,
+  isSubmitting,
+}: TambahUlokFormProps) {
   const [formData, setFormData] = useState({
     namaUlok: "",
     provinsi: "",
@@ -30,34 +37,8 @@ const AddUlokForm: React.FC = () => {
     kontakpemilik: "",
   });
 
-  // Fungsi khusus untuk WilayahSelector agar bisa menyimpan NAMA wilayah
-  const handleWilayahChange = (field: string, name: string) => {
-    const updatedData: Record<string, any> = { [field]: name };
-
-    // Saat provinsi berubah, reset semua field di bawahnya
-    if (field === "provinsi") {
-      updatedData.kabupaten = "";
-      updatedData.kecamatan = "";
-      updatedData.kelurahan = "";
-    }
-    // Saat kabupaten berubah, reset field kecamatan dan kelurahan
-    else if (field === "kabupaten") {
-      updatedData.kecamatan = "";
-      updatedData.kelurahan = "";
-    }
-    // Saat kecamatan berubah, reset field kelurahan
-    else if (field === "kecamatan") {
-      updatedData.kelurahan = "";
-    }
-
-    // Gabungkan data yang diperbarui dengan state formData sebelumnya
-    setFormData((prev) => ({ ...prev, ...updatedData }));
-  };
-
   const formatStoreOptions = ["Reguler", "Super", "Spesifik", "Franchise"];
   const bentukObjekOptions = ["Tanah", "Bangunan"];
-  const router = useRouter();
-
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const handleChange = (
@@ -69,7 +50,22 @@ const AddUlokForm: React.FC = () => {
     setFormData({ ...formData, [name]: value });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleWilayahChange = (field: string, name: string) => {
+    const updatedData: Record<string, any> = { [field]: name };
+    if (field === "provinsi") {
+      updatedData.kabupaten = "";
+      updatedData.kecamatan = "";
+      updatedData.kelurahan = "";
+    } else if (field === "kabupaten") {
+      updatedData.kecamatan = "";
+      updatedData.kelurahan = "";
+    } else if (field === "kecamatan") {
+      updatedData.kelurahan = "";
+    }
+    setFormData((prev) => ({ ...prev, ...updatedData }));
+  };
+
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     setErrors({});
@@ -154,14 +150,10 @@ const AddUlokForm: React.FC = () => {
     const result = UlokCreateSchema.safeParse(parsedInput);
 
     if (!result.success) {
-      // Map error dari schema ke nama field di form
+      const schemaErrors: Record<string, string> = {};
       const schemaFieldMap: Record<string, string> = {
         nama_ulok: "namaUlok",
-        provinsi: "provinsi",
-        kabupaten: "kabupaten",
-        kecamatan: "kecamatan",
         desa_kelurahan: "kelurahan",
-        alamat: "alamat",
         latitude: "latlong",
         longitude: "latlong",
         format_store: "formatStore",
@@ -175,77 +167,26 @@ const AddUlokForm: React.FC = () => {
         nama_pemilik: "namapemilik",
         kontak_pemilik: "kontakpemilik",
       };
-
-      const schemaErrors: Record<string, string> = {};
       result.error.issues.forEach((err) => {
         const schemaField = err.path[0] as string;
         const formField = schemaFieldMap[schemaField] || schemaField;
         schemaErrors[formField] = err.message;
       });
-
       setErrors(schemaErrors);
       console.error("❌ Schema validasi gagal:", schemaErrors);
-      console.log("Detail issues:", result.error.issues);
       return;
     }
-
-    // Jika semua validasi berhasil, submit data
-    console.log("✅ Data valid:", result.data);
-    setErrors({});
-
-    try {
-      const response = await fetch("/api/ulok", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(result.data),
-      });
-
-      const resJson = await response.json();
-
-      if (!response.ok) {
-        console.error("❌ Gagal submit:", resJson.error || resJson);
-        alert(resJson.error || "Terjadi kesalahan");
-      } else {
-        console.log("✅ Berhasil submit:", resJson.data);
-        alert("Data berhasil disimpan");
-        router.push("/usulan_lokasi");
-
-        // Reset form setelah berhasil submit
-        setFormData({
-          namaUlok: "",
-          provinsi: "",
-          kabupaten: "",
-          kecamatan: "",
-          kelurahan: "",
-          alamat: "",
-          latlong: "",
-          formatStore: "",
-          bentukObjek: "",
-          alasHak: "",
-          jumlahlantai: "",
-          lebardepan: "",
-          panjang: "",
-          luas: "",
-          hargasewa: "",
-          namapemilik: "",
-          kontakpemilik: "",
-        });
-      }
-    } catch (err) {
-      console.error("❌ Error fetch:", err);
-      alert("Gagal menghubungi server");
-    }
+    await onSubmit(result.data);
   };
 
   return (
-    <div className="relative max-w-7xl mx-auto">
-      <form className="mt-10 relative max-w-7xl mx-auto">
+    <form onSubmit={handleFormSubmit} className="space-y-10 max-w-7xl mx-auto">
+      {/* Bagian Data Lokasi */}
+      <div className="relative">
         <div className="absolute -top-4 left-6 bg-red-600 text-white px-4 py-1 rounded shadow-md font-semibold">
-          Data Store
+          Data Lokasi
         </div>
-        <div className="bg-white shadow-[1px_1px_6px_rgba(0,0,0,0.25)] rounded p-6 space-y-4">
+        <div className="bg-white shadow-[1px_1px_6px_rgba(0,0,0,0.25)] rounded p-6 pt-10 space-y-4">
           {/* Nama ULOK */}
           <div>
             <label htmlFor="namaUlok" className="block font-bold mb-1">
@@ -312,10 +253,10 @@ const AddUlokForm: React.FC = () => {
             </div>
           </div>
         </div>
-      </form>
+      </div>
 
-      {/*Data Store */}
-      <form className="mt-10 relative max-w-7xl mx-auto">
+      {/* Bagian Data Store */}
+      <div className="mt-10 relative max-w-7xl mx-auto">
         <div className="absolute -top-4 left-6 bg-red-600 text-white px-4 py-1 rounded shadow-md font-semibold">
           Data Store
         </div>
@@ -452,10 +393,10 @@ const AddUlokForm: React.FC = () => {
             )}
           </div>
         </div>
-      </form>
+      </div>
 
-      {/*Data Pemilik */}
-      <form className="mt-10 relative max-w-7xl mx-auto">
+      {/* Bagian Data Pemilik */}
+      <div className="mt-10 relative max-w-7xl mx-auto">
         <div className="absolute -top-4 left-6 bg-red-600 text-white px-4 py-1 rounded shadow-md font-bold">
           Data Pemilik
         </div>
@@ -496,17 +437,18 @@ const AddUlokForm: React.FC = () => {
             )}
           </div>
         </div>
-      </form>
+      </div>
+
+      {/* Tombol Submit */}
       <div className="flex justify-end mt-6">
         <Button
           variant="submit"
           className="w-full sm:w-[200px] md:w-[268px] h-[42px] hover:bg-[hsl(145.44,63.2%,42%)]"
-          onClick={handleSubmit}
+          onClick={handleFormSubmit}
         >
           Submit
         </Button>
       </div>
-    </div>
+    </form>
   );
-};
-export default AddUlokForm;
+}
