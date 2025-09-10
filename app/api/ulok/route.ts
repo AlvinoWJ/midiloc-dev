@@ -26,15 +26,11 @@ type UlokErrorResponse = {
 };
 
 // Helper kirim error ringkas ala signUp
-function errorResponse(
-  status: number,
-  message: string,
-  error: string | any
-) {
+function errorResponse(status: number, message: string, error: string | any) {
   const body: UlokErrorResponse = {
     success: false,
     message,
-    error
+    error,
   };
   return NextResponse.json(body, { status });
 }
@@ -54,7 +50,7 @@ function successResponse<T>(
     data,
     ...(opts?.message ? { message: opts.message } : {}),
     ...(opts?.pagination ? { pagination: opts.pagination } : {}),
-    ...(opts?.meta ? { meta: opts.meta } : {})
+    ...(opts?.meta ? { meta: opts.meta } : {}),
   };
   return NextResponse.json(body, { status });
 }
@@ -106,7 +102,7 @@ export async function GET(request: Request) {
       page: safePage,
       limit: safeLimit,
       total,
-      totalPages: total ? Math.ceil(total / safeLimit) : 0
+      totalPages: total ? Math.ceil(total / safeLimit) : 0,
     };
 
     return successResponse(200, data, {
@@ -117,15 +113,17 @@ export async function GET(request: Request) {
           nama: user.nama,
           branch_nama: user.branch_nama,
           position_nama: user.position_nama,
-        }
-      }
+        },
+      },
     });
   } catch (err: any) {
     // Fallback internal error
     return errorResponse(
       500,
       "Terjadi kesalahan server internal",
-      process.env.NODE_ENV === "development" ? err?.message ?? String(err) : "Internal server error"
+      process.env.NODE_ENV === "development"
+        ? err?.message ?? String(err)
+        : "Internal server error"
     );
   }
 }
@@ -155,7 +153,7 @@ export async function POST(request: Request) {
         {
           success: false,
           message: "Validasi gagal",
-          error: parsed.error.issues // front-end bisa mapping sendiri
+          error: parsed.error.issues, // front-end bisa mapping sendiri
         },
         { status: 422 }
       );
@@ -168,7 +166,7 @@ export async function POST(request: Request) {
       .insert({
         users_id: user.id,
         branch_id: user.branch_id,
-        ...payload
+        ...payload,
       })
       .select("*")
       .single();
@@ -182,13 +180,15 @@ export async function POST(request: Request) {
     }
 
     return successResponse(201, data, {
-      message: "Data ULOK berhasil dibuat"
+      message: "Data ULOK berhasil dibuat",
     });
   } catch (err: any) {
     return errorResponse(
       500,
       "Terjadi kesalahan server internal",
-      process.env.NODE_ENV === "development" ? err?.message ?? String(err) : "Internal server error"
+      process.env.NODE_ENV === "development"
+        ? err?.message ?? String(err)
+        : "Internal server error"
     );
   }
 }
