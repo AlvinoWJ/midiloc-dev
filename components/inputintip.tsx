@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { Upload, Calendar, FileText } from "lucide-react";
+import CustomSelect from "@/components/ui/customselect"; // Import CustomSelect component
 
 // Tipe untuk props yang akan diterima komponen ini
 interface InputIntipFormProps {
@@ -9,11 +10,6 @@ interface InputIntipFormProps {
   onClose: () => void;
   isSubmitting: boolean;
 }
-
-type OptionType = {
-  value: string;
-  label: string;
-};
 
 interface DetailFieldProps {
   label: string;
@@ -23,7 +19,7 @@ interface DetailFieldProps {
     event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => void;
   type?: string;
-  options?: OptionType[];
+  options?: string[];
 }
 
 // Komponen helper kecil untuk field, bisa ditaruh di file terpisah jika mau
@@ -33,15 +29,13 @@ const DetailField = ({
   name,
   onChange,
   type = "text",
-  options,
+  options = [],
 }: DetailFieldProps) => {
   if (type === "file") {
     const fileValue = value as File | null;
     return (
       <div className="col-span-2">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          {label}*
-        </label>
+        <label className="block font-semibold mb-2">{label}*</label>
         <div
           className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-red-400 transition-colors cursor-pointer bg-gray-50"
           onClick={() => document.getElementById(name)?.click()}
@@ -79,57 +73,33 @@ const DetailField = ({
       </div>
     );
   }
+
   if (type === "select") {
     return (
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          {label}*
-        </label>
-        <div className="relative">
-          <select
-            value={String(value || "")}
-            onChange={onChange}
-            name={name}
-            className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-red-500 appearance-none bg-white text-gray-700"
-          >
-            <option value="">{label}</option>
-            {options?.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-          <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-            <svg
-              className="w-4 h-4 text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M19 9l-7 7-7-7"
-              />
-            </svg>
-          </div>
-        </div>
+        <CustomSelect
+          id={name}
+          name={name}
+          label={label}
+          placeholder={`Pilih ${label}`}
+          value={String(value || "")}
+          options={options}
+          onChange={onChange}
+        />
       </div>
     );
   }
+
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-2">
-        {label}*
-      </label>
+      <label className="block font-semibold mb-2">{label}*</label>
       <div className="relative">
         <input
           type={type}
           value={String(value || "")}
           onChange={onChange}
           name={name}
-          className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-red-500"
+          className="w-full p-3 border border-gray-300 rounded focus:ring-2 focus:ring-red-500 focus:border-red-500"
         />
         {type === "date" && (
           <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
@@ -187,10 +157,7 @@ export default function InputIntipForm({
     await onSubmit(dataToSend);
   };
 
-  const statusOptions = [
-    { value: "OK", label: "OK" },
-    { value: "Not OK", label: "Not OK" },
-  ];
+  const statusOptions = ["Status Intip", "OK", "Not OK"];
 
   return (
     // Latar belakang modal
@@ -207,7 +174,7 @@ export default function InputIntipForm({
         </div>
 
         {/* Content */}
-        <div className="p-4 space-y-4">
+        <div className="p-4 space-y-4 ">
           <DetailField
             label="Status INTIP"
             value={formData.statusIntip}

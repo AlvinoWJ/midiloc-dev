@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
 import { UlokUpdateSchema, UlokUpdateInput } from "@/lib/validations/ulok"; // <-- Impor tipe Zod
 import { MapPin } from "lucide-react";
+import { StatusBadge } from "@/components/ui/statusbadge";
 
 interface UlokData {
   id: string;
@@ -241,9 +242,7 @@ export default function DetailUlok({
 
             {/* Status badge dengan flex-shrink-0 agar tidak mengecil */}
             <div className="flex-shrink-0">
-              <div className="bg-progress text-white px-4 py-2 rounded text-sm font-medium whitespace-nowrap">
-                In Progress
-              </div>
+              <StatusBadge status={initialData.approval_status} />
             </div>
           </div>
         </div>
@@ -438,28 +437,30 @@ export default function DetailUlok({
           </div>
         </div>
 
-        {isLocationManagerintip() && !initialData.file_intip && (
-          <button
-            onClick={onOpenIntipForm} // ✅ panggil props, bukan langsung state
-            className="mt-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded flex items-center gap-2 transition-colors duration-200"
-            disabled={isSubmitting}
-          >
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+        {isLocationManagerintip() &&
+          !initialData.file_intip &&
+          initialData.approval_status === "In Progress" && (
+            <button
+              onClick={onOpenIntipForm} // ✅ panggil props, bukan langsung state
+              className="mt-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded flex items-center gap-2 transition-colors duration-200"
+              disabled={isSubmitting}
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-              />
-            </svg>
-            Input Data Intip
-          </button>
-        )}
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                />
+              </svg>
+              Input Data Intip
+            </button>
+          )}
         {/* ✅ Tombol Approve/Tolak */}
         {canApprove() && initialData.file_intip && (
           <div className="flex gap-3 mt-4">

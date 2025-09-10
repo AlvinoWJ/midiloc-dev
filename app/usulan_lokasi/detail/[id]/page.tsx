@@ -169,7 +169,7 @@ export default function DetailPage() {
         }`}
       >
         <Navbar />
-        <main className="flex-1 p-4 md:p-6">
+        <main className="flex-1 p-4 md:p-6 hide-scrollbar">
           {isLoading && <p className="text-center py-10">Loading data...</p>}
           {errorMessage && (
             <p className="text-center text-red-500 py-10">{errorMessage}</p>
