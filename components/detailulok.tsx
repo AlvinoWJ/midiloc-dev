@@ -7,6 +7,7 @@ import { Input, Textarea } from "@/components/ui/input";
 import { UlokUpdateSchema, UlokUpdateInput } from "@/lib/validations/ulok"; // <-- Impor tipe Zod
 import { MapPin } from "lucide-react";
 import { StatusBadge } from "@/components/ui/statusbadge";
+import { CheckCircle2, FileText } from "lucide-react";
 
 interface UlokData {
   id: string;
@@ -28,8 +29,10 @@ interface UlokData {
   hargasewa: string;
   namapemilik: string;
   kontakpemilik: string;
-  approval_status: string; // <-- Tambahkan field status untuk logika tombol
-  file_intip: string | null; // <-- Tambahkan untuk logika tombol intip
+  approval_status: string;
+  file_intip: string | null;
+  approval_intip: string | null;
+  tanggal_approval_intip: string | null;
 }
 
 interface DetailUlokProps {
@@ -39,6 +42,7 @@ interface DetailUlokProps {
   onOpenIntipForm: () => void;
   onApprove?: (status: "OK" | "Rejected") => void;
   user?: CurrentUser | null; // ✅ ditambahkan
+  fileIntipUrl: string | null;
 }
 
 type CurrentUser = {
@@ -90,6 +94,7 @@ export default function DetailUlok({
   onOpenIntipForm,
   onApprove,
   user,
+  fileIntipUrl,
 }: DetailUlokProps) {
   const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
@@ -166,6 +171,28 @@ export default function DetailUlok({
     setErrors({});
     setIsEditing(false);
   };
+
+  console.log("--- DEBUGGING DATA UNTUK TOMBOL APPROVAL ---");
+
+  // Kondisi 1: Apakah user adalah Location Manager?
+  console.log("1. Role Check:", {
+    position_nama: user?.position_nama,
+    isManager: isLocationManagerintip(),
+  });
+
+  // Kondisi 2: Apakah file_intip sudah ada nilainya?
+  console.log("2. File Intip Check:", {
+    file_intip: initialData.file_intip,
+    fileExists: !!initialData.file_intip, // !! mengubah nilai menjadi boolean (true/false)
+  });
+
+  // Kondisi 3: Apakah statusnya persis 'In Progress'?
+  console.log("3. Status Check:", {
+    approval_status: initialData.approval_status,
+    isCorrectStatus: initialData.approval_status === "In Progress",
+  });
+
+  console.log("-------------------------------------------");
 
   return (
     <div className="bg-gray-50 min-h-screen">
@@ -402,7 +429,7 @@ export default function DetailUlok({
           </div>
         </div>
         {/* Data Pemilik Card */}
-        <div className="bg-white rounded-xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)] mb-4">
+        <div className="bg-white rounded-xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)] mb-8">
           <div className="border-b border-gray-200 px-6 py-4">
             <div className="flex items-center">
               <img
@@ -437,13 +464,81 @@ export default function DetailUlok({
           </div>
         </div>
 
-        <div className="flex justify-end">
+        {/* Kartu ini hanya akan muncul jika data file_intip sudah ada */}
+        {initialData.file_intip && (
+          <div className="bg-white rounded-xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)] mb-4">
+            <div className="border-b border-gray-200 px-6 py-4">
+              <div className="flex items-center">
+                {/* Menggunakan ikon yang relevan untuk approval */}
+                <CheckCircle2 className="text-green-600 mr-3" size={20} />
+                <h2 className="text-lg font-semibold text-gray-900">
+                  Data Approval INTIP
+                </h2>
+              </div>
+            </div>
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                {/* Menampilkan Status INTIP */}
+                {/* Kita gunakan komponen DetailField Anda agar konsisten */}
+                <DetailField
+                  label="Status INTIP"
+                  value={initialData.approval_intip || "-"}
+                  isEditing={false} // Selalu false karena ini hanya untuk display
+                />
+
+                {/* Menampilkan Tanggal Approval */}
+                <DetailField
+                  label="Tanggal Approval"
+                  value={
+                    initialData.tanggal_approval_intip
+                      ? new Date(
+                          initialData.tanggal_approval_intip
+                        ).toLocaleDateString("id-ID", {
+                          day: "numeric",
+                          month: "long",
+                          year: "numeric",
+                        })
+                      : "-"
+                  }
+                  isEditing={false}
+                />
+
+                {/* Menampilkan Link ke File Bukti Approval */}
+                <div className="col-span-1">
+                  <p className="text-gray-600 font-medium text-sm mb-1 block">
+                    Bukti Approval
+                  </p>
+                  {fileIntipUrl ? (
+                    <a
+                      href={fileIntipUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-sm text-red-600 hover:text-red-800 font-semibold transition-colors"
+                    >
+                      <FileText className="h-4 w-4" />
+                      <span>Lihat File: {initialData.file_intip}</span>
+                    </a>
+                  ) : (
+                    <p className="text-sm text-gray-400 italic">
+                      Memuat file...
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* GANTI SELURUH BLOK TOMBOL DENGAN INI */}
+        <div className="flex justify-end mt-4">
           {isLocationManagerintip() &&
-            !initialData.file_intip &&
-            initialData.approval_status === "In Progress" && (
+          initialData.approval_status === "In Progress" ? (
+            // JIKA user adalah Manager DAN status masih "In Progress"...
+            !initialData.file_intip ? (
+              // ...TAPI file intip BELUM ada, maka tampilkan tombol Input Intip
               <button
-                onClick={onOpenIntipForm} // ✅ panggil props, bukan langsung state
-                className="mt-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded flex items-center gap-2 transition-colors duration-200"
+                onClick={onOpenIntipForm}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded flex items-center gap-2 transition-colors duration-200"
                 disabled={isSubmitting}
               >
                 <svg
@@ -461,26 +556,26 @@ export default function DetailUlok({
                 </svg>
                 Input Data Intip
               </button>
-            )}
-          {/* ✅ Tombol Approve/Tolak */}
-          {canApprove() && initialData.file_intip && (
-            <div className="flex gap-3 mt-4">
-              <Button
-                onClick={() => onApprove && onApprove("OK")}
-                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md"
-                disabled={isSubmitting}
-              >
-                Setujui
-              </Button>
-              <Button
-                onClick={() => onApprove && onApprove("Rejected")}
-                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md"
-                disabled={isSubmitting}
-              >
-                Tolak
-              </Button>
-            </div>
-          )}
+            ) : (
+              // ...DAN file intip SUDAH ada, maka tampilkan tombol Approve/Tolak
+              <div className="flex gap-3">
+                <Button
+                  onClick={() => onApprove && onApprove("OK")}
+                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md"
+                  disabled={isSubmitting}
+                >
+                  Setujui
+                </Button>
+                <Button
+                  onClick={() => onApprove && onApprove("Rejected")}
+                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md"
+                  disabled={isSubmitting}
+                >
+                  Tolak
+                </Button>
+              </div>
+            )
+          ) : null}
         </div>
       </div>
     </div>

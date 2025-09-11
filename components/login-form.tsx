@@ -50,7 +50,7 @@ export function LoginForm({
           <Image
             src="/midiloc.png"
             alt="Alfamidi Logo"
-            width={395}
+            width={350}
             height={90}
             priority
           />
