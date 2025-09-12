@@ -110,10 +110,9 @@ export const DetailUlokSkeleton = () => {
   );
 };
 
-// Skeleton untuk InfoCard
 export const InfoCardSkeleton = () => {
   return (
-    <div className="w-[330px] shadow-[1px_1px_6px_rgba(0,0,0,0.25)] bg-white rounded-lg border">
+    <div className="w-[330px] h-[151px] shadow-[1px_1px_6px_rgba(0,0,0,0.25)] bg-white rounded-lg border bg-border-white">
       {/* CardHeader skeleton */}
       <div className="flex flex-row justify-between items-start space-y-0 p-6 pb-2">
         <div className="flex-1 min-w-0">
@@ -176,28 +175,28 @@ export const UlokCardsSkeleton = ({ count }: { count: number }) => {
   );
 };
 
-// Skeleton untuk seluruh halaman Usulan Lokasi - 100% identik
+// Skeleton untuk seluruh halaman Usulan Lokasi - 100% identik dengan spacing exact
 export const UlokPageSkeleton = ({ cardCount = 6 }: { cardCount?: number }) => {
   return (
-    <main className="flex-1 p-6 space-y-6">
-      {/* Header atas skeleton */}
+    <>
+      {/* Header atas skeleton - spacing exact sama dengan original */}
       <div className="flex items-center justify-between">
-        {/* Title skeleton */}
+        {/* Title skeleton - dengan margin exact */}
         <div className="mt-3 mb-4">
-          <Skeleton className="h-10 w-64" />
+          <Skeleton className="h-9 w-64" />
         </div>
         {/* SearchWithFilter skeleton */}
         <SearchWithFilterSkeleton />
       </div>
 
-      {/* Tab Recent & History + Add skeleton */}
+      {/* Tab Recent & History + Add skeleton - spacing exact */}
       <div className="flex items-center justify-between">
         <TabsSkeleton />
         <AddButtonSkeleton />
       </div>
 
-      {/* Cards grid skeleton */}
+      {/* Cards grid skeleton - spacing exact sama dengan original */}
       <UlokCardsSkeleton count={cardCount} />
-    </main>
+    </>
   );
 };

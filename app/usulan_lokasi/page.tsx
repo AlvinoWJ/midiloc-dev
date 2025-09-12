@@ -127,11 +127,13 @@ export default function UlokPage() {
         }`}
       >
         <Navbar />
+
         <main className="flex-1 p-6 space-y-6">
-          {/* Jika loading, tampilkan skeleton identik 100% */}
+          {/* Jika loading, tampilkan skeleton dengan struktur exact sama */}
           {isLoading ? (
-            <UlokPageSkeleton cardCount={ulokData.length || 6} />
+            <UlokPageSkeleton cardCount={6} />
           ) : isError ? (
+            // Error State dengan design yang lebih baik
             <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
               <div className="bg-white rounded-lg shadow-sm border p-8 max-w-md">
                 <div className="text-red-500 text-4xl mb-4">⚠️</div>
