@@ -7,71 +7,34 @@ import { InfoCard } from "@/components/infocard";
 import Tabs from "@/components/ui/tabs";
 import AddButton from "@/components/ui/addbutton";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import SearchWithFilter from "@/components/searchwithfilter";
+import SWRProvider from "@/app/swr-provider";
+import { useUser } from "@/app/hooks/useUser";
+import { useUlok } from "@/app/hooks/useUlok";
 
-type Ulok = {
-  id: string;
-  nama_ulok: string;
-  alamat: string;
-  created_at: string;
-  approval_status: string;
-};
 
-type CurrentUser = {
-  id: string;
-  email: string | null;
-  nama: string | null;
-  branch_id: string | null;
-  branch_nama: string | null;
-  position_id: string | null;
-  position_nama: string | null;
-};
+export default function UlokPageWrapper() {
+  // Jika nanti SWRProvider sudah ada di layout global, cukup return <UlokPage />
+  return (
+    <SWRProvider>
+      <UlokPage />
+    </SWRProvider>
+  );
+}
 
-export default function UlokPage() {
+export function UlokPage() {
   const { isCollapsed } = useSidebar();
   const router = useRouter();
-  const [ulokData, setUlokData] = useState<Ulok[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isError, setIsError] = useState(false);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [filterMonth, setFilterMonth] = useState("");
   const [filterYear, setFilterYear] = useState("");
   const [activeTab, setActiveTab] = useState("Recent");
-  const [user, setUser] = useState<CurrentUser | null>(null);
+  const { user } = useUser();
+  const { ulokData, ulokLoading, ulokError } = useUlok();
 
-  useEffect(() => {
-    const fetchUlok = async () => {
-      try {
-        setIsLoading(true);
-        setIsError(false);
-
-        const res = await fetch("http://localhost:3000/api/ulok");
-        if (!res.ok) {
-          if (res.status === 401 || res.status === 403) {
-            throw new Error(
-              "Akses ditolak: hanya role Location Specialist yang dapat melihat data ini."
-            );
-          } else {
-            throw new Error(`Gagal mengambil data ulok (Error ${res.status})`);
-          }
-        }
-
-        const data = await res.json();
-        setUlokData(data.data);
-        setUser(data.meta.user);
-      } catch (err) {
-        console.error("Fetch error:", err);
-        setIsError(true);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    // fetchUserData();
-    fetchUlok();
-  }, []);
-
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const monthMap: Record<string, string> = {
     Januari: "01",
     Februari: "02",
@@ -154,9 +117,9 @@ export default function UlokPage() {
 
           {/* Info Card */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3  gap-6">
-            {isLoading ? (
+            {ulokLoading ? (
               <p className="text-gray-500">Loading...</p>
-            ) : isError ? (
+            ) : ulokError ? (
               <p className="text-red-500">Gagal memuat data.</p>
             ) : filteredUlok.length === 0 ? (
               <p className="text-gray-500">Tidak ada data yang cocok.</p>

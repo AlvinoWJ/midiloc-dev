@@ -3,8 +3,18 @@
 import { useSidebar } from "@/components/ui/sidebarcontext";
 import Sidebar from "@/components/sidebar";
 import Navbar from "@/components/navbar";
+import SWRProvider from "@/app/swr-provider";
 
-export default function Form_KpltPage() {
+export default function From_KpltpageWrapper() {
+  // Jika nanti SWRProvider sudah ada di layout global, cukup return <UlokPage />
+  return (
+    <SWRProvider>
+      <Form_KpltPage />
+    </SWRProvider>
+  );
+}
+
+export function Form_KpltPage() {
   // Mengambil state isCollapsed dari context
   const { isCollapsed } = useSidebar();
 

@@ -3,8 +3,18 @@
 import { useSidebar } from "@/components/ui/sidebarcontext";
 import Sidebar from "@/components/sidebar";
 import Navbar from "@/components/navbar";
+import SWRProvider from "@/app/swr-provider";
 
-export default function DashboardPage() {
+export default function DashboardPageWrapper() {
+  // Jika nanti SWRProvider sudah ada di layout global, cukup return <UlokPage />
+  return (
+    <SWRProvider>
+      <DashboardPage />
+    </SWRProvider>
+  );
+}
+
+export function DashboardPage() {
   // Mengambil state isCollapsed dari context
   const { isCollapsed } = useSidebar();
 

@@ -7,6 +7,7 @@ import { Input, Textarea } from "@/components/ui/input";
 import { UlokUpdateSchema, UlokUpdateInput } from "@/lib/validations/ulok"; // <-- Impor tipe Zod
 import { MapPin } from "lucide-react";
 import { StatusBadge } from "@/components/ui/statusbadge";
+import { useUser } from "@/app/hooks/useUser";
 
 interface UlokData {
   id: string;
@@ -37,15 +38,10 @@ interface DetailUlokProps {
   onSave: (data: UlokUpdateInput) => Promise<boolean>;
   isSubmitting: boolean;
   onOpenIntipForm: () => void;
-  onApprove?: (status: "OK" | "Rejected") => void;
-  user?: CurrentUser | null; // ✅ ditambahkan
+  onApprove?: (status: "OK" | "NOK") => void;
 }
 
-type CurrentUser = {
-  id: string;
-  nama: string;
-  position_nama: string;
-};
+
 
 const DetailField = ({
   label,
@@ -89,20 +85,16 @@ export default function DetailUlok({
   isSubmitting,
   onOpenIntipForm,
   onApprove,
-  user,
 }: DetailUlokProps) {
   const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
   const [editedData, setEditedData] = useState(initialData);
   const [errors, setErrors] = useState<Record<string, string | undefined>>({});
+  const { user } = useUser();
 
   useEffect(() => {
     setEditedData(initialData);
   }, [initialData]);
-
-  if (!user) {
-    return <div>Loading user data...</div>; // Teks ini akan muncul sesaat
-  }
 
   const canApprove = () =>
     user?.position_nama?.toLowerCase().trim() === "Location Manager";
@@ -473,7 +465,7 @@ export default function DetailUlok({
                 Setujui
               </Button>
               <Button
-                onClick={() => onApprove && onApprove("Rejected")}
+                onClick={() => onApprove && onApprove("NOK")}
                 className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md"
                 disabled={isSubmitting}
               >
