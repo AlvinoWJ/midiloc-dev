@@ -8,6 +8,8 @@ import DetailUlok from "@/components/detailulok";
 import { useSidebar } from "@/components/ui/sidebarcontext";
 import { UlokUpdateInput } from "@/lib/validations/ulok";
 import InputIntipForm from "@/components/inputintip";
+import { useAlert } from "@/components/alertcontext";
+import { DetailUlokSkeleton } from "@/components/skleton";
 
 interface UlokDataForUI {
   id: string;
@@ -30,7 +32,16 @@ interface UlokDataForUI {
   namapemilik: string;
   kontakpemilik: string;
   approval_status: string;
+  approval_intip: string;
+  tanggal_approval_intip: string;
   file_intip: string | null;
+}
+
+interface IntipFormData {
+  approval_intip: string;
+  tanggal_approval_intip: string;
+  file_intip: File | null;
+  approval_status: string;
 }
 
 type CurrentUser = {
@@ -50,6 +61,10 @@ export default function DetailPage() {
   const [isSubmittingIntip, setIsSubmittingIntip] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [user, setUser] = useState<CurrentUser | null>(null);
+  const [isApproving, setIsApproving] = useState(false);
+  const { showToast, showConfirmation } = useAlert();
+
+  const [fileIntipUrl, setFileIntipUrl] = useState<string | null>(null);
 
   // --- Fetch data user ---
   useEffect(() => {
@@ -70,7 +85,7 @@ export default function DetailPage() {
   // --- Fetch data ulok ---
   const fetchData = useCallback(async () => {
     if (!id) {
-      setIsLoading(false);
+      setIsLoading(true);
       setErrorMessage("ID tidak ditemukan di URL.");
       return;
     }
@@ -109,6 +124,8 @@ export default function DetailPage() {
         kontakpemilik: apiData.kontak_pemilik,
         approval_status: apiData.approval_status,
         file_intip: apiData.file_intip,
+        approval_intip: apiData.approval_intip,
+        tanggal_approval_intip: apiData.tanggal_approval_intip,
       });
     } catch (err: any) {
       setErrorMessage(err.message || "Terjadi kesalahan.");
@@ -120,6 +137,44 @@ export default function DetailPage() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  // --- [BARU] useEffect untuk mengambil file intip SETELAH data ulok didapat ---
+  useEffect(() => {
+    // Pastikan ada data ulok dan ada path file_intip
+    if (!ulokData || !ulokData.file_intip) {
+      return;
+    }
+
+    const fetchFile = async () => {
+      try {
+        // Fetch ke endpoint file Anda
+        const response = await fetch(`/api/ulok/${ulokData.id}/file-intip`);
+
+        if (!response.ok) {
+          throw new Error("Gagal mengambil file intip.");
+        }
+
+        // Konversi respons menjadi Blob (binary large object)
+        const fileBlob = await response.blob();
+
+        // Buat URL sementara dari Blob agar bisa ditampilkan di browser
+        const objectUrl = URL.createObjectURL(fileBlob);
+        setFileIntipUrl(objectUrl);
+      } catch (error) {
+        console.error("Fetch file error:", error);
+        // Anda bisa set state error di sini jika perlu
+      }
+    };
+
+    fetchFile();
+
+    // Cleanup function untuk menghapus object URL dari memori saat komponen di-unmount
+    return () => {
+      if (fileIntipUrl) {
+        URL.revokeObjectURL(fileIntipUrl);
+      }
+    };
+  }, [ulokData]); // Dijalankan setiap kali ulokData berubah
 
   // --- Save/Edit ---
   const handleSaveData = async (data: UlokUpdateInput): Promise<boolean> => {
@@ -150,13 +205,59 @@ export default function DetailPage() {
         body: formData,
       });
       if (!response.ok) throw new Error("Gagal menyimpan data intip.");
-      alert("Data intip berhasil disimpan!");
-      setShowIntipForm(false);
-      await fetchData();
+      fetchData();
     } catch (error: any) {
-      alert(error.message);
     } finally {
       setIsSubmittingIntip(false);
+    }
+  };
+
+  // Approve (LM multipart)
+  const handleSetApproval = async (status: "OK" | "NOK") => {
+    if (!id) return;
+
+    const confirmed = await showConfirmation({
+      title: "Konfirmasi Perubahan Status",
+      message:
+        status === "OK"
+          ? `Apakah Anda yakin ingin menyetujui ${ulokData?.namaUlok}?`
+          : `Apakah Anda yakin ingin menolak ${ulokData?.namaUlok}?`,
+      confirmText: status === "OK" ? "Ya, Setujui" : "Ya, Tolak",
+      cancelText: "Batal",
+      type: status === "OK" ? "success" : "error",
+    });
+
+    if (!confirmed) return;
+
+    setIsApproving(true);
+    try {
+      const fd = new FormData();
+      fd.append("approval_status", status);
+      const res = await fetch(`/api/ulok/${id}`, {
+        method: "PATCH",
+        body: fd,
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error(j.error || "Gagal update status.");
+      }
+      showToast({
+        type: "success",
+        title: "Status Berhasil Diubah",
+        message: `Approval status telah diubah menjadi ${status}`,
+        duration: 4000,
+      });
+
+      await fetchData();
+    } catch (e: any) {
+      showToast({
+        type: "error",
+        title: "Gagal Mengubah Status",
+        message: e.message || "Terjadi kesalahan saat mengupdate status",
+        duration: 6000,
+      });
+    } finally {
+      setIsApproving(false);
     }
   };
 
@@ -169,8 +270,8 @@ export default function DetailPage() {
         }`}
       >
         <Navbar />
-        <main className="flex-1 p-4 md:p-6">
-          {isLoading && <p className="text-center py-10">Loading data...</p>}
+        <main className="flex-1 p-4 md:p-6 hide-scrollbar">
+          {isLoading && <DetailUlokSkeleton />}
           {errorMessage && (
             <p className="text-center text-red-500 py-10">{errorMessage}</p>
           )}
@@ -181,6 +282,8 @@ export default function DetailPage() {
               isSubmitting={isSubmitting}
               user={user}
               onOpenIntipForm={() => setShowIntipForm(true)}
+              fileIntipUrl={fileIntipUrl}
+              onApprove={handleSetApproval}
             />
           )}
         </main>

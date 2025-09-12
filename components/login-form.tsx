@@ -48,9 +48,9 @@ export function LoginForm({
       <Card>
         <CardHeader className="flex flex-col items-center space-y-2">
           <Image
-            src="/alfamidi-logo.png"
+            src="/midiloc.png"
             alt="Alfamidi Logo"
-            width={395}
+            width={350}
             height={90}
             priority
           />

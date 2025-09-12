@@ -19,8 +19,6 @@ export interface UlokRow {
   bentuk_objek: string;
   alas_hak: boolean;
   jumlah_lantai: number;
-
-  
   lebar_depan: number;
   panjang: number;
   luas: number;

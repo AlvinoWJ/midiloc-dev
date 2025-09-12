@@ -7,11 +7,13 @@ import Sidebar from "@/components/sidebar";
 import Navbar from "@/components/navbar";
 import TambahUlokForm from "@/components/addulokform";
 import { UlokCreateInput } from "@/lib/validations/ulok";
+import { useAlert } from "@/components/alertcontext";
 
 export default function TambahUlokPage() {
   const { isCollapsed } = useSidebar();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { showToast } = useAlert();
 
   // --- (BARU) Fungsi "pintar" untuk menangani fetch API ---
   const handleFormSubmit = async (data: UlokCreateInput) => {
@@ -28,16 +30,22 @@ export default function TambahUlokPage() {
       const resJson = await response.json();
 
       if (!response.ok) {
-        console.error("❌ Gagal submit:", resJson.error || resJson);
-        alert(resJson.error || "Terjadi kesalahan saat menyimpan data.");
+        showToast({
+          type: "error",
+          message: resJson.error || "Terjadi kesalahan saat menyimpan data.",
+        });
       } else {
-        console.log("✅ Berhasil submit:", resJson.data);
-        alert("Data berhasil disimpan!");
-        router.push("/usulan_lokasi"); // Arahkan pengguna setelah berhasil
+        showToast({
+          type: "success",
+          message: "Data berhasil disimpan!",
+        });
+        router.push("/usulan_lokasi");
       }
     } catch (err) {
-      console.error("❌ Error fetch:", err);
-      alert("Gagal menghubungi server. Silakan coba lagi.");
+      showToast({
+        type: "error",
+        message: "Gagal menghubungi server. Silakan coba lagi.",
+      });
     } finally {
       setIsSubmitting(false);
     }

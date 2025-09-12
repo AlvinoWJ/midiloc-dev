@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { ThemeProvider } from "next-themes";
 import { Poppins } from "next/font/google";
 import { SidebarProvider } from "@/components/ui/sidebarcontext";
+import { AlertProvider } from "@/components/alertcontext";
 import "./globals.css";
 
 // Pakai Poppins
@@ -34,7 +35,9 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <SidebarProvider>{children}</SidebarProvider>
+          <AlertProvider>
+            <SidebarProvider>{children}</SidebarProvider>
+          </AlertProvider>
         </ThemeProvider>
       </body>
     </html>

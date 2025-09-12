@@ -2,6 +2,9 @@
 
 import React, { useState } from "react";
 import { Upload, Calendar, FileText } from "lucide-react";
+import CustomSelect from "@/components/ui/customselect"; // Import CustomSelect component
+import { Button } from "@/components/ui/button";
+import { useAlert } from "@/components/alertcontext";
 
 // Tipe untuk props yang akan diterima komponen ini
 interface InputIntipFormProps {
@@ -9,11 +12,6 @@ interface InputIntipFormProps {
   onClose: () => void;
   isSubmitting: boolean;
 }
-
-type OptionType = {
-  value: string;
-  label: string;
-};
 
 interface DetailFieldProps {
   label: string;
@@ -23,31 +21,29 @@ interface DetailFieldProps {
     event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => void;
   type?: string;
-  options?: OptionType[];
+  options?: string[];
 }
 
-// Komponen helper kecil untuk field, bisa ditaruh di file terpisah jika mau
 const DetailField = ({
   label,
   value,
   name,
   onChange,
   type = "text",
-  options,
+  options = [],
 }: DetailFieldProps) => {
   if (type === "file") {
     const fileValue = value as File | null;
     return (
       <div className="col-span-2">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          {label}*
-        </label>
+        <label className="block font-semibold mb-2">{label}*</label>
         <div
           className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-red-400 transition-colors cursor-pointer bg-gray-50"
           onClick={() => document.getElementById(name)?.click()}
         >
           <input
             id={name}
+            name={name}
             type="file"
             className="hidden"
             onChange={onChange}
@@ -79,61 +75,34 @@ const DetailField = ({
       </div>
     );
   }
+
   if (type === "select") {
     return (
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          {label}*
-        </label>
-        <div className="relative">
-          <select
-            value={String(value || "")}
-            onChange={onChange}
-            name={name}
-            className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-red-500 appearance-none bg-white text-gray-700"
-          >
-            <option value="">{label}</option>
-            {options?.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-          <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-            <svg
-              className="w-4 h-4 text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M19 9l-7 7-7-7"
-              />
-            </svg>
-          </div>
-        </div>
+        <CustomSelect
+          id={name}
+          name={name}
+          label={label}
+          placeholder={`Pilih ${label}`}
+          value={String(value || "")}
+          options={options}
+          onChange={onChange}
+        />
       </div>
     );
   }
+
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-2">
-        {label}*
-      </label>
+      <label className="block font-semibold mb-2">{label}*</label>
       <div className="relative">
         <input
           type={type}
           value={String(value || "")}
           onChange={onChange}
           name={name}
-          className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-red-500"
+          className="w-full p-3 border border-gray-300 rounded focus:ring-2 focus:ring-red-500 focus:border-red-500"
         />
-        {type === "date" && (
-          <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-        )}
       </div>
     </div>
   );
@@ -144,20 +113,24 @@ export default function InputIntipForm({
   onClose,
   isSubmitting,
 }: InputIntipFormProps) {
+  const { showAlert, showToast, showConfirmation } = useAlert();
   const [formData, setFormData] = useState<{
-    statusIntip: string;
-    tanggalApproval: string;
-    buktiApproval: File | null;
+    approval_intip: string;
+    tanggal_approval_intip: string;
+    file_intip: File | null;
   }>({
-    statusIntip: "OK", // Default value
-    tanggalApproval: "",
-    buktiApproval: null,
+    approval_intip: "", // Gunakan string kosong sebagai nilai awal yang lebih netral
+    tanggal_approval_intip: "",
+    file_intip: null,
   });
 
   const handleInputChange = (
     event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value, files } = event.target as HTMLInputElement;
+    if (files) {
+      console.log("File yang dipilih:", files[0]);
+    }
     setFormData((prev) => ({
       ...prev,
       [name]: files ? files[0] : value,
@@ -167,30 +140,112 @@ export default function InputIntipForm({
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    // Validasi sederhana
+    console.log("State formData sebelum submit:", formData);
+
     if (
-      !formData.statusIntip ||
-      !formData.tanggalApproval ||
-      !formData.buktiApproval
+      !formData.approval_intip ||
+      !formData.tanggal_approval_intip ||
+      !formData.file_intip
     ) {
-      alert("Semua field wajib diisi.");
+      showAlert({
+        type: "error",
+        title: "Gagal Menyimpan",
+        message: "Semua field wajib diisi.",
+        duration: 5000,
+      });
       return;
     }
 
-    // PENTING: Gunakan FormData untuk mengirim file
-    const dataToSend = new FormData();
-    dataToSend.append("approval_intip", formData.statusIntip);
-    dataToSend.append("tanggal_approval_intip", formData.tanggalApproval);
-    dataToSend.append("file_intip", formData.buktiApproval);
+    if (formData.file_intip && formData.file_intip.size > 10 * 1024 * 1024) {
+      showAlert({
+        type: "error",
+        title: "File Terlalu Besar",
+        message:
+          "Ukuran file maksimal 10MB. Silakan pilih file yang lebih kecil.",
+        duration: 5000,
+      });
+      return;
+    }
 
-    // Panggil fungsi onSubmit dari props dengan data yang sudah siap
-    await onSubmit(dataToSend);
+    const confirmed = await showConfirmation({
+      title: "Konfirmasi Submit Data INTIP",
+      message: `Apakah Anda yakin ingin menyimpan data INTIP dengan status "${formData.approval_intip}"? Pastikan semua data sudah benar.`,
+      confirmText: "Ya, Simpan Data",
+      cancelText: "Periksa Kembali",
+      type: "success",
+    });
+
+    if (!confirmed) return;
+
+    try {
+      // PENTING: Gunakan FormData untuk mengirim file
+      const dataToSend = new FormData();
+      dataToSend.append("approval_intip", formData.approval_intip);
+      dataToSend.append(
+        "tanggal_approval_intip",
+        formData.tanggal_approval_intip
+      );
+      if (formData.file_intip) {
+        dataToSend.append("file_intip", formData.file_intip);
+      }
+
+      // LOG 3: Cek isi dari FormData sebelum dikirim
+      console.log("--- Mengecek isi FormData ---");
+      for (let pair of dataToSend.entries()) {
+        console.log(pair[0] + ": ", pair[1]);
+      }
+      console.log("----------------------------");
+
+      await onSubmit(dataToSend);
+
+      showToast({
+        type: "success",
+        title: "Berhasil Disimpan!",
+        message: "Data INTIP berhasil disimpan ke sistem.",
+        duration: 4000,
+      });
+
+      onClose();
+    } catch (error) {
+      console.error("Error submitting INTIP data:", error);
+
+      showAlert({
+        type: "error",
+        title: "Terjadi Kesalahan",
+        message:
+          "Gagal menyimpan data INTIP. Silakan periksa koneksi internet Anda dan coba lagi.",
+        duration: 6000,
+      });
+    }
   };
 
-  const statusOptions = [
-    { value: "OK", label: "OK" },
-    { value: "Not OK", label: "Not OK" },
-  ];
+  const handleCancel = async () => {
+    // Cek apakah ada data yang sudah diisi oleh pengguna
+    const hasUnsavedChanges =
+      formData.approval_intip ||
+      formData.tanggal_approval_intip ||
+      formData.file_intip;
+
+    if (hasUnsavedChanges) {
+      const confirmed = await showConfirmation({
+        title: "Batalkan Perubahan?",
+        message:
+          "Anda memiliki perubahan yang belum disimpan. Apakah Anda yakin ingin menutup form ini?",
+        confirmText: "Ya, Tutup",
+        cancelText: "Lanjutkan Mengisi",
+        type: "warning",
+      });
+
+      if (confirmed) {
+        onClose();
+      }
+    } else {
+      // Jika form masih kosong, langsung tutup tanpa konfirmasi
+      onClose();
+    }
+  };
+
+  const statusOptions = ["OK", "Not OK"];
 
   return (
     // Latar belakang modal
@@ -207,47 +262,49 @@ export default function InputIntipForm({
         </div>
 
         {/* Content */}
-        <div className="p-4 space-y-4">
+        <div className="p-4 space-y-4 ">
           <DetailField
             label="Status INTIP"
-            value={formData.statusIntip}
-            name="statusIntip"
+            value={formData.approval_intip}
+            name="approval_intip"
             type="select"
             options={statusOptions}
             onChange={handleInputChange}
           />
           <DetailField
             label="Tanggal Approval INTIP"
-            value={formData.tanggalApproval}
-            name="tanggalApproval"
+            value={formData.tanggal_approval_intip}
+            name="tanggal_approval_intip"
             type="date"
             onChange={handleInputChange}
           />
           <DetailField
             label="Bukti Approval INTIP"
-            value={formData.buktiApproval}
-            name="buktiApproval"
+            value={formData.file_intip}
+            name="file_intip"
             type="file"
             onChange={handleInputChange}
           />
         </div>
 
         {/* Footer dengan tombol aksi */}
-        <div className="flex justify-end gap-3 bg-gray-50 p-3 border-t">
-          <button
+        <div className="flex justify-end gap-3 p-4 rounded-b-xl">
+          <Button
             type="button"
-            onClick={onClose}
-            className="px-4 py-2 text-sm font-medium bg-white border rounded-md hover:bg-gray-100"
+            variant="outline"
+            onClick={handleCancel}
+            className="rounded-full px-6"
+            disabled={isSubmitting}
           >
-            Batal
-          </button>
-          <button
+            Cancel
+          </Button>
+          <Button
             type="submit"
             disabled={isSubmitting}
-            className="px-4 py-2 text-sm font-medium text-white bg-red-600 border rounded-md hover:bg-red-700 disabled:bg-red-300"
+            className="bg-submit hover:bg-green-600 text-white rounded-full px-6"
           >
-            {isSubmitting ? "Menyimpan..." : "Simpan"}
-          </button>
+            {isSubmitting ? "Menyimpan..." : "Save"}
+          </Button>
         </div>
       </form>
     </div>

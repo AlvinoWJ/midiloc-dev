@@ -9,6 +9,7 @@ import WilayahSelector from "@/components/wilayahselector";
 import { UlokCreateSchema, UlokCreateInput } from "@/lib/validations/ulok";
 import LocationPickerMap from "@/components/map/LocationPickerMap";
 import { Dialog } from "@headlessui/react";
+import { useAlert } from "@/components/alertcontext";
 
 interface TambahUlokFormProps {
   onSubmit: (data: UlokCreateInput) => Promise<void>;
@@ -19,6 +20,7 @@ export default function TambahUlokForm({
   onSubmit,
   isSubmitting,
 }: TambahUlokFormProps) {
+  const { showConfirmation, showToast } = useAlert();
   const [formData, setFormData] = useState({
     namaUlok: "",
     provinsi: "",
@@ -52,6 +54,14 @@ export default function TambahUlokForm({
   ) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
+    // Hapus error untuk field yang sedang diubah
+    if (errors[name]) {
+      setErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
   };
 
   const handleWilayahChange = (field: string, name: string) => {
@@ -136,7 +146,6 @@ export default function TambahUlokForm({
     // Jika ada error dari validasi manual, tampilkan dan stop
     if (Object.keys(fieldErrors).length > 0) {
       setErrors(fieldErrors);
-      console.error("❌ Validasi manual gagal:", fieldErrors);
       return;
     }
 
@@ -187,10 +196,40 @@ export default function TambahUlokForm({
         schemaErrors[formField] = err.message;
       });
       setErrors(schemaErrors);
+      showToast({
+        type: "error",
+        title: "Validasi Gagal",
+        message:
+          "Beberapa data yang Anda masukkan tidak valid. Silakan periksa kembali.",
+      });
       console.error("❌ Schema validasi gagal:", schemaErrors);
       return;
     }
-    await onSubmit(result.data);
+    // 5. (BARU) Tampilkan dialog konfirmasi sebelum mengirim data
+    const isConfirmed = await showConfirmation({
+      title: "Konfirmasi Simpan Data",
+      message:
+        "Apakah Anda yakin semua data yang diisi sudah benar dan ingin menyimpannya?",
+      type: "success",
+      confirmText: "Ya, Simpan",
+      cancelText: "Batal",
+    });
+
+    if (isConfirmed) {
+      try {
+        await onSubmit(result.data);
+      } catch (error) {
+        console.error("❌ Gagal submit:", error);
+        showToast({
+          type: "error",
+          title: "Proses Gagal",
+          message:
+            error instanceof Error
+              ? error.message
+              : "Terjadi kesalahan saat mengirim data.",
+        });
+      }
+    }
   };
 
   return (

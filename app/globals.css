@@ -2,6 +2,7 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
 html,
 body {
   @apply font-sans;
@@ -40,5 +41,18 @@ body {
   }
   body {
     @apply bg-background text-foreground;
+  }
+  html {
+    @apply hide-scrollbar;
+  }
+}
+
+@layer utilities {
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
   }
 }

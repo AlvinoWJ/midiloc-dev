@@ -35,8 +35,10 @@ export function InfoCard({
     <Link href={`/usulan_lokasi/detail/${id}`}>
       <Card className="w-[330px] shadow-[1px_1px_6px_rgba(0,0,0,0.25)] hover:shadow-lg transition-shadow duration-300">
         <CardHeader className="flex flex-row justify-between items-start space-y-0">
-          <div>
-            <CardTitle className="text-xl capitalize">{nama_ulok}</CardTitle>
+          <div className="flex-1 min-w-0">
+            <CardTitle className="text-xl capitalize truncate">
+              {nama_ulok}
+            </CardTitle>
             <CardDescription className="truncate w-[230px] text-gray-700 text-m font-medium">
               {alamat}
             </CardDescription>

@@ -4,8 +4,11 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
-import { UlokUpdateSchema, UlokUpdateInput } from "@/lib/validations/ulok"; // <-- Impor tipe Zod
+import { UlokUpdateSchema, UlokUpdateInput } from "@/lib/validations/ulok";
 import { MapPin } from "lucide-react";
+import { StatusBadge } from "@/components/ui/statusbadge";
+import { CheckCircle2, FileText } from "lucide-react";
+import { ApprovalStatusbutton } from "@/components/approvalbutton";
 
 interface UlokData {
   id: string;
@@ -27,8 +30,10 @@ interface UlokData {
   hargasewa: string;
   namapemilik: string;
   kontakpemilik: string;
-  approval_status: string; // <-- Tambahkan field status untuk logika tombol
-  file_intip: string | null; // <-- Tambahkan untuk logika tombol intip
+  approval_status: string;
+  file_intip: string | null;
+  approval_intip: string | null;
+  tanggal_approval_intip: string | null;
 }
 
 interface DetailUlokProps {
@@ -36,8 +41,9 @@ interface DetailUlokProps {
   onSave: (data: UlokUpdateInput) => Promise<boolean>;
   isSubmitting: boolean;
   onOpenIntipForm: () => void;
-  onApprove?: (status: "OK" | "Rejected") => void;
+  onApprove?: (status: "OK" | "NOK") => void;
   user?: CurrentUser | null; // ✅ ditambahkan
+  fileIntipUrl: string | null;
 }
 
 type CurrentUser = {
@@ -52,7 +58,7 @@ const DetailField = ({
   isEditing,
   name,
   onChange,
-  type = "text",
+  type = "textarea",
 }: any) => (
   <div className="mb-4">
     <label className="text-gray-600 font-medium text-sm mb-1 block">
@@ -89,19 +95,17 @@ export default function DetailUlok({
   onOpenIntipForm,
   onApprove,
   user,
+  fileIntipUrl,
 }: DetailUlokProps) {
   const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
   const [editedData, setEditedData] = useState(initialData);
   const [errors, setErrors] = useState<Record<string, string | undefined>>({});
+  const [isApproving, setIsApproving] = useState(false);
 
   useEffect(() => {
     setEditedData(initialData);
   }, [initialData]);
-
-  if (!user) {
-    return <div>Loading user data...</div>; // Teks ini akan muncul sesaat
-  }
 
   const canApprove = () =>
     user?.position_nama?.toLowerCase().trim() === "Location Manager";
@@ -164,6 +168,16 @@ export default function DetailUlok({
     setEditedData(initialData);
     setErrors({});
     setIsEditing(false);
+  };
+
+  const handleApproveAction = async (status: "OK" | "NOK") => {
+    if (!onApprove) {
+      console.error("onApprove function is not provided!");
+      return;
+    }
+    setIsApproving(true);
+    await onApprove(status); // Memanggil fungsi yang datang dari parent (page.tsx)
+    setIsApproving(false);
   };
 
   return (
@@ -241,9 +255,7 @@ export default function DetailUlok({
 
             {/* Status badge dengan flex-shrink-0 agar tidak mengecil */}
             <div className="flex-shrink-0">
-              <div className="bg-progress text-white px-4 py-2 rounded text-sm font-medium whitespace-nowrap">
-                In Progress
-              </div>
+              <StatusBadge status={initialData.approval_status} />
             </div>
           </div>
         </div>
@@ -438,47 +450,114 @@ export default function DetailUlok({
           </div>
         </div>
 
-        {isLocationManagerintip() && !initialData.file_intip && (
-          <button
-            onClick={onOpenIntipForm} // ✅ panggil props, bukan langsung state
-            className="mt-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded flex items-center gap-2 transition-colors duration-200"
-            disabled={isSubmitting}
-          >
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-              />
-            </svg>
-            Input Data Intip
-          </button>
-        )}
-        {/* ✅ Tombol Approve/Tolak */}
-        {canApprove() && initialData.file_intip && (
-          <div className="flex gap-3 mt-4">
-            <Button
-              onClick={() => onApprove && onApprove("OK")}
-              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md"
-              disabled={isSubmitting}
-            >
-              Setujui
-            </Button>
-            <Button
-              onClick={() => onApprove && onApprove("Rejected")}
-              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md"
-              disabled={isSubmitting}
-            >
-              Tolak
-            </Button>
+        {/* Kartu ini hanya akan muncul jika data file_intip sudah ada */}
+        {initialData.file_intip && (
+          <div className="bg-white rounded-xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)] mb-4">
+            <div className="border-b border-gray-200 px-6 py-4">
+              <div className="flex items-center">
+                {/* Menggunakan ikon yang relevan untuk approval */}
+                <CheckCircle2 className="text-green-600 mr-3" size={20} />
+                <h2 className="text-lg font-semibold text-gray-900">
+                  Data Approval INTIP
+                </h2>
+              </div>
+            </div>
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                {/* Menampilkan Status INTIP */}
+                {/* Kita gunakan komponen DetailField Anda agar konsisten */}
+                <DetailField
+                  label="Status INTIP"
+                  value={initialData.approval_intip || "-"}
+                  isEditing={false} // Selalu false karena ini hanya untuk display
+                />
+
+                {/* Menampilkan Tanggal Approval */}
+                <DetailField
+                  label="Tanggal Approval"
+                  value={
+                    initialData.tanggal_approval_intip
+                      ? new Date(
+                          initialData.tanggal_approval_intip
+                        ).toLocaleDateString("id-ID", {
+                          day: "numeric",
+                          month: "long",
+                          year: "numeric",
+                        })
+                      : "-"
+                  }
+                  isEditing={false}
+                />
+
+                {/* Menampilkan Link ke File Bukti Approval */}
+                <div className="col-span-1">
+                  <p className="text-gray-600 font-medium text-sm mb-1 block">
+                    Bukti Approval
+                  </p>
+                  {fileIntipUrl ? (
+                    <a
+                      href={fileIntipUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-sm text-red-600 hover:text-red-800 font-semibold transition-colors"
+                    >
+                      <FileText className="h-4 w-4" />
+                      <span>Lihat File: {initialData.file_intip}</span>
+                    </a>
+                  ) : (
+                    <p className="text-sm text-gray-400 italic">
+                      Memuat file...
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
         )}
+
+        {/* GANTI SELURUH BLOK TOMBOL DENGAN INI */}
+        <div className="flex justify-end mt-4">
+          {isLocationManagerintip() &&
+          initialData.approval_status === "In Progress" ? (
+            // JIKA user adalah Manager DAN status masih "In Progress"...
+            !initialData.file_intip ? (
+              // ...TAPI file intip BELUM ada, maka tampilkan tombol Input Intip
+              <button
+                onClick={onOpenIntipForm}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded flex items-center gap-2 transition-colors duration-200"
+                disabled={isSubmitting}
+              >
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                  />
+                </svg>
+                Input Data Intip
+              </button>
+            ) : (
+              <div className="flex gap-3">
+                <ApprovalStatusbutton
+                  show={isLocationManagerintip()}
+                  currentStatus={initialData.approval_status}
+                  fileUploaded={!!initialData.file_intip}
+                  onApprove={handleApproveAction}
+                  loading={isApproving}
+                  disabled={
+                    isApproving || initialData.approval_status !== "In Progress"
+                  }
+                />
+              </div>
+            )
+          ) : null}
+        </div>
       </div>
     </div>
   );
