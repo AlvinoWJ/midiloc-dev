@@ -4,10 +4,11 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
-import { UlokUpdateSchema, UlokUpdateInput } from "@/lib/validations/ulok"; // <-- Impor tipe Zod
+import { UlokUpdateSchema, UlokUpdateInput } from "@/lib/validations/ulok";
 import { MapPin } from "lucide-react";
 import { StatusBadge } from "@/components/ui/statusbadge";
 import { CheckCircle2, FileText } from "lucide-react";
+import { ApprovalStatusbutton } from "@/components/approvalbutton";
 
 interface UlokData {
   id: string;
@@ -40,7 +41,7 @@ interface DetailUlokProps {
   onSave: (data: UlokUpdateInput) => Promise<boolean>;
   isSubmitting: boolean;
   onOpenIntipForm: () => void;
-  onApprove?: (status: "OK" | "Rejected") => void;
+  onApprove?: (status: "OK" | "NOK") => void;
   user?: CurrentUser | null; // ✅ ditambahkan
   fileIntipUrl: string | null;
 }
@@ -57,7 +58,7 @@ const DetailField = ({
   isEditing,
   name,
   onChange,
-  type = "text",
+  type = "textarea",
 }: any) => (
   <div className="mb-4">
     <label className="text-gray-600 font-medium text-sm mb-1 block">
@@ -100,14 +101,11 @@ export default function DetailUlok({
   const [isEditing, setIsEditing] = useState(false);
   const [editedData, setEditedData] = useState(initialData);
   const [errors, setErrors] = useState<Record<string, string | undefined>>({});
+  const [isApproving, setIsApproving] = useState(false);
 
   useEffect(() => {
     setEditedData(initialData);
   }, [initialData]);
-
-  if (!user) {
-    return <div>Loading user data...</div>; // Teks ini akan muncul sesaat
-  }
 
   const canApprove = () =>
     user?.position_nama?.toLowerCase().trim() === "Location Manager";
@@ -172,27 +170,15 @@ export default function DetailUlok({
     setIsEditing(false);
   };
 
-  console.log("--- DEBUGGING DATA UNTUK TOMBOL APPROVAL ---");
-
-  // Kondisi 1: Apakah user adalah Location Manager?
-  console.log("1. Role Check:", {
-    position_nama: user?.position_nama,
-    isManager: isLocationManagerintip(),
-  });
-
-  // Kondisi 2: Apakah file_intip sudah ada nilainya?
-  console.log("2. File Intip Check:", {
-    file_intip: initialData.file_intip,
-    fileExists: !!initialData.file_intip, // !! mengubah nilai menjadi boolean (true/false)
-  });
-
-  // Kondisi 3: Apakah statusnya persis 'In Progress'?
-  console.log("3. Status Check:", {
-    approval_status: initialData.approval_status,
-    isCorrectStatus: initialData.approval_status === "In Progress",
-  });
-
-  console.log("-------------------------------------------");
+  const handleApproveAction = async (status: "OK" | "NOK") => {
+    if (!onApprove) {
+      console.error("onApprove function is not provided!");
+      return;
+    }
+    setIsApproving(true);
+    await onApprove(status); // Memanggil fungsi yang datang dari parent (page.tsx)
+    setIsApproving(false);
+  };
 
   return (
     <div className="bg-gray-50 min-h-screen">
@@ -557,22 +543,17 @@ export default function DetailUlok({
                 Input Data Intip
               </button>
             ) : (
-              // ...DAN file intip SUDAH ada, maka tampilkan tombol Approve/Tolak
               <div className="flex gap-3">
-                <Button
-                  onClick={() => onApprove && onApprove("OK")}
-                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md"
-                  disabled={isSubmitting}
-                >
-                  Setujui
-                </Button>
-                <Button
-                  onClick={() => onApprove && onApprove("Rejected")}
-                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md"
-                  disabled={isSubmitting}
-                >
-                  Tolak
-                </Button>
+                <ApprovalStatusbutton
+                  show={isLocationManagerintip()}
+                  currentStatus={initialData.approval_status}
+                  fileUploaded={!!initialData.file_intip}
+                  onApprove={handleApproveAction}
+                  loading={isApproving}
+                  disabled={
+                    isApproving || initialData.approval_status !== "In Progress"
+                  }
+                />
               </div>
             )
           ) : null}

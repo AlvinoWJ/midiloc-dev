@@ -1,7 +1,5 @@
 "use client";
 
-// Tidak perlu lagi `useState` di sini
-
 interface TabsProps {
   tabs: string[];
   onTabChange: (tab: string) => void; // Dibuat menjadi wajib, bukan opsional

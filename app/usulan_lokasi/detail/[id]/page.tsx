@@ -8,7 +8,8 @@ import DetailUlok from "@/components/detailulok";
 import { useSidebar } from "@/components/ui/sidebarcontext";
 import { UlokUpdateInput } from "@/lib/validations/ulok";
 import InputIntipForm from "@/components/inputintip";
-import { ApprovalStatusPanel } from "@/components/approvalstatus";
+import { useAlert } from "@/components/alertcontext";
+import { DetailUlokSkeleton } from "@/components/skleton";
 
 interface UlokDataForUI {
   id: string;
@@ -61,6 +62,7 @@ export default function DetailPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [isApproving, setIsApproving] = useState(false);
+  const { showToast, showConfirmation } = useAlert();
 
   const [fileIntipUrl, setFileIntipUrl] = useState<string | null>(null);
 
@@ -213,11 +215,20 @@ export default function DetailPage() {
   // Approve (LM multipart)
   const handleSetApproval = async (status: "OK" | "NOK") => {
     if (!id) return;
-    if (!ulokData?.file_intip) {
-      alert("Tidak bisa mengubah status. File Intip belum diupload.");
-      return;
-    }
-    if (!confirm(`Ubah approval_status menjadi ${status}?`)) return;
+
+    const confirmed = await showConfirmation({
+      title: "Konfirmasi Perubahan Status",
+      message:
+        status === "OK"
+          ? `Apakah Anda yakin ingin menyetujui ${ulokData?.namaUlok}?`
+          : `Apakah Anda yakin ingin menolak ${ulokData?.namaUlok}?`,
+      confirmText: status === "OK" ? "Ya, Setujui" : "Ya, Tolak",
+      cancelText: "Batal",
+      type: status === "OK" ? "success" : "error",
+    });
+
+    if (!confirmed) return;
+
     setIsApproving(true);
     try {
       const fd = new FormData();
@@ -230,17 +241,25 @@ export default function DetailPage() {
         const j = await res.json().catch(() => ({}));
         throw new Error(j.error || "Gagal update status.");
       }
-      alert(`Status berhasil diubah ke ${status}`);
+      showToast({
+        type: "success",
+        title: "Status Berhasil Diubah",
+        message: `Approval status telah diubah menjadi ${status}`,
+        duration: 4000,
+      });
+
       await fetchData();
     } catch (e: any) {
-      alert(e.message);
+      showToast({
+        type: "error",
+        title: "Gagal Mengubah Status",
+        message: e.message || "Terjadi kesalahan saat mengupdate status",
+        duration: 6000,
+      });
     } finally {
       setIsApproving(false);
     }
   };
-
-  const canApprove = user?.position_nama?.toLowerCase() === "location manager";
-  const intipCompleted = Boolean(ulokData?.file_intip); // syarat “intip sudah dikerjakan”
 
   return (
     <div className="flex">
@@ -252,7 +271,7 @@ export default function DetailPage() {
       >
         <Navbar />
         <main className="flex-1 p-4 md:p-6 hide-scrollbar">
-          {isLoading && <p className="text-center py-10">Loading data...</p>}
+          {isLoading && <DetailUlokSkeleton />}
           {errorMessage && (
             <p className="text-center text-red-500 py-10">{errorMessage}</p>
           )}
@@ -264,7 +283,7 @@ export default function DetailPage() {
               user={user}
               onOpenIntipForm={() => setShowIntipForm(true)}
               fileIntipUrl={fileIntipUrl}
-              onApprove={handleApprove}
+              onApprove={handleSetApproval}
             />
           )}
         </main>
@@ -276,25 +295,6 @@ export default function DetailPage() {
             onSubmit={handleIntipSubmit}
             isSubmitting={isSubmittingIntip}
           />
-        )}
-
-        {/* Panel Approval hanya muncul jika: LM & intip sudah dikerjakan */}
-        <ApprovalStatusPanel
-          currentStatus={ulokData?.approval_status || null}
-          disabled={isApproving}
-          onApprove={handleSetApproval}
-          show={canApprove && intipCompleted}
-          fileUploaded={intipCompleted}
-        />
-
-        {/* Jika LM tapi belum ada file_intip, tampilkan info pengingat */}
-        {canApprove && !intipCompleted && (
-          <div className="mt-6 border rounded bg-white p-4 text-sm text-gray-700">
-            <p>
-              Approval belum tersedia karena Intip belum diupload. Silakan klik
-              tombol Input Intip terlebih dahulu.
-            </p>
-          </div>
         )}
       </div>
     </div>
