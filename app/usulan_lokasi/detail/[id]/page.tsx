@@ -8,6 +8,7 @@ import DetailUlok from "@/components/detailulok";
 import { useSidebar } from "@/components/ui/sidebarcontext";
 import { UlokUpdateInput } from "@/lib/validations/ulok";
 import InputIntipForm from "@/components/inputintip";
+import { ApprovalStatusPanel } from "@/components/approvalstatus";
 
 interface UlokDataForUI {
   id: string;
@@ -59,6 +60,7 @@ export default function DetailPage() {
   const [isSubmittingIntip, setIsSubmittingIntip] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [user, setUser] = useState<CurrentUser | null>(null);
+  const [isApproving, setIsApproving] = useState(false);
 
   const [fileIntipUrl, setFileIntipUrl] = useState<string | null>(null);
 
@@ -208,34 +210,37 @@ export default function DetailPage() {
     }
   };
 
-  const handleApprove = async (status: "OK" | "Rejected") => {
-    setIsSubmitting(true);
+  // Approve (LM multipart)
+  const handleSetApproval = async (status: "OK" | "NOK") => {
+    if (!id) return;
+    if (!ulokData?.file_intip) {
+      alert("Tidak bisa mengubah status. File Intip belum diupload.");
+      return;
+    }
+    if (!confirm(`Ubah approval_status menjadi ${status}?`)) return;
+    setIsApproving(true);
     try {
-      // Tentukan status akhir berdasarkan input
-      const finalStatus = status === "OK" ? "Approved" : "Rejected";
-
-      const response = await fetch(`http://localhost:3000/api/ulok/${id}`, {
+      const fd = new FormData();
+      fd.append("approval_status", status);
+      const res = await fetch(`/api/ulok/${id}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        // Kirim hanya field yang berubah
-        body: JSON.stringify({
-          approval_status: finalStatus,
-        }),
+        body: fd,
       });
-
-      if (!response.ok) {
-        throw new Error("Gagal memperbarui status approval.");
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error(j.error || "Gagal update status.");
       }
-
-      alert(`Status berhasil diubah menjadi: ${finalStatus}`);
-      await fetchData(); // Muat ulang data untuk refresh UI
-    } catch (error: any) {
-      console.error("Approval error:", error);
-      alert(error.message || "Terjadi kesalahan saat approval.");
+      alert(`Status berhasil diubah ke ${status}`);
+      await fetchData();
+    } catch (e: any) {
+      alert(e.message);
     } finally {
-      setIsSubmitting(false);
+      setIsApproving(false);
     }
   };
+
+  const canApprove = user?.position_nama?.toLowerCase() === "location manager";
+  const intipCompleted = Boolean(ulokData?.file_intip); // syarat “intip sudah dikerjakan”
 
   return (
     <div className="flex">
@@ -271,6 +276,25 @@ export default function DetailPage() {
             onSubmit={handleIntipSubmit}
             isSubmitting={isSubmittingIntip}
           />
+        )}
+
+        {/* Panel Approval hanya muncul jika: LM & intip sudah dikerjakan */}
+        <ApprovalStatusPanel
+          currentStatus={ulokData?.approval_status || null}
+          disabled={isApproving}
+          onApprove={handleSetApproval}
+          show={canApprove && intipCompleted}
+          fileUploaded={intipCompleted}
+        />
+
+        {/* Jika LM tapi belum ada file_intip, tampilkan info pengingat */}
+        {canApprove && !intipCompleted && (
+          <div className="mt-6 border rounded bg-white p-4 text-sm text-gray-700">
+            <p>
+              Approval belum tersedia karena Intip belum diupload. Silakan klik
+              tombol Input Intip terlebih dahulu.
+            </p>
+          </div>
         )}
       </div>
     </div>

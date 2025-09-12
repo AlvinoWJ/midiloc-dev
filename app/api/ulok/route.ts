@@ -80,9 +80,18 @@ export async function GET(request: Request) {
     const from = (safePage - 1) * safeLimit;
     const to = from + safeLimit - 1;
 
+    // Kolom list view — sesuaikan dengan kebutuhan front-end
+    const listColumns = [
+      "id",
+      "nama_ulok",
+      "approval_status",
+      "created_at",
+      // tambahkan kolom ringkas lain yang benar-benar dibutuhkan
+    ].join(",");
+
     let query = supabase
       .from("ulok")
-      .select("*", { count: "exact" })
+      .select(listColumns, { count: "exact" })
       .eq("branch_id", user.branch_id)
       .order("created_at", { ascending: false })
       .range(from, to);

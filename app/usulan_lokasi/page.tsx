@@ -41,17 +41,6 @@ export default function UlokPage() {
   const [user, setUser] = useState<CurrentUser | null>(null);
 
   useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const response = await fetch(`http://localhost:3000/api/me`);
-        const userData = await response.json();
-        setUser(userData.user);
-      } catch (error) {
-        console.error("Terjadi error saat fetch:", error);
-        setUser(null);
-      }
-    };
-
     const fetchUlok = async () => {
       try {
         setIsLoading(true);
@@ -70,6 +59,7 @@ export default function UlokPage() {
 
         const data = await res.json();
         setUlokData(data.data);
+        setUser(data.meta.user);
       } catch (err) {
         console.error("Fetch error:", err);
         setIsError(true);
@@ -78,7 +68,7 @@ export default function UlokPage() {
       }
     };
 
-    fetchUserData();
+    // fetchUserData();
     fetchUlok();
   }, []);
 
