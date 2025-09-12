@@ -490,20 +490,50 @@ export default function DetailUlok({
                 />
 
                 {/* Menampilkan Link ke File Bukti Approval */}
-                <div className="col-span-1">
-                  <p className="text-gray-600 font-medium text-sm mb-1 block">
+                <div className="col-span-1 md:col-span-2">
+                  {" "}
+                  {/* Dibuat lebih lebar agar preview pas */}
+                  <p className="text-gray-600 font-medium text-sm mb-2 block">
                     Bukti Approval
                   </p>
                   {fileIntipUrl ? (
-                    <a
-                      href={fileIntipUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 text-sm text-red-600 hover:text-red-800 font-semibold transition-colors"
-                    >
-                      <FileText className="h-4 w-4" />
-                      <span>Lihat File: {initialData.file_intip}</span>
-                    </a>
+                    (() => {
+                      // Fungsi sederhana untuk memeriksa apakah file adalah gambar berdasarkan ekstensi
+                      const isImage = /\.(jpeg|jpg|gif|png|webp)$/i.test(
+                        initialData.file_intip
+                      );
+
+                      if (isImage) {
+                        // Jika file adalah gambar, tampilkan preview
+                        return (
+                          <a
+                            href={fileIntipUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title="Klik untuk melihat ukuran penuh"
+                          >
+                            <img
+                              src={fileIntipUrl}
+                              alt="Preview Bukti Approval"
+                              className="rounded-lg shadow-md max-w-xs max-h-60 object-contain border border-gray-200 cursor-pointer transition-transform hover:scale-105"
+                            />
+                          </a>
+                        );
+                      } else {
+                        // Jika bukan gambar, tampilkan link seperti semula
+                        return (
+                          <a
+                            href={fileIntipUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 text-sm text-red-600 hover:text-red-800 font-semibold transition-colors"
+                          >
+                            <FileText className="h-4 w-4" />
+                            <span>Lihat File: {initialData.file_intip}</span>
+                          </a>
+                        );
+                      }
+                    })()
                   ) : (
                     <p className="text-sm text-gray-400 italic">
                       Memuat file...

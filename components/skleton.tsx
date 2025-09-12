@@ -6,110 +6,157 @@ export const Skeleton = ({ className = "" }: { className?: string }) => {
   );
 };
 
-// Skeleton khusus untuk detail ulok
+// Skeleton untuk DetailUlok - 100% identik dengan layout asli
 export const DetailUlokSkeleton = () => {
   return (
-    <div className="max-w-4xl mx-auto bg-white shadow-lg rounded-lg p-6 space-y-6">
-      {/* Header Skeleton */}
-      <div className="border-b pb-4">
-        <Skeleton className="h-8 w-64 mb-2" />
-        <Skeleton className="h-4 w-48" />
-      </div>
-
-      {/* Content Grid Skeleton */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Left Column */}
-        <div className="space-y-4">
-          <div>
-            <Skeleton className="h-4 w-24 mb-2" />
-            <Skeleton className="h-6 w-full" />
-          </div>
-          <div>
-            <Skeleton className="h-4 w-20 mb-2" />
-            <Skeleton className="h-6 w-full" />
-          </div>
-          <div>
-            <Skeleton className="h-4 w-28 mb-2" />
-            <Skeleton className="h-6 w-full" />
-          </div>
-          <div>
-            <Skeleton className="h-4 w-24 mb-2" />
-            <Skeleton className="h-6 w-full" />
-          </div>
-          <div>
-            <Skeleton className="h-4 w-32 mb-2" />
-            <Skeleton className="h-6 w-full" />
+    <div className="bg-gray-50 min-h-screen">
+      <div className="max-w-6xl mx-auto p-2">
+        {/* Header with Back and Edit buttons skeleton */}
+        <div className="flex justify-between items-center mb-6">
+          <Skeleton className="rounded-full w-20 h-10" />
+          <div className="flex gap-3">
+            <Skeleton className="rounded-full w-16 h-10" />
           </div>
         </div>
 
-        {/* Right Column */}
-        <div className="space-y-4">
-          <div>
-            <Skeleton className="h-4 w-28 mb-2" />
-            <Skeleton className="h-6 w-full" />
-          </div>
-          <div>
-            <Skeleton className="h-4 w-24 mb-2" />
-            <Skeleton className="h-6 w-full" />
-          </div>
-          <div>
-            <Skeleton className="h-4 w-20 mb-2" />
-            <Skeleton className="h-6 w-full" />
-          </div>
-          <div>
-            <Skeleton className="h-4 w-32 mb-2" />
-            <Skeleton className="h-6 w-full" />
-          </div>
-          <div>
-            <Skeleton className="h-4 w-28 mb-2" />
-            <Skeleton className="h-6 w-full" />
+        {/* Title Card skeleton */}
+        <div className="bg-white rounded-xl p-6 mb-8 shadow-[1px_1px_6px_rgba(0,0,0,0.25)]">
+          <div className="flex items-start justify-between mb-5">
+            <div className="flex-1 pr-4">
+              {/* Title skeleton */}
+              <Skeleton className="h-8 w-64 mb-2" />
+              {/* Date info skeleton */}
+              <div className="flex items-center text-sm">
+                <Skeleton className="w-2 h-2 rounded-full mr-2" />
+                <Skeleton className="h-4 w-48" />
+              </div>
+            </div>
+            {/* Status badge skeleton */}
+            <div className="flex-shrink-0">
+              <Skeleton className="h-6 w-24 rounded-full" />
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Data Pemilik Section */}
-      <div className="border-t pt-6">
-        <Skeleton className="h-6 w-32 mb-4" />
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <Skeleton className="h-4 w-24 mb-2" />
-            <Skeleton className="h-6 w-full" />
+        {/* Data Usulan Lokasi Card skeleton */}
+        <div className="bg-white rounded-xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)] mb-8">
+          {/* Card header skeleton */}
+          <div className="border-b border-gray-200 px-6 py-4">
+            <div className="flex items-center">
+              <Skeleton className="w-5 h-5 mr-3" />
+              <Skeleton className="h-5 w-48" />
+            </div>
           </div>
-          <div>
-            <Skeleton className="h-4 w-28 mb-2" />
-            <Skeleton className="h-6 w-full" />
+          {/* Card content skeleton */}
+          <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+              {/* Left column fields */}
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={`left-${i}`} className="space-y-2">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-10 w-full rounded border" />
+                </div>
+              ))}
+              {/* Right column fields */}
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={`right-${i}`} className="space-y-2">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-10 w-full rounded border" />
+                </div>
+              ))}
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Data Approval Section */}
-      <div className="border-t pt-6">
-        <Skeleton className="h-6 w-40 mb-4" />
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <Skeleton className="h-4 w-20 mb-2" />
-            <Skeleton className="h-6 w-24" />
+        {/* Data Store Card skeleton */}
+        <div className="bg-white rounded-xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)] mb-8">
+          {/* Card header skeleton */}
+          <div className="border-b border-gray-200 px-6 py-4">
+            <div className="flex items-center">
+              <Skeleton className="w-6 h-6 mr-3" />
+              <Skeleton className="h-5 w-32" />
+            </div>
           </div>
-          <div>
-            <Skeleton className="h-4 w-32 mb-2" />
-            <Skeleton className="h-6 w-32" />
+          {/* Card content skeleton */}
+          <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+              {/* Store data fields */}
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={`store-${i}`} className="space-y-2">
+                  <Skeleton className="h-4 w-28" />
+                  <Skeleton className="h-10 w-full rounded border" />
+                </div>
+              ))}
+            </div>
           </div>
         </div>
-        <div className="mt-4">
-          <Skeleton className="h-4 w-28 mb-2" />
-          <Skeleton className="h-20 w-full rounded-lg" />
-        </div>
-      </div>
 
-      {/* Action Buttons */}
-      <div className="flex justify-end space-x-3 pt-6 border-t">
-        <Skeleton className="h-10 w-20" />
-        <Skeleton className="h-10 w-16" />
+        {/* Data Pemilik Card skeleton */}
+        <div className="bg-white rounded-xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)] mb-8">
+          {/* Card header skeleton */}
+          <div className="border-b border-gray-200 px-6 py-4">
+            <div className="flex items-center">
+              <Skeleton className="w-5 h-5 mr-3" />
+              <Skeleton className="h-5 w-32" />
+            </div>
+          </div>
+          {/* Card content skeleton */}
+          <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+              {/* Pemilik data fields */}
+              {Array.from({ length: 2 }).map((_, i) => (
+                <div key={`pemilik-${i}`} className="space-y-2">
+                  <Skeleton className="h-4 w-28" />
+                  <Skeleton className="h-10 w-full rounded border" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Data Approval INTIP Card skeleton */}
+        <div className="bg-white rounded-xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)] mb-8">
+          {/* Card header skeleton */}
+          <div className="border-b border-gray-200 px-6 py-4">
+            <div className="flex items-center">
+              <Skeleton className="w-5 h-5 mr-3" />
+              <Skeleton className="h-5 w-44" />
+            </div>
+          </div>
+          {/* Card content skeleton */}
+          <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+              {/* Approval fields */}
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-6 w-16" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-6 w-32" />
+              </div>
+            </div>
+            {/* File section */}
+            <div className="mt-6 space-y-2">
+              <Skeleton className="h-4 w-28" />
+              <Skeleton className="h-32 w-full rounded border" />
+            </div>
+            {/* Buttons section */}
+            <div className="flex gap-3 mt-6">
+              <Skeleton className="h-10 w-32 rounded" />
+              <Skeleton className="h-10 w-20 rounded-full bg-red-200" />
+              <Skeleton className="h-10 w-16 rounded-full bg-green-200" />
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
 };
 
+// ----------------------------------------------------------------------------------------- //
+
+// Skeleton untuk InfoCard
 export const InfoCardSkeleton = () => {
   return (
     <div className="w-[330px] h-[151px] shadow-[1px_1px_6px_rgba(0,0,0,0.25)] bg-white rounded-lg border bg-border-white">
