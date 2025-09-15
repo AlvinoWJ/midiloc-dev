@@ -1,15 +1,13 @@
 // app/dashboard/page.tsx
 "use client";
 
-// --- TAMBAHAN BARU 1: Import semua yang berhubungan dengan peta ---
-import PetaLoader from "@/components/map/PetaLoader";
-
-// Import yang sudah ada
-import { useSidebar } from "@/components/ui/sidebarcontext";
-import Sidebar from "@/components/desktop/sidebar";
-import Navbar from "@/components/desktop/navbar";
-import { dummyPropertiData } from "@/lib/dummy-data";
 import SWRProvider from "@/app/swr-provider";
+import { dummyPropertiData } from "@/lib/dummy-data";
+import { useDeviceType } from "@/hooks/useDeviceType";
+import { useUser } from "@/hooks/useUser";
+import { DashboardPageProps, Properti } from "@/types/common";
+import DesktopDashboardLayout from "@/components/desktop/dashboard-layout";
+import MobileDashboardLayout from "@/components/mobile/dashboard-layout";
 
 export default function DashboardPageWrapper() {
   // Jika nanti SWRProvider sudah ada di layout global, cukup return <UlokPage />
@@ -21,30 +19,22 @@ export default function DashboardPageWrapper() {
 }
 
 export function DashboardPage() {
-  const { isCollapsed } = useSidebar();
+  const { isMobile } = useDeviceType();
+  const { user, loadingUser, userError } = useUser();
 
-  return (
-    <div className="flex">
-      <Sidebar />
+  const propertiData: Properti[] = dummyPropertiData;
 
-      <div
-        className={`flex-1 flex flex-col bg-gray-50 min-h-screen transition-all duration-300 ${
-          isCollapsed ? "ml-[80px]" : "ml-[270px]"
-        }`}
-      >
-        <Navbar />
+  // 2. Siapkan props untuk dikirim ke komponen layout
+  const dashboardProps: DashboardPageProps = {
+    propertiData,
+    user,
+    isLoading: loadingUser,
+    isError: !!userError,
+  };
 
-        <main className="flex-1 p-6">
-          <h1 className="mt-3 text-2xl font-bold">Your Performance</h1>
+  if (isMobile) {
+    return <MobileDashboardLayout {...dashboardProps} />;
+  }
 
-          {/* --- TAMBAHAN BARU 3: Sisipkan Peta di Sini --- */}
-          <div className="mt-8">
-            <div className="bg-white p-4 rounded-lg shadow-md h-[500px] w-full border">
-              <PetaLoader data={dummyPropertiData} />
-            </div>
-          </div>
-        </main>
-      </div>
-    </div>
-  );
+  return <DesktopDashboardLayout {...dashboardProps} />;
 }

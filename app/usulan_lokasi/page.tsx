@@ -61,7 +61,6 @@ export function UlokPage() {
       return true;
     });
 
-  // --- SIAPKAN PROPS UNTUK DIKIRIM KE LAYOUT ---
   const layoutProps = {
     user,
     isLoading: ulokLoading,
