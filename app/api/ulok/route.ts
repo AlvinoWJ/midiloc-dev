@@ -87,6 +87,7 @@ export async function GET(request: Request) {
       "approval_status",
       "alamat",
       "created_at",
+      "alamat",
       // tambahkan kolom ringkas lain yang benar-benar dibutuhkan
     ].join(",");
 

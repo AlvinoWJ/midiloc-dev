@@ -43,6 +43,7 @@ const DetailField = ({
         >
           <input
             id={name}
+            name={name}
             type="file"
             className="hidden"
             onChange={onChange}
@@ -114,19 +115,22 @@ export default function InputIntipForm({
 }: InputIntipFormProps) {
   const { showAlert, showToast, showConfirmation } = useAlert();
   const [formData, setFormData] = useState<{
-    statusIntip: string;
-    tanggalApproval: string;
-    buktiApproval: File | null;
+    approval_intip: string;
+    tanggal_approval_intip: string;
+    file_intip: File | null;
   }>({
-    statusIntip: "Status INTIP",
-    tanggalApproval: "",
-    buktiApproval: null,
+    approval_intip: "", // Gunakan string kosong sebagai nilai awal yang lebih netral
+    tanggal_approval_intip: "",
+    file_intip: null,
   });
 
   const handleInputChange = (
     event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value, files } = event.target as HTMLInputElement;
+    if (files) {
+      console.log("File yang dipilih:", files[0]);
+    }
     setFormData((prev) => ({
       ...prev,
       [name]: files ? files[0] : value,
@@ -136,27 +140,23 @@ export default function InputIntipForm({
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
+    console.log("State formData sebelum submit:", formData);
+
     if (
-      !formData.statusIntip ||
-      formData.statusIntip === "Status INTIP" ||
-      !formData.tanggalApproval ||
-      !formData.buktiApproval
+      !formData.approval_intip ||
+      !formData.tanggal_approval_intip ||
+      !formData.file_intip
     ) {
       showAlert({
         type: "error",
-        title: "Validasi Gagal",
-        message:
-          "Semua field wajib diisi dengan benar. Pastikan status INTIP dipilih, tanggal diisi, dan file diupload.",
+        title: "Gagal Menyimpan",
+        message: "Semua field wajib diisi.",
         duration: 5000,
       });
       return;
     }
 
-    // Validasi ukuran file (Max 10MB)
-    if (
-      formData.buktiApproval &&
-      formData.buktiApproval.size > 10 * 1024 * 1024
-    ) {
+    if (formData.file_intip && formData.file_intip.size > 10 * 1024 * 1024) {
       showAlert({
         type: "error",
         title: "File Terlalu Besar",
@@ -169,33 +169,35 @@ export default function InputIntipForm({
 
     const confirmed = await showConfirmation({
       title: "Konfirmasi Submit Data INTIP",
-      message: `Apakah Anda yakin ingin menyimpan data INTIP dengan status "${formData.statusIntip}"? Pastikan semua data sudah benar.`,
+      message: `Apakah Anda yakin ingin menyimpan data INTIP dengan status "${formData.approval_intip}"? Pastikan semua data sudah benar.`,
       confirmText: "Ya, Simpan Data",
       cancelText: "Periksa Kembali",
-      type: "info",
+      type: "success",
     });
 
-    if (!confirmed) {
-      // User membatalkan submit
-      showToast({
-        type: "info",
-        message: "Submit data dibatalkan. Silakan periksa kembali data Anda.",
-        duration: 3000,
-      });
-      return;
-    }
+    if (!confirmed) return;
 
     try {
       // PENTING: Gunakan FormData untuk mengirim file
       const dataToSend = new FormData();
-      dataToSend.append("approval_intip", formData.statusIntip);
-      dataToSend.append("tanggal_approval_intip", formData.tanggalApproval);
-      dataToSend.append("file_intip", formData.buktiApproval);
+      dataToSend.append("approval_intip", formData.approval_intip);
+      dataToSend.append(
+        "tanggal_approval_intip",
+        formData.tanggal_approval_intip
+      );
+      if (formData.file_intip) {
+        dataToSend.append("file_intip", formData.file_intip);
+      }
 
-      // Panggil fungsi onSubmit dari props dengan data yang sudah siap
+      // LOG 3: Cek isi dari FormData sebelum dikirim
+      console.log("--- Mengecek isi FormData ---");
+      for (let pair of dataToSend.entries()) {
+        console.log(pair[0] + ": ", pair[1]);
+      }
+      console.log("----------------------------");
+
       await onSubmit(dataToSend);
 
-      // Success notification
       showToast({
         type: "success",
         title: "Berhasil Disimpan!",
@@ -203,10 +205,8 @@ export default function InputIntipForm({
         duration: 4000,
       });
 
-      // Close modal setelah berhasil
       onClose();
     } catch (error) {
-      // Error handling dengan alert profesional
       console.error("Error submitting INTIP data:", error);
 
       showAlert({
@@ -220,30 +220,32 @@ export default function InputIntipForm({
   };
 
   const handleCancel = async () => {
-    // Jika ada data yang sudah diisi, konfirmasi sebelum cancel
-    if (
-      formData.statusIntip !== "Status INTIP" ||
-      formData.tanggalApproval ||
-      formData.buktiApproval
-    ) {
+    // Cek apakah ada data yang sudah diisi oleh pengguna
+    const hasUnsavedChanges =
+      formData.approval_intip ||
+      formData.tanggal_approval_intip ||
+      formData.file_intip;
+
+    if (hasUnsavedChanges) {
       const confirmed = await showConfirmation({
-        title: "Konfirmasi Submit",
-        message: "Yakin ingin menyimpan?",
-        confirmText: "Ya, Simpan",
-        cancelText: "Batal",
-        type: "info",
+        title: "Batalkan Perubahan?",
+        message:
+          "Anda memiliki perubahan yang belum disimpan. Apakah Anda yakin ingin menutup form ini?",
+        confirmText: "Ya, Tutup",
+        cancelText: "Lanjutkan Mengisi",
+        type: "warning",
       });
 
       if (confirmed) {
         onClose();
       }
     } else {
-      // Jika belum ada data, langsung close
+      // Jika form masih kosong, langsung tutup tanpa konfirmasi
       onClose();
     }
   };
 
-  const statusOptions = ["Status Intip", "OK", "Not OK"];
+  const statusOptions = ["OK", "Not OK"];
 
   return (
     // Latar belakang modal
@@ -263,23 +265,23 @@ export default function InputIntipForm({
         <div className="p-4 space-y-4 ">
           <DetailField
             label="Status INTIP"
-            value={formData.statusIntip}
-            name="statusIntip"
+            value={formData.approval_intip}
+            name="approval_intip"
             type="select"
             options={statusOptions}
             onChange={handleInputChange}
           />
           <DetailField
             label="Tanggal Approval INTIP"
-            value={formData.tanggalApproval}
-            name="tanggalApproval"
+            value={formData.tanggal_approval_intip}
+            name="tanggal_approval_intip"
             type="date"
             onChange={handleInputChange}
           />
           <DetailField
             label="Bukti Approval INTIP"
-            value={formData.buktiApproval}
-            name="buktiApproval"
+            value={formData.file_intip}
+            name="file_intip"
             type="file"
             onChange={handleInputChange}
           />

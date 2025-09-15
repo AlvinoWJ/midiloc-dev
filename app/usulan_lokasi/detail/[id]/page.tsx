@@ -8,10 +8,12 @@ import DetailUlok from "@/components/detailulok";
 import { useSidebar } from "@/components/ui/sidebarcontext";
 import { UlokUpdateInput } from "@/lib/validations/ulok";
 import InputIntipForm from "@/components/inputintip";
-import { ApprovalStatusPanel } from "@/components/approvalstatus";
+import { ApprovalStatusbutton } from "@/components/approvalbutton";
 import { useUser } from "@/app/hooks/useUser";
 import { useUlokDetail } from "@/app/hooks/useUlokDetail";
 import SWRProvider from "@/app/swr-provider";
+import { useAlert } from "@/components/alertcontext";
+import { DetailUlokSkeleton } from "@/components/skleton";
 
 export default function DetailPageWrapper() {
   // Jika nanti SWRProvider sudah ada di layout global, cukup return <UlokPage />
@@ -32,6 +34,11 @@ export function DetailPage() {
   const { user } = useUser();
   const { ulokData, isLoading, errorMessage, refresh } = useUlokDetail(id);
   const [isApproving, setIsApproving] = useState(false);
+  const { showToast, showConfirmation } = useAlert();
+
+  const fileIntipUrl = ulokData?.file_intip
+    ? `/api/ulok/${ulokData.id}/file-intip`
+    : null;
 
   // --- Save/Edit ---
   const handleSaveData = async (data: UlokUpdateInput): Promise<boolean> => {
@@ -66,9 +73,17 @@ export function DetailPage() {
       alert("Data intip berhasil disimpan!");
       setShowIntipForm(false);
       await refresh();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      alert(error.message);
+    } catch (error: unknown) {
+      let message = "Terjadi kesalahan saat menyimpan data intip.";
+      if (error instanceof Error) {
+        message = error.message;
+      }
+      showToast({
+        type: "error",
+        title: "Gagal Menyimpan Data Intip",
+        message,
+        duration: 4000,
+      });
     } finally {
       setIsSubmittingIntip(false);
     }
@@ -77,11 +92,20 @@ export function DetailPage() {
   // Approve (LM multipart)
   const handleSetApproval = async (status: "OK" | "NOK") => {
     if (!id) return;
-    if (!ulokData?.file_intip) {
-      alert("Tidak bisa mengubah status. File Intip belum diupload.");
-      return;
-    }
-    if (!confirm(`Ubah approval_status menjadi ${status}?`)) return;
+
+    const confirmed = await showConfirmation({
+      title: "Konfirmasi Perubahan Status",
+      message:
+        status === "OK"
+          ? `Apakah Anda yakin ingin menyetujui ${ulokData?.namaUlok}?`
+          : `Apakah Anda yakin ingin menolak ${ulokData?.namaUlok}?`,
+      confirmText: status === "OK" ? "Ya, Setujui" : "Ya, Tolak",
+      cancelText: "Batal",
+      type: status === "OK" ? "success" : "error",
+    });
+
+    if (!confirmed) return;
+
     setIsApproving(true);
     try {
       const fd = new FormData();
@@ -94,16 +118,27 @@ export function DetailPage() {
         const j = await res.json().catch(() => ({}));
         throw new Error(j.error || "Gagal update status.");
       }
-      alert(`Status berhasil diubah ke ${status}`);
+      // alert(`Status berhasil diubah ke ${status}`);
+      showToast({
+        type: "success",
+        title: "Status berhasil diubah",
+        message: `Approval status telah diubah menjadi ${status}`,
+        duration: 4000,
+      });
       await refresh();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
-      alert(e.message);
+      showToast({
+        type: "error",
+        title: "Gagal Mengubah Status",
+        message: e.message || "Terjadi kesalahan saat mengupdate status",
+        duration: 4000,
+      });
     } finally {
       setIsApproving(false);
     }
   };
-
+  
   const canApprove = user?.position_nama?.toLowerCase() === "location manager";
   const intipCompleted = Boolean(ulokData?.file_intip); // syarat “intip sudah dikerjakan”
 
@@ -117,9 +152,7 @@ export function DetailPage() {
       );
     }
     if (isLoading) {
-      return (
-        <p className="text-center py-10 text-gray-500">Memuat detail...</p>
-      );
+      return <DetailUlokSkeleton />;
     }
     if (errorMessage) {
       return (
@@ -138,6 +171,7 @@ export function DetailPage() {
         isSubmitting={isSubmitting}
         onOpenIntipForm={() => setShowIntipForm(true)}
         onApprove={handleSetApproval}
+        fileIntipUrl={fileIntipUrl}
       />
     );
   };
@@ -155,7 +189,8 @@ export function DetailPage() {
         <main className="flex-1 p-4 md:p-6 hide-scrollbar">
           {renderContent()}
 
-          {/* Modal Input Intip */}
+          
+        {/* Modal Input Intip */}
           {showIntipForm && (
             <InputIntipForm
               onClose={() => setShowIntipForm(false)}
@@ -165,7 +200,7 @@ export function DetailPage() {
           )}
 
           {/* Panel Approval hanya muncul jika: LM & intip sudah dikerjakan */}
-          <ApprovalStatusPanel
+          <ApprovalStatusbutton
             currentStatus={ulokData?.approval_status || null}
             disabled={isApproving}
             onApprove={handleSetApproval}

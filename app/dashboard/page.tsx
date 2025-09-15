@@ -1,8 +1,14 @@
+// app/dashboard/page.tsx
 "use client";
 
+// --- TAMBAHAN BARU 1: Import semua yang berhubungan dengan peta ---
+import PetaLoader from "@/components/map/PetaLoader";
+
+// Import yang sudah ada
 import { useSidebar } from "@/components/ui/sidebarcontext";
 import Sidebar from "@/components/sidebar";
 import Navbar from "@/components/navbar";
+import { dummyPropertiData } from "@/lib/dummy-data";
 import SWRProvider from "@/app/swr-provider";
 
 export default function DashboardPageWrapper() {
@@ -15,15 +21,12 @@ export default function DashboardPageWrapper() {
 }
 
 export function DashboardPage() {
-  // Mengambil state isCollapsed dari context
   const { isCollapsed } = useSidebar();
 
   return (
     <div className="flex">
-      {/* Sidebar */}
       <Sidebar />
 
-      {/* Konten utama yang memiliki margin kiri dinamis sesuai sidebar */}
       <div
         className={`flex-1 flex flex-col bg-gray-50 min-h-screen transition-all duration-300 ${
           isCollapsed ? "ml-[80px]" : "ml-[270px]"
@@ -31,9 +34,16 @@ export function DashboardPage() {
       >
         <Navbar />
 
-        {/* Konten halaman */}
         <main className="flex-1 p-6">
           <h1 className="mt-3 text-2xl font-bold">Your Performance</h1>
+
+          {/* --- TAMBAHAN BARU 3: Sisipkan Peta di Sini --- */}
+          <div className="mt-8">
+            <div className="bg-white p-4 rounded-lg shadow-md h-[500px] w-full border">
+              <PetaLoader data={dummyPropertiData} />
+            </div>
+          </div>
+          
         </main>
       </div>
     </div>

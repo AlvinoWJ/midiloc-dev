@@ -7,6 +7,8 @@ import CustomSelect from "@/components/ui/customselect";
 import { Button } from "@/components/ui/button";
 import WilayahSelector from "@/components/wilayahselector";
 import { UlokCreateSchema, UlokCreateInput } from "@/lib/validations/ulok";
+import LocationPickerMap from "@/components/map/LocationPickerMap";
+import { Dialog } from "@headlessui/react";
 import { useAlert } from "@/components/alertcontext";
 
 interface TambahUlokFormProps {
@@ -43,6 +45,8 @@ export default function TambahUlokForm({
   const bentukObjekOptions = ["Tanah", "Bangunan"];
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+    const [isMapOpen, setIsMapOpen] = useState(false);
+
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
@@ -74,6 +78,16 @@ export default function TambahUlokForm({
     }
     setFormData((prev) => ({ ...prev, ...updatedData }));
   };
+
+    const handleMapSelect = (lat: number, lng: number) => {
+    // Fungsi ini akan memperbarui state 'formData' dengan koordinat baru
+    setFormData((prev) => ({
+      ...prev,
+      latlong: `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
+    }));
+    setIsMapOpen(false); // Otomatis tutup modal setelah memilih
+  };
+  // --------------------
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -219,6 +233,7 @@ export default function TambahUlokForm({
   };
 
   return (
+    <>
     <form onSubmit={handleFormSubmit} className="space-y-10 max-w-7xl mx-auto">
       {/* Bagian Data Lokasi */}
       <div className="relative">
@@ -272,19 +287,21 @@ export default function TambahUlokForm({
               <label htmlFor="latlong" className="block font-bold mb-1">
                 LatLong <span className="text-red-500">*</span>
               </label>
-              <div className="relative">
+              <div className="flex items-center gap-2">
                 <Input
                   id="latlong"
                   name="latlong"
                   placeholder="Masukkan LatLong"
                   value={formData.latlong}
                   onChange={handleChange}
-                  className="pr-10"
+                  className="flex-grow"
                 />
-                <MapPin
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500"
-                  size={18}
-                />
+                <button
+                  type="button" onClick={() => setIsMapOpen(true)} 
+                  className="p-2 border rounded-md hover:bg-gray-100 flex-shrink-0">
+
+                  <MapPin className="text-red-500" size={18}/>
+                </button>
               </div>
               {errors.latlong && (
                 <p className="text-red-500 text-sm mt-1">{errors.latlong}</p>
@@ -489,5 +506,21 @@ export default function TambahUlokForm({
         </Button>
       </div>
     </form>
-  );
+    <Dialog open={isMapOpen} onClose={() => setIsMapOpen(false)} className="relative z-50">
+        <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+        <div className="fixed inset-0 flex items-center justify-center p-4">
+          <Dialog.Panel className="w-full max-w-3xl h-[80vh] bg-white rounded-lg shadow-xl overflow-hidden">
+            <div className="p-4 border-b">
+              <Dialog.Title className="text-lg font-medium">Pilih Lokasi dari Peta</Dialog.Title>
+              <p className="text-sm text-gray-500">Klik pada peta untuk memilih koordinat.</p>
+            </div>
+            <div className="h-[calc(100%-80px)]">
+              {/* Panggil komponen peta di sini */}
+              <LocationPickerMap onConfirm={handleMapSelect} />
+            </div>
+          </Dialog.Panel>
+        </div>
+      </Dialog>
+      </>
+);
 }
