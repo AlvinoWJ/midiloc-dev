@@ -38,6 +38,8 @@ export function useUlokDetail(id: string | undefined) {
         kontakpemilik: raw.kontak_pemilik,
         approval_status: raw.approval_status,
         file_intip: raw.file_intip,
+        tanggal_approval_intip: raw.tanggal_approval_intip,
+        approval_intip: raw.approval_intip,
       }
     : null;
 
