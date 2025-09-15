@@ -6,8 +6,8 @@ import PetaLoader from "@/components/map/PetaLoader";
 
 // Import yang sudah ada
 import { useSidebar } from "@/components/ui/sidebarcontext";
-import Sidebar from "@/components/sidebar";
-import Navbar from "@/components/navbar";
+import Sidebar from "@/components/desktop/sidebar";
+import Navbar from "@/components/desktop/navbar";
 import { dummyPropertiData } from "@/lib/dummy-data";
 import SWRProvider from "@/app/swr-provider";
 
@@ -21,9 +21,6 @@ export default function DashboardPageWrapper() {
 }
 
 export function DashboardPage() {
-
-
-export default function DashboardPage() {
   const { isCollapsed } = useSidebar();
 
   return (
@@ -46,7 +43,6 @@ export default function DashboardPage() {
               <PetaLoader data={dummyPropertiData} />
             </div>
           </div>
-          
         </main>
       </div>
     </div>

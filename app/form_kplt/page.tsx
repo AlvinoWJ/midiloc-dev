@@ -1,8 +1,8 @@
 "use client";
 
 import { useSidebar } from "@/components/ui/sidebarcontext";
-import Sidebar from "@/components/sidebar";
-import Navbar from "@/components/navbar";
+import Sidebar from "@/components/desktop/sidebar";
+import Navbar from "@/components/desktop/navbar";
 import SWRProvider from "@/app/swr-provider";
 
 export default function From_KpltpageWrapper() {

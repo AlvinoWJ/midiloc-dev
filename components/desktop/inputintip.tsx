@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { Upload, Calendar, FileText } from "lucide-react";
 import CustomSelect from "@/components/ui/customselect"; // Import CustomSelect component
 import { Button } from "@/components/ui/button";
-import { useAlert } from "@/components/alertcontext";
+import { useAlert } from "@/components/desktop/alertcontext";
 
 // Tipe untuk props yang akan diterima komponen ini
 interface InputIntipFormProps {

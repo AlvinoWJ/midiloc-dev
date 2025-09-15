@@ -3,11 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSidebar } from "@/components/ui/sidebarcontext";
-import Sidebar from "@/components/sidebar";
-import Navbar from "@/components/navbar";
-import TambahUlokForm from "@/components/addulokform";
+import Sidebar from "@/components/desktop/sidebar";
+import Navbar from "@/components/desktop/navbar";
+import TambahUlokForm from "@/components/desktop/addulokform";
 import { UlokCreateInput } from "@/lib/validations/ulok";
-import { useAlert } from "@/components/alertcontext";
+import { useAlert } from "@/components/desktop/alertcontext";
 
 export default function TambahUlokPage() {
   const { isCollapsed } = useSidebar();

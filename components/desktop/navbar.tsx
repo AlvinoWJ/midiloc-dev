@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import { Menu } from 'lucide-react';
-import { useSidebar } from '@/components/ui/sidebarcontext';
-import { useUser } from '@/app/hooks/useUser';
+import { Menu } from "lucide-react";
+import { useSidebar } from "@/components/ui/sidebarcontext";
+import { useUser } from "@/hooks/useUser";
 
 export default function Navbar() {
-  const { user, loadingUser, userError} = useUser();
+  const { user, loadingUser, userError } = useUser();
   const { toggleSidebar } = useSidebar();
 
   return (

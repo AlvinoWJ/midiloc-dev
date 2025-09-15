@@ -1,4 +1,4 @@
-import { UpdatePasswordForm } from "@/components/update-password-form";
+import { UpdatePasswordForm } from "@/components/desktop/update-password-form";
 import Image from "next/image";
 
 export default function Page() {
