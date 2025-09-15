@@ -7,72 +7,34 @@ import { InfoCard } from "@/components/infocard";
 import Tabs from "@/components/ui/tabs";
 import AddButton from "@/components/ui/addbutton";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import SearchWithFilter from "@/components/searchwithfilter";
-import { UlokCardsSkeleton, UlokPageSkeleton } from "@/components/skleton";
+import { UlokPageSkeleton } from "@/components/skleton";
+import SWRProvider from "@/app/swr-provider";
+import { useUser } from "@/app/hooks/useUser";
+import { useUlok } from "@/app/hooks/useUlok";
 
-type Ulok = {
-  id: string;
-  nama_ulok: string;
-  alamat: string;
-  created_at: string;
-  approval_status: string;
-};
+export default function UlokPageWrapper() {
+  // Jika nanti SWRProvider sudah ada di layout global, cukup return <UlokPage />
+  return (
+    <SWRProvider>
+      <UlokPage />
+    </SWRProvider>
+  );
+}
 
-type CurrentUser = {
-  id: string;
-  email: string | null;
-  nama: string | null;
-  branch_id: string | null;
-  branch_nama: string | null;
-  position_id: string | null;
-  position_nama: string | null;
-};
-
-export default function UlokPage() {
+export function UlokPage() {
   const { isCollapsed } = useSidebar();
   const router = useRouter();
-  const [ulokData, setUlokData] = useState<Ulok[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isError, setIsError] = useState(false);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [filterMonth, setFilterMonth] = useState("");
   const [filterYear, setFilterYear] = useState("");
   const [activeTab, setActiveTab] = useState("Recent");
-  const [user, setUser] = useState<CurrentUser | null>(null);
+  const { user } = useUser();
+  const { ulokData, ulokLoading, ulokError } = useUlok();
 
-  useEffect(() => {
-    const fetchUlok = async () => {
-      try {
-        setIsLoading(true);
-        setIsError(false);
-
-        const res = await fetch("http://localhost:3000/api/ulok");
-        if (!res.ok) {
-          if (res.status === 401 || res.status === 403) {
-            throw new Error(
-              "Akses ditolak: hanya role Location Specialist yang dapat melihat data ini."
-            );
-          } else {
-            throw new Error(`Gagal mengambil data ulok (Error ${res.status})`);
-          }
-        }
-
-        const data = await res.json();
-        setUlokData(data.data);
-        setUser(data.meta.user);
-      } catch (err) {
-        console.error("Fetch error:", err);
-        setIsError(true);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    // fetchUserData();
-    fetchUlok();
-  }, []);
-
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const monthMap: Record<string, string> = {
     Januari: "01",
     Februari: "02",
@@ -130,9 +92,9 @@ export default function UlokPage() {
 
         <main className="flex-1 p-6 space-y-6">
           {/* Jika loading, tampilkan skeleton dengan struktur exact sama */}
-          {isLoading ? (
+          {ulokLoading ? (
             <UlokPageSkeleton cardCount={6} />
-          ) : isError ? (
+          ) : ulokError ? (
             // Error State dengan design yang lebih baik
             <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
               <div className="bg-white rounded-lg shadow-sm border p-8 max-w-md">
@@ -179,37 +141,14 @@ export default function UlokPage() {
                 )}
               </div>
 
-              {/* Info Card atau Empty State */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredUlok.length === 0 ? (
-                  // Empty State yang lebih menarik
-                  <div className="col-span-full flex flex-col items-center justify-center py-16">
-                    <div className="text-gray-300 text-6xl mb-4">📍</div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">
-                      {searchQuery || filterMonth || filterYear
-                        ? "Tidak ada data yang cocok"
-                        : "Belum ada data ulok"}
-                    </h3>
-                    <p className="text-gray-500 text-center max-w-md">
-                      {searchQuery || filterMonth || filterYear
-                        ? "Coba ubah kata kunci pencarian atau filter untuk menemukan data yang Anda cari."
-                        : activeTab === "Recent"
-                        ? "Mulai dengan menambahkan usulan lokasi baru."
-                        : "Belum ada data riwayat usulan lokasi."}
-                    </p>
-                    {isLocationSpecialist() &&
-                      !searchQuery &&
-                      !filterMonth &&
-                      !filterYear &&
-                      activeTab === "Recent" && (
-                        <button
-                          onClick={() => router.push("/usulan_lokasi/tambah")}
-                          className="mt-4 bg-red-500 text-white px-6 py-2 rounded-lg hover:bg-red-600 transition-colors"
-                        >
-                          Tambah Usulan Lokasi
-                        </button>
-                      )}
-                  </div>
+              {/* Info Card */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3  gap-6">
+                {ulokLoading ? (
+                  <p className="text-gray-500">Loading...</p>
+                ) : ulokError ? (
+                  <p className="text-red-500">Gagal memuat data.</p>
+                ) : filteredUlok.length === 0 ? (
+                  <p className="text-gray-500">Tidak ada data yang cocok.</p>
                 ) : (
                   filteredUlok.map((ulok) => (
                     <InfoCard

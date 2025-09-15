@@ -1,43 +1,11 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { Menu } from "lucide-react";
-import { useSidebar } from "@/components/ui/sidebarcontext";
-
-type User = {
-  nama: string;
-  branch_nama: string;
-};
+import { Menu } from 'lucide-react';
+import { useSidebar } from '@/components/ui/sidebarcontext';
+import { useUser } from '@/app/hooks/useUser';
 
 export default function Navbar() {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isError, setIsError] = useState(false);
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        setIsLoading(true);
-        setIsError(false);
-
-        const res = await fetch("http://localhost:3000/api/me");
-        if (!res.ok) {
-          throw new Error("Failed to fetch user");
-        }
-
-        const data = await res.json();
-        setUser(data.user);
-      } catch (err) {
-        console.error("Fetch error:", err);
-        setIsError(true);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchUser();
-  }, []);
-
+  const { user, loadingUser, userError} = useUser();
   const { toggleSidebar } = useSidebar();
 
   return (
@@ -54,9 +22,9 @@ export default function Navbar() {
 
           <div className="flex flex-col">
             <span className="text-lg">Selamat Datang,</span>
-            {isLoading ? (
+            {loadingUser ? (
               <span className="font-bold text-lg">Loading...</span>
-            ) : isError ? (
+            ) : userError ? (
               <span className="text-red-400 font-bold text-lg">
                 Gagal memuat data
               </span>
@@ -71,9 +39,9 @@ export default function Navbar() {
         </div>
 
         <div>
-          {isLoading ? (
+          {loadingUser ? (
             <span className="text-lg font-medium">Loading branch...</span>
-          ) : isError ? (
+          ) : userError ? (
             <span className="text-lg font-medium text-red-400">
               Error branch
             </span>

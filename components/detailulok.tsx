@@ -7,6 +7,7 @@ import { Input, Textarea } from "@/components/ui/input";
 import { UlokUpdateSchema, UlokUpdateInput } from "@/lib/validations/ulok";
 import { MapPin } from "lucide-react";
 import { StatusBadge } from "@/components/ui/statusbadge";
+import { useUser } from "@/app/hooks/useUser";
 import { CheckCircle2, FileText } from "lucide-react";
 import { ApprovalStatusbutton } from "@/components/approvalbutton";
 
@@ -42,15 +43,8 @@ interface DetailUlokProps {
   isSubmitting: boolean;
   onOpenIntipForm: () => void;
   onApprove?: (status: "OK" | "NOK") => void;
-  user?: CurrentUser | null; // ✅ ditambahkan
   fileIntipUrl: string | null;
 }
-
-type CurrentUser = {
-  id: string;
-  nama: string;
-  position_nama: string;
-};
 
 const DetailField = ({
   label,
@@ -59,6 +53,7 @@ const DetailField = ({
   name,
   onChange,
   type = "textarea",
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 }: any) => (
   <div className="mb-4">
     <label className="text-gray-600 font-medium text-sm mb-1 block">
@@ -94,21 +89,21 @@ export default function DetailUlok({
   isSubmitting,
   onOpenIntipForm,
   onApprove,
-  user,
   fileIntipUrl,
 }: DetailUlokProps) {
   const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
   const [editedData, setEditedData] = useState(initialData);
   const [errors, setErrors] = useState<Record<string, string | undefined>>({});
+  const { user } = useUser();
   const [isApproving, setIsApproving] = useState(false);
 
   useEffect(() => {
     setEditedData(initialData);
   }, [initialData]);
 
-  const canApprove = () =>
-    user?.position_nama?.toLowerCase().trim() === "Location Manager";
+  // const canApprove = () =>
+  //   user?.position_nama?.toLowerCase().trim() === "Location Manager";
   const isLocationManagerintip = () =>
     user?.position_nama?.toLowerCase().trim() === "location manager";
   const isLocationSpecialist = () =>
@@ -587,6 +582,26 @@ export default function DetailUlok({
               </div>
             )
           ) : null}
+
+          {/* ✅ Tombol Approve/Tolak
+          {canApprove() && initialData.file_intip && (
+            <div className="flex gap-3 mt-4">
+              <Button
+                onClick={() => onApprove && onApprove("OK")}
+                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md"
+                disabled={isSubmitting}
+              >
+                Setujui
+              </Button>
+              <Button
+                onClick={() => onApprove && onApprove("NOK")}
+                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md"
+                disabled={isSubmitting}
+              >
+                Tolak
+              </Button>
+            </div>
+          )} */}
         </div>
       </div>
     </div>

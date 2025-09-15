@@ -9,6 +9,18 @@ import { useSidebar } from "@/components/ui/sidebarcontext";
 import Sidebar from "@/components/sidebar";
 import Navbar from "@/components/navbar";
 import { dummyPropertiData } from "@/lib/dummy-data";
+import SWRProvider from "@/app/swr-provider";
+
+export default function DashboardPageWrapper() {
+  // Jika nanti SWRProvider sudah ada di layout global, cukup return <UlokPage />
+  return (
+    <SWRProvider>
+      <DashboardPage />
+    </SWRProvider>
+  );
+}
+
+export function DashboardPage() {
 
 
 export default function DashboardPage() {

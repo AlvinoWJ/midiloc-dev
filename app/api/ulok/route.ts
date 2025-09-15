@@ -85,6 +85,7 @@ export async function GET(request: Request) {
       "id",
       "nama_ulok",
       "approval_status",
+      "alamat",
       "created_at",
       "alamat",
       // tambahkan kolom ringkas lain yang benar-benar dibutuhkan
@@ -117,14 +118,6 @@ export async function GET(request: Request) {
 
     return successResponse(200, data, {
       pagination,
-      meta: {
-        user: {
-          id: user.id,
-          nama: user.nama,
-          branch_nama: user.branch_nama,
-          position_nama: user.position_nama,
-        },
-      },
     });
   } catch (err: any) {
     // Fallback internal error

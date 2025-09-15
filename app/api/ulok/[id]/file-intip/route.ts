@@ -1,74 +1,61 @@
+// (Ini versi ringkas tanpa ETag, tinggal pakai langsung)
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser, canUlok } from "@/lib/auth/acl";
 
-function normalizePath(p: string) {
-  return p.startsWith("file_intip/") ? p.replace(/^file_intip\//, "") : p;
-}
-
 export async function GET(
-  _req: Request,
+  req: Request,
   { params }: { params: { id: string } }
 ) {
   const supabase = await createClient();
   const user = await getCurrentUser();
-
   if (!user)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!canUlok("read", user))
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  // Ambil data ulok
-  let query = supabase
+  const { data: ulok, error } = await supabase
     .from("ulok")
     .select("id, users_id, branch_id, file_intip")
-    .eq("id", params.id);
-  if (user.position_nama === "location specialist") {
-    query = query.eq("users_id", user.id).eq("branch_id", user.branch_id);
-  } else if (user.position_nama === "location manager") {
-    if (!user.branch_id)
-      return NextResponse.json(
-        { error: "Forbidden: no branch" },
-        { status: 403 }
-      );
-    query = query.eq("branch_id", user.branch_id);
-  }
-  const { data: ulok, error } = await query.single();
+    .eq("id", params.id)
+    .single();
+
   if (error || !ulok)
     return NextResponse.json({ error: "Not Found" }, { status: 404 });
-
-  if (!ulok.file_intip) {
+  if (!ulok.file_intip)
     return NextResponse.json({ error: "No file_intip" }, { status: 404 });
+
+  const mode = new URL(req.url).searchParams.get("mode") || "redirect";
+  const path = ulok.file_intip.replace(/^file_intip\//, "");
+
+  if (mode === "proxy") {
+    // PROXY MODE
+    const { data: fileData, error: dlErr } = await supabase.storage
+      .from("file_intip")
+      .download(path);
+    if (dlErr || !fileData)
+      return NextResponse.json({ error: "Download failed" }, { status: 500 });
+
+    // Sederhana saja (bisa tambahkan detect mime)
+    return new Response(fileData, {
+      status: 200,
+      headers: {
+        "Content-Type": "application/octet-stream",
+        "Cache-Control": "private, max-age=60",
+        "Content-Disposition": `inline; filename="${encodeURIComponent(
+          path.split("/").pop() || "file"
+        )}"`,
+      },
+    });
   }
 
-  const relative = normalizePath(ulok.file_intip);
-  const { data: fileData, error: dlErr } = await supabase.storage
+  // REDIRECT MODE (default)
+  const { data: signed, error: signErr } = await supabase.storage
     .from("file_intip")
-    .download(relative);
+    .createSignedUrl(path, 60 * 5);
 
-  if (dlErr || !fileData) {
-    return NextResponse.json(
-      { error: "Failed to download file" },
-      { status: 500 }
-    );
-  }
+  if (signErr || !signed?.signedUrl)
+    return NextResponse.json({ error: "Sign failed" }, { status: 500 });
 
-  // Deteksi content type sederhana
-  let contentType = "application/octet-stream";
-  if (relative.match(/\.(png|jpg|jpeg|gif)$/i))
-    contentType =
-      "image/" +
-      (relative.split(".").pop()!.toLowerCase() === "jpg"
-        ? "jpeg"
-        : relative.split(".").pop()!.toLowerCase());
-  else if (relative.endsWith(".pdf")) contentType = "application/pdf";
-
-  return new Response(fileData, {
-    status: 200,
-    headers: {
-      "Content-Type": contentType,
-      "Content-Disposition": `inline; filename="${relative.split("/").pop()}"`,
-      "Cache-Control": "private, max-age=60",
-    },
-  });
+  return NextResponse.redirect(signed.signedUrl, 302);
 }

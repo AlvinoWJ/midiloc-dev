@@ -6,19 +6,13 @@ import { Home, MapPin, FileText, User } from "lucide-react";
 import Image from "next/image";
 import { LogoutButton } from "./logout-button";
 import { useSidebar } from "@/components/ui/sidebarcontext";
-import { useEffect, useState } from "react";
+import { useUser } from '@/app/hooks/useUser';
 
-type User = {
-  nama: string;
-  position_nama: string;
-};
 
 export default function Sidebar() {
   const { isCollapsed } = useSidebar();
   const pathname = usePathname();
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isError, setIsError] = useState(false);
+  const { user, loadingUser, userError } = useUser();
 
   const menu = [
     { name: "Dashboard", href: "/dashboard", icon: <Home size={20} /> },
@@ -29,30 +23,6 @@ export default function Sidebar() {
     },
     { name: "Form KPLT", href: "/form_kplt", icon: <FileText size={20} /> },
   ];
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        setIsLoading(true);
-        setIsError(false);
-
-        const res = await fetch("http://localhost:3000/api/me");
-        if (!res.ok) {
-          throw new Error("Failed to fetch user");
-        }
-
-        const data = await res.json();
-        setUser(data.user);
-      } catch (err) {
-        console.error("Fetch error:", err);
-        setIsError(true);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchUser();
-  }, []);
 
   return (
     <aside
@@ -94,9 +64,9 @@ export default function Sidebar() {
         >
           <User className="h-12 w-12 rounded-full border p-2 flex-shrink-0" />
 
-          {isLoading ? (
+          {loadingUser ? (
             <p className="text-foreground font-semibold">Loading...</p>
-          ) : isError ? (
+          ) : userError ? (
             <p className="text-primary text-sm">Gagal memuat data</p>
           ) : (
             <div
