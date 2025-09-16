@@ -1,10 +1,11 @@
 // components/desktop/dashboard-layout.tsx
 "use client";
 
-import { useSidebar } from "@/components/ui/sidebarcontext";
+import { useSidebar } from "@/hooks/useSidebar";
 import Sidebar from "@/components/desktop/sidebar";
 import Navbar from "@/components/desktop/navbar";
 import PetaLoader from "@/components/map/PetaLoader";
+import DashboardMap from "@/components/ui/DashboardMap";
 import { DashboardPageProps } from "@/types/common";
 
 export default function DesktopDashboardLayout(props: DashboardPageProps) {
@@ -62,6 +63,7 @@ export default function DesktopDashboardLayout(props: DashboardPageProps) {
               <div className="bg-white p-4 rounded-lg shadow-md h-[calc(100vh-200px)] w-full border">
                 <PetaLoader data={propertiData} />
               </div>
+              <DashboardMap />
             </>
           )}
         </main>

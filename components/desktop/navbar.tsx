@@ -1,7 +1,7 @@
 "use client";
 
 import { Menu } from "lucide-react";
-import { useSidebar } from "@/components/ui/sidebarcontext";
+import { useSidebar } from "@/hooks/useSidebar";
 import { useUser } from "@/hooks/useUser";
 
 export default function Navbar() {

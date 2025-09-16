@@ -4,6 +4,7 @@ import { useState } from "react";
 import MobileSidebar from "./sidebar";
 import MobileNavbar from "./navbar";
 import PetaLoader from "@/components/map/PetaLoader";
+import DashboardMap from "@/components/ui/DashboardMap";
 import { DashboardPageProps } from "@/types/common";
 
 export default function DesktopDashboardLayout(props: DashboardPageProps) {
@@ -69,6 +70,7 @@ export default function DesktopDashboardLayout(props: DashboardPageProps) {
             <div className="bg-white p-2 rounded-lg shadow-md h-[60vh] w-full border">
               <PetaLoader data={propertiData} />
             </div>
+            <DashboardMap />
           </>
         )}
       </main>

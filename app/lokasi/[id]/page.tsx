@@ -6,7 +6,7 @@ import { use } from "react";
 // Import semua komponen dan tipe data yang dibutuhkan
 import Sidebar from "@/components/desktop/sidebar";
 import Navbar from "@/components/desktop/navbar";
-import { useSidebar } from "@/components/ui/sidebarcontext";
+import { useSidebar } from "@/hooks/useSidebar";
 import Link from "next/link";
 import PetaLoader from "@/components/map/PetaLoader";
 import { Properti } from "@/types";

@@ -88,7 +88,8 @@ export async function GET(request: Request) {
       "alamat",
       "created_at",
       "alamat",
-      // tambahkan kolom ringkas lain yang benar-benar dibutuhkan
+      "latitude",
+      "longtitude",
     ].join(",");
 
     let query = supabase

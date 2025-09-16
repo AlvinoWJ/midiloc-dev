@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import Sidebar from "@/components/desktop/sidebar";
 import Navbar from "@/components/desktop/navbar";
 import DetailUlok from "@/components/desktop/detailulok";
-import { useSidebar } from "@/components/ui/sidebarcontext";
+import { useSidebar } from "@/hooks/useSidebar";
 import { UlokUpdateInput } from "@/lib/validations/ulok";
 import InputIntipForm from "@/components/desktop/inputintip";
 import { ApprovalStatusbutton } from "@/components/desktop/approvalbutton";

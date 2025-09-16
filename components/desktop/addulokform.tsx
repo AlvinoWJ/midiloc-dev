@@ -10,11 +10,17 @@ import { UlokCreateSchema, UlokCreateInput } from "@/lib/validations/ulok";
 import LocationPickerMap from "@/components/map/LocationPickerMap";
 import { Dialog } from "@headlessui/react";
 import { useAlert } from "@/components/desktop/alertcontext";
+import dynamic from "next/dynamic";
 
 interface TambahUlokFormProps {
   onSubmit: (data: UlokCreateInput) => Promise<void>;
   isSubmitting: boolean;
 }
+
+const LocationPickerModal = dynamic(
+  () => import("@/components/map/LocationPickerMap"),
+  { ssr: false }
+);
 
 export default function TambahUlokForm({
   onSubmit,
@@ -307,6 +313,15 @@ export default function TambahUlokForm({
                     <MapPin className="text-red-500" size={18} />
                   </button>
                 </div>
+                <p className="mt-2 text-xs text-gray-500 italic">
+                  <strong>Catatan:</strong> Jika ikon peta tidak berfungsi,
+                  masukkan koordinat manual dengan format:
+                  <br />
+                  <code className="bg-gray-200 px-1 rounded">
+                    -6.2257, 106.6570
+                  </code>{" "}
+                  (Latitude Y, Longitude X).
+                </p>
                 {errors.latlong && (
                   <p className="text-red-500 text-sm mt-1">{errors.latlong}</p>
                 )}
@@ -532,7 +547,7 @@ export default function TambahUlokForm({
             </div>
             <div className="h-[calc(100%-80px)]">
               {/* Panggil komponen peta di sini */}
-              <LocationPickerMap onConfirm={handleMapSelect} />
+              {isMapOpen && <LocationPickerModal onConfirm={handleMapSelect} />}
             </div>
           </Dialog.Panel>
         </div>

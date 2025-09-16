@@ -10,6 +10,7 @@ import { StatusBadge } from "@/components/ui/statusbadge";
 import { useUser } from "@/hooks/useUser";
 import { CheckCircle2, FileText } from "lucide-react";
 import { ApprovalStatusbutton } from "@/components/desktop/approvalbutton";
+import DetailMapCard from "../ui/detailmapcard";
 
 interface UlokData {
   id: string;
@@ -444,6 +445,8 @@ export default function DetailUlok({
             </div>
           </div>
         </div>
+
+        <DetailMapCard latlong={initialData.latlong} />
 
         {/* Kartu ini hanya akan muncul jika data file_intip sudah ada */}
         {initialData.file_intip && (

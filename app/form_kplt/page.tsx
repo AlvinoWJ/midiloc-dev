@@ -1,6 +1,6 @@
 "use client";
 
-import { useSidebar } from "@/components/ui/sidebarcontext";
+import { useSidebar } from "@/hooks/useSidebar";
 import Sidebar from "@/components/desktop/sidebar";
 import Navbar from "@/components/desktop/navbar";
 import SWRProvider from "@/app/swr-provider";

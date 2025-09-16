@@ -6,7 +6,7 @@ import DesktopTabs from "@/components/desktop/tabs";
 import AddButton from "@/components/ui/addbutton";
 import SearchWithFilter from "@/components/desktop/searchwithfilter";
 import { UlokPageSkeleton } from "@/components/desktop/skleton";
-import { useSidebar } from "@/components/ui/sidebarcontext";
+import { useSidebar } from "@/hooks/useSidebar";
 import { useRouter } from "next/navigation";
 
 export default function DesktopLayout(props: UlokPageProps) {
