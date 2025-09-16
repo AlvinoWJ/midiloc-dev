@@ -31,7 +31,7 @@ export function UlokPage() {
   const { ulokData, ulokLoading, ulokError } = useUlok();
 
   // 3. Device Detection
-  const { isMobile, width } = useDeviceType(); // Ganti dengan isMobile || isTablet jika perlu
+  const { isMobile, isDeviceLoading } = useDeviceType(); // Ganti dengan isMobile || isTablet jika perlu
 
   // 4. Business Logic & Data Filtering
   const isLocationSpecialist = useCallback(() => {
@@ -81,8 +81,11 @@ export function UlokPage() {
     onFilterChange,
   };
 
-  console.log("DIRENDER ULANG, status isMobile:", isMobile);
-  console.log("DIRENDER ULANG:", width);
+  if (isDeviceLoading) {
+    // Anda bisa mengganti ini dengan komponen Skeleton/Loader yang lebih baik
+    return <div className="min-h-screen bg-gray-50" />;
+  }
+
   // --- RENDER LAYOUT BERDASARKAN UKURAN LAYAR ---
   if (isMobile) {
     return <MobileLayout {...layoutProps} />;

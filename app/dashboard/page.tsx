@@ -18,7 +18,7 @@ export default function DashboardPageWrapper() {
 }
 
 export function DashboardPage() {
-  const { isMobile } = useDeviceType();
+  const { isMobile, isDeviceLoading } = useDeviceType();
   const { user, loadingUser, userError } = useUser();
 
   // 2. GUNAKAN hook baru untuk mengambil data properti
@@ -40,6 +40,11 @@ export function DashboardPage() {
     isLoading: isPageLoading,
     isError: isPageError,
   };
+
+  if (isDeviceLoading) {
+    // Anda bisa mengganti ini dengan komponen Skeleton/Loader yang lebih baik
+    return <div className="min-h-screen bg-gray-50" />;
+  }
 
   if (isMobile) {
     return <MobileDashboardLayout {...dashboardProps} />;

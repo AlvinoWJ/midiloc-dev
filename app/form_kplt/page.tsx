@@ -8,13 +8,7 @@ import { DashboardPageProps } from "@/types/common";
 import DesktopKPLTLayout from "@/components/desktop/kplt-layout";
 import MobileKPLTLayout from "@/components/mobile/kplt-layout";
 
-// Hook untuk mengambil data KPLT (sesuaikan dengan kebutuhan Anda)
 function useKPLT() {
-  // Implementasikan hook ini sesuai dengan kebutuhan API KPLT Anda
-  // Contoh:
-  // const { data: kpltData, error, isLoading } = useSWR('/api/kplt', fetcher);
-
-  // Sementara return dummy data
   return {
     kplt: [],
     isLoading: false,
@@ -31,25 +25,25 @@ export default function KPLTPageWrapper() {
 }
 
 export function KPLTPage() {
-  const { isMobile } = useDeviceType();
+  const { isMobile, isDeviceLoading } = useDeviceType();
   const { user, loadingUser, userError } = useUser();
 
-  // Gunakan hook untuk mengambil data KPLT
   const { kplt, isLoading: loadingKPLT, isError: kpltError } = useKPLT();
 
-  // Gabungkan state loading dan error dari kedua hook
   const isPageLoading = loadingUser || loadingKPLT;
   const isPageError = !!userError || !!kpltError;
 
-  // Siapkan props untuk dikirim ke komponen layout
   const kpltProps: DashboardPageProps = {
-    // Gunakan data KPLT, berikan array kosong sebagai fallback
-    propertiData: kplt || [], // Atau sesuaikan dengan struktur data KPLT Anda
+    propertiData: kplt || [],
     user,
     isLoading: isPageLoading,
     isError: isPageError,
   };
 
+  if (isDeviceLoading) {
+    // Anda bisa mengganti ini dengan komponen Skeleton/Loader yang lebih baik
+    return <div className="min-h-screen bg-gray-50" />;
+  }
   if (isMobile) {
     return <MobileKPLTLayout {...kpltProps} />;
   }
