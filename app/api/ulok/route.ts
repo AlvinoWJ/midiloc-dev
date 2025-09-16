@@ -89,7 +89,7 @@ export async function GET(request: Request) {
       "created_at",
       "alamat",
       "latitude",
-      "longtitude",
+      "longitude",
     ].join(",");
 
     let query = supabase
