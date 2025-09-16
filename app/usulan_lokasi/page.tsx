@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import SWRProvider from "@/app/swr-provider";
 import { useUser } from "@/hooks/useUser";
 import { useUlok } from "@/hooks/useUlok";
@@ -31,12 +31,12 @@ export function UlokPage() {
   const { ulokData, ulokLoading, ulokError } = useUlok();
 
   // 3. Device Detection
-  const { isMobile } = useDeviceType(); // Ganti dengan isMobile || isTablet jika perlu
+  const { isMobile, width } = useDeviceType(); // Ganti dengan isMobile || isTablet jika perlu
 
   // 4. Business Logic & Data Filtering
-  const isLocationSpecialist = () => {
+  const isLocationSpecialist = useCallback(() => {
     return user?.position_nama?.trim().toLowerCase() === "location specialist";
-  };
+  }, [user]);
 
   // Pastikan ulokData tidak undefined sebelum memfilter
   const filteredUlok = (ulokData || [])
@@ -61,6 +61,11 @@ export function UlokPage() {
       return true;
     });
 
+  const onFilterChange = useCallback((month: string, year: string) => {
+    setFilterMonth(month);
+    setFilterYear(year);
+  }, []);
+
   const layoutProps = {
     user,
     isLoading: ulokLoading,
@@ -73,12 +78,11 @@ export function UlokPage() {
     isLocationSpecialist,
     onTabChange: setActiveTab,
     onSearch: setSearchQuery,
-    onFilterChange: (month: string, year: string) => {
-      setFilterMonth(month);
-      setFilterYear(year);
-    },
+    onFilterChange,
   };
 
+  console.log("DIRENDER ULANG, status isMobile:", isMobile);
+  console.log("DIRENDER ULANG:", width);
   // --- RENDER LAYOUT BERDASARKAN UKURAN LAYAR ---
   if (isMobile) {
     return <MobileLayout {...layoutProps} />;

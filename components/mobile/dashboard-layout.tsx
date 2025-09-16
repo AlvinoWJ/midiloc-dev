@@ -11,26 +11,36 @@ export default function DesktopDashboardLayout(props: DashboardPageProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 relative">
       {/* Mobile Sidebar */}
-      <MobileSidebar
-        isOpen={isMobileMenuOpen}
-        onClose={() => setIsMobileMenuOpen(false)}
-        user={user}
-        isLoading={isLoading}
-        isError={isError}
-      />
+      <div className="relative z-50">
+        <MobileSidebar
+          isOpen={isMobileMenuOpen}
+          onClose={() => setIsMobileMenuOpen(false)}
+          user={user}
+          isLoading={isLoading}
+          isError={isError}
+        />
+      </div>
+      {isMobileMenuOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-40"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
 
       {/* Mobile Navbar */}
-      <MobileNavbar
-        user={user}
-        isLoading={isLoading}
-        isError={isError}
-        onMenuClick={() => setIsMobileMenuOpen(true)}
-      />
+      <div className="relative z-30">
+        <MobileNavbar
+          user={user}
+          isLoading={isLoading}
+          isError={isError}
+          onMenuClick={() => setIsMobileMenuOpen(true)}
+        />
+      </div>
 
       {/* Main Content */}
-      <main className="px-4 py-4 space-y-4">
+      <main className="px-4 py-4 space-y-4 relative z-10">
         {isLoading ? (
           // Skeleton Loading State
           <div>

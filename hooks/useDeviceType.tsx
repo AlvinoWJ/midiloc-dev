@@ -1,44 +1,44 @@
 import { useState, useEffect } from "react";
 
+// 1. Definisikan breakpoint sebagai konstanta agar mudah diubah.
+const TABLET_BREAKPOINT = 965;
+const DESKTOP_BREAKPOINT = 1024;
+const DEBOUNCE_DELAY = 150;
+
 interface DeviceType {
   isMobile: boolean;
   isTablet: boolean;
   isDesktop: boolean;
-  width: number;
+  width?: number;
 }
 
 export function useDeviceType(): DeviceType {
   const [deviceType, setDeviceType] = useState<DeviceType>({
     isMobile: false,
     isTablet: false,
-    isDesktop: false,
-    width: 0,
+    isDesktop: true,
+    width: undefined,
   });
 
   useEffect(() => {
-    const checkDeviceType = () => {
-      const width = window.innerWidth;
-      setDeviceType({
-        isMobile: width < 768,
-        isTablet: width >= 768 && width < 1024,
-        isDesktop: width >= 1024,
-        width,
-      });
-    };
-
-    // Check on mount
-    checkDeviceType();
-
-    // Check on resize with debounce
     let timeoutId: NodeJS.Timeout;
-    const debouncedCheck = () => {
+    const handleResize = () => {
       clearTimeout(timeoutId);
-      timeoutId = setTimeout(checkDeviceType, 150);
+      timeoutId = setTimeout(() => {
+        const width = window.innerWidth;
+        setDeviceType({
+          isMobile: width < TABLET_BREAKPOINT,
+          isTablet: width >= TABLET_BREAKPOINT && width < DESKTOP_BREAKPOINT,
+          isDesktop: width >= DESKTOP_BREAKPOINT,
+          width,
+        });
+      }, DEBOUNCE_DELAY);
     };
+    handleResize();
 
-    window.addEventListener("resize", debouncedCheck);
+    window.addEventListener("resize", handleResize);
     return () => {
-      window.removeEventListener("resize", debouncedCheck);
+      window.removeEventListener("resize", handleResize);
       clearTimeout(timeoutId);
     };
   }, []);
