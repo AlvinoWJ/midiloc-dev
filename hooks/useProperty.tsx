@@ -30,7 +30,7 @@ function adaptApiDataToProperti(apiData: any[]): Properti[] {
         latitude: latitude,
         longitude: longitude,
         status: item.approval_status || "In Progress",
-        tanggal_pengajuan: item.created_at || new Date().toISOString(),
+        tanggal_pengajuan: item.created_at,
         specialist_name: item.specialist_name || "N/A",
         harga: 0,
         luas_tanah: 0,

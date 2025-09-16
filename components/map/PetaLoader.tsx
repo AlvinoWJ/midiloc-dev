@@ -32,10 +32,6 @@ export default function PetaLoader({
 
   // Teruskan (pass down) prop 'centerPoint' ke komponen peta
   return (
-    <PetaLokasiInteraktif
-      data={data}
-      centerPoint={centerPoint}
-      showPopup={showPopup}
-    />
+    <PetaLokasiInteraktif centerPoint={centerPoint} showPopup={showPopup} />
   );
 }

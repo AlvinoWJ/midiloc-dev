@@ -4,52 +4,60 @@
 import { useMemo } from "react";
 import PetaLoader from "@/components/map/PetaLoader";
 import { MapPin } from "lucide-react";
+import { useUlokDetail } from "@/hooks/useUlokDetail";
+import { Properti } from "@/types/common";
 
 interface DetailMapCardProps {
-  latlong: string; // Menerima latlong dalam format "latitude,longitude"
+  id: string;
 }
 
-export default function DetailMapCard({ latlong }: DetailMapCardProps) {
+export default function DetailMapCard({ id }: DetailMapCardProps) {
+  const { ulokData, isLoading, errorMessage } = useUlokDetail(id);
   // Parsing latlong string menjadi angka
-  const coordinates = useMemo(() => {
-    if (!latlong || !latlong.includes(",")) {
-      // Jika data tidak valid, kembalikan null atau default
-      return null;
-    }
-    const [lat, lng] = latlong.split(",").map(Number);
-    if (isNaN(lat) || isNaN(lng)) {
-      return null;
-    }
-    return [lat, lng] as [number, number];
-  }, [latlong]);
 
-  // Jika koordinat tidak valid, tampilkan pesan
-  if (!coordinates) {
+  // 3. Tampilkan pesan loading
+  if (isLoading) {
+    return (
+      <div className="bg-gray-100 h-64 flex items-center justify-center rounded-lg">
+        <p className="text-gray-500">Memuat data peta...</p>
+      </div>
+    );
+  }
+
+  // 4. Tampilkan pesan error jika fetch gagal atau data tidak valid
+  if (
+    errorMessage ||
+    !ulokData ||
+    !ulokData.latlong ||
+    !ulokData.latlong.includes(",")
+  ) {
     return (
       <div className="bg-gray-100 h-64 flex items-center justify-center rounded-lg">
         <p className="text-gray-500">
-          Koordinat lokasi tidak valid atau belum tersedia.
+          Koordinat lokasi tidak valid atau gagal dimuat.
         </p>
       </div>
     );
   }
 
-  // Objek data dummy yang dibutuhkan oleh PetaLoader
-  const lokasiData = {
-    id: 1, // ID bisa apa saja karena tidak ditampilkan
-    latitude: coordinates[0],
-    longitude: coordinates[1],
-    // Properti lain bisa diisi data kosong
-    nama: "Lokasi Usulan",
-    alamat: "",
-    status: "In Progress" as const,
-    gambar_url: "",
-    tanggal_pengajuan: "",
-    harga: 0,
-    luas_tanah: 0,
-    luas_bangunan: 0,
-    specialist_name: "",
-  };
+  // Siapkan data untuk PetaLoader dari data yang sudah di-fetch
+  const [latitude, longitude] = ulokData.latlong.split(",").map(Number);
+  const markerData: Properti[] = [
+    {
+      id: parseInt(ulokData.id, 10),
+      latitude,
+      longitude,
+      nama: ulokData.namaUlok,
+      alamat: ulokData.alamat,
+      status: ulokData.approval_status,
+      tanggal_pengajuan: ulokData.tanggalUlok,
+      harga: 0,
+      luas_tanah: 0,
+      luas_bangunan: 0,
+      specialist_name: "",
+      gambar_url: "",
+    },
+  ];
 
   return (
     <div className="bg-white rounded-xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)] mb-8">
@@ -62,8 +70,9 @@ export default function DetailMapCard({ latlong }: DetailMapCardProps) {
       <div className="p-6">
         <div className="w-full h-80 rounded-lg overflow-hidden border">
           <PetaLoader
-            data={[lokasiData]} // Berikan data dalam bentuk array
-            centerPoint={coordinates}
+            // Berikan data dalam bentuk array
+            data={markerData}
+            centerPoint={[latitude, longitude]}
             showPopup={false} // Tidak perlu popup di halaman detail
           />
         </div>
