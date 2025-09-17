@@ -18,8 +18,6 @@ export default function UlokPageWrapper() {
 }
 
 export function UlokPage() {
-  // --- KUMPULKAN SEMUA LOGIKA DI SINI ---
-
   // 1. State Management
   const [searchQuery, setSearchQuery] = useState("");
   const [filterMonth, setFilterMonth] = useState("");

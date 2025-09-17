@@ -3,7 +3,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
 import { CurrentUser } from "@/types/common";
-import { LogoutButton } from "@/components/desktop/logout-button";
+import { LogoutButton } from "@/components/ui/logout-button";
 
 interface MobileSidebarProps {
   isOpen: boolean;

@@ -5,13 +5,15 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
 import { UlokUpdateSchema, UlokUpdateInput } from "@/lib/validations/ulok";
-import { MapPin } from "lucide-react";
 import { StatusBadge } from "@/components/ui/statusbadge";
 import { useUser } from "@/hooks/useUser";
-import { CheckCircle2, FileText } from "lucide-react";
-import { ApprovalStatusbutton } from "@/components/desktop/approvalbutton";
+import { CheckCircle2, FileText, ArrowLeft, Edit3, MapPin } from "lucide-react";
+import { ApprovalStatusbutton } from "@/components/ui/approvalbutton"; // Pastikan path benar
 import DetailMapCard from "@/components/ui/detailmapcard";
+import MobileNavbar from "./navbar";
+import MobileSidebar from "./sidebar";
 
+// Interface Data & Props (Sama seperti kode dasar Anda)
 interface UlokData {
   id: string;
   namaUlok: string;
@@ -37,26 +39,25 @@ interface UlokData {
   approval_intip: string | null;
   tanggal_approval_intip: string | null;
 }
-
 interface DetailUlokProps {
   initialData: UlokData;
   onSave: (data: UlokUpdateInput) => Promise<boolean>;
   isSubmitting: boolean;
   onOpenIntipForm: () => void;
-  onApprove?: (status: "OK" | "NOK") => void;
+  onApprove: (status: "OK" | "NOK") => void;
   fileIntipUrl: string | null;
 }
 
+// Komponen DetailField (Diadaptasi untuk mobile)
 const DetailField = ({
   label,
   value,
   isEditing,
   name,
   onChange,
-  type = "textarea",
-}: // eslint-disable-next-line @typescript-eslint/no-explicit-any
-any) => (
-  <div className="mb-4">
+  type = "text",
+}: any) => (
+  <div>
     <label className="text-gray-600 font-medium text-sm mb-1 block">
       {label}
     </label>
@@ -66,8 +67,8 @@ any) => (
           name={name}
           value={value}
           onChange={onChange}
-          className="w-full"
-          rows={3}
+          className="w-full text-sm"
+          rows={2}
         />
       ) : (
         <Input
@@ -75,24 +76,32 @@ any) => (
           type={type}
           value={value}
           onChange={onChange}
-          className="w-full"
+          className="w-full text-sm"
         />
       )
     ) : (
-      <div className="text-gray-900 font-normal py-2">{value || "-"}</div>
+      <div className="text-gray-900 py-2 text-sm bg-gray-100 rounded-lg px-3 min-h-[40px] flex items-start w-full break-words">
+        {value || "-"}
+      </div>
     )}
   </div>
 );
 
-export default function DetailUlok({
-  initialData,
-  onSave,
-  isSubmitting,
-  onOpenIntipForm,
-  onApprove,
-  fileIntipUrl,
-}: DetailUlokProps) {
+export default function MobileDetailUlokLayout(props: DetailUlokProps) {
+  const {
+    initialData,
+    onSave,
+    isSubmitting,
+    onOpenIntipForm,
+    onApprove,
+    fileIntipUrl,
+  } = props;
+
+  // ===============================================
+  // SEMUA STATE & LOGIKA DARI KODE DASAR ADA DI SINI
+  // ===============================================
   const router = useRouter();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editedData, setEditedData] = useState(initialData);
   const [errors, setErrors] = useState<Record<string, string | undefined>>({});
@@ -103,13 +112,15 @@ export default function DetailUlok({
     setEditedData(initialData);
   }, [initialData]);
 
-  // const canApprove = () =>
-  //   user?.position_nama?.toLowerCase().trim() === "Location Manager";
-  const isLocationManagerintip = () =>
+  // --- LOGIKA OTORISASI ---
+  const isLocationManager =
     user?.position_nama?.toLowerCase().trim() === "location manager";
-  const isLocationSpecialist = () =>
+  const isLocationSpecialist =
     user?.position_nama?.toLowerCase().trim() === "location specialist";
+  const isIntipDone = !!initialData.file_intip;
+  const isPendingApproval = initialData.approval_status === "In Progress";
 
+  // --- FUNGSI HANDLER ---
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
@@ -139,22 +150,16 @@ export default function DetailUlok({
       nama_pemilik: editedData.namapemilik,
       kontak_pemilik: editedData.kontakpemilik,
     };
-
     const validationResult = UlokUpdateSchema.safeParse(dataToValidate);
-
     if (!validationResult.success) {
-      // Jika validasi gagal, format dan simpan pesan error
       const formattedErrors: Record<string, string> = {};
-      for (const issue of validationResult.error.issues) {
-        const key = String(issue.path[0]);
-        formattedErrors[key] = issue.message;
-      }
+      validationResult.error.issues.forEach((issue) => {
+        formattedErrors[String(issue.path[0])] = issue.message;
+      });
       setErrors(formattedErrors);
-      console.error("Validation Errors:", formattedErrors);
       return;
     }
     const success = await onSave(validationResult.data);
-
     if (success) {
       setIsEditing(false);
     }
@@ -167,56 +172,78 @@ export default function DetailUlok({
   };
 
   const handleApproveAction = async (status: "OK" | "NOK") => {
-    if (!onApprove) {
-      console.error("onApprove function is not provided!");
-      return;
-    }
+    if (!onApprove) return;
     setIsApproving(true);
-    await onApprove(status); // Memanggil fungsi yang datang dari parent (page.tsx)
+    await onApprove(status);
     setIsApproving(false);
   };
 
   return (
     <div className="bg-gray-50 min-h-screen">
-      <div className="max-w-6xl mx-auto p-2">
-        <div className="flex justify-between items-center mb-6">
+      <MobileSidebar
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+        user={user}
+        isLoading={isSubmitting}
+        isError={false}
+      />
+
+      <MobileNavbar
+        onMenuClick={() => setIsSidebarOpen(true)}
+        user={user}
+        isLoading={isSubmitting}
+        isError={false}
+      />
+
+      <main className="p-4 space-y-4">
+        {/* OPSI 1: Minimalis & Fungsional */}
+        <div className="flex justify-between items-center">
           <Button
             onClick={() => router.back()}
-            className="rounded-full w-20 h-10"
+            variant="outline"
+            className="text-gray-700 rounded-full"
           >
-            Back
+            <ArrowLeft size={20} className="mr-2" />
+            Kembali
           </Button>
-          <div className="flex gap-3">
-            {isLocationSpecialist() && (
-              <>
-                {isEditing ? (
-                  <>
-                    <Button
-                      variant="outline"
-                      onClick={handleCancel}
-                      className="rounded-full px-6"
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      onClick={handleSaveWrapper}
-                      className="bg-submit hover:bg-green-600 text-white rounded-full px-6"
-                    >
-                      Save
-                    </Button>
-                  </>
-                ) : (
+
+          {isLocationSpecialist && isPendingApproval && (
+            <div className="flex items-center gap-2">
+              {isEditing ? (
+                <>
                   <Button
-                    onClick={() => setIsEditing(true)}
-                    className="bg-red-600 hover:bg-red-700 text-white rounded-full px-8 py-2 font-medium"
+                    variant="outline"
+                    size="default"
+                    className="rounded-full"
+                    onClick={handleCancel} // Menggunakan fungsi handleCancel yang benar
                   >
-                    Edit
+                    Batal
                   </Button>
-                )}
-              </>
-            )}
-          </div>
+                  <Button
+                    variant="submit"
+                    size="default"
+                    className="rounded-full"
+                    onClick={handleSaveWrapper} // Menggunakan fungsi handleSaveWrapper yang benar
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? "Menyimpan..." : <>Simpan</>}
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  variant="default"
+                  size="default"
+                  className="rounded-full"
+                  onClick={() => setIsEditing(true)} // Menggunakan setIsEditing langsung
+                >
+                  <Edit3 size={16} className="mr-2" />
+                  Edit
+                </Button>
+              )}
+            </div>
+          )}
         </div>
+
         {/* Title Card */}
         <div className="bg-white rounded-xl p-6 mb-8 shadow-[1px_1px_6px_rgba(0,0,0,0.25)]">
           <div className="flex items-start justify-between mb-5">
@@ -447,29 +474,25 @@ export default function DetailUlok({
         </div>
 
         <DetailMapCard id={initialData.id} />
-        {/* Kartu ini hanya akan muncul jika data file_intip sudah ada */}
-        {initialData.file_intip && (
-          <div className="bg-white rounded-xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)] mb-4">
+        {/* Tampilkan kartu approval JIKA intip sudah selesai */}
+        {isIntipDone && (
+          <div className="bg-white rounded-xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)] mb-8">
             <div className="border-b border-gray-200 px-6 py-4">
               <div className="flex items-center">
-                {/* Menggunakan ikon yang relevan untuk approval */}
-                <CheckCircle2 className="text-green-600 mr-3" size={20} />
-                <h2 className="text-lg font-semibold text-gray-900">
+                <CheckCircle2 className="text-green-600 mr-3" size={18} />
+                <h3 className="text-lg font-semibold text-gray-900">
                   Data Approval INTIP
-                </h2>
+                </h3>
               </div>
             </div>
-            <div className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                {/* Menampilkan Status INTIP */}
-                {/* Kita gunakan komponen DetailField Anda agar konsisten */}
+            <div className="p-4 space-y-4">
+              {/* Status & Tanggal */}
+              <div className="grid grid-cols-2 gap-4">
                 <DetailField
                   label="Status INTIP"
                   value={initialData.approval_intip || "-"}
-                  isEditing={false} // Selalu false karena ini hanya untuk display
+                  isEditing={false}
                 />
-
-                {/* Menampilkan Tanggal Approval */}
                 <DetailField
                   label="Tanggal Approval"
                   value={
@@ -485,127 +508,81 @@ export default function DetailUlok({
                   }
                   isEditing={false}
                 />
+              </div>
 
-                {/* Menampilkan Link ke File Bukti Approval */}
-                <div className="col-span-1 md:col-span-2">
-                  {" "}
-                  {/* Dibuat lebih lebar agar preview pas */}
-                  <p className="text-gray-600 font-medium text-sm mb-2 block">
-                    Bukti Approval
-                  </p>
-                  {fileIntipUrl ? (
-                    (() => {
-                      // Fungsi sederhana untuk memeriksa apakah file adalah gambar berdasarkan ekstensi
-                      const isImage = /\.(jpeg|jpg|gif|png|webp)$/i.test(
+              {/* Bukti Approval (File Preview) */}
+              <div>
+                <p className="text-gray-600 font-medium text-sm mb-2 block">
+                  Bukti Approval
+                </p>
+                {fileIntipUrl ? (
+                  (() => {
+                    const isImage =
+                      initialData.file_intip &&
+                      /\.(jpeg|jpg|gif|png|webp)$/i.test(
                         initialData.file_intip
                       );
 
-                      if (isImage) {
-                        // Jika file adalah gambar, tampilkan preview
-                        return (
-                          <a
-                            href={fileIntipUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            title="Klik untuk melihat ukuran penuh"
-                          >
-                            <img
-                              src={fileIntipUrl}
-                              alt="Preview Bukti Approval"
-                              className="rounded-lg shadow-md max-w-xs max-h-60 object-contain border border-gray-200 cursor-pointer transition-transform hover:scale-105"
-                            />
-                          </a>
-                        );
-                      } else {
-                        // Jika bukan gambar, tampilkan link seperti semula
-                        return (
-                          <a
-                            href={fileIntipUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-2 text-sm text-red-600 hover:text-red-800 font-semibold transition-colors"
-                          >
-                            <FileText className="h-4 w-4" />
-                            <span>Lihat File: {initialData.file_intip}</span>
-                          </a>
-                        );
-                      }
-                    })()
-                  ) : (
-                    <p className="text-sm text-gray-400 italic">
-                      Memuat file...
-                    </p>
-                  )}
-                </div>
+                    if (isImage) {
+                      return (
+                        <a
+                          href={fileIntipUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <img
+                            src={fileIntipUrl}
+                            alt="Preview Bukti Approval"
+                            className="rounded-lg shadow-md w-full max-h-48 object-contain border border-gray-200"
+                          />
+                        </a>
+                      );
+                    } else {
+                      return (
+                        <a
+                          href={fileIntipUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 p-3 bg-gray-100 rounded-lg text-sm text-red-600 hover:text-red-800 font-semibold"
+                        >
+                          <FileText className="h-4 w-4" />
+                          <span>Lihat File: {initialData.file_intip}</span>
+                        </a>
+                      );
+                    }
+                  })()
+                ) : (
+                  <p className="text-sm text-gray-400 italic">Memuat file...</p>
+                )}
               </div>
             </div>
           </div>
         )}
 
-        {/* GANTI SELURUH BLOK TOMBOL DENGAN INI */}
-        <div className="flex justify-end mt-4">
-          {isLocationManagerintip() &&
-          initialData.approval_status === "In Progress" ? (
-            // JIKA user adalah Manager DAN status masih "In Progress"...
-            !initialData.file_intip ? (
-              // ...TAPI file intip BELUM ada, maka tampilkan tombol Input Intip
-              <button
+        {isLocationManager && isPendingApproval && (
+          <div className="mt-6">
+            {!isIntipDone ? (
+              <Button
                 onClick={onOpenIntipForm}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded flex items-center gap-2 transition-colors duration-200"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3"
+                size="lg"
                 disabled={isSubmitting}
               >
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                  />
-                </svg>
                 Input Data Intip
-              </button>
+              </Button>
             ) : (
-              <div className="flex gap-3">
-                <ApprovalStatusbutton
-                  show={isLocationManagerintip()}
-                  currentStatus={initialData.approval_status}
-                  fileUploaded={!!initialData.file_intip}
-                  onApprove={handleApproveAction}
-                  loading={isApproving}
-                  disabled={
-                    isApproving || initialData.approval_status !== "In Progress"
-                  }
-                />
-              </div>
-            )
-          ) : null}
-
-          {/* ✅ Tombol Approve/Tolak
-          {canApprove() && initialData.file_intip && (
-            <div className="flex gap-3 mt-4">
-              <Button
-                onClick={() => onApprove && onApprove("OK")}
-                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md"
-                disabled={isSubmitting}
-              >
-                Setujui
-              </Button>
-              <Button
-                onClick={() => onApprove && onApprove("NOK")}
-                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md"
-                disabled={isSubmitting}
-              >
-                Tolak
-              </Button>
-            </div>
-          )} */}
-        </div>
-      </div>
+              <ApprovalStatusbutton
+                currentStatus={initialData.approval_status}
+                show={true}
+                fileUploaded={true}
+                onApprove={handleApproveAction}
+                loading={isApproving}
+                disabled={isApproving}
+              />
+            )}
+          </div>
+        )}
+      </main>
     </div>
   );
 }

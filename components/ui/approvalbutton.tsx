@@ -24,13 +24,13 @@ export function ApprovalStatusbutton({
   return (
     <div className="mt-3 px-4 md:px-5">
       {fileUploaded && (
-        <div className="flex gap-7">
+        <div className="flex w-full gap-2 sm:w-auto sm:gap-4">
           <Button
             disabled={disabled || loading}
             onClick={() => onApprove("NOK")}
             variant="default"
             size="default"
-            className="min-w-[100px]"
+            className="flex-1 sm:flex-none min-w-[100px]"
           >
             {disabled || loading ? "Memproses..." : "NOK"}
           </Button>
@@ -39,7 +39,7 @@ export function ApprovalStatusbutton({
             onClick={() => onApprove("OK")}
             variant="submit"
             size="default"
-            className="min-w-[100px]"
+            className="flex-1 sm:flex-none min-w-[100px]"
           >
             {disabled || loading ? "Memproses..." : "OK"}
           </Button>
