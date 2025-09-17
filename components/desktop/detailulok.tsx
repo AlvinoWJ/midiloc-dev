@@ -10,7 +10,7 @@ import { StatusBadge } from "@/components/ui/statusbadge";
 import { useUser } from "@/hooks/useUser";
 import { CheckCircle2, FileText } from "lucide-react";
 import { ApprovalStatusbutton } from "@/components/desktop/approvalbutton";
-import DetailMapCard from "@/components/ui/detailmapcard";
+import DetailMapCard from "@/components/ui/DetailMapCard";
 
 interface UlokData {
   id: string;
