@@ -4,10 +4,11 @@
 import SWRProvider from "@/app/swr-provider";
 import { useDeviceType } from "@/hooks/useDeviceType";
 import { useUser } from "@/hooks/useUser";
-import { useProperti } from "@/hooks/useProperty"; // <-- 1. IMPORT hook baru
+// import { useProperti } from "@/hooks/useProperty"; // <-- 1. IMPORT hook baru
 import { DashboardPageProps } from "@/types/common";
 import DesktopDashboardLayout from "@/components/desktop/dashboard-layout";
 import MobileDashboardLayout from "@/components/mobile/dashboard-layout";
+import { useUlok } from "@/hooks/useUlok";
 
 export default function DashboardPageWrapper() {
   return (
@@ -19,26 +20,18 @@ export default function DashboardPageWrapper() {
 
 export function DashboardPage() {
   const { isMobile, isDeviceLoading } = useDeviceType();
-  const { user, loadingUser, userError } = useUser();
+  const { user } = useUser();
 
   // 2. GUNAKAN hook baru untuk mengambil data properti
-  const {
-    properti,
-    isLoading: loadingProperti,
-    isError: propertiError,
-  } = useProperti();
-
-  // 3. Gabungkan state loading dan error dari kedua hook
-  const isPageLoading = loadingUser || loadingProperti;
-  const isPageError = !!userError || !!propertiError;
+  const { ulokData, ulokLoading, ulokError } = useUlok();
 
   // 4. Siapkan props untuk dikirim ke komponen layout
   const dashboardProps: DashboardPageProps = {
     // Gunakan data dari hook, berikan array kosong sebagai fallback
-    propertiData: properti || [],
+    propertiData: ulokData || [],
     user,
-    isLoading: isPageLoading,
-    isError: isPageError,
+    isLoading: ulokLoading,
+    isError: ulokError,
   };
 
   if (isDeviceLoading) {
