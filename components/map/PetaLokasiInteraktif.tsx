@@ -11,10 +11,11 @@ import {
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { useRouter } from "next/navigation";
-import { useProperti } from "@/hooks/useProperty";
+// import { useProperti } from "@/hooks/useProperty";
 import { Properti } from "@/types/common"; // 1. Tipe data diaktifkan (uncomment)
 
 // Fix ikon default Leaflet (tidak berubah)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl:
@@ -48,22 +49,28 @@ const formatTanggal = (tanggalString: string | undefined | null) => {
       month: "long",
       year: "numeric",
     });
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
     return "Format tanggal salah";
   }
 };
 
 interface PetaProps {
+  data: Properti[]; // <-- Add this
   centerPoint?: [number, number];
   showPopup?: boolean;
 }
 
 export default function PetaLokasiInteraktif({
+  data,
   centerPoint,
   showPopup = true,
 }: PetaProps) {
   const router = useRouter();
-  const { properti, isLoading, isError } = useProperti();
+
+  // Dummy loading and error state (replace with real logic if available)
+  const isLoading = !data || data.length === 0;
+  const isError = false; // Set to true if you want to simulate error
 
   const handleDetailClick = (id: string | number) => {
     router.push(`/usulan_lokasi/detail/${id}`);
@@ -111,21 +118,21 @@ export default function PetaLokasiInteraktif({
         </LayersControl.BaseLayer>
       </LayersControl>
 
-      {properti
-        .filter((lokasi) => lokasi.status !== "NOK") // Filter data dengan status BUKAN 'NOK'
+      {data
+        .filter((lokasi) => lokasi.approval_status !== "NOK") // Filter data dengan status BUKAN 'NOK'
         .map(
           (
             lokasi // 4. Variabel diubah menjadi 'lokasi' agar lebih jelas
           ) => (
             <Marker
               key={lokasi.id}
-              position={[lokasi.latitude, lokasi.longitude]}
+              position={[Number(lokasi.latitude), Number(lokasi.longitude)]}
             >
               {showPopup && (
                 <Popup>
                   <div className="w-64 p-3 space-y-2">
                     <h3 className="font-extrabold text-xl text-gray-800">
-                      {lokasi.nama}
+                      {lokasi.nama_ulok}
                     </h3>
                     <p
                       className="text-sm text-gray-600 truncate"
@@ -135,9 +142,9 @@ export default function PetaLokasiInteraktif({
                     </p>
                     <div className="border-b border-gray-200 pt-1"></div>
                     <div className="flex justify-between items-center gap-2 pt-1">
-                      <StatusBadge status={lokasi.status} />
+                      <StatusBadge status={lokasi.approval_status} />
                       <span className="text-sm font-medium text-gray-500 text-right truncate">
-                        {formatTanggal(lokasi.tanggal_pengajuan)}
+                        {formatTanggal(lokasi.created_at)}
                       </span>
                     </div>
                     <button

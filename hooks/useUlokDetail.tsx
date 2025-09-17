@@ -87,6 +87,9 @@ export function useUlokDetail(id: string | undefined): UseUlokDetailReturn {
         hargasewa: `Rp ${new Intl.NumberFormat("id-ID").format(
           raw.harga_sewa
         )}`,
+        hargasewa: `Rp ${new Intl.NumberFormat("id-ID").format(
+          raw.harga_sewa
+        )}`,
         namapemilik: raw.nama_pemilik,
         kontakpemilik: raw.kontak_pemilik,
         approval_status: raw.approval_status,

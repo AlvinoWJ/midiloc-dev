@@ -7,7 +7,7 @@ import { UlokUpdateSchema, UlokUpdateInput } from "@/lib/validations/ulok";
 import { MapPin, CheckCircle2, FileText } from "lucide-react";
 import { StatusBadge } from "@/components/ui/statusbadge";
 import { useUser } from "@/hooks/useUser";
-import DetailMapCard from "@/components/ui/detailmapcard";
+import DetailMapCard from "@/components/ui/DetailMapCard";
 import DetailActionButtons from "./detail-ulok-buttons";
 import Sidebar from "@/components/desktop/sidebar";
 import Navbar from "@/components/desktop/navbar";

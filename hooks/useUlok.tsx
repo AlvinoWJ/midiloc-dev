@@ -9,6 +9,8 @@ export type Ulok = {
   alamat: string;
   created_at: string;
   approval_status: string;
+  latitude: string;
+  longitude: string;
 };
 
 interface ApiUlokResponse {

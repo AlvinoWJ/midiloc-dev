@@ -69,7 +69,7 @@ export async function GET(
 
   const { id } = params;
 
-  let query = supabase.from("ulok").select("*").eq("id", id);
+  let query = supabase.from("ulok").select("*, users!ulok_users_id_fkey(nama, no_telp)").eq("id", id);
 
   //validate query by position
   if (user.position_nama === "location specialist") {

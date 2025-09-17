@@ -1,7 +1,7 @@
 // components/ui/DetailMapCard.tsx
 "use client";
 
-import { useMemo } from "react";
+// import { useMemo } from "react";
 import PetaLoader from "@/components/map/PetaLoader";
 import { MapPin } from "lucide-react";
 import { useUlokDetail } from "@/hooks/useUlokDetail";
@@ -41,21 +41,16 @@ export default function DetailMapCard({ id }: DetailMapCardProps) {
   }
 
   // Siapkan data untuk PetaLoader dari data yang sudah di-fetch
-  const [latitude, longitude] = ulokData.latlong.split(",").map(Number);
+  const [latitude, longitude] = ulokData.latlong.split(",").map(String);
   const markerData: Properti[] = [
     {
-      id: parseInt(ulokData.id, 10),
+      id: ulokData.id,
       latitude,
       longitude,
-      nama: ulokData.namaUlok,
+      nama_ulok: ulokData.namaUlok,
       alamat: ulokData.alamat,
-      status: ulokData.approval_status,
-      tanggal_pengajuan: ulokData.tanggalUlok,
-      harga: 0,
-      luas_tanah: 0,
-      luas_bangunan: 0,
-      specialist_name: "",
-      gambar_url: "",
+      approval_status: ulokData.approval_status,
+      created_at: ulokData.tanggalUlok,
     },
   ];
 
@@ -72,7 +67,7 @@ export default function DetailMapCard({ id }: DetailMapCardProps) {
           <PetaLoader
             // Berikan data dalam bentuk array
             data={markerData}
-            centerPoint={[latitude, longitude]}
+            centerPoint={[Number(latitude), Number(longitude)]}
             showPopup={false} // Tidak perlu popup di halaman detail
           />
         </div>
