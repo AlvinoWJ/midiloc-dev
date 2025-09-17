@@ -21,6 +21,9 @@ export default function DashboardPageWrapper() {
 }
 
 export function DashboardPage() {
+
+
+export default function DashboardPage() {
   const { isCollapsed } = useSidebar();
 
   return (
