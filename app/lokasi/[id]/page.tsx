@@ -9,7 +9,7 @@ import Navbar from "@/components/desktop/navbar";
 import { useSidebar } from "@/hooks/useSidebar";
 import Link from "next/link";
 import PetaLoader from "@/components/map/PetaLoader";
-import { Properti } from "@/types";
+import { Properti } from "@/types/common";
 
 export default function DetailLokasiPage({
   params,
