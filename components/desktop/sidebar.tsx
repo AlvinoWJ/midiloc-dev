@@ -5,9 +5,8 @@ import { usePathname } from "next/navigation";
 import { Home, MapPin, FileText, User } from "lucide-react";
 import Image from "next/image";
 import { LogoutButton } from "./logout-button";
-import { useSidebar } from "@/components/ui/sidebarcontext";
-import { useUser } from '@/app/hooks/useUser';
-
+import { useSidebar } from "@/hooks/useSidebar";
+import { useUser } from "@/hooks/useUser";
 
 export default function Sidebar() {
   const { isCollapsed } = useSidebar();

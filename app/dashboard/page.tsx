@@ -1,18 +1,15 @@
 // app/dashboard/page.tsx
 "use client";
 
-// --- TAMBAHAN BARU 1: Import semua yang berhubungan dengan peta ---
-import PetaLoader from "@/components/map/PetaLoader";
-
-// Import yang sudah ada
-import { useSidebar } from "@/components/ui/sidebarcontext";
-import Sidebar from "@/components/sidebar";
-import Navbar from "@/components/navbar";
-import { dummyPropertiData } from "@/lib/dummy-data";
 import SWRProvider from "@/app/swr-provider";
+import { useDeviceType } from "@/hooks/useDeviceType";
+import { useUser } from "@/hooks/useUser";
+import { useProperti } from "@/hooks/useProperty"; // <-- 1. IMPORT hook baru
+import { DashboardPageProps } from "@/types/common";
+import DesktopDashboardLayout from "@/components/desktop/dashboard-layout";
+import MobileDashboardLayout from "@/components/mobile/dashboard-layout";
 
 export default function DashboardPageWrapper() {
-  // Jika nanti SWRProvider sudah ada di layout global, cukup return <UlokPage />
   return (
     <SWRProvider>
       <DashboardPage />
@@ -21,34 +18,37 @@ export default function DashboardPageWrapper() {
 }
 
 export function DashboardPage() {
+  const { isMobile, isDeviceLoading } = useDeviceType();
+  const { user, loadingUser, userError } = useUser();
 
+  // 2. GUNAKAN hook baru untuk mengambil data properti
+  const {
+    properti,
+    isLoading: loadingProperti,
+    isError: propertiError,
+  } = useProperti();
 
-export default function DashboardPage() {
-  const { isCollapsed } = useSidebar();
+  // 3. Gabungkan state loading dan error dari kedua hook
+  const isPageLoading = loadingUser || loadingProperti;
+  const isPageError = !!userError || !!propertiError;
 
-  return (
-    <div className="flex">
-      <Sidebar />
+  // 4. Siapkan props untuk dikirim ke komponen layout
+  const dashboardProps: DashboardPageProps = {
+    // Gunakan data dari hook, berikan array kosong sebagai fallback
+    propertiData: properti || [],
+    user,
+    isLoading: isPageLoading,
+    isError: isPageError,
+  };
 
-      <div
-        className={`flex-1 flex flex-col bg-gray-50 min-h-screen transition-all duration-300 ${
-          isCollapsed ? "ml-[80px]" : "ml-[270px]"
-        }`}
-      >
-        <Navbar />
+  if (isDeviceLoading) {
+    // Anda bisa mengganti ini dengan komponen Skeleton/Loader yang lebih baik
+    return <div className="min-h-screen bg-gray-50" />;
+  }
 
-        <main className="flex-1 p-6">
-          <h1 className="mt-3 text-2xl font-bold">Your Performance</h1>
+  if (isMobile) {
+    return <MobileDashboardLayout {...dashboardProps} />;
+  }
 
-          {/* --- TAMBAHAN BARU 3: Sisipkan Peta di Sini --- */}
-          <div className="mt-8">
-            <div className="bg-white p-4 rounded-lg shadow-md h-[500px] w-full border">
-              <PetaLoader data={dummyPropertiData} />
-            </div>
-          </div>
-          
-        </main>
-      </div>
-    </div>
-  );
+  return <DesktopDashboardLayout {...dashboardProps} />;
 }

@@ -1,41 +1,52 @@
+// app/kplt/page.tsx
 "use client";
 
-import { useSidebar } from "@/components/ui/sidebarcontext";
-import Sidebar from "@/components/sidebar";
-import Navbar from "@/components/navbar";
 import SWRProvider from "@/app/swr-provider";
+import { useDeviceType } from "@/hooks/useDeviceType";
+import { useUser } from "@/hooks/useUser";
+import { DashboardPageProps } from "@/types/common";
+import DesktopKPLTLayout from "@/components/desktop/kplt-layout";
+import MobileKPLTLayout from "@/components/mobile/kplt-layout";
 
-export default function From_KpltpageWrapper() {
-  // Jika nanti SWRProvider sudah ada di layout global, cukup return <UlokPage />
+function useKPLT() {
+  return {
+    kplt: [],
+    isLoading: false,
+    isError: false,
+  };
+}
+
+export default function KPLTPageWrapper() {
   return (
     <SWRProvider>
-      <Form_KpltPage />
+      <KPLTPage />
     </SWRProvider>
   );
 }
 
-export function Form_KpltPage() {
-  // Mengambil state isCollapsed dari context
-  const { isCollapsed } = useSidebar();
+export function KPLTPage() {
+  const { isMobile, isDeviceLoading } = useDeviceType();
+  const { user, loadingUser, userError } = useUser();
 
-  return (
-    <div className="flex">
-      {/* Sidebar */}
-      <Sidebar />
+  const { kplt, isLoading: loadingKPLT, isError: kpltError } = useKPLT();
 
-      {/* Konten utama yang memiliki margin kiri dinamis sesuai sidebar */}
-      <div
-        className={`flex-1 flex flex-col bg-gray-50 min-h-screen transition-all duration-300 ${
-          isCollapsed ? "ml-[80px]" : "ml-[270px]"
-        }`}
-      >
-        <Navbar />
+  const isPageLoading = loadingUser || loadingKPLT;
+  const isPageError = !!userError || !!kpltError;
 
-        {/* Konten halaman */}
-        <main className="flex-1 p-6 space-y-6">
-          <h1 className="mt-3 text-2xl font-bold">Your Performance</h1>
-        </main>
-      </div>
-    </div>
-  );
+  const kpltProps: DashboardPageProps = {
+    propertiData: kplt || [],
+    user,
+    isLoading: isPageLoading,
+    isError: isPageError,
+  };
+
+  if (isDeviceLoading) {
+    // Anda bisa mengganti ini dengan komponen Skeleton/Loader yang lebih baik
+    return <div className="min-h-screen bg-gray-50" />;
+  }
+  if (isMobile) {
+    return <MobileKPLTLayout {...kpltProps} />;
+  }
+
+  return <DesktopKPLTLayout {...kpltProps} />;
 }

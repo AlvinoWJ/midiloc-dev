@@ -1,4 +1,4 @@
-import { ForgotPasswordForm } from "@/components/forgot-password-form";
+import { ForgotPasswordForm } from "@/components/desktop/forgot-password-form";
 import Image from "next/image";
 
 export default function Page() {

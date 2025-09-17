@@ -1,12 +1,16 @@
 "use client";
 
-interface TabsProps {
+interface DesktopTabsProps {
   tabs: string[];
-  onTabChange: (tab: string) => void; // Dibuat menjadi wajib, bukan opsional
-  activeTab: string; // Menerima tab yang aktif dari parent
+  onTabChange: (tab: string) => void;
+  activeTab: string;
 }
 
-export default function Tabs({ tabs, onTabChange, activeTab }: TabsProps) {
+export default function DesktopTabs({
+  tabs,
+  onTabChange,
+  activeTab,
+}: DesktopTabsProps) {
   // `handleClick` bisa disederhanakan atau langsung dipanggil di onClick
   const handleClick = (tab: string) => {
     onTabChange(tab); // Hanya memanggil fungsi dari parent

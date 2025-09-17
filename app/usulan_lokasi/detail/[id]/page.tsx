@@ -2,18 +2,18 @@
 
 import { useState } from "react";
 import { useParams } from "next/navigation";
-import Sidebar from "@/components/sidebar";
-import Navbar from "@/components/navbar";
-import DetailUlok from "@/components/detailulok";
-import { useSidebar } from "@/components/ui/sidebarcontext";
+import Sidebar from "@/components/desktop/sidebar";
+import Navbar from "@/components/desktop/navbar";
+import DetailUlok from "@/components/desktop/detailulok";
+import { useSidebar } from "@/hooks/useSidebar";
 import { UlokUpdateInput } from "@/lib/validations/ulok";
-import InputIntipForm from "@/components/inputintip";
-import { ApprovalStatusbutton } from "@/components/approvalbutton";
-import { useUser } from "@/app/hooks/useUser";
-import { useUlokDetail } from "@/app/hooks/useUlokDetail";
+import InputIntipForm from "@/components/desktop/inputintip";
+import { ApprovalStatusbutton } from "@/components/desktop/approvalbutton";
+import { useUser } from "@/hooks/useUser";
+import { useUlokDetail } from "@/hooks/useUlokDetail";
 import SWRProvider from "@/app/swr-provider";
-import { useAlert } from "@/components/alertcontext";
-import { DetailUlokSkeleton } from "@/components/skleton";
+import { useAlert } from "@/components/desktop/alertcontext";
+import { DetailUlokSkeleton } from "@/components/desktop/skleton";
 
 export default function DetailPageWrapper() {
   // Jika nanti SWRProvider sudah ada di layout global, cukup return <UlokPage />
@@ -138,7 +138,7 @@ export function DetailPage() {
       setIsApproving(false);
     }
   };
-  
+
   const canApprove = user?.position_nama?.toLowerCase() === "location manager";
   const intipCompleted = Boolean(ulokData?.file_intip); // syarat “intip sudah dikerjakan”
 
@@ -189,8 +189,7 @@ export function DetailPage() {
         <main className="flex-1 p-4 md:p-6 hide-scrollbar">
           {renderContent()}
 
-          
-        {/* Modal Input Intip */}
+          {/* Modal Input Intip */}
           {showIntipForm && (
             <InputIntipForm
               onClose={() => setShowIntipForm(false)}
@@ -207,16 +206,6 @@ export function DetailPage() {
             show={canApprove && intipCompleted}
             fileUploaded={intipCompleted}
           />
-
-          {/* Jika LM tapi belum ada file_intip, tampilkan info pengingat */}
-          {canApprove && !intipCompleted && (
-            <div className="mt-6 border rounded bg-white p-4 text-sm text-gray-700">
-              <p>
-                Approval belum tersedia karena Intip belum diupload. Silakan
-                klik tombol Input Intip terlebih dahulu.
-              </p>
-            </div>
-          )}
         </main>
       </div>
     </div>
