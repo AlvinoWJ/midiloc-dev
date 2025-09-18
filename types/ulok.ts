@@ -2,7 +2,6 @@ import type { UlokCreateInput, UlokUpdateInput } from "@/lib/validations/ulok";
 
 export type { UlokCreateInput, UlokUpdateInput };
 
-// Tipe row ulok minimal (bisa disesuaikan jika memakai generated types Supabase)
 export interface UlokRow {
   id: string;
   users_id: string;

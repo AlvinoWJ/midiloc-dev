@@ -1,3 +1,4 @@
+//untuk fetch
 "use client";
 import useSWR from "swr";
 // 👇 1. Impor tipe data UlokRow dari definisi global Anda
@@ -41,7 +42,7 @@ export type MappedUlokData = {
   file_intip: string | null;
   tanggal_approval_intip: string | null; // atau Date
   approval_intip: string | null;
-  // Tambahkan juga latitude dan longitude jika dibutuhkan di map
+
   latitude: number | null;
   longitude: number | null;
 };
@@ -87,9 +88,7 @@ export function useUlokDetail(id: string | undefined): UseUlokDetailReturn {
         hargasewa: `Rp ${new Intl.NumberFormat("id-ID").format(
           raw.harga_sewa
         )}`,
-        hargasewa: `Rp ${new Intl.NumberFormat("id-ID").format(
-          raw.harga_sewa
-        )}`,
+
         namapemilik: raw.nama_pemilik,
         kontakpemilik: raw.kontak_pemilik,
         approval_status: raw.approval_status,

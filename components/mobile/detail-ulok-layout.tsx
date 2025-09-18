@@ -1,46 +1,22 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
-import { UlokUpdateSchema, UlokUpdateInput } from "@/lib/validations/ulok";
 import { StatusBadge } from "@/components/ui/statusbadge";
 import { useUser } from "@/hooks/useUser";
 import { CheckCircle2, FileText, ArrowLeft, Edit3, MapPin } from "lucide-react";
-import { ApprovalStatusbutton } from "@/components/ui/approvalbutton"; // Pastikan path benar
-import DetailMapCard from "@/components/ui/detailmapcard";
+import { ApprovalStatusbutton } from "@/components/ui/approvalbutton";
+import DetailMapCard from "@/components/ui/DetailMapCard";
 import MobileNavbar from "./navbar";
 import MobileSidebar from "./sidebar";
+import { MappedUlokData } from "@/hooks/useUlokDetail";
+import { UlokUpdateInput } from "@/lib/validations/ulok";
+import { useDetailUlokForm } from "@/hooks/useDetailUlokForm";
 
-// Interface Data & Props (Sama seperti kode dasar Anda)
-interface UlokData {
-  id: string;
-  namaUlok: string;
-  provinsi: string;
-  kabupaten: string;
-  kecamatan: string;
-  kelurahan: string;
-  alamat: string;
-  latlong: string;
-  tanggalUlok: string;
-  formatStore: string;
-  bentukObjek: string;
-  alasHak: string;
-  jumlahlantai: string;
-  lebardepan: string;
-  panjang: string;
-  luas: string;
-  hargasewa: string;
-  namapemilik: string;
-  kontakpemilik: string;
-  approval_status: string;
-  file_intip: string | null;
-  approval_intip: string | null;
-  tanggal_approval_intip: string | null;
-}
 interface DetailUlokProps {
-  initialData: UlokData;
+  initialData: MappedUlokData;
   onSave: (data: UlokUpdateInput) => Promise<boolean>;
   isSubmitting: boolean;
   onOpenIntipForm: () => void;
@@ -96,21 +72,17 @@ export default function MobileDetailUlokLayout(props: DetailUlokProps) {
     onApprove,
     fileIntipUrl,
   } = props;
-
-  // ===============================================
-  // SEMUA STATE & LOGIKA DARI KODE DASAR ADA DI SINI
-  // ===============================================
   const router = useRouter();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editedData, setEditedData] = useState(initialData);
-  const [errors, setErrors] = useState<Record<string, string | undefined>>({});
   const { user } = useUser();
   const [isApproving, setIsApproving] = useState(false);
-
-  useEffect(() => {
-    setEditedData(initialData);
-  }, [initialData]);
+  const {
+    isEditing,
+    setIsEditing,
+    editedData,
+    handleInputChange,
+    handleSaveWrapper,
+    handleCancel,
+  } = useDetailUlokForm(initialData, onSave);
 
   // --- LOGIKA OTORISASI ---
   const isLocationManager =
@@ -119,57 +91,6 @@ export default function MobileDetailUlokLayout(props: DetailUlokProps) {
     user?.position_nama?.toLowerCase().trim() === "location specialist";
   const isIntipDone = !!initialData.file_intip;
   const isPendingApproval = initialData.approval_status === "In Progress";
-
-  // --- FUNGSI HANDLER ---
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
-    setEditedData((prev) => ({ ...prev, [name]: value }));
-    if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: undefined }));
-    }
-  };
-
-  const handleSaveWrapper = async () => {
-    const dataToValidate = {
-      nama_ulok: editedData.namaUlok,
-      desa_kelurahan: editedData.kelurahan,
-      kecamatan: editedData.kecamatan,
-      kabupaten: editedData.kabupaten,
-      provinsi: editedData.provinsi,
-      alamat: editedData.alamat,
-      format_store: editedData.formatStore,
-      bentuk_objek: editedData.bentukObjek,
-      alas_hak: editedData.alasHak,
-      jumlah_lantai: editedData.jumlahlantai,
-      lebar_depan: editedData.lebardepan,
-      panjang: editedData.panjang,
-      luas: editedData.luas,
-      harga_sewa: editedData.hargasewa.replace(/[^0-9]/g, ""),
-      nama_pemilik: editedData.namapemilik,
-      kontak_pemilik: editedData.kontakpemilik,
-    };
-    const validationResult = UlokUpdateSchema.safeParse(dataToValidate);
-    if (!validationResult.success) {
-      const formattedErrors: Record<string, string> = {};
-      validationResult.error.issues.forEach((issue) => {
-        formattedErrors[String(issue.path[0])] = issue.message;
-      });
-      setErrors(formattedErrors);
-      return;
-    }
-    const success = await onSave(validationResult.data);
-    if (success) {
-      setIsEditing(false);
-    }
-  };
-
-  const handleCancel = () => {
-    setEditedData(initialData);
-    setErrors({});
-    setIsEditing(false);
-  };
 
   const handleApproveAction = async (status: "OK" | "NOK") => {
     if (!onApprove) return;
@@ -180,30 +101,13 @@ export default function MobileDetailUlokLayout(props: DetailUlokProps) {
 
   return (
     <div className="bg-gray-50 min-h-screen">
-      <MobileSidebar
-        isOpen={isSidebarOpen}
-        onClose={() => setIsSidebarOpen(false)}
-        user={user}
-        isLoading={isSubmitting}
-        isError={false}
-      />
-
-      <MobileNavbar
-        onMenuClick={() => setIsSidebarOpen(true)}
-        user={user}
-        isLoading={isSubmitting}
-        isError={false}
-      />
+      <MobileSidebar />
+      <MobileNavbar />
 
       <main className="p-4 space-y-4">
-        {/* OPSI 1: Minimalis & Fungsional */}
         <div className="flex justify-between items-center">
-          <Button
-            onClick={() => router.back()}
-            variant="outline"
-            className="text-gray-700 rounded-full"
-          >
-            <ArrowLeft size={20} className="mr-2" />
+          <Button onClick={() => router.back()} variant="back">
+            <ArrowLeft size={20} className="mr-1" />
             Kembali
           </Button>
 
@@ -212,7 +116,7 @@ export default function MobileDetailUlokLayout(props: DetailUlokProps) {
               {isEditing ? (
                 <>
                   <Button
-                    variant="outline"
+                    variant="back"
                     size="default"
                     className="rounded-full"
                     onClick={handleCancel} // Menggunakan fungsi handleCancel yang benar
@@ -328,7 +232,6 @@ export default function MobileDetailUlokLayout(props: DetailUlokProps) {
                 label="Alamat"
                 value={editedData?.alamat || ""}
                 isEditing={isEditing}
-                inputValue={editedData?.alamat || ""}
                 inputType="textarea"
                 name="alamat"
                 onChange={handleInputChange}
@@ -337,9 +240,10 @@ export default function MobileDetailUlokLayout(props: DetailUlokProps) {
             <div className="mt-4">
               <DetailField
                 label="LatLong"
-                value={editedData?.latlong || ""}
+                value={`${editedData.latitude ?? ""}, ${
+                  editedData.longitude ?? ""
+                }`}
                 isEditing={isEditing}
-                inputValue={editedData?.latlong || ""}
                 name="latlong"
                 onChange={handleInputChange}
               />

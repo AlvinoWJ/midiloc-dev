@@ -2,46 +2,23 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
 import { UlokUpdateSchema, UlokUpdateInput } from "@/lib/validations/ulok";
-import { MapPin, CheckCircle2, FileText } from "lucide-react";
+import { MapPin, CheckCircle2, FileText, ArrowLeft, Edit3 } from "lucide-react";
 import { StatusBadge } from "@/components/ui/statusbadge";
 import { useUser } from "@/hooks/useUser";
 import DetailMapCard from "@/components/ui/DetailMapCard";
-import DetailActionButtons from "./detail-ulok-buttons";
 import Sidebar from "@/components/desktop/sidebar";
 import Navbar from "@/components/desktop/navbar";
 import { useSidebar } from "@/hooks/useSidebar";
-import { DetailUlokSkeleton } from "./skleton";
+import { ApprovalStatusbutton } from "@/components/ui/approvalbutton";
+import { useDetailUlokForm } from "@/hooks/useDetailUlokForm";
+import { MappedUlokData } from "@/hooks/useUlokDetail";
 
-// Interface Data & Props (Sama seperti kode dasar Anda)
-interface UlokData {
-  id: string;
-  namaUlok: string;
-  provinsi: string;
-  kabupaten: string;
-  kecamatan: string;
-  kelurahan: string;
-  alamat: string;
-  latlong: string;
-  tanggalUlok: string;
-  formatStore: string;
-  bentukObjek: string;
-  alasHak: string;
-  jumlahlantai: string;
-  lebardepan: string;
-  panjang: string;
-  luas: string;
-  hargasewa: string;
-  namapemilik: string;
-  kontakpemilik: string;
-  approval_status: string;
-  file_intip: string | null;
-  approval_intip: string | null;
-  tanggal_approval_intip: string | null;
-}
+// Interface Data & Props
 interface DetailUlokLayoutProps {
-  initialData: UlokData;
+  initialData: MappedUlokData;
   onSave: (data: UlokUpdateInput) => Promise<boolean>;
   isSubmitting: boolean;
   onOpenIntipForm: () => void;
@@ -49,7 +26,7 @@ interface DetailUlokLayoutProps {
   fileIntipUrl: string | null;
 }
 
-// Komponen DetailField (Sama seperti kode dasar Anda)
+// Komponen DetailField
 const DetailField = ({
   label,
   value,
@@ -81,7 +58,7 @@ const DetailField = ({
         />
       )
     ) : (
-      <div className="text-gray-900 py-2 text-sm bg-gray-50 rounded-lg px-3 min-h-[40px] flex items-start">
+      <div className="text-gray-900 py-2 text-sm bg-gray-50 rounded-lg px-3 min-h-[40px] flex items-start w-full break-words">
         {value || "-"}
       </div>
     )}
@@ -98,22 +75,17 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
     fileIntipUrl,
   } = props;
   const { isCollapsed } = useSidebar();
-
-  // ===============================================
-  // SEMUA STATE & LOGIKA DARI KODE DASAR ADA DI SINI
-  // ===============================================
   const router = useRouter();
-  const [isEditing, setIsEditing] = useState(false);
-  const [editedData, setEditedData] = useState(initialData);
-  const [errors, setErrors] = useState<Record<string, string | undefined>>({});
   const { user } = useUser();
   const [isApproving, setIsApproving] = useState(false);
-
-  useEffect(() => {
-    if (initialData) {
-      setEditedData(initialData);
-    }
-  }, [initialData]);
+  const {
+    isEditing,
+    setIsEditing,
+    editedData,
+    handleInputChange,
+    handleSaveWrapper,
+    handleCancel,
+  } = useDetailUlokForm(initialData, onSave);
 
   // --- LOGIKA OTORISASI ---
   const isLocationManager =
@@ -122,57 +94,6 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
     user?.position_nama?.toLowerCase().trim() === "location specialist";
   const isIntipDone = !!initialData.file_intip;
   const isPendingApproval = initialData.approval_status === "In Progress";
-
-  // --- FUNGSI HANDLER ---
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
-    setEditedData((prev) => ({ ...prev, [name]: value }));
-    if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: undefined }));
-    }
-  };
-
-  const handleSaveWrapper = async () => {
-    const dataToValidate = {
-      nama_ulok: editedData.namaUlok,
-      desa_kelurahan: editedData.kelurahan,
-      kecamatan: editedData.kecamatan,
-      kabupaten: editedData.kabupaten,
-      provinsi: editedData.provinsi,
-      alamat: editedData.alamat,
-      format_store: editedData.formatStore,
-      bentuk_objek: editedData.bentukObjek,
-      alas_hak: editedData.alasHak,
-      jumlah_lantai: editedData.jumlahlantai,
-      lebar_depan: editedData.lebardepan,
-      panjang: editedData.panjang,
-      luas: editedData.luas,
-      harga_sewa: editedData.hargasewa.replace(/[^0-9]/g, ""),
-      nama_pemilik: editedData.namapemilik,
-      kontak_pemilik: editedData.kontakpemilik,
-    };
-    const validationResult = UlokUpdateSchema.safeParse(dataToValidate);
-    if (!validationResult.success) {
-      const formattedErrors: Record<string, string> = {};
-      validationResult.error.issues.forEach((issue) => {
-        formattedErrors[String(issue.path[0])] = issue.message;
-      });
-      setErrors(formattedErrors);
-      return;
-    }
-    const success = await onSave(validationResult.data);
-    if (success) {
-      setIsEditing(false);
-    }
-  };
-
-  const handleCancel = () => {
-    setEditedData(initialData);
-    setErrors({});
-    setIsEditing(false);
-  };
 
   const handleApproveAction = async (status: "OK" | "NOK") => {
     if (!onApprove) return;
@@ -192,22 +113,47 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
         <Navbar />
         <main className="flex-1 p-4 md:p-6 hide-scrollbar">
           <div className="max-w-6xl mx-auto">
-            <DetailActionButtons
-              isLocationSpecialist={isLocationSpecialist}
-              isLocationManager={isLocationManager}
-              isEditing={isEditing}
-              isSubmitting={isSubmitting}
-              isApproving={isApproving}
-              isIntipDone={isIntipDone}
-              isPendingApproval={isPendingApproval}
-              currentStatus={initialData.approval_status}
-              onEdit={() => setIsEditing(true)}
-              onSave={handleSaveWrapper}
-              onCancel={handleCancel}
-              onOpenIntipForm={onOpenIntipForm}
-              onApprove={handleApproveAction}
-            />
+            {/* --- BAGIAN TOMBOL ATAS --- */}
+            <div className="flex justify-between items-center mb-6">
+              <Button onClick={() => router.back()} variant="back">
+                <ArrowLeft size={20} className="mr-1" />
+                Kembali
+              </Button>
 
+              <div className="flex gap-3">
+                {/* Tombol Aksi untuk Location Specialist */}
+                {isLocationSpecialist && isPendingApproval && (
+                  <>
+                    {isEditing ? (
+                      <>
+                        <Button
+                          variant="back"
+                          onClick={handleCancel}
+                          className="rounded-full px-6"
+                        >
+                          Batal
+                        </Button>
+                        <Button
+                          onClick={handleSaveWrapper}
+                          disabled={isSubmitting}
+                          className="bg-submit hover:bg-green-600 text-white rounded-full px-6"
+                        >
+                          {isSubmitting ? "Menyimpan..." : "Simpan"}
+                        </Button>
+                      </>
+                    ) : (
+                      <Button
+                        onClick={() => setIsEditing(true)}
+                        className="bg-red-600 hover:bg-red-700 text-white rounded-full px-8 py-2 font-medium flex items-center gap-2"
+                      >
+                        <Edit3 size={16} />
+                        Edit
+                      </Button>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
             {/* Title Card */}
             <div className="bg-white rounded-xl p-6 mb-8 shadow-[1px_1px_6px_rgba(0,0,0,0.25)]">
               <div className="flex items-start justify-between mb-5">
@@ -221,7 +167,7 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
                         className="text-2xl font-bold border-2 border-gray-300 rounded px-3 py-2 focus:ring-0 focus:ring-red-500 focus:border-red-500 transition-all duration-200"
                       />
                     ) : (
-                      initialData.namaUlok || "-"
+                      editedData?.namaUlok || "-"
                     )}
                   </h1>
                   <div className="flex items-center text-sm text-gray-500">
@@ -229,7 +175,7 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
                     <span>Dibuat Pada </span>
                     <span className="ml-1">
                       {new Date(
-                        initialData.tanggalUlok || ""
+                        editedData?.tanggalUlok || ""
                       ).toLocaleDateString("id-ID", {
                         day: "numeric",
                         month: "long",
@@ -238,13 +184,12 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
                     </span>
                   </div>
                 </div>
-
-                {/* Status badge dengan flex-shrink-0 agar tidak mengecil */}
                 <div className="flex-shrink-0">
                   <StatusBadge status={initialData.approval_status} />
                 </div>
               </div>
             </div>
+
             {/* Data Usulan Lokasi Card */}
             <div className="bg-white rounded-xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)] mb-8">
               <div className="border-b border-gray-200 px-6 py-4">
@@ -256,66 +201,58 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
                 </div>
               </div>
               <div className="p-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8">
                   <DetailField
                     label="Provinsi"
-                    value={
-                      isEditing ? editedData.provinsi : initialData.provinsi
-                    }
+                    value={editedData?.provinsi || ""}
                     isEditing={isEditing}
                     name="provinsi"
                     onChange={handleInputChange}
                   />
                   <DetailField
                     label="Kabupaten/Kota"
-                    value={
-                      isEditing ? editedData.kabupaten : initialData.kabupaten
-                    }
+                    value={editedData?.kabupaten || ""}
                     isEditing={isEditing}
                     name="kabupaten"
                     onChange={handleInputChange}
                   />
                   <DetailField
                     label="Kecamatan"
-                    value={
-                      isEditing ? editedData.kecamatan : initialData.kecamatan
-                    }
+                    value={editedData?.kecamatan || ""}
                     isEditing={isEditing}
                     name="kecamatan"
                     onChange={handleInputChange}
                   />
                   <DetailField
                     label="Kelurahan/Desa"
-                    value={
-                      isEditing ? editedData.kelurahan : initialData.kelurahan
-                    }
+                    value={editedData?.kelurahan || ""}
                     isEditing={isEditing}
                     name="kelurahan"
                     onChange={handleInputChange}
                   />
                 </div>
-                <div className="mt-4">
-                  <DetailField
-                    label="Alamat"
-                    value={isEditing ? editedData.alamat : initialData.alamat}
-                    isEditing={isEditing}
-                    inputType="textarea"
-                    name="alamat"
-                    onChange={handleInputChange}
-                  />
-                </div>
-                <div className="mt-4">
-                  <DetailField
-                    label="LatLong"
-                    value={isEditing ? editedData.latlong : initialData.latlong}
-                    isEditing={isEditing}
-                    name="latlong"
-                    onChange={handleInputChange}
-                  />
-                </div>
+                <DetailField
+                  label="Alamat"
+                  value={editedData?.alamat || ""}
+                  isEditing={isEditing}
+                  type="textarea"
+                  name="alamat"
+                  onChange={handleInputChange}
+                />
+                <DetailField
+                  label="LatLong"
+                  value={`${editedData.latitude ?? ""}, ${
+                    editedData.longitude ?? ""
+                  }`}
+                  isEditing={isEditing}
+                  name="latlong"
+                  onChange={handleInputChange}
+                />
               </div>
             </div>
-            {/* Data Store Card */}
+
+            {/* Data Store & Pemilik Cards (etc...) */}
+            {/* ... Letakkan sisa card Anda di sini (Data Store, Pemilik, Peta, Approval INTIP) ... */}
             <div className="bg-white rounded-xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)] mb-8">
               <div className="border-b border-gray-200 px-6 py-4">
                 <div className="flex items-center">
@@ -333,42 +270,30 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
                   <DetailField
                     label="Format Store"
-                    value={
-                      isEditing
-                        ? editedData.formatStore
-                        : initialData.formatStore
-                    }
+                    value={editedData?.formatStore || ""}
                     isEditing={isEditing}
                     name="formatStore"
                     onChange={handleInputChange}
                   />
                   <DetailField
                     label="Bentuk Objek"
-                    value={
-                      isEditing
-                        ? editedData.bentukObjek
-                        : initialData.bentukObjek
-                    }
+                    value={editedData?.bentukObjek || ""}
                     isEditing={isEditing}
                     name="bentukObjek"
                     onChange={handleInputChange}
                   />
                   <DetailField
                     label="Alas Hak"
-                    value={isEditing ? editedData.alasHak : initialData.alasHak}
+                    value={editedData?.alasHak || ""}
                     isEditing={isEditing}
                     name="alasHak"
                     onChange={handleInputChange}
                   />
                   <DetailField
                     label="Jumlah Lantai"
-                    value={
-                      isEditing
-                        ? editedData.jumlahlantai
-                        : initialData.jumlahlantai
-                    }
+                    value={editedData?.jumlahlantai || ""}
                     isEditing={isEditing}
-                    inputType="number"
+                    type="number"
                     name="jumlahlantai"
                     onChange={handleInputChange}
                   />
@@ -376,27 +301,25 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-4 mt-4">
                   <DetailField
                     label="Lebar Depan"
-                    value={
-                      isEditing ? editedData.lebardepan : initialData.lebardepan
-                    }
+                    value={editedData?.lebardepan || ""}
                     isEditing={isEditing}
-                    inputType="number"
+                    type="number"
                     name="lebardepan"
                     onChange={handleInputChange}
                   />
                   <DetailField
                     label="Panjang"
-                    value={isEditing ? editedData.panjang : initialData.panjang}
+                    value={editedData?.panjang || ""}
                     isEditing={isEditing}
-                    inputType="number"
+                    type="number"
                     name="panjang"
                     onChange={handleInputChange}
                   />
                   <DetailField
                     label="Luas"
-                    value={isEditing ? editedData.luas : initialData.luas}
+                    value={editedData?.luas || ""}
                     isEditing={isEditing}
-                    inputType="number"
+                    type="number"
                     name="luas"
                     onChange={handleInputChange}
                   />
@@ -404,9 +327,7 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
                 <div className="mt-4">
                   <DetailField
                     label="Harga Sewa (+PPH 10%)"
-                    value={
-                      isEditing ? editedData.hargasewa : initialData.hargasewa
-                    }
+                    value={editedData?.hargasewa || ""}
                     isEditing={isEditing}
                     name="hargasewa"
                     onChange={handleInputChange}
@@ -414,13 +335,13 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
                 </div>
               </div>
             </div>
-            {/* Data Pemilik Card */}
+
             <div className="bg-white rounded-xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)] mb-8">
               <div className="border-b border-gray-200 px-6 py-4">
                 <div className="flex items-center">
                   <img
                     src="/icons/profil2.png"
-                    alt="Logo Data Store"
+                    alt="Logo Data Pemilik"
                     className="w-6 h-6 mr-3 object-contain"
                   />
                   <h2 className="text-lg font-semibold text-gray-900">
@@ -432,22 +353,14 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
                 <div className="space-y-4">
                   <DetailField
                     label="Nama Pemilik"
-                    value={
-                      isEditing
-                        ? editedData.namapemilik
-                        : initialData.namapemilik
-                    }
+                    value={editedData?.namapemilik || ""}
                     isEditing={isEditing}
                     name="namapemilik"
                     onChange={handleInputChange}
                   />
                   <DetailField
                     label="Kontak Pemilik"
-                    value={
-                      isEditing
-                        ? editedData.kontakpemilik
-                        : initialData.kontakpemilik
-                    }
+                    value={editedData?.kontakpemilik || ""}
                     isEditing={isEditing}
                     name="kontakpemilik"
                     onChange={handleInputChange}
@@ -458,7 +371,6 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
 
             <DetailMapCard id={initialData.id} />
 
-            {/* Kartu Approval INTIP - LOGIKA DIPERBAIKI */}
             {isIntipDone && (
               <section className="bg-white rounded-xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)] mt-8">
                 <div className="border-b border-gray-200 px-6 py-4">
@@ -471,14 +383,11 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
                 </div>
                 <div className="p-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                    {/* Menampilkan Status INTIP */}
                     <DetailField
                       label="Status INTIP"
                       value={initialData.approval_intip || "-"}
                       isEditing={false}
                     />
-
-                    {/* Menampilkan Tanggal Approval */}
                     <DetailField
                       label="Tanggal Approval"
                       value={
@@ -494,8 +403,6 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
                       }
                       isEditing={false}
                     />
-
-                    {/* Menampilkan Link ke File Bukti Approval */}
                     <div className="col-span-1 md:col-span-2">
                       <p className="text-gray-600 font-medium text-sm mb-2 block">
                         Bukti Approval
@@ -507,9 +414,7 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
                             /\.(jpeg|jpg|gif|png|webp)$/i.test(
                               initialData.file_intip
                             );
-
                           if (isImage) {
-                            // Jika file adalah gambar, tampilkan preview
                             return (
                               <a
                                 href={fileIntipUrl}
@@ -517,6 +422,7 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
                                 rel="noopener noreferrer"
                                 title="Klik untuk melihat ukuran penuh"
                               >
+                                {" "}
                                 <img
                                   src={fileIntipUrl}
                                   alt="Preview Bukti Approval"
@@ -525,7 +431,6 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
                               </a>
                             );
                           } else {
-                            // Jika bukan gambar, tampilkan link
                             return (
                               <a
                                 href={fileIntipUrl}
@@ -550,6 +455,30 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
                   </div>
                 </div>
               </section>
+            )}
+
+            {/* --- BAGIAN TOMBOL BAWAH (AKSI MANAGER) --- */}
+            {isLocationManager && isPendingApproval && (
+              <div className="mt-8 flex justify-end">
+                {!isIntipDone ? (
+                  <Button
+                    onClick={onOpenIntipForm}
+                    className="bg-blue-600 hover:bg-blue-700 text-white rounded-full px-8 py-3 text-base"
+                    size="lg"
+                  >
+                    Input Data Intip
+                  </Button>
+                ) : (
+                  <ApprovalStatusbutton
+                    currentStatus={initialData.approval_status}
+                    show={true}
+                    fileUploaded={true}
+                    onApprove={handleApproveAction}
+                    loading={isApproving}
+                    disabled={isApproving}
+                  />
+                )}
+              </div>
             )}
           </div>
         </main>

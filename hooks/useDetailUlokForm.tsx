@@ -1,4 +1,4 @@
-// hooks/useDetailUlokForm.ts //untuk menyimpan fungsi update
+// hooks/useDetailUlokForm.ts //untuk menyimpan fungsi
 import { useState, useEffect } from "react";
 import { MappedUlokData } from "@/hooks/useUlokDetail";
 import { UlokUpdateSchema, UlokUpdateInput } from "@/lib/validations/ulok";
@@ -20,17 +20,19 @@ export function useDetailUlokForm(
   ) => {
     const { name, value, type } = e.target;
 
-    // Penanganan khusus untuk field gabungan latlong
     if (name === "latlong") {
-      const [latStr = "", longStr = ""] = value
-        .split(",")
-        .map((coord) => coord.trim());
+      // 💡 Logika pemisahan yang lebih aman
+      const coords = value.split(",").map((coord) => coord.trim());
+      const latStr = coords[0] || ""; // Ambil bagian pertama, default string kosong
+      const longStr = coords[1] || ""; // Ambil bagian kedua, default string kosong
 
+      // parseFloat akan menghasilkan NaN jika string kosong atau tidak valid
       const latitude = parseFloat(latStr);
       const longitude = parseFloat(longStr);
 
       setEditedData((prev) => ({
         ...prev,
+        // Jika hasil parse bukan angka (NaN), simpan sebagai null
         latitude: !isNaN(latitude) ? latitude : null,
         longitude: !isNaN(longitude) ? longitude : null,
       }));
@@ -67,6 +69,7 @@ export function useDetailUlokForm(
   };
 
   const handleSaveWrapper = async () => {
+    const hargaSewaString = String(editedData.hargasewa || "");
     const dataToValidate = {
       namaUlok: editedData.namaUlok,
       desa_kelurahan: editedData.kelurahan,
@@ -83,7 +86,7 @@ export function useDetailUlokForm(
       lebar_depan: editedData.lebardepan,
       panjang: editedData.panjang,
       luas: editedData.luas,
-      harga_sewa: editedData.hargasewa,
+      harga_sewa: hargaSewaString.replace(/[^0-9]/g, ""),
       nama_pemilik: editedData.namapemilik,
       kontak_pemilik: editedData.kontakpemilik,
     };

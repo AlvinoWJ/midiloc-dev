@@ -1,25 +1,20 @@
 // mobile-navbar.tsx
-import { Menu, Bell } from "lucide-react";
+"use client";
 
-interface MobileNavbarProps {
-  user: any;
-  isLoading: boolean;
-  isError: boolean;
-  onMenuClick: () => void;
-}
+import { Menu } from "lucide-react";
+import { useSidebar } from "@/hooks/useSidebar";
+import { useUser } from "@/hooks/useUser";
 
-export default function MobileNavbar({
-  user,
-  isLoading,
-  isError,
-  onMenuClick,
-}: MobileNavbarProps) {
+export default function MobileNavbar() {
+  const { toggleSidebar } = useSidebar();
+  const { user, loadingUser, userError } = useUser();
+
   return (
     <header className="bg-primary text-primary-foreground shadow-md sticky top-0 z-40">
       <div className="flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-3">
           <button
-            onClick={onMenuClick}
+            onClick={toggleSidebar}
             className="p-2 rounded-lg hover:bg-red-700 transition-colors"
           >
             <Menu size={24} />
@@ -27,9 +22,10 @@ export default function MobileNavbar({
 
           <div className="flex flex-col">
             <span className="text-xs opacity-90">Selamat Datang,</span>
-            {isLoading ? (
+
+            {loadingUser ? (
               <span className="font-semibold text-sm">Loading...</span>
-            ) : isError ? (
+            ) : userError ? (
               <span className="text-red-200 font-semibold text-sm">Error</span>
             ) : (
               <span className="font-semibold text-sm capitalize truncate max-w-[120px]">
@@ -40,9 +36,9 @@ export default function MobileNavbar({
         </div>
 
         <div className="text-xs font-medium capitalize truncate max-w-[100px]">
-          {isLoading
+          {loadingUser
             ? "Loading..."
-            : isError
+            : userError
             ? "Error"
             : `Branch ${user?.branch_nama}`}
         </div>
