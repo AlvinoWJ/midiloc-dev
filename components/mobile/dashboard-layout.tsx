@@ -1,54 +1,29 @@
 "use client";
 
-import { useState } from "react";
 import MobileSidebar from "./sidebar";
 import MobileNavbar from "./navbar";
 import PetaLoader from "@/components/map/PetaLoader";
 import { DashboardPageProps } from "@/types/common";
 
-export default function DesktopDashboardLayout(props: DashboardPageProps) {
-  const { propertiData, user, isLoading, isError } = props;
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+export default function MobileDashboardLayout(props: DashboardPageProps) {
+  const { propertiData, isLoading, isError } = props;
 
   return (
     <div className="min-h-screen bg-gray-50 relative">
-      {/* Mobile Sidebar */}
-      <div className="relative z-50">
-        <MobileSidebar
-          isOpen={isMobileMenuOpen}
-          onClose={() => setIsMobileMenuOpen(false)}
-          user={user}
-          isLoading={isLoading}
-          isError={isError}
-        />
-      </div>
-      {isMobileMenuOpen && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40"
-          onClick={() => setIsMobileMenuOpen(false)}
-        />
-      )}
-
-      {/* Mobile Navbar */}
-      <div className="relative z-30">
-        <MobileNavbar
-          user={user}
-          isLoading={isLoading}
-          isError={isError}
-          onMenuClick={() => setIsMobileMenuOpen(true)}
-        />
-      </div>
+      {/* Komponen sidebar dan navbar dipanggil tanpa props */}
+      <MobileSidebar />
+      <MobileNavbar />
 
       {/* Main Content */}
       <main className="px-4 py-4 space-y-4 relative z-10">
         {isLoading ? (
-          // Skeleton Loading State
+          // Skeleton Loading untuk data peta (propertiData)
           <div>
             <div className="h-8 w-2/3 bg-gray-200 rounded animate-pulse"></div>
             <div className="mt-4 h-96 w-full bg-gray-200 rounded-lg animate-pulse"></div>
           </div>
         ) : isError ? (
-          // Error State
+          // Error State untuk data peta (propertiData)
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <div className="text-red-500 text-6xl mb-4">⚠️</div>
             <h3 className="text-lg font-semibold">Gagal Memuat Data</h3>

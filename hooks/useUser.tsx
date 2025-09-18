@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import useSWR from 'swr';
+import useSWR from "swr";
 
 export type AppUser = {
   id: string;
@@ -18,7 +18,7 @@ interface ApiMeResponse {
 
 export function useUser() {
   // Key '/api/me' akan dicache global oleh SWR
-  const { data, error, isLoading, mutate } = useSWR<ApiMeResponse>('/api/me');
+  const { data, error, isLoading, mutate } = useSWR<ApiMeResponse>("/api/me");
 
   return {
     user: data?.user ?? null,
@@ -27,15 +27,12 @@ export function useUser() {
     refreshUser: () => mutate(),
     // Optimistic local update (misal update display name)
     updateUserLocal: (partial: Partial<NonNullable<AppUser>>) =>
-      mutate(
-        (current) => {
-          const prevUser = current?.user;
-          if (!prevUser || !prevUser.id) return current; // do not update if no user or id
-          return {
-            user: { ...prevUser, ...partial, id: prevUser.id },
-          };
-        },
-        false
-      ),
+      mutate((current) => {
+        const prevUser = current?.user;
+        if (!prevUser || !prevUser.id) return current; // do not update if no user or id
+        return {
+          user: { ...prevUser, ...partial, id: prevUser.id },
+        };
+      }, false),
   };
 }
