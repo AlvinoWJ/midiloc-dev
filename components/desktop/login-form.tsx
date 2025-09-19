@@ -106,7 +106,9 @@ export function DesktopLoginForm({
                       className="absolute inset-y-0 right-3 flex items-center"
                     >
                       <Image
-                        src={showPassword ? "/icons/Hide.png" : "/icons/show.png"}
+                        src={
+                          showPassword ? "/icons/Hide.png" : "/icons/show.png"
+                        }
                         alt="toggle password"
                         width={21}
                         height={21}
