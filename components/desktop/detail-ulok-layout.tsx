@@ -15,8 +15,9 @@ import { useSidebar } from "@/hooks/useSidebar";
 import { ApprovalStatusbutton } from "@/components/ui/approvalbutton";
 import { useDetailUlokForm } from "@/hooks/useDetailUlokForm";
 import { MappedUlokData } from "@/hooks/useUlokDetail";
+import CustomSelect from "@/components/ui/customselect";
+import WilayahSelector from "@/components/desktop/wilayahselector";
 
-// Interface Data & Props
 interface DetailUlokLayoutProps {
   initialData: MappedUlokData;
   onSave: (data: UlokUpdateInput) => Promise<boolean>;
@@ -26,14 +27,13 @@ interface DetailUlokLayoutProps {
   fileIntipUrl: string | null;
 }
 
-// Komponen DetailField
 const DetailField = ({
   label,
   value,
   isEditing,
   name,
-  onChange,
   type = "text",
+  onChange,
 }: any) => (
   <div className="mb-4">
     <label className="text-gray-600 font-medium text-sm mb-2 block">
@@ -82,18 +82,23 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
     isEditing,
     setIsEditing,
     editedData,
+    errors,
     handleInputChange,
+    handleSelectChange,
     handleSaveWrapper,
     handleCancel,
   } = useDetailUlokForm(initialData, onSave);
 
-  // --- LOGIKA OTORISASI ---
   const isLocationManager =
     user?.position_nama?.toLowerCase().trim() === "location manager";
   const isLocationSpecialist =
     user?.position_nama?.toLowerCase().trim() === "location specialist";
   const isIntipDone = !!initialData.file_intip;
   const isPendingApproval = initialData.approval_status === "In Progress";
+  
+  const formatStoreOptions = ["Reguler", "Super", "Spesifik", "Franchise"];
+  const bentukObjekOptions = ["Tanah", "Bangunan"];
+  const alasHakOptions = ["true", "false"];
 
   const handleApproveAction = async (status: "OK" | "NOK") => {
     if (!onApprove) return;
@@ -121,7 +126,6 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
               </Button>
 
               <div className="flex gap-3">
-                {/* Tombol Aksi untuk Location Specialist */}
                 {isLocationSpecialist && isPendingApproval && (
                   <>
                     {isEditing ? (
@@ -155,7 +159,6 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
                 )}
               </div>
             </div>
-            {/* Title Card */}
             <div className="bg-white rounded-xl p-6 mb-8 shadow-[1px_1px_6px_rgba(0,0,0,0.25)]">
               <div className="flex items-start justify-between mb-5">
                 <div className="flex-1 pr-4">
@@ -191,7 +194,6 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
               </div>
             </div>
 
-            {/* Data Usulan Lokasi Card */}
             <div className="bg-white rounded-xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)] mb-8">
               <div className="border-b border-gray-200 px-6 py-4">
                 <div className="flex items-center">
@@ -203,34 +205,37 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
               </div>
               <div className="p-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8">
-                  <DetailField
-                    label="Provinsi"
-                    value={editedData?.provinsi || ""}
-                    isEditing={isEditing}
-                    name="provinsi"
-                    onChange={handleInputChange}
-                  />
-                  <DetailField
-                    label="Kabupaten/Kota"
-                    value={editedData?.kabupaten || ""}
-                    isEditing={isEditing}
-                    name="kabupaten"
-                    onChange={handleInputChange}
-                  />
-                  <DetailField
-                    label="Kecamatan"
-                    value={editedData?.kecamatan || ""}
-                    isEditing={isEditing}
-                    name="kecamatan"
-                    onChange={handleInputChange}
-                  />
-                  <DetailField
-                    label="Kelurahan/Desa"
-                    value={editedData?.kelurahan || ""}
-                    isEditing={isEditing}
-                    name="kelurahan"
-                    onChange={handleInputChange}
-                  />
+                  {isEditing ? (
+                    <div className="col-span-1 md:col-span-2">
+                       <WilayahSelector
+                          onWilayahChange={handleSelectChange}
+                          errors={errors}
+                          initialProvince={editedData?.provinsi}
+                          initialRegency={editedData?.kabupaten}
+                          initialDistrict={editedData?.kecamatan}
+                          initialVillage={editedData?.kelurahan}
+                      />
+                    </div>
+                  ) : (
+                    <>
+                      <DetailField
+                        label="Provinsi"
+                        value={editedData?.provinsi || ""}
+                      />
+                      <DetailField
+                        label="Kabupaten/Kota"
+                        value={editedData?.kabupaten || ""}
+                      />
+                      <DetailField
+                        label="Kecamatan"
+                        value={editedData?.kecamatan || ""}
+                      />
+                      <DetailField
+                        label="Kelurahan/Desa"
+                        value={editedData?.kelurahan || ""}
+                      />
+                    </>
+                  )}
                 </div>
                 <DetailField
                   label="Alamat"
@@ -252,8 +257,6 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
               </div>
             </div>
 
-            {/* Data Store & Pemilik Cards (etc...) */}
-            {/* ... Letakkan sisa card Anda di sini (Data Store, Pemilik, Peta, Approval INTIP) ... */}
             <div className="bg-white rounded-xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)] mb-8">
               <div className="border-b border-gray-200 px-6 py-4">
                 <div className="flex items-center">
@@ -269,27 +272,63 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
               </div>
               <div className="p-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                  <DetailField
-                    label="Format Store"
-                    value={editedData?.formatStore || ""}
-                    isEditing={isEditing}
-                    name="formatStore"
-                    onChange={handleInputChange}
-                  />
-                  <DetailField
-                    label="Bentuk Objek"
-                    value={editedData?.bentukObjek || ""}
-                    isEditing={isEditing}
-                    name="bentukObjek"
-                    onChange={handleInputChange}
-                  />
-                  <DetailField
-                    label="Alas Hak"
-                    value={editedData?.alasHak || ""}
-                    isEditing={isEditing}
-                    name="alasHak"
-                    onChange={handleInputChange}
-                  />
+                  {isEditing ? (
+                    <CustomSelect
+                      id="formatStore"
+                      name="formatStore"
+                      label="Format Store"
+                      placeholder="Pilih Format Store"
+                      value={editedData?.formatStore || ""}
+                      options={formatStoreOptions}
+                      onChange={(e) =>
+                        handleSelectChange("formatStore", e.target.value)
+                      }
+                      error={errors.formatStore}
+                    />
+                  ) : (
+                    <DetailField
+                      label="Format Store"
+                      value={editedData?.formatStore || ""}
+                    />
+                  )}
+                  {isEditing ? (
+                    <CustomSelect
+                      id="bentukObjek"
+                      name="bentukObjek"
+                      label="Bentuk Objek"
+                      placeholder="Pilih Bentuk Objek"
+                      value={editedData?.bentukObjek || ""}
+                      options={bentukObjekOptions}
+                      onChange={(e) =>
+                        handleSelectChange("bentukObjek", e.target.value)
+                      }
+                      error={errors.bentukObjek}
+                    />
+                  ) : (
+                    <DetailField
+                      label="Bentuk Objek"
+                      value={editedData?.bentukObjek || ""}
+                    />
+                  )}
+                  {isEditing ? (
+                    <CustomSelect
+                      id="alasHak"
+                      name="alasHak"
+                      label="Alas Hak"
+                      placeholder="Pilih Alas Hak"
+                      value={editedData?.alasHak || ""}
+                      options={alasHakOptions}
+                      onChange={(e) =>
+                        handleSelectChange("alasHak", e.target.value)
+                      }
+                      error={errors.alasHak}
+                    />
+                  ) : (
+                    <DetailField
+                      label="Alas Hak"
+                      value={editedData?.alasHak || ""}
+                    />
+                  )}
                   <DetailField
                     label="Jumlah Lantai"
                     value={editedData?.jumlahlantai || ""}
@@ -458,7 +497,6 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
               </section>
             )}
 
-            {/* --- BAGIAN TOMBOL BAWAH (AKSI MANAGER) --- */}
             {isLocationManager && isPendingApproval && (
               <div className="mt-8 flex justify-end">
                 {!isIntipDone ? (
