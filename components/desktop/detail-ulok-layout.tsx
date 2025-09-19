@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
-import { UlokUpdateSchema, UlokUpdateInput } from "@/lib/validations/ulok";
+import { UlokUpdateInput } from "@/lib/validations/ulok";
 import { MapPin, CheckCircle2, FileText, ArrowLeft, Edit3 } from "lucide-react";
 import { StatusBadge } from "@/components/ui/statusbadge";
 import { useUser } from "@/hooks/useUser";
@@ -112,7 +112,7 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
       >
         <Navbar />
         <main className="flex-1 p-4 md:p-6 hide-scrollbar">
-          <div className="max-w-6xl mx-auto">
+          <div className="max-w-7xl mx-auto">
             {/* --- BAGIAN TOMBOL ATAS --- */}
             <div className="flex justify-between items-center mb-6">
               <Button onClick={() => router.back()} variant="back">
@@ -134,9 +134,10 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
                           Batal
                         </Button>
                         <Button
+                          variant="submit"
                           onClick={handleSaveWrapper}
                           disabled={isSubmitting}
-                          className="bg-submit hover:bg-green-600 text-white rounded-full px-6"
+                          className="px-6"
                         >
                           {isSubmitting ? "Menyimpan..." : "Simpan"}
                         </Button>

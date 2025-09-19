@@ -16,9 +16,14 @@ interface ApiMeResponse {
   user: AppUser;
 }
 
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
+
 export function useUser() {
   // Key '/api/me' akan dicache global oleh SWR
-  const { data, error, isLoading, mutate } = useSWR<ApiMeResponse>("/api/me");
+  const { data, error, isLoading, mutate } = useSWR<ApiMeResponse>(
+    "/api/me",
+    fetcher
+  );
 
   return {
     user: data?.user ?? null,
