@@ -1,4 +1,5 @@
-// hooks/useDetailUlokForm.ts //untuk menyimpan fungsi
+// hooks/useDetailUlokForm.ts
+
 import { useState, useEffect } from "react";
 import { MappedUlokData } from "@/hooks/useUlokDetail";
 import { UlokUpdateSchema, UlokUpdateInput } from "@/lib/validations/ulok";
@@ -20,19 +21,25 @@ export function useDetailUlokForm(
   ) => {
     const { name, value, type } = e.target;
 
-    if (name === "latlong") {
-      // 💡 Logika pemisahan yang lebih aman
-      const coords = value.split(",").map((coord) => coord.trim());
-      const latStr = coords[0] || ""; // Ambil bagian pertama, default string kosong
-      const longStr = coords[1] || ""; // Ambil bagian kedua, default string kosong
+    if (name === "hargasewa") {
+      const cleanValue = value.replace(/[^0-9]/g, ""); 
+      setEditedData((prev) => ({ ...prev, [name]: cleanValue }));
+      if (errors[name]) {
+        setErrors((prev) => ({ ...prev, [name]: undefined }));
+      }
+      return;
+    }
 
-      // parseFloat akan menghasilkan NaN jika string kosong atau tidak valid
+    if (name === "latlong") {
+      const coords = value.split(",").map((coord) => coord.trim());
+      const latStr = coords[0] || "";
+      const longStr = coords[1] || "";
+
       const latitude = parseFloat(latStr);
       const longitude = parseFloat(longStr);
 
       setEditedData((prev) => ({
         ...prev,
-        // Jika hasil parse bukan angka (NaN), simpan sebagai null
         latitude: !isNaN(latitude) ? latitude : null,
         longitude: !isNaN(longitude) ? longitude : null,
       }));
@@ -45,33 +52,36 @@ export function useDetailUlokForm(
         }));
       }
     } else {
-      // Penanganan untuk semua input lainnya
       let finalValue: string | number | null = value;
-
       if (type === "number") {
-        // Jika input angka dikosongkan, set nilainya jadi null
         if (value === "") {
           finalValue = null;
         } else {
           const parsedNumber = parseFloat(value);
-          // Konversi ke angka hanya jika nilainya valid, jika tidak biarkan null
           finalValue = !isNaN(parsedNumber) ? parsedNumber : null;
         }
       }
-
       setEditedData((prev) => ({ ...prev, [name]: finalValue }));
-
-      // Hapus pesan error untuk field yang sedang diedit
       if (errors[name]) {
         setErrors((prev) => ({ ...prev, [name]: undefined }));
       }
     }
   };
 
+  const handleSelectChange = (name: string, value: string) => {
+    setEditedData((prev) => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: undefined }));
+    }
+  };
+
   const handleSaveWrapper = async () => {
-    const hargaSewaString = String(editedData.hargasewa || "");
+    const cleanedHargaSewa = editedData.hargasewa
+      ? parseInt(editedData.hargasewa.toString().replace(/[^0-9]/g, ""), 10)
+      : 0;
+
     const dataToValidate = {
-      namaUlok: editedData.namaUlok,
+      nama_ulok: editedData.namaUlok,
       desa_kelurahan: editedData.kelurahan,
       kecamatan: editedData.kecamatan,
       kabupaten: editedData.kabupaten,
@@ -81,12 +91,12 @@ export function useDetailUlokForm(
       longitude: editedData.longitude,
       format_store: editedData.formatStore,
       bentuk_objek: editedData.bentukObjek,
-      alas_hak: editedData.alasHak,
+      alas_hak: editedData.alasHak === 'true',
       jumlah_lantai: editedData.jumlahlantai,
       lebar_depan: editedData.lebardepan,
       panjang: editedData.panjang,
       luas: editedData.luas,
-      harga_sewa: hargaSewaString.replace(/[^0-9]/g, ""),
+      harga_sewa: cleanedHargaSewa,
       nama_pemilik: editedData.namapemilik,
       kontak_pemilik: editedData.kontakpemilik,
     };
@@ -96,15 +106,15 @@ export function useDetailUlokForm(
     if (!validationResult.success) {
       const formattedErrors: Record<string, string> = {};
       for (const issue of validationResult.error.issues) {
-        const key = String(issue.path[0]);
+        const key = issue.path[0] as string; 
         formattedErrors[key] = issue.message;
       }
       setErrors(formattedErrors);
-      console.error("Validation Errors:", formattedErrors);
-      return;
+      console.error("Validation Failed:", formattedErrors);
+      return; 
     }
-    const success = await onSave(validationResult.data);
 
+    const success = await onSave(validationResult.data);
     if (success) {
       setIsEditing(false);
     }
@@ -116,13 +126,13 @@ export function useDetailUlokForm(
     setIsEditing(false);
   };
 
-  // Kembalikan semua state dan handler yang dibutuhkan oleh UI
   return {
     isEditing,
     setIsEditing,
     editedData,
     errors,
     handleInputChange,
+    handleSelectChange,
     handleSaveWrapper,
     handleCancel,
   };
