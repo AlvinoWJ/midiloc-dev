@@ -2,7 +2,7 @@
 "use client";
 
 import SWRProvider from "@/app/swr-provider";
-import { useDeviceType } from "@/hooks/useDeviceType";
+import { useDevice } from "@/app/context/DeviceContext";
 import { useUser } from "@/hooks/useUser";
 import { DashboardPageProps } from "@/types/common";
 import DesktopKPLTLayout from "@/components/desktop/kplt-layout";
@@ -25,7 +25,7 @@ export default function KPLTPageWrapper() {
 }
 
 export function KPLTPage() {
-  const { isMobile, isDeviceLoading } = useDeviceType();
+  const { isMobile } = useDevice();
   const { user, loadingUser, userError } = useUser();
 
   const { kplt, isLoading: loadingKPLT, isError: kpltError } = useKPLT();
@@ -40,10 +40,6 @@ export function KPLTPage() {
     isError: isPageError,
   };
 
-  if (isDeviceLoading) {
-    // Anda bisa mengganti ini dengan komponen Skeleton/Loader yang lebih baik
-    return <div className="min-h-screen bg-gray-50" />;
-  }
   if (isMobile) {
     return <MobileKPLTLayout {...kpltProps} />;
   }

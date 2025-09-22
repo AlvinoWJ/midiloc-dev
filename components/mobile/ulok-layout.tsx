@@ -6,14 +6,11 @@ import MobileTabs from "./tabs";
 import MobileAddButton from "./addbutton";
 import MobileSearchWithFilter from "./searchwithfilter";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
 
-export default function MobileLayout(props: UlokPageProps) {
+export default function MobileUlokLayout(props: UlokPageProps) {
   const router = useRouter();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const {
-    user,
     isLoading,
     isError,
     activeTab,
@@ -29,22 +26,8 @@ export default function MobileLayout(props: UlokPageProps) {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Mobile Sidebar */}
-      <MobileSidebar
-        isOpen={isMobileMenuOpen}
-        onClose={() => setIsMobileMenuOpen(false)}
-        user={user}
-        isLoading={isLoading}
-        isError={isError}
-      />
-
-      {/* Mobile Navbar */}
-      <MobileNavbar
-        user={user}
-        isLoading={isLoading}
-        isError={isError}
-        onMenuClick={() => setIsMobileMenuOpen(true)}
-      />
+      <MobileSidebar />
+      <MobileNavbar />
 
       {/* Main Content */}
       <main className="px-4 py-4 space-y-4">

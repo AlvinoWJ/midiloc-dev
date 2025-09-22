@@ -17,8 +17,10 @@ import { useDetailUlokForm } from "@/hooks/useDetailUlokForm";
 import { MappedUlokData } from "@/hooks/useUlokDetail";
 import CustomSelect from "@/components/ui/customselect";
 import WilayahSelector from "@/components/desktop/wilayahselector";
+import { DetailUlokSkeleton } from "./skleton";
 
 interface DetailUlokLayoutProps {
+  isLoading?: boolean;
   initialData: MappedUlokData;
   onSave: (data: UlokUpdateInput) => Promise<boolean>;
   isSubmitting: boolean;
@@ -65,8 +67,9 @@ const DetailField = ({
   </div>
 );
 
-export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
+export default function DesktopDetailUlokLayout(props: DetailUlokLayoutProps) {
   const {
+    isLoading,
     initialData,
     onSave,
     isSubmitting,
@@ -89,13 +92,34 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
     handleCancel,
   } = useDetailUlokForm(initialData, onSave);
 
+  // Jika sedang loading, jangan proses logika di bawahnya
+  if (isLoading) {
+    return (
+      <div className="flex">
+        <Sidebar />
+        <div
+          className={`flex-1 flex flex-col bg-gray-50 min-h-screen transition-all duration-300 ${
+            isCollapsed ? "ml-[80px]" : "ml-[270px]"
+          }`}
+        >
+          <Navbar />
+          <main className="flex-1 p-4 md:p-6">
+            <div className="max-w-7xl mx-auto">
+              <DetailUlokSkeleton />
+            </div>
+          </main>
+        </div>
+      </div>
+    );
+  }
+
   const isLocationManager =
     user?.position_nama?.toLowerCase().trim() === "location manager";
   const isLocationSpecialist =
     user?.position_nama?.toLowerCase().trim() === "location specialist";
   const isIntipDone = !!initialData.file_intip;
   const isPendingApproval = initialData.approval_status === "In Progress";
-  
+
   const formatStoreOptions = ["Reguler", "Super", "Spesifik", "Franchise"];
   const bentukObjekOptions = ["Tanah", "Bangunan"];
   const alasHakOptions = ["true", "false"];
@@ -207,13 +231,13 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8">
                   {isEditing ? (
                     <div className="col-span-1 md:col-span-2">
-                       <WilayahSelector
-                          onWilayahChange={handleSelectChange}
-                          errors={errors}
-                          initialProvince={editedData?.provinsi}
-                          initialRegency={editedData?.kabupaten}
-                          initialDistrict={editedData?.kecamatan}
-                          initialVillage={editedData?.kelurahan}
+                      <WilayahSelector
+                        onWilayahChange={handleSelectChange}
+                        errors={errors}
+                        initialProvince={editedData?.provinsi}
+                        initialRegency={editedData?.kabupaten}
+                        initialDistrict={editedData?.kecamatan}
+                        initialVillage={editedData?.kelurahan}
                       />
                     </div>
                   ) : (
@@ -247,8 +271,8 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
                 />
                 <DetailField
                   label="LatLong"
-                  value={`${editedData.latitude ?? ""}, ${
-                    editedData.longitude ?? ""
+                  value={`${editedData?.latitude ?? ""}, ${
+                    editedData?.longitude ?? ""
                   }`}
                   isEditing={isEditing}
                   name="latlong"

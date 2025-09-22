@@ -7,7 +7,7 @@ import {
   useCallback,
   ReactNode,
 } from "react";
-import { useDeviceType } from "./useDeviceType";
+import { useDevice } from "@/app/context/DeviceContext";
 
 type SidebarContextType = {
   isCollapsed: boolean;
@@ -20,27 +20,36 @@ const LOCAL_STORAGE_KEY = "sidebarCollapsed";
 const SidebarContext = createContext<SidebarContextType | undefined>(undefined);
 
 export function SidebarProvider({ children }: { children: ReactNode }) {
-  const { isMobile } = useDeviceType();
-  const getInitialState = () => {
-    // Untuk mobile, sidebar selalu default terlipat (true).
-    // Untuk desktop, sidebar selalu default terbuka (false).
-    return isMobile ? true : false;
-  };
+  const { isMobile } = useDevice();
 
-  const [isCollapsed, setIsCollapsed] = useState<boolean>(getInitialState);
+  const [isCollapsed, setIsCollapsed] = useState<boolean>(() => {
+    // Karena `isMobile` sudah benar sejak awal, kita bisa langsung check
+    if (isMobile) {
+      return true; // Di mobile, sidebar selalu mulai dalam keadaan tertutup
+    }
 
-  useEffect(() => {
-    // Saat tipe perangkat berubah (misal dari desktop ke mobile karena resize),
-    // atur ulang state ke nilai default yang sesuai.
-    setIsCollapsed(getInitialState());
-  }, [isMobile]);
-
-  useEffect(() => {
-    if (!isMobile) {
+    // Untuk desktop, kita cek localStorage
+    try {
       const savedState = localStorage.getItem(LOCAL_STORAGE_KEY);
       if (savedState !== null) {
-        setIsCollapsed(JSON.parse(savedState));
+        return JSON.parse(savedState);
       }
+    } catch (error) {
+      console.error("Failed to parse sidebar state from localStorage", error);
+    }
+
+    // Jika tidak ada di localStorage, default untuk desktop adalah terbuka
+    return false;
+  });
+
+  //3. Jaga agar state tetap sesuai jika user mengubah ukuran window
+  useEffect(() => {
+    if (isMobile) {
+      setIsCollapsed(true);
+    } else {
+      // Saat kembali ke desktop, kembalikan ke state terakhir yang tersimpan atau default
+      const savedState = localStorage.getItem(LOCAL_STORAGE_KEY);
+      setIsCollapsed(savedState !== null ? JSON.parse(savedState) : false);
     }
   }, [isMobile]);
 

@@ -10,7 +10,7 @@ export const Skeleton = ({ className = "" }: { className?: string }) => {
 export const DetailUlokSkeleton = () => {
   return (
     <div className="bg-gray-50 min-h-screen">
-      <div className="max-w-6xl mx-auto p-2">
+      <div className="max-w-7xl mx-auto">
         {/* Header with Back and Edit buttons skeleton */}
         <div className="flex justify-between items-center mb-6">
           <Skeleton className="rounded-full w-20 h-10" />
@@ -49,21 +49,34 @@ export const DetailUlokSkeleton = () => {
           </div>
           {/* Card content skeleton */}
           <div className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-              {/* Left column fields */}
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div key={`left-${i}`} className="space-y-2">
-                  <Skeleton className="h-4 w-24" />
-                  <Skeleton className="h-10 w-full rounded border" />
-                </div>
-              ))}
-              {/* Right column fields */}
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div key={`right-${i}`} className="space-y-2">
-                  <Skeleton className="h-4 w-24" />
-                  <Skeleton className="h-10 w-full rounded border" />
-                </div>
-              ))}
+            {/* Grid for Province, Kabupaten, Kecamatan, Kelurahan */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8">
+              <div className="mb-4">
+                <Skeleton className="h-4 w-16 mb-2" />
+                <Skeleton className="h-10 w-full rounded bg-gray-50" />
+              </div>
+              <div className="mb-4">
+                <Skeleton className="h-4 w-24 mb-2" />
+                <Skeleton className="h-10 w-full rounded bg-gray-50" />
+              </div>
+              <div className="mb-4">
+                <Skeleton className="h-4 w-20 mb-2" />
+                <Skeleton className="h-10 w-full rounded bg-gray-50" />
+              </div>
+              <div className="mb-4">
+                <Skeleton className="h-4 w-28 mb-2" />
+                <Skeleton className="h-10 w-full rounded bg-gray-50" />
+              </div>
+            </div>
+            {/* Alamat field */}
+            <div className="mb-4">
+              <Skeleton className="h-4 w-12 mb-2" />
+              <Skeleton className="h-16 w-full rounded bg-gray-50" />
+            </div>
+            {/* LatLong field */}
+            <div className="mb-4">
+              <Skeleton className="h-4 w-16 mb-2" />
+              <Skeleton className="h-10 w-full rounded bg-gray-50" />
             </div>
           </div>
         </div>
@@ -74,19 +87,51 @@ export const DetailUlokSkeleton = () => {
           <div className="border-b border-gray-200 px-6 py-4">
             <div className="flex items-center">
               <Skeleton className="w-6 h-6 mr-3" />
-              <Skeleton className="h-5 w-32" />
+              <Skeleton className="h-5 w-24" />
             </div>
           </div>
           {/* Card content skeleton */}
           <div className="p-6">
+            {/* First row - 2 columns */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-              {/* Store data fields */}
-              {Array.from({ length: 8 }).map((_, i) => (
-                <div key={`store-${i}`} className="space-y-2">
-                  <Skeleton className="h-4 w-28" />
-                  <Skeleton className="h-10 w-full rounded border" />
-                </div>
-              ))}
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-10 w-full rounded bg-gray-50" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-10 w-full rounded bg-gray-50" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-18" />
+                <Skeleton className="h-10 w-full rounded bg-gray-50" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-26" />
+                <Skeleton className="h-10 w-full rounded bg-gray-50" />
+              </div>
+            </div>
+            {/* Second row - 3 columns for Lebar Depan, Panjang, Luas */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-4 mt-4">
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-22" />
+                <Skeleton className="h-10 w-full rounded bg-gray-50" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-16" />
+                <Skeleton className="h-10 w-full rounded bg-gray-50" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-12" />
+                <Skeleton className="h-10 w-full rounded bg-gray-50" />
+              </div>
+            </div>
+            {/* Harga Sewa field - single column */}
+            <div className="mt-4">
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-40" />
+                <Skeleton className="h-10 w-full rounded bg-gray-50" />
+              </div>
             </div>
           </div>
         </div>
@@ -96,25 +141,39 @@ export const DetailUlokSkeleton = () => {
           {/* Card header skeleton */}
           <div className="border-b border-gray-200 px-6 py-4">
             <div className="flex items-center">
-              <Skeleton className="w-5 h-5 mr-3" />
-              <Skeleton className="h-5 w-32" />
+              <Skeleton className="w-6 h-6 mr-3" />
+              <Skeleton className="h-5 w-24" />
             </div>
           </div>
           {/* Card content skeleton */}
           <div className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-              {/* Pemilik data fields */}
-              {Array.from({ length: 2 }).map((_, i) => (
-                <div key={`pemilik-${i}`} className="space-y-2">
-                  <Skeleton className="h-4 w-28" />
-                  <Skeleton className="h-10 w-full rounded border" />
-                </div>
-              ))}
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-10 w-full rounded bg-gray-50" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-28" />
+                <Skeleton className="h-10 w-full rounded bg-gray-50" />
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Data Approval INTIP Card skeleton */}
+        {/* DetailMapCard skeleton */}
+        <div className="bg-white rounded-xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)] mb-8">
+          <div className="border-b border-gray-200 px-6 py-4">
+            <div className="flex items-center">
+              <Skeleton className="w-5 h-5 mr-3" />
+              <Skeleton className="h-5 w-20" />
+            </div>
+          </div>
+          <div className="p-6">
+            <Skeleton className="h-64 w-full rounded" />
+          </div>
+        </div>
+
+        {/* Data Approval INTIP Card skeleton (conditional) */}
         <div className="bg-white rounded-xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)] mb-8">
           {/* Card header skeleton */}
           <div className="border-b border-gray-200 px-6 py-4">
@@ -126,7 +185,6 @@ export const DetailUlokSkeleton = () => {
           {/* Card content skeleton */}
           <div className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-              {/* Approval fields */}
               <div className="space-y-2">
                 <Skeleton className="h-4 w-24" />
                 <Skeleton className="h-6 w-16" />
@@ -137,17 +195,16 @@ export const DetailUlokSkeleton = () => {
               </div>
             </div>
             {/* File section */}
-            <div className="mt-6 space-y-2">
-              <Skeleton className="h-4 w-28" />
-              <Skeleton className="h-32 w-full rounded border" />
-            </div>
-            {/* Buttons section */}
-            <div className="flex gap-3 mt-6">
-              <Skeleton className="h-10 w-32 rounded" />
-              <Skeleton className="h-10 w-20 rounded-full bg-red-200" />
-              <Skeleton className="h-10 w-16 rounded-full bg-green-200" />
+            <div className="col-span-1 md:col-span-2 mt-4">
+              <Skeleton className="h-4 w-24 mb-2" />
+              <Skeleton className="h-60 max-w-xs rounded-lg" />
             </div>
           </div>
+        </div>
+
+        {/* Action buttons skeleton */}
+        <div className="mt-8 flex justify-end">
+          <Skeleton className="h-12 w-48 rounded-full" />
         </div>
       </div>
     </div>
