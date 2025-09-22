@@ -9,7 +9,7 @@ import { UlokPageSkeleton } from "@/components/desktop/skleton";
 import { useSidebar } from "@/hooks/useSidebar";
 import { useRouter } from "next/navigation";
 
-export default function DesktopLayout(props: UlokPageProps) {
+export default function DesktopUlokLayout(props: UlokPageProps) {
   const { isCollapsed } = useSidebar();
   const router = useRouter();
   const {

@@ -3,15 +3,12 @@
 import { useState } from "react";
 import { useParams } from "next/navigation";
 import SWRProvider from "@/app/swr-provider";
-import { useDeviceType } from "@/hooks/useDeviceType";
+import { useDevice } from "@/app/context/DeviceContext";
 import { useUlokDetail } from "@/hooks/useUlokDetail";
 import { useAlert } from "@/components/desktop/alertcontext";
 import { UlokUpdateInput } from "@/lib/validations/ulok";
-import DetailUlokLayout from "@/components/desktop/detail-ulok-layout";
+import DesktopDetailUlok from "@/components/desktop/detail-ulok-layout";
 import MobileDetailUlok from "@/components/mobile/detail-ulok-layout";
-
-// Impor komponen pendukung
-import { DetailUlokSkeleton } from "@/components/desktop/skleton";
 import InputIntipForm from "@/components/ui/inputintip";
 
 // Komponen Wrapper untuk SWR, tidak berubah
@@ -27,14 +24,13 @@ export default function DetailPageWrapper() {
 export function DetailPage() {
   // --- SETUP & HOOKS ---
   const { id } = useParams<{ id: string }>();
-  const { isMobile, isDeviceLoading } = useDeviceType();
+  const { isMobile } = useDevice();
   const { ulokData, isLoading, errorMessage, refresh } = useUlokDetail(id);
   const { showToast, showConfirmation } = useAlert();
-
-  // --- STATE MANAGEMENT ---
   const [showIntipForm, setShowIntipForm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmittingIntip, setIsSubmittingIntip] = useState(false);
+  const isPageLoading = isLoading;
 
   // --- API HANDLERS (Fungsi-fungsi ini tetap di sini karena ini adalah "otak" dari halaman) ---
 
@@ -142,13 +138,6 @@ export function DetailPage() {
     }
   };
 
-  // --- RENDER LOGIC ---
-
-  // Menampilkan skeleton saat loading data atau saat deteksi perangkat
-  if (isDeviceLoading || isLoading) {
-    return <DetailUlokSkeleton />;
-  }
-
   // Menampilkan pesan error jika gagal mengambil data
   if (errorMessage) {
     return (
@@ -158,8 +147,38 @@ export function DetailPage() {
     );
   }
 
-  // Menampilkan pesan jika data tidak ditemukan
-  if (!id || !ulokData) {
+  // 1. Tangani state saat deteksi perangkat sedang berjalan
+  if (isLoading) {
+    // Buat props dummy untuk skeleton. initialData harus ada untuk menghindari error props.
+    const loadingProps = {
+      isLoading: true,
+      initialData: null as any, // Diberi `null` karena skeleton tidak butuh data
+      // Sisa props bisa di-dummy karena tidak akan digunakan oleh skeleton
+      onSave: async () => false,
+      isSubmitting: false,
+      onOpenIntipForm: () => {},
+      onApprove: () => {},
+      fileIntipUrl: null,
+    };
+
+    return (
+      <>
+        {/* Versi Mobile: Tampil di layar kecil, tersembunyi di layar 'md' ke atas */}
+        <div className="md:hidden">
+          <MobileDetailUlok {...loadingProps} />
+        </div>
+        {/* Versi Desktop: Tersembunyi di layar kecil, tampil di layar 'md' ke atas */}
+        <div className="hidden md:block">
+          <DesktopDetailUlok {...loadingProps} />
+        </div>
+      </>
+    );
+  }
+
+  // 2. Setelah deteksi perangkat selesai, lanjutkan dengan logika seperti biasa
+  const pageIsDataLoading = isLoading;
+
+  if (!pageIsDataLoading && !ulokData) {
     return (
       <div className="flex items-center justify-center min-h-screen text-center">
         Data tidak ditemukan.
@@ -168,12 +187,13 @@ export function DetailPage() {
   }
 
   const pageProps = {
-    initialData: ulokData,
+    isLoading: isPageLoading,
+    initialData: ulokData!,
     onSave: handleSaveData,
     isSubmitting,
     onOpenIntipForm: () => setShowIntipForm(true),
     onApprove: handleSetApproval,
-    fileIntipUrl: ulokData.file_intip
+    fileIntipUrl: ulokData?.file_intip
       ? `/api/ulok/${ulokData.id}/file-intip`
       : null,
   };
@@ -183,7 +203,7 @@ export function DetailPage() {
       {isMobile ? (
         <MobileDetailUlok {...pageProps} />
       ) : (
-        <DetailUlokLayout {...pageProps} />
+        <DesktopDetailUlok {...pageProps} />
       )}
 
       {/* Modal dirender di level ini agar bisa tampil di atas layout manapun */}

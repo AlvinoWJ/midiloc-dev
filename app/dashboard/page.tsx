@@ -2,7 +2,7 @@
 "use client";
 
 import SWRProvider from "@/app/swr-provider";
-import { useDeviceType } from "@/hooks/useDeviceType";
+import { useDevice } from "@/app/context/DeviceContext";
 import { useUser } from "@/hooks/useUser";
 // import { useProperti } from "@/hooks/useProperty"; // <-- 1. IMPORT hook baru
 import { DashboardPageProps } from "@/types/common";
@@ -19,7 +19,7 @@ export default function DashboardPageWrapper() {
 }
 
 export function DashboardPage() {
-  const { isMobile, isDeviceLoading } = useDeviceType();
+  const { isMobile } = useDevice();
   const { user } = useUser();
 
   // 2. GUNAKAN hook baru untuk mengambil data properti
@@ -33,11 +33,6 @@ export function DashboardPage() {
     isLoading: ulokLoading,
     isError: ulokError,
   };
-
-  if (isDeviceLoading) {
-    // Anda bisa mengganti ini dengan komponen Skeleton/Loader yang lebih baik
-    return <div className="min-h-screen bg-gray-50" />;
-  }
 
   if (isMobile) {
     return <MobileDashboardLayout {...dashboardProps} />;

@@ -16,6 +16,7 @@ import { useDetailUlokForm } from "@/hooks/useDetailUlokForm";
 import { MappedUlokData } from "@/hooks/useUlokDetail";
 import CustomSelect from "@/components/ui/customselect";
 import WilayahSelector from "@/components/desktop/wilayahselector";
+import { DetailUlokSkeleton } from "./skleton";
 import { UlokUpdateInput } from "@/lib/validations/ulok";
 import { Dialog } from "@headlessui/react";
 import dynamic from "next/dynamic";
@@ -27,6 +28,7 @@ const LocationPickerModal = dynamic(
 );
 
 interface DetailUlokLayoutProps {
+  isLoading?: boolean;
   initialData: MappedUlokData;
   onSave: (data: UlokUpdateInput) => Promise<boolean>;
   isSubmitting: boolean;
@@ -47,8 +49,9 @@ const DetailField = ({ label, value }: { label: string; value: any }) => (
   </div>
 );
 
-export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
+export default function DesktopDetailUlokLayout(props: DetailUlokLayoutProps) {
   const {
+    isLoading,
     initialData,
     onSave,
     isSubmitting,
@@ -72,6 +75,27 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
     handleSaveWrapper,
     handleCancel,
   } = useDetailUlokForm(initialData, onSave);
+
+  // Jika sedang loading, jangan proses logika di bawahnya
+  if (isLoading) {
+    return (
+      <div className="flex">
+        <Sidebar />
+        <div
+          className={`flex-1 flex flex-col bg-gray-50 min-h-screen transition-all duration-300 ${
+            isCollapsed ? "ml-[80px]" : "ml-[270px]"
+          }`}
+        >
+          <Navbar />
+          <main className="flex-1 p-4 md:p-6">
+            <div className="max-w-7xl mx-auto">
+              <DetailUlokSkeleton />
+            </div>
+          </main>
+        </div>
+      </div>
+    );
+  }
 
   const isLocationManager =
     user?.position_nama?.toLowerCase().trim() === "location manager";
@@ -170,7 +194,7 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
                   </div>
                 </div>
               </div>
-
+              
               {/* FORM UTAMA */}
               <form
                 onSubmit={(e) => {
@@ -288,7 +312,7 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
                     )}
                   </div>
                 </div>
-
+                
                 {/* --- KARTU DATA STORE --- */}
                 <div className="relative">
                   <div className="absolute -top-4 left-6 bg-red-600 text-white px-4 py-1 rounded shadow-md font-semibold">
