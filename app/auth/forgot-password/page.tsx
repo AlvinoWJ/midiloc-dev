@@ -1,26 +1,19 @@
-import { ForgotPasswordForm } from "@/components/desktop/forgot-password-form";
-import Image from "next/image";
+"use client";
 
-export default function Page() {
+import { DesktopForgotPasswordForm } from "@/components/desktop/forgot-password-form";
+import { MobileForgotPasswordForm } from "@/components/mobile/forgot-password-form";
+
+export default function ForgotPasswordPage() {
   return (
-    <div className="grid min-h-screen w-full grid-cols-1 md:grid-cols-2">
-      {/* Kiri - Card dengan bg putih */}
-      <div className="flex items-center justify-center bg-white p-6 md:p-10">
-        <div className="w-full max-w-sm">
-          <ForgotPasswordForm />
-        </div>
+    <div className="min-h-screen">
+      {/* Mobile & Tablet */}
+      <div className="block lg:hidden">
+        <MobileForgotPasswordForm />
       </div>
 
-      {/* Kanan - Gambar dengan bg merah */}
-      <div className="flex flex-col items-center justify-center bg-red-600 p-6">
-        <Image
-          src="/Location.jpg"
-          alt="Location Illustration"
-          width={350}
-          height={350}
-          priority
-        />
-        <h1 className="mt-6 text-2xl font-bold text-white">LOCATION</h1>
+      {/* Desktop */}
+      <div className="hidden lg:block">
+        <DesktopForgotPasswordForm />
       </div>
     </div>
   );

@@ -2,20 +2,23 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useSidebar } from "@/hooks/useSidebar";
-import Sidebar from "@/components/desktop/sidebar";
-import Navbar from "@/components/desktop/navbar";
-import TambahUlokForm from "@/components/desktop/addulokform";
+import { useDeviceType } from "@/hooks/useDeviceType";
+import AddUlokFormDesktop from "@/components/desktop/add-ulok-layout"; // Pastikan path dan nama file sesuai
+import AddUlokFormMobile from "@/components/mobile/add-ulok-layout"; // Pastikan path dan nama file sesuai
 import { UlokCreateInput } from "@/lib/validations/ulok";
 import { useAlert } from "@/components/desktop/alertcontext";
 
 export default function TambahUlokPage() {
-  const { isCollapsed } = useSidebar();
+  // --- HOOKS ---
+  const { isMobile, isDeviceLoading } = useDeviceType();
   const router = useRouter();
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const { showToast } = useAlert();
 
-  // --- (BARU) Fungsi "pintar" untuk menangani fetch API ---
+  // --- STATE MANAGEMENT ---
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // --- API HANDLER ---
+  // Logika ini menjadi "otak" halaman, yang akan di-pass ke komponen UI.
   const handleFormSubmit = async (data: UlokCreateInput) => {
     setIsSubmitting(true);
     try {
@@ -30,48 +33,49 @@ export default function TambahUlokPage() {
       const resJson = await response.json();
 
       if (!response.ok) {
-        showToast({
-          type: "error",
-          message: resJson.error || "Terjadi kesalahan saat menyimpan data.",
-        });
-      } else {
-        showToast({
-          type: "success",
-          message: "Data berhasil disimpan!",
-        });
-        router.push("/usulan_lokasi");
+        // Jika API mengembalikan error, tampilkan pesannya
+        throw new Error(
+          resJson.error || "Terjadi kesalahan saat menyimpan data."
+        );
       }
-    } catch (err) {
+
+      // Jika berhasil
+      showToast({
+        type: "success",
+        title: "Berhasil",
+        message: "Usulan Lokasi baru telah berhasil disimpan!",
+      });
+      router.push("/usulan_lokasi"); // Arahkan ke halaman daftar
+    } catch (err: unknown) {
+      // Tangani semua jenis error (network, API, etc.)
       showToast({
         type: "error",
-        message: "Gagal menghubungi server. Silakan coba lagi.",
+        title: "Gagal Menyimpan",
+        message:
+          err instanceof Error
+            ? err.message
+            : "Gagal menghubungi server. Coba lagi nanti.",
       });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  return (
-    <div className="flex">
-      <Sidebar />
-      <div
-        className={`flex-1 flex flex-col bg-gray-50 min-h-screen transition-all duration-300 ${
-          isCollapsed ? "ml-[80px]" : "ml-[270px]"
-        }`}
-      >
-        <Navbar />
-        <main className="flex-1 p-6 mt-3">
-          <h1 className="text-2xl font-bold mb-6 text-gray-800">
-            Tambah Usulan Lokasi Baru
-          </h1>
+  // --- RENDER LOGIC ---
 
-          {/* Komponen form sekarang menerima props */}
-          <TambahUlokForm
-            onSubmit={handleFormSubmit}
-            isSubmitting={isSubmitting}
-          />
-        </main>
-      </div>
-    </div>
+  // 1. Tampilkan skeleton saat deteksi perangkat sedang berjalan
+  // Ini penting untuk mencegah "flicker" atau tampilan layout yang salah sesaat.
+
+  // 2. Siapkan props yang akan diteruskan ke komponen UI
+  const formProps = {
+    onSubmit: handleFormSubmit,
+    isSubmitting: isSubmitting,
+  };
+
+  // 3. Render komponen yang sesuai berdasarkan hasil deteksi perangkat
+  return isMobile ? (
+    <AddUlokFormMobile {...formProps} />
+  ) : (
+    <AddUlokFormDesktop {...formProps} />
   );
 }

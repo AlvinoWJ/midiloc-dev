@@ -1,7 +1,7 @@
 import { UlokPageProps } from "@/types/common";
 import Sidebar from "@/components/desktop/sidebar";
 import Navbar from "@/components/desktop/navbar";
-import { InfoCard } from "@/components/desktop/infocard";
+import { InfoCard } from "@/components/ui/infocard";
 import DesktopTabs from "@/components/desktop/tabs";
 import AddButton from "@/components/ui/addbutton";
 import SearchWithFilter from "@/components/desktop/searchwithfilter";

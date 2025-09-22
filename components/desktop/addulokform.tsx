@@ -7,7 +7,6 @@ import CustomSelect from "@/components/ui/customselect";
 import { Button } from "@/components/ui/button";
 import WilayahSelector from "@/components/desktop/wilayahselector";
 import { UlokCreateSchema, UlokCreateInput } from "@/lib/validations/ulok";
-import LocationPickerMap from "@/components/map/LocationPickerMap";
 import { Dialog } from "@headlessui/react";
 import { useAlert } from "@/components/desktop/alertcontext";
 import dynamic from "next/dynamic";

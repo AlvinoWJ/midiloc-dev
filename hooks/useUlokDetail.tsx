@@ -1,21 +1,73 @@
+//untuk fetch
 "use client";
 import useSWR from "swr";
+// 👇 1. Impor tipe data UlokRow dari definisi global Anda
+import { UlokRow } from "@/types/ulok";
 
-const fetcher = async (url: string) => {
+// Definisikan tipe untuk respons API mentah
+// Ini mencerminkan struktur `data.data[0]`
+type UlokApiResponse = {
+  data: UlokRow[];
+};
+
+const fetcher = async (url: string): Promise<UlokApiResponse> => {
   const r = await fetch(url, { credentials: "include" });
   if (!r.ok) throw new Error(`Fetch error ${r.status}`);
   return r.json();
 };
 
-export function useUlokDetail(id: string | undefined) {
-  const { data, error, isLoading, mutate } = useSWR(
+// 👇 2. Definisikan tipe untuk data yang sudah bersih/ter-mapping
+//    Ini adalah struktur yang akan digunakan oleh komponen UI Anda
+export type MappedUlokData = {
+  id: any; // Sebaiknya ganti 'any' dengan tipe ID Anda, misal: number atau string
+  namaUlok: string;
+  provinsi: string;
+  kabupaten: string;
+  kecamatan: string;
+  kelurahan: string;
+  alamat: string;
+  latlong: string;
+  tanggalUlok: string; // atau Date
+  formatStore: string;
+  bentukObjek: string;
+  alasHak: string;
+  jumlahlantai: string;
+  lebardepan: string;
+  panjang: string;
+  luas: string;
+  hargasewa: string;
+  namapemilik: string;
+  kontakpemilik: string;
+  approval_status: string;
+  file_intip: string | null;
+  tanggal_approval_intip: string | null; // atau Date
+  approval_intip: string | null;
+
+  latitude: number | null;
+  longitude: number | null;
+};
+
+// 👇 3. Tambahkan tipe pada nilai kembalian hook
+type UseUlokDetailReturn = {
+  ulokData: MappedUlokData | null;
+  isLoading: boolean;
+  errorMessage: any;
+  refresh: () => void;
+};
+
+export function useUlokDetail(id: string | undefined): UseUlokDetailReturn {
+  // 👇 4. Beri tahu SWR tentang tipe data API mentah
+  const { data, error, isLoading, mutate } = useSWR<UlokApiResponse>(
     id ? `/api/ulok/${id}` : null,
     fetcher
   );
 
-  // Asumsi data.data[0]
+  // TypeScript sekarang tahu bahwa `data` adalah UlokApiResponse | undefined
   const raw = data?.data?.[0];
-  const mapped = raw
+
+  // Map data mentah ke format yang bersih.
+  // Pastikan `mapped` sesuai dengan tipe `MappedUlokData`
+  const mapped: MappedUlokData | null = raw
     ? {
         id: raw.id,
         namaUlok: raw.nama_ulok,
@@ -36,14 +88,15 @@ export function useUlokDetail(id: string | undefined) {
         hargasewa: `Rp ${new Intl.NumberFormat("id-ID").format(
           raw.harga_sewa
         )}`,
+
         namapemilik: raw.nama_pemilik,
         kontakpemilik: raw.kontak_pemilik,
         approval_status: raw.approval_status,
         file_intip: raw.file_intip,
         tanggal_approval_intip: raw.tanggal_approval_intip,
         approval_intip: raw.approval_intip,
-        nama_pengusul: raw.users.nama,
-        no_telp: String(raw.users.no_telp),
+        latitude: raw.latitude,
+        longitude: raw.longitude,
       }
     : null;
 

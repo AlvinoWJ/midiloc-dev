@@ -2,19 +2,20 @@
 
 import { useState, useEffect, useRef } from "react";
 
-// Definisikan tipe data
 interface Wilayah {
   code: string;
   name: string;
 }
 
-// Definisikan props yang diterima komponen ini
 interface WilayahSelectorProps {
   onWilayahChange: (field: string, value: string) => void;
-  errors: Record<string, string>;
+  errors: Record<string, string | undefined>;
+  initialProvince?: string;
+  initialRegency?: string;
+  initialDistrict?: string;
+  initialVillage?: string;
 }
 
-// Komponen SearchableDropdown
 interface SearchableDropdownProps {
   id: string;
   name: string;
@@ -48,17 +49,12 @@ const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // --- PERBAIKAN DI SINI ---
-  // Sinkronkan input value dengan selectedName dari props
   useEffect(() => {
-    // Jika dropdown tidak sedang dibuka, paksakan nilainya
-    // agar sama dengan selectedName (atau string kosong jika tidak ada).
     if (!isOpen) {
       setInputValue(selectedName || "");
     }
   }, [selectedName, isOpen]);
 
-  // Filter options berdasarkan input value
   useEffect(() => {
     if (inputValue === "" || !isOpen) {
       setFilteredOptions(options);
@@ -70,7 +66,6 @@ const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
     }
   }, [inputValue, options, isOpen]);
 
-  // Close dropdown ketika click outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -78,7 +73,6 @@ const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
         !dropdownRef.current.contains(event.target as Node)
       ) {
         setIsOpen(false);
-        // Reset input value ke selected name jika ada
         if (selectedName) {
           setInputValue(selectedName);
         } else {
@@ -94,13 +88,9 @@ const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setInputValue(value);
-
-    // Buka dropdown ketika user mengetik
     if (!isOpen && value.length > 0) {
       setIsOpen(true);
     }
-
-    // Tutup dropdown jika input kosong dan tidak ada yang terpilih
     if (value.length === 0 && !selectedName) {
       setIsOpen(false);
     }
@@ -109,7 +99,6 @@ const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
   const handleInputFocus = () => {
     if (!disabled && !isLoading) {
       setIsOpen(true);
-      // Clear input saat focus untuk memudahkan pencarian
       if (selectedName) {
         setInputValue("");
       }
@@ -163,7 +152,6 @@ const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
         {label} <span className="text-red-500">*</span>
       </label>
 
-      {/* Input Field */}
       <div
         className={`relative flex items-center ${
           error ? "border-red-500" : ""
@@ -187,7 +175,6 @@ const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
           autoComplete="off"
         />
 
-        {/* Action Buttons */}
         <div className="absolute right-2 flex items-center gap-1">
           {inputValue && !disabled && !isLoading && (
             <button
@@ -225,7 +212,6 @@ const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
         </div>
       </div>
 
-      {/* Dropdown Menu */}
       {isOpen && !disabled && !isLoading && (
         <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto">
           {filteredOptions.length > 0 ? (
@@ -250,7 +236,6 @@ const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
         </div>
       )}
 
-      {/* Error Message */}
       {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
     </div>
   );
@@ -259,26 +244,26 @@ const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
 const WilayahSelector: React.FC<WilayahSelectorProps> = ({
   onWilayahChange,
   errors,
+  initialProvince,
+  initialRegency,
+  initialDistrict,
+  initialVillage,
 }) => {
-  // State untuk menyimpan daftar wilayah dari API
   const [provinces, setProvinces] = useState<Wilayah[]>([]);
   const [regencies, setRegencies] = useState<Wilayah[]>([]);
   const [districts, setDistricts] = useState<Wilayah[]>([]);
   const [villages, setVillages] = useState<Wilayah[]>([]);
 
-  // State INTERNAL untuk mengontrol value dropdown dan memicu useEffect
   const [selectedProvince, setSelectedProvince] = useState("");
   const [selectedRegency, setSelectedRegency] = useState("");
   const [selectedDistrict, setSelectedDistrict] = useState("");
   const [selectedVillage, setSelectedVillage] = useState("");
 
-  // State untuk menyimpan nama yang dipilih (untuk ditampilkan di dropdown)
   const [selectedProvinceName, setSelectedProvinceName] = useState("");
   const [selectedRegencyName, setSelectedRegencyName] = useState("");
   const [selectedDistrictName, setSelectedDistrictName] = useState("");
   const [selectedVillageName, setSelectedVillageName] = useState("");
 
-  // --- PERBAIKAN: Gunakan state object untuk loading individual ---
   const [loadingStates, setLoadingStates] = useState({
     provinces: false,
     regencies: false,
@@ -286,35 +271,48 @@ const WilayahSelector: React.FC<WilayahSelectorProps> = ({
     villages: false,
   });
 
-  // --- useEffect untuk fetch data (sudah disesuaikan dengan loadingStates) ---
   useEffect(() => {
-    const fetchProvinces = async () => {
-      // Set loading spesifik untuk provinsi
+    const fetchAllData = async () => {
       setLoadingStates((prev) => ({ ...prev, provinces: true }));
       try {
-        const response = await fetch("/api/wilayah?type=provinces");
-        const data = await response.json();
-        setProvinces(data.data || []);
+        const resProvinces = await fetch("/api/wilayah?type=provinces");
+        const dataProvinces = await resProvinces.json();
+        const provincesList = dataProvinces.data || [];
+        setProvinces(provincesList);
+
+        if (initialProvince) {
+          const province = provincesList.find((p: Wilayah) => p.name === initialProvince);
+          if (province) {
+            setSelectedProvince(province.code);
+            setSelectedProvinceName(initialProvince);
+          }
+        }
       } catch (error) {
         console.error("Gagal mengambil data provinsi:", error);
       } finally {
-        // Hentikan loading spesifik untuk provinsi
         setLoadingStates((prev) => ({ ...prev, provinces: false }));
       }
     };
-    fetchProvinces();
-  }, []);
+    fetchAllData();
+  }, [initialProvince]);
 
   useEffect(() => {
     if (selectedProvince) {
       const fetchRegencies = async () => {
         setLoadingStates((prev) => ({ ...prev, regencies: true }));
         try {
-          const response = await fetch(
-            `/api/wilayah?type=regencies&code=${selectedProvince}`
-          );
-          const data = await response.json();
-          setRegencies(data.data || []);
+          const resRegencies = await fetch(`/api/wilayah?type=regencies&code=${selectedProvince}`);
+          const dataRegencies = await resRegencies.json();
+          const regenciesList = dataRegencies.data || [];
+          setRegencies(regenciesList);
+          
+          if (initialRegency) {
+            const regency = regenciesList.find((r: Wilayah) => r.name === initialRegency);
+            if (regency) {
+              setSelectedRegency(regency.code);
+              setSelectedRegencyName(initialRegency);
+            }
+          }
         } catch (error) {
           console.error("Gagal mengambil data kabupaten:", error);
         } finally {
@@ -322,19 +320,30 @@ const WilayahSelector: React.FC<WilayahSelectorProps> = ({
         }
       };
       fetchRegencies();
+    } else {
+      setRegencies([]);
+      setSelectedRegency("");
+      setSelectedRegencyName("");
     }
-  }, [selectedProvince]);
+  }, [selectedProvince, initialRegency]);
 
   useEffect(() => {
     if (selectedRegency) {
       const fetchDistricts = async () => {
         setLoadingStates((prev) => ({ ...prev, districts: true }));
         try {
-          const response = await fetch(
-            `/api/wilayah?type=districts&code=${selectedRegency}`
-          );
-          const data = await response.json();
-          setDistricts(data.data || []);
+          const resDistricts = await fetch(`/api/wilayah?type=districts&code=${selectedRegency}`);
+          const dataDistricts = await resDistricts.json();
+          const districtsList = dataDistricts.data || [];
+          setDistricts(districtsList);
+
+          if (initialDistrict) {
+            const district = districtsList.find((d: Wilayah) => d.name === initialDistrict);
+            if (district) {
+              setSelectedDistrict(district.code);
+              setSelectedDistrictName(initialDistrict);
+            }
+          }
         } catch (error) {
           console.error("Gagal mengambil data kecamatan:", error);
         } finally {
@@ -342,19 +351,30 @@ const WilayahSelector: React.FC<WilayahSelectorProps> = ({
         }
       };
       fetchDistricts();
+    } else {
+      setDistricts([]);
+      setSelectedDistrict("");
+      setSelectedDistrictName("");
     }
-  }, [selectedRegency]);
+  }, [selectedRegency, initialDistrict]);
 
   useEffect(() => {
     if (selectedDistrict) {
       const fetchVillages = async () => {
         setLoadingStates((prev) => ({ ...prev, villages: true }));
         try {
-          const response = await fetch(
-            `/api/wilayah?type=villages&code=${selectedDistrict}`
-          );
-          const data = await response.json();
-          setVillages(data.data || []);
+          const resVillages = await fetch(`/api/wilayah?type=villages&code=${selectedDistrict}`);
+          const dataVillages = await resVillages.json();
+          const villagesList = dataVillages.data || [];
+          setVillages(villagesList);
+
+          if (initialVillage) {
+            const village = villagesList.find((v: Wilayah) => v.name === initialVillage);
+            if (village) {
+              setSelectedVillage(village.code);
+              setSelectedVillageName(initialVillage);
+            }
+          }
         } catch (error) {
           console.error("Gagal mengambil data kelurahan:", error);
         } finally {
@@ -362,15 +382,17 @@ const WilayahSelector: React.FC<WilayahSelectorProps> = ({
         }
       };
       fetchVillages();
+    } else {
+      setVillages([]);
+      setSelectedVillage("");
+      setSelectedVillageName("");
     }
-  }, [selectedDistrict]);
+  }, [selectedDistrict, initialVillage]);
 
   const handleProvinceChange = (code: string, name: string) => {
     setSelectedProvince(code);
     setSelectedProvinceName(name);
     onWilayahChange("provinsi", name);
-
-    // Reset state internal (ini sudah benar)
     setRegencies([]);
     setDistricts([]);
     setVillages([]);
@@ -380,7 +402,6 @@ const WilayahSelector: React.FC<WilayahSelectorProps> = ({
     setSelectedRegencyName("");
     setSelectedDistrictName("");
     setSelectedVillageName("");
-
     onWilayahChange("kabupaten", "");
     onWilayahChange("kecamatan", "");
     onWilayahChange("kelurahan", "");
@@ -390,14 +411,12 @@ const WilayahSelector: React.FC<WilayahSelectorProps> = ({
     setSelectedRegency(code);
     setSelectedRegencyName(name);
     onWilayahChange("kabupaten", name);
-
     setDistricts([]);
     setVillages([]);
     setSelectedDistrict("");
     setSelectedVillage("");
     setSelectedDistrictName("");
     setSelectedVillageName("");
-
     onWilayahChange("kecamatan", "");
     onWilayahChange("kelurahan", "");
   };
@@ -406,11 +425,9 @@ const WilayahSelector: React.FC<WilayahSelectorProps> = ({
     setSelectedDistrict(code);
     setSelectedDistrictName(name);
     onWilayahChange("kecamatan", name);
-
     setVillages([]);
     setSelectedVillage("");
     setSelectedVillageName("");
-
     onWilayahChange("kelurahan", "");
   };
 
@@ -422,7 +439,6 @@ const WilayahSelector: React.FC<WilayahSelectorProps> = ({
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 md:grid-rows-2 gap-4">
-      {/* Provinsi */}
       <SearchableDropdown
         id="provinsi"
         name="provinsi"
@@ -436,7 +452,6 @@ const WilayahSelector: React.FC<WilayahSelectorProps> = ({
         error={errors.provinsi}
       />
 
-      {/* Kabupaten/Kota */}
       <SearchableDropdown
         id="kabupaten"
         name="kabupaten"
@@ -451,7 +466,6 @@ const WilayahSelector: React.FC<WilayahSelectorProps> = ({
         error={errors.kabupaten}
       />
 
-      {/* Kecamatan */}
       <SearchableDropdown
         id="kecamatan"
         name="kecamatan"
@@ -466,7 +480,6 @@ const WilayahSelector: React.FC<WilayahSelectorProps> = ({
         error={errors.kecamatan}
       />
 
-      {/* Kelurahan/Desa */}
       <SearchableDropdown
         id="kelurahan"
         name="kelurahan"
@@ -483,4 +496,5 @@ const WilayahSelector: React.FC<WilayahSelectorProps> = ({
     </div>
   );
 };
+
 export default WilayahSelector;

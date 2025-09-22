@@ -8,13 +8,8 @@ import PetaLoader from "@/components/map/PetaLoader";
 import { DashboardPageProps } from "@/types/common";
 
 export default function DesktopDashboardLayout(props: DashboardPageProps) {
-  const { propertiData, user, isLoading, isError } = props;
+  const { propertiData, isLoading, isError } = props;
   const { isCollapsed } = useSidebar();
-
-  const getGreeting = () => {
-    if (!user || !user.nama) return "Dashboard";
-    return `Selamat Datang, ${user.nama.split(" ")[0]}!`;
-  };
 
   return (
     <div className="flex">
@@ -56,9 +51,7 @@ export default function DesktopDashboardLayout(props: DashboardPageProps) {
           ) : (
             // Content Loaded State
             <>
-              <h1 className="text-3xl font-bold text-gray-800">
-                {getGreeting()}
-              </h1>
+              <h1 className="text-3xl font-bold text-gray-800">Dashboard</h1>
               <div className="bg-white p-4 rounded-lg shadow-md h-[calc(100vh-200px)] w-full border">
                 <PetaLoader data={propertiData} />
               </div>

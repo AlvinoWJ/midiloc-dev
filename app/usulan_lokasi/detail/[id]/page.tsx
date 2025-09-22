@@ -2,21 +2,20 @@
 
 import { useState } from "react";
 import { useParams } from "next/navigation";
-import Sidebar from "@/components/desktop/sidebar";
-import Navbar from "@/components/desktop/navbar";
-import DetailUlok from "@/components/desktop/detailulok";
-import { useSidebar } from "@/hooks/useSidebar";
-import { UlokUpdateInput } from "@/lib/validations/ulok";
-import InputIntipForm from "@/components/desktop/inputintip";
-import { ApprovalStatusbutton } from "@/components/desktop/approvalbutton";
-import { useUser } from "@/hooks/useUser";
-import { useUlokDetail } from "@/hooks/useUlokDetail";
 import SWRProvider from "@/app/swr-provider";
+import { useDeviceType } from "@/hooks/useDeviceType";
+import { useUlokDetail } from "@/hooks/useUlokDetail";
 import { useAlert } from "@/components/desktop/alertcontext";
-import { DetailUlokSkeleton } from "@/components/desktop/skleton";
+import { UlokUpdateInput } from "@/lib/validations/ulok";
+import DetailUlokLayout from "@/components/desktop/detail-ulok-layout";
+import MobileDetailUlok from "@/components/mobile/detail-ulok-layout";
 
+// Impor komponen pendukung
+import { DetailUlokSkeleton } from "@/components/desktop/skleton";
+import InputIntipForm from "@/components/ui/inputintip";
+
+// Komponen Wrapper untuk SWR, tidak berubah
 export default function DetailPageWrapper() {
-  // Jika nanti SWRProvider sudah ada di layout global, cukup return <UlokPage />
   return (
     <SWRProvider>
       <DetailPage />
@@ -24,53 +23,65 @@ export default function DetailPageWrapper() {
   );
 }
 
+// Komponen Halaman Inti
 export function DetailPage() {
-  const { isCollapsed } = useSidebar();
+  // --- SETUP & HOOKS ---
   const { id } = useParams<{ id: string }>();
-
-  const [showIntipForm, setShowIntipForm] = useState(false);
-  const [isSubmittingIntip, setIsSubmittingIntip] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const { user } = useUser();
+  const { isMobile, isDeviceLoading } = useDeviceType();
   const { ulokData, isLoading, errorMessage, refresh } = useUlokDetail(id);
-  const [isApproving, setIsApproving] = useState(false);
   const { showToast, showConfirmation } = useAlert();
 
-  const fileIntipUrl = ulokData?.file_intip
-    ? `/api/ulok/${ulokData.id}/file-intip`
-    : null;
+  // --- STATE MANAGEMENT ---
+  const [showIntipForm, setShowIntipForm] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmittingIntip, setIsSubmittingIntip] = useState(false);
 
-  // --- Save/Edit ---
+  // --- API HANDLERS (Fungsi-fungsi ini tetap di sini karena ini adalah "otak" dari halaman) ---
+
   const handleSaveData = async (data: UlokUpdateInput): Promise<boolean> => {
     setIsSubmitting(true);
     try {
-      await fetch(`http://localhost:3000/api/ulok/${id}`, {
+      await fetch(`/api/ulok/${id}`, {
+        // Menggunakan path relatif lebih baik
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
-      alert("Data berhasil diperbarui!");
+      showToast({
+        type: "success",
+        title: "Berhasil",
+        message: "Data ULOK telah diperbarui.",
+      });
       await refresh();
       return true;
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
-      alert("Gagal menyimpan pembaruan.");
+      showToast({
+        type: "error",
+        title: "Gagal",
+        message: "Gagal menyimpan pembaruan.",
+      });
       return false;
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // --- Submit Intip ---
   const handleIntipSubmit = async (formData: FormData) => {
     setIsSubmittingIntip(true);
     try {
-      const response = await fetch(`http://localhost:3000/api/ulok/${id}`, {
+      const response = await fetch(`/api/ulok/${id}`, {
         method: "PATCH",
         body: formData,
       });
-      if (!response.ok) throw new Error("Gagal menyimpan data intip.");
-      alert("Data intip berhasil disimpan!");
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Gagal menyimpan data intip.");
+      }
+      showToast({
+        type: "success",
+        title: "Berhasil",
+        message: "Data intip berhasil disimpan!",
+      });
       setShowIntipForm(false);
       await refresh();
     } catch (error: unknown) {
@@ -82,17 +93,14 @@ export function DetailPage() {
         type: "error",
         title: "Gagal Menyimpan Data Intip",
         message,
-        duration: 4000,
       });
     } finally {
       setIsSubmittingIntip(false);
     }
   };
 
-  // Approve (LM multipart)
   const handleSetApproval = async (status: "OK" | "NOK") => {
     if (!id) return;
-
     const confirmed = await showConfirmation({
       title: "Konfirmasi Perubahan Status",
       message:
@@ -106,7 +114,8 @@ export function DetailPage() {
 
     if (!confirmed) return;
 
-    setIsApproving(true);
+    // State isApproving dikelola di dalam komponen layout masing-masing,
+    // jadi tidak perlu state di sini. Fungsi ini hanya berisi logika API.
     try {
       const fd = new FormData();
       fd.append("approval_status", status);
@@ -118,96 +127,73 @@ export function DetailPage() {
         const j = await res.json().catch(() => ({}));
         throw new Error(j.error || "Gagal update status.");
       }
-      // alert(`Status berhasil diubah ke ${status}`);
       showToast({
         type: "success",
         title: "Status berhasil diubah",
         message: `Approval status telah diubah menjadi ${status}`,
-        duration: 4000,
       });
       await refresh();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
       showToast({
         type: "error",
         title: "Gagal Mengubah Status",
         message: e.message || "Terjadi kesalahan saat mengupdate status",
-        duration: 4000,
       });
-    } finally {
-      setIsApproving(false);
     }
   };
 
-  const canApprove = user?.position_nama?.toLowerCase() === "location manager";
-  const intipCompleted = Boolean(ulokData?.file_intip); // syarat “intip sudah dikerjakan”
+  // --- RENDER LOGIC ---
 
-  // RENDER STATES
-  const renderContent = () => {
-    if (!id) {
-      return (
-        <p className="text-center py-10 text-red-500">
-          ID tidak ditemukan di URL.
-        </p>
-      );
-    }
-    if (isLoading) {
-      return <DetailUlokSkeleton />;
-    }
-    if (errorMessage) {
-      return (
-        <p className="text-center py-10 text-red-500">
-          Gagal memuat data: {(errorMessage as Error).message}
-        </p>
-      );
-    }
-    if (!ulokData) {
-      return <p className="text-center py-10">Data tidak ditemukan.</p>;
-    }
+  // Menampilkan skeleton saat loading data atau saat deteksi perangkat
+  if (isDeviceLoading || isLoading) {
+    return <DetailUlokSkeleton />;
+  }
+
+  // Menampilkan pesan error jika gagal mengambil data
+  if (errorMessage) {
     return (
-      <DetailUlok
-        initialData={ulokData}
-        onSave={handleSaveData}
-        isSubmitting={isSubmitting}
-        onOpenIntipForm={() => setShowIntipForm(true)}
-        onApprove={handleSetApproval}
-        fileIntipUrl={fileIntipUrl}
-      />
+      <div className="flex items-center justify-center min-h-screen text-center text-red-500">
+        Gagal memuat data: {(errorMessage as Error).message}
+      </div>
     );
+  }
+
+  // Menampilkan pesan jika data tidak ditemukan
+  if (!id || !ulokData) {
+    return (
+      <div className="flex items-center justify-center min-h-screen text-center">
+        Data tidak ditemukan.
+      </div>
+    );
+  }
+
+  const pageProps = {
+    initialData: ulokData,
+    onSave: handleSaveData,
+    isSubmitting,
+    onOpenIntipForm: () => setShowIntipForm(true),
+    onApprove: handleSetApproval,
+    fileIntipUrl: ulokData.file_intip
+      ? `/api/ulok/${ulokData.id}/file-intip`
+      : null,
   };
 
   return (
-    <div className="flex">
-      <Sidebar />
-      <div
-        className={`flex-1 flex flex-col bg-gray-50 min-h-screen transition-all duration-300 ${
-          isCollapsed ? "pl-[80px]" : "pl-[270px]"
-        }`}
-      >
-        <Navbar />
+    <>
+      {isMobile ? (
+        <MobileDetailUlok {...pageProps} />
+      ) : (
+        <DetailUlokLayout {...pageProps} />
+      )}
 
-        <main className="flex-1 p-4 md:p-6 hide-scrollbar">
-          {renderContent()}
-
-          {/* Modal Input Intip */}
-          {showIntipForm && (
-            <InputIntipForm
-              onClose={() => setShowIntipForm(false)}
-              onSubmit={handleIntipSubmit}
-              isSubmitting={isSubmittingIntip}
-            />
-          )}
-
-          {/* Panel Approval hanya muncul jika: LM & intip sudah dikerjakan */}
-          <ApprovalStatusbutton
-            currentStatus={ulokData?.approval_status || null}
-            disabled={isApproving}
-            onApprove={handleSetApproval}
-            show={canApprove && intipCompleted}
-            fileUploaded={intipCompleted}
-          />
-        </main>
-      </div>
-    </div>
+      {/* Modal dirender di level ini agar bisa tampil di atas layout manapun */}
+      {showIntipForm && (
+        <InputIntipForm
+          onClose={() => setShowIntipForm(false)}
+          onSubmit={handleIntipSubmit}
+          isSubmitting={isSubmittingIntip}
+        />
+      )}
+    </>
   );
 }

@@ -11,7 +11,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-export function LoginForm({
+export function DesktopLoginForm({
   className,
   ...props
 }: React.ComponentPropsWithoutRef<"div">) {
@@ -34,7 +34,6 @@ export function LoginForm({
         password,
       });
       if (error) throw error;
-      // Update this route to redirect to an authenticated route. The user already has an active session.
       router.push("/dashboard");
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : "An error occurred");
@@ -44,81 +43,102 @@ export function LoginForm({
   };
 
   return (
-    <div className={cn("flex flex-col gap-6", className)} {...props}>
-      <Card>
-        <CardHeader className="flex flex-col items-center space-y-2">
-          <Image
-            src="/midiloc.png"
-            alt="Alfamidi Logo"
-            width={350}
-            height={90}
-            priority
-          />
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleLogin}>
-            <div className="flex flex-col gap-6">
-              <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="m@example.com"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
-              <div className="grid gap-2">
-                <div className="flex items-center">
-                  <Label htmlFor="password">Password</Label>
-                  <Link
-                    href="/auth/forgot-password"
-                    className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
-                  >
-                    Forgot your password?
-                  </Link>
-                </div>
-                <div className="relative">
+    <div
+      className={cn("grid min-h-screen grid-cols-2 bg-white", className)}
+      {...props}
+    >
+      {/* Left side (Image) */}
+      <div className="relative w-full h-full">
+        <Image
+          src="/bg_alfamidi.png"
+          alt="Alfamidi Illustration"
+          fill
+          className="object-cover"
+          priority
+        />
+      </div>
+
+      {/* Right side (Login Card) */}
+      <div className="flex items-center justify-center p-8">
+        <Card className="w-full max-w-md shadow-lg">
+          <CardHeader className="flex flex-col items-center space-y-2">
+            <Image
+              src="/midiloc.png"
+              alt="Alfamidi Logo"
+              width={350}
+              height={90}
+              priority
+            />
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleLogin}>
+              <div className="flex flex-col gap-6">
+                {/* Email */}
+                <div className="grid gap-2">
+                  <Label htmlFor="email">Email</Label>
                   <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
+                    id="email"
+                    type="email"
+                    placeholder="Enter your email address"
+                    className="placeholder:text-sm"
                     required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="pr-10"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-3 flex items-center"
-                  >
-                    <Image
-                      src={showPassword ? "/icons/Hide.png" : "/icons/show.png"}
-                      alt="toggle password"
-                      width={21}
-                      height={21}
-                    />
-                  </button>
                 </div>
+
+                {/* Password */}
+                <div className="grid gap-2">
+                  <Label htmlFor="password">Password</Label>
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Enter your password"
+                      className="pr-10 placeholder:text-sm"
+                      required
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute inset-y-0 right-3 flex items-center"
+                    >
+                      <Image
+                        src={
+                          showPassword ? "/icons/Hide.png" : "/icons/show.png"
+                        }
+                        alt="toggle password"
+                        width={21}
+                        height={21}
+                      />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Error */}
+                {error && <p className="text-sm text-red-500">{error}</p>}
+
+                {/* Submit */}
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading ? "Logging in..." : "Login"}
+                </Button>
               </div>
-              {error && <p className="text-sm text-red-500">{error}</p>}
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Logging in..." : "Login"}
-              </Button>
-            </div>
-            <div className="mt-4 text-center text-sm">
-              Don&apos;t have an account?{" "}
-              <Link
-                href="/auth/sign-up"
-                className="underline underline-offset-4"
-              >
-                Sign up
-              </Link>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+
+              {/* Forgot Password link (di bawah form) */}
+              <div className="mt-4 text-center text-sm">
+                <Link
+                  href="/auth/forgot-password"
+                  className="underline underline-offset-4"
+                >
+                  Forgot Password?
+                </Link>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

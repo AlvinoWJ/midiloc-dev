@@ -36,8 +36,6 @@ export function SidebarProvider({ children }: { children: ReactNode }) {
   }, [isMobile]);
 
   useEffect(() => {
-    // Saat komponen pertama kali mount di client, coba baca dari localStorage.
-    // Ini untuk mengingat preferensi pengguna di sesi sebelumnya (khusus desktop).
     if (!isMobile) {
       const savedState = localStorage.getItem(LOCAL_STORAGE_KEY);
       if (savedState !== null) {

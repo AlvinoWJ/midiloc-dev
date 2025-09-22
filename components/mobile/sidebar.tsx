@@ -1,17 +1,12 @@
-import { X, Home, MapPin, FileText, LogOut, User } from "lucide-react";
+"use client";
+
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { X, Home, MapPin, FileText, User } from "lucide-react";
 import Image from "next/image";
-import { CurrentUser } from "@/types/common";
-import { LogoutButton } from "@/components/desktop/logout-button";
-
-interface MobileSidebarProps {
-  isOpen: boolean;
-  onClose: () => void;
-  user: CurrentUser | null;
-  isLoading: boolean;
-  isError: boolean;
-}
+import { LogoutButton } from "@/components/ui/logout-button";
+import { useSidebar } from "@/hooks/useSidebar";
+import { useUser } from "@/hooks/useUser";
 
 const menu = [
   { name: "Dashboard", href: "/dashboard", icon: <Home size={20} /> },
@@ -19,14 +14,12 @@ const menu = [
   { name: "Form KPLT", href: "/form_kplt", icon: <FileText size={20} /> },
 ];
 
-export default function MobileSidebar({
-  isOpen,
-  onClose,
-  user,
-  isLoading,
-  isError,
-}: MobileSidebarProps) {
+export default function MobileSidebar() {
   const pathname = usePathname();
+  const { isCollapsed, setIsCollapsed } = useSidebar();
+  const { user, loadingUser, userError } = useUser();
+  const isOpen = !isCollapsed;
+  const onClose = () => setIsCollapsed(true);
 
   if (!isOpen) return null;
 
@@ -65,12 +58,13 @@ export default function MobileSidebar({
               <User size={24} className="text-red-600" />
             </div>
             <div className="flex-1 min-w-0">
-              {isLoading ? (
+              {/* 7. Ganti variabel props dengan yang dari hook */}
+              {loadingUser ? (
                 <div className="space-y-2">
                   <div className="h-4 bg-gray-200 rounded animate-pulse w-24"></div>
                   <div className="h-3 bg-gray-200 rounded animate-pulse w-32"></div>
                 </div>
-              ) : isError ? (
+              ) : userError ? (
                 <p className="text-red-600 text-sm font-medium">
                   Error loading data
                 </p>
