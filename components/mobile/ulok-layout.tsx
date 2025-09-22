@@ -6,6 +6,7 @@ import MobileTabs from "./tabs";
 import MobileAddButton from "./addbutton";
 import MobileSearchWithFilter from "./searchwithfilter";
 import { useRouter } from "next/navigation";
+import { MobileUlokContentSkeleton } from "@/components/mobile/skleton";
 
 export default function MobileUlokLayout(props: UlokPageProps) {
   const router = useRouter();
@@ -32,19 +33,7 @@ export default function MobileUlokLayout(props: UlokPageProps) {
       {/* Main Content */}
       <main className="px-4 py-4 space-y-4">
         {isLoading ? (
-          <div className="space-y-4">
-            <div className="h-8 bg-gray-200 rounded animate-pulse"></div>
-            <div className="h-10 bg-gray-200 rounded animate-pulse"></div>
-            <div className="h-12 bg-gray-200 rounded animate-pulse"></div>
-            <div className="space-y-3">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <div
-                  key={i}
-                  className="h-32 bg-gray-200 rounded animate-pulse"
-                ></div>
-              ))}
-            </div>
-          </div>
+          <MobileUlokContentSkeleton />
         ) : isError ? (
           <div className="flex flex-col items-center justify-center py-16 text-center px-6">
             <div className="text-red-500 text-6xl mb-4">⚠️</div>

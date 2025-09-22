@@ -7,27 +7,21 @@ export const Skeleton = ({ className = "" }: { className?: string }) => {
   );
 };
 
-// Mobile Search dengan Filter Content Skeleton
-export const MobileSearchWithFilterSkeleton = () => {
+// Mobile Search dengan Filter Content Skeleton (Sesuai kode asli Anda)
+const MobileSearchWithFilterSkeleton = () => {
   return (
-    <div className="mb-4 space-y-3">
+    <div className="mb-4">
       {/* Search bar */}
       <Skeleton className="h-12 w-full rounded-lg" />
-      {/* Filter buttons */}
-      <div className="flex gap-2 overflow-x-auto">
-        <Skeleton className="h-10 w-20 rounded-full flex-shrink-0" />
-        <Skeleton className="h-10 w-20 rounded-full flex-shrink-0" />
-        <Skeleton className="h-10 w-24 rounded-full flex-shrink-0" />
-      </div>
     </div>
   );
 };
 
-// Mobile Tabs Content Skeleton
-export const MobileTabsSkeleton = () => {
+// Mobile Tabs Content Skeleton (Sesuai kode asli Anda, sedikit disesuaikan)
+const MobileTabsSkeleton = () => {
   return (
     <div className="mb-4">
-      <div className="flex bg-gray-100 rounded-lg p-1">
+      <div className="flex bg-gray-200 rounded-xl p-1">
         <Skeleton className="h-10 w-1/2 rounded-md" />
         <div className="w-1"></div>
         <Skeleton className="h-10 w-1/2 rounded-md" />
@@ -36,77 +30,57 @@ export const MobileTabsSkeleton = () => {
   );
 };
 
-// Mobile Add Button Content Skeleton
-export const MobileAddButtonSkeleton = () => {
+// Mobile Add Button Content Skeleton (Sesuai kode asli Anda)
+const MobileAddButtonSkeleton = () => {
   return (
-    <div className="mb-6">
-      <Skeleton className="h-12 w-full rounded-lg" />
+    <div className="mb-4">
+      <Skeleton className="h-12 w-full rounded-xl" />
     </div>
   );
 };
 
-// Mobile Info Card Content Skeleton - Sesuai dengan struktur MobileInfoCard
-export const MobileInfoCardSkeleton = () => {
+// Mobile Info Card Skeleton - STRUKTUR DIPERBAIKI agar cocok dengan gambar
+const MobileInfoCardSkeleton = () => {
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-      {/* Card Header */}
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex-1">
-          <Skeleton className="h-5 w-3/4 mb-2" />
-          <Skeleton className="h-4 w-1/2" />
-        </div>
-        <Skeleton className="h-6 w-20 rounded-full" />
+    // Kontainer kartu dengan padding dan border bawah
+
+    <div className="bg-white p-4 border border-gray-200 space-y-3 rounded-xl mb-4">
+      {/* Baris Atas: Placeholder untuk Judul di kiri dan Ikon di kanan */}
+      <div className="flex justify-between items-start">
+        <Skeleton className="h-5 w-3/5" /> {/* Placeholder Nama Ulok */}
+        <Skeleton className="h-6 w-6" /> {/* Placeholder Ikon Edit */}
       </div>
 
-      {/* Card Content */}
-      <div className="space-y-2">
-        <div className="flex items-center">
-          <Skeleton className="w-4 h-4 mr-2" />
-          <Skeleton className="h-4 w-2/3" />
-        </div>
-        <div className="flex items-center">
-          <Skeleton className="w-4 h-4 mr-2" />
-          <Skeleton className="h-4 w-1/2" />
-        </div>
-      </div>
+      {/* Baris Tengah: Placeholder untuk Alamat */}
+      <Skeleton className="h-4 w-4/5" />
 
-      {/* Card Footer */}
-      <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100">
-        <div className="flex items-center">
-          <Skeleton className="w-4 h-4 mr-2" />
-          <Skeleton className="h-3 w-24" />
-        </div>
-        <Skeleton className="w-6 h-6" />
+      {/* Baris Bawah: Placeholder untuk Status di kiri dan Tanggal di kanan */}
+      <div className="flex justify-between items-center pt-2">
+        <Skeleton className="h-6 w-14 rounded-md" />{" "}
+        {/* Placeholder Badge Status */}
+        <Skeleton className="h-4 w-28" /> {/* Placeholder Tanggal */}
       </div>
     </div>
   );
 };
 
-// Main Mobile Ulok Content Skeleton - Hanya konten dalam main, tanpa navbar/sidebar
+// Main Mobile Ulok Content Skeleton - Menyusun semua komponen dengan benar
 export const MobileUlokContentSkeleton = () => {
   return (
-    <>
-      {/* Page Title Skeleton */}
+    <div className="px-1 animate-pulse">
+      {/* Placeholder untuk Judul Halaman */}
       <div className="mb-6">
         <Skeleton className="h-8 w-40" />
       </div>
 
-      {/* Search and Filter Skeleton */}
+      {/* Komponen Skeleton Anda dipanggil di sini dalam urutan yang benar */}
       <MobileSearchWithFilterSkeleton />
-
-      {/* Tabs Skeleton */}
       <MobileTabsSkeleton />
-
-      {/* Add Button Skeleton */}
       <MobileAddButtonSkeleton />
-
-      {/* Cards Skeleton */}
-      <div className="space-y-4 pb-6">
-        {[1, 2, 3, 4, 5].map((i) => (
-          <MobileInfoCardSkeleton key={i} />
-        ))}
-      </div>
-    </>
+      <MobileInfoCardSkeleton />
+      <MobileInfoCardSkeleton />
+      <MobileInfoCardSkeleton />
+    </div>
   );
 };
 

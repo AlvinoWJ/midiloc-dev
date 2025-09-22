@@ -15,7 +15,6 @@ import { MappedUlokData } from "@/hooks/useUlokDetail";
 import { UlokUpdateInput } from "@/lib/validations/ulok";
 import { useDetailUlokForm } from "@/hooks/useDetailUlokForm";
 import { MobileDetailUlokContentSkeleton } from "@/components/mobile/skleton";
-import { useSidebar } from "@/hooks/useSidebar";
 
 interface DetailUlokProps {
   isLoading?: boolean;
@@ -66,7 +65,6 @@ const DetailField = ({
 );
 
 export default function MobileDetailUlokLayout(props: DetailUlokProps) {
-  const { setIsCollapsed } = useSidebar();
   const {
     isLoading,
     initialData,
@@ -105,7 +103,7 @@ export default function MobileDetailUlokLayout(props: DetailUlokProps) {
         ) : (
           <>
             {/* Konten Normal setelah loading selesai */}
-            <div className="px-4 py-4 space-y-4">
+            <div className="px-4 py-4 space-y-6">
               <div className="flex justify-between items-center">
                 <Button onClick={() => router.back()} variant="back">
                   <ArrowLeft size={20} className="mr-1" />
@@ -154,31 +152,35 @@ export default function MobileDetailUlokLayout(props: DetailUlokProps) {
               {/* Title Card */}
               <div className="bg-white rounded-xl p-6 mb-8 shadow-[1px_1px_6px_rgba(0,0,0,0.25)]">
                 <div className="flex items-start justify-between mb-5">
-                  <div className="flex-1 pr-4">
-                    <h1 className="text-2xl font-bold text-gray-900 mb-2">
+                  <div className="flex-1 pr-4 min-w-0">
+                    <h1 className="text-2xl font-bold text-gray-900 mb-2 truncate">
                       {isEditing ? (
                         <Input
                           name="namaUlok"
                           value={editedData?.namaUlok || ""}
                           onChange={handleInputChange}
-                          className="text-2xl font-bold border-2 border-gray-300 rounded px-3 py-2 focus:ring-0 focus:ring-red-500 focus:border-red-500 transition-all duration-200"
+                          className="text-2xl font-bold ..."
                         />
                       ) : (
                         editedData?.namaUlok || "-"
                       )}
                     </h1>
+
                     <div className="flex items-center text-sm text-gray-500">
-                      <div className="w-2 h-2 bg-gray-400 rounded-full mr-2"></div>
-                      <span>Dibuat Pada </span>
-                      <span className="ml-1">
-                        {new Date(
-                          editedData?.tanggalUlok || ""
-                        ).toLocaleDateString("id-ID", {
-                          day: "numeric",
-                          month: "long",
-                          year: "numeric",
-                        })}
-                      </span>
+                      <div className="w-2 h-2 bg-gray-400 rounded-full mr-2 flex-shrink-0"></div>
+                      {/* Item 2: Pembungkus untuk semua teks (diberi truncate) */}
+                      <div className="whitespace-nowrap">
+                        <span>Dibuat Pada </span>
+                        <span className="ml-1">
+                          {new Date(
+                            editedData?.tanggalUlok || ""
+                          ).toLocaleDateString("id-ID", {
+                            day: "numeric",
+                            month: "long",
+                            year: "numeric",
+                          })}
+                        </span>
+                      </div>
                     </div>
                   </div>
                   <div className="flex-shrink-0">
