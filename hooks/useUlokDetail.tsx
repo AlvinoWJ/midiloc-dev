@@ -19,6 +19,7 @@ const fetcher = async (url: string): Promise<UlokApiResponse> => {
 // 👇 2. Definisikan tipe untuk data yang sudah bersih/ter-mapping
 //    Ini adalah struktur yang akan digunakan oleh komponen UI Anda
 export type MappedUlokData = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   id: any; // Sebaiknya ganti 'any' dengan tipe ID Anda, misal: number atau string
   namaUlok: string;
   provinsi: string;
@@ -51,6 +52,7 @@ export type MappedUlokData = {
 type UseUlokDetailReturn = {
   ulokData: MappedUlokData | null;
   isLoading: boolean;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   errorMessage: any;
   refresh: () => void;
 };
