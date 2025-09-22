@@ -58,8 +58,22 @@ export default function TambahUlokForm({
     >
   ) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-    // Hapus error untuk field yang sedang diubah
+
+    // Fields that should only accept numeric input
+    const numericOnlyFields = [
+      "jumlahlantai",
+      "lebardepan",
+      "panjang",
+      "luas",
+    ];
+
+    let processedValue = value;
+    if (numericOnlyFields.includes(name)) {
+      // Replace any character that is not a digit with an empty string
+      processedValue = value.replace(/[^0-9]/g, "");
+    }
+
+    setFormData({ ...formData, [name]: processedValue });
     if (errors[name]) {
       setErrors((prev) => {
         const newErrors = { ...prev };
@@ -85,14 +99,12 @@ export default function TambahUlokForm({
   };
 
   const handleMapSelect = (lat: number, lng: number) => {
-    // Fungsi ini akan memperbarui state 'formData' dengan koordinat baru
     setFormData((prev) => ({
       ...prev,
       latlong: `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
     }));
-    setIsMapOpen(false); // Otomatis tutup modal setelah memilih
+    setIsMapOpen(false);
   };
-  // --------------------
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -140,15 +152,17 @@ export default function TambahUlokForm({
     ];
     numericFields.forEach((field) => {
       const value = formData[field as keyof typeof formData];
-      if (value && isNaN(Number(value))) {
+      // Hapus semua karakter non-digit sebelum validasi numerik untuk harga sewa
+      const numericValue =
+        field === "hargasewa" ? value.replace(/[^0-9]/g, "") : value;
+      if (numericValue && isNaN(Number(numericValue))) {
         fieldErrors[field] = `${field} harus berupa angka`;
       }
-      if (value && Number(value) <= 0) {
+      if (numericValue && Number(numericValue) <= 0) {
         fieldErrors[field] = `${field} harus lebih dari 0`;
       }
     });
 
-    // Jika ada error dari validasi manual, tampilkan dan stop
     if (Object.keys(fieldErrors).length > 0) {
       setErrors(fieldErrors);
       return;
@@ -170,7 +184,7 @@ export default function TambahUlokForm({
       lebar_depan: Number(formData.lebardepan),
       panjang: Number(formData.panjang),
       luas: Number(formData.luas),
-      harga_sewa: Number(formData.hargasewa),
+      harga_sewa: Number(formData.hargasewa.replace(/[^0-9]/g, "")), // Pastikan hanya angka yang disimpan
       nama_pemilik: formData.namapemilik,
       kontak_pemilik: formData.kontakpemilik,
     };
@@ -210,7 +224,7 @@ export default function TambahUlokForm({
       console.error("❌ Schema validasi gagal:", schemaErrors);
       return;
     }
-    // 5. (BARU) Tampilkan dialog konfirmasi sebelum mengirim data
+
     const isConfirmed = await showConfirmation({
       title: "Konfirmasi Simpan Data",
       message:
@@ -237,10 +251,20 @@ export default function TambahUlokForm({
     }
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLFormElement>) => {
+    if (e.key === "Enter") {
+      const target = e.target as HTMLElement;
+      if (target.tagName.toLowerCase() !== "textarea") {
+        e.preventDefault();
+      }
+    }
+  };
+
   return (
     <>
       <form
         onSubmit={handleFormSubmit}
+        onKeyDown={handleKeyDown}
         className="space-y-10 max-w-7xl mx-auto"
       >
         {/* Bagian Data Lokasi */}
@@ -307,7 +331,7 @@ export default function TambahUlokForm({
                   <button
                     type="button"
                     onClick={() => setIsMapOpen(true)}
-                    className="p-2 border rounded-md hover:bg-gray-100 flex-shrink-0"
+                    className="p-2 border border-gray-300 rounded hover:bg-gray-100 flex-shrink-0"
                   >
                     <MapPin className="text-red-500" size={18} />
                   </button>
@@ -390,6 +414,7 @@ export default function TambahUlokForm({
                   placeholder="Masukkan Jumlah Lantai"
                   value={formData.jumlahlantai}
                   onChange={handleChange}
+                  inputMode="numeric"
                 />
                 {errors.jumlahlantai && (
                   <p className="text-red-500 text-sm mt-1">
@@ -411,6 +436,7 @@ export default function TambahUlokForm({
                   placeholder="Masukkan Lebar Depan"
                   value={formData.lebardepan}
                   onChange={handleChange}
+                  inputMode="numeric"
                 />
                 {errors.lebardepan && (
                   <p className="text-red-500 text-sm mt-1">
@@ -429,6 +455,7 @@ export default function TambahUlokForm({
                   placeholder="Masukkan Panjang"
                   value={formData.panjang}
                   onChange={handleChange}
+                  inputMode="numeric"
                 />
                 {errors.panjang && (
                   <p className="text-red-500 text-sm mt-1">{errors.panjang}</p>
@@ -445,6 +472,7 @@ export default function TambahUlokForm({
                   placeholder="Masukkan Luas"
                   value={formData.luas}
                   onChange={handleChange}
+                  inputMode="numeric"
                 />
                 {errors.luas && (
                   <p className="text-red-500 text-sm mt-1">{errors.luas}</p>
@@ -520,11 +548,12 @@ export default function TambahUlokForm({
         {/* Tombol Submit */}
         <div className="flex justify-end mt-6">
           <Button
+            type="submit"
             variant="submit"
             className="w-full sm:w-[200px] md:w-[268px] h-[42px] hover:bg-[hsl(145.44,63.2%,42%)]"
-            onClick={handleFormSubmit}
+            disabled={isSubmitting}
           >
-            Submit
+            {isSubmitting ? "Menyimpan..." : "Submit"}
           </Button>
         </div>
       </form>
@@ -535,7 +564,7 @@ export default function TambahUlokForm({
       >
         <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
         <div className="fixed inset-0 flex items-center justify-center p-4">
-          <Dialog.Panel className="w-full max-w-3xl h-[80vh] bg-white rounded-lg shadow-xl overflow-hidden">
+          <Dialog.Panel className="w-full max-w-3xl h-[80vh] bg-white rounded shadow-xl overflow-hidden">
             <div className="p-4 border-b">
               <Dialog.Title className="text-lg font-medium">
                 Pilih Lokasi dari Peta
@@ -545,7 +574,6 @@ export default function TambahUlokForm({
               </p>
             </div>
             <div className="h-[calc(100%-80px)]">
-              {/* Panggil komponen peta di sini */}
               {isMapOpen && <LocationPickerModal onConfirm={handleMapSelect} />}
             </div>
           </Dialog.Panel>
@@ -554,3 +582,4 @@ export default function TambahUlokForm({
     </>
   );
 }
+
