@@ -40,7 +40,7 @@ export const UlokBaseSchema = z
     alamat: z.string().min(1),
     format_store: z.string().min(1),
     bentuk_objek: z.string().min(1),
-    alas_hak: z.coerce.boolean().default(false).optional(),
+    alas_hak: z.string().min(1),
     jumlah_lantai: z.coerce.number().int().min(1),
     lebar_depan: z.coerce.number(),
     panjang: z.coerce.number(),

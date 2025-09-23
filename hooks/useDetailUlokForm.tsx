@@ -91,7 +91,7 @@ export function useDetailUlokForm(
       longitude: editedData.longitude,
       format_store: editedData.formatStore,
       bentuk_objek: editedData.bentukObjek,
-      alas_hak: editedData.alasHak === 'true',
+      alas_hak: editedData.alasHak,
       jumlah_lantai: editedData.jumlahlantai,
       lebar_depan: editedData.lebardepan,
       panjang: editedData.panjang,

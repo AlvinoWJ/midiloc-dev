@@ -55,6 +55,7 @@ export function useAddUlokForm({
   };
 
   const handleWilayahChange = (field: string, name: string) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const updatedData: Record<string, any> = { [field]: name };
     if (field === "provinsi") {
       updatedData.kabupaten = "";
@@ -155,7 +156,7 @@ export function useAddUlokForm({
       longitude: Number(formData.latlong.split(",")[1]?.trim() || 0),
       format_store: formData.formatStore,
       bentuk_objek: formData.bentukObjek,
-      alas_hak: formData.alasHak === "true", // Sesuaikan jika inputnya berbeda
+      alas_hak: formData.alasHak, // Sesuaikan jika inputnya berbeda
       jumlah_lantai: Number(formData.jumlahlantai),
       lebar_depan: Number(formData.lebardepan),
       panjang: Number(formData.panjang),
