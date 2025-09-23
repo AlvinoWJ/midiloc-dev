@@ -1,7 +1,7 @@
 "use client";
 
 import { Input } from "@/components/ui/input";
-import { MapPin } from "lucide-react";
+import { MapPin, ArrowLeft } from "lucide-react";
 import CustomSelect from "@/components/ui/customselect";
 import { Button } from "@/components/ui/button";
 import WilayahSelector from "@/components/desktop/wilayahselector"; // Bisa digunakan kembali jika responsif
@@ -11,6 +11,7 @@ import dynamic from "next/dynamic";
 import { useAddUlokForm } from "@/hooks/useAddUlokForm"; // Import hook
 import MobileSidebar from "./sidebar";
 import MobileNavbar from "./navbar";
+import { useRouter } from "next/navigation";
 
 interface TambahUlokFormProps {
   onSubmit: (data: UlokCreateInput) => Promise<void>;
@@ -36,6 +37,7 @@ export default function AddUlokFormMobile({
     handleMapSelect,
     handleFormSubmit,
   } = useAddUlokForm({ onSubmit, isSubmitting });
+  const router = useRouter();
 
   const formatStoreOptions = ["Reguler", "Super", "Spesifik", "Franchise"];
   const bentukObjekOptions = ["Tanah", "Bangunan"];
@@ -45,6 +47,10 @@ export default function AddUlokFormMobile({
       <MobileSidebar />
       <MobileNavbar />
       <form onSubmit={handleFormSubmit} className="space-y-6 p-4">
+        <Button onClick={() => router.back()} variant="back">
+          <ArrowLeft size={20} className="mr-1" />
+          Kembali
+        </Button>
         {/* === BAGIAN DATA LOKASI === */}
         <div className="bg-white shadow rounded px-4 pt-4 pb-8 space-y-4">
           <h2 className="text-xl font-bold text-black border-b pb-2">
