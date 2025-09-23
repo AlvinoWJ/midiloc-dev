@@ -84,7 +84,7 @@ export default function DesktopUlokLayout(props: UlokPageProps) {
               </div>
 
               {/* Cards Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {filteredUlok.length === 0 ? (
                   <div className="col-span-full flex flex-col items-center justify-center py-16">
                     <div className="text-gray-300 text-6xl mb-4">📍</div>
