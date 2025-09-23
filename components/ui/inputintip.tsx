@@ -198,13 +198,6 @@ export default function InputIntipForm({
 
       await onSubmit(dataToSend);
 
-      showToast({
-        type: "success",
-        title: "Berhasil Disimpan!",
-        message: "Data INTIP berhasil disimpan ke sistem.",
-        duration: 4000,
-      });
-
       onClose();
     } catch (error) {
       console.error("Error submitting INTIP data:", error);
@@ -245,7 +238,7 @@ export default function InputIntipForm({
     }
   };
 
-  const statusOptions = ["OK", "Not OK"];
+  const statusOptions = ["OK", "NOK"];
 
   return (
     // Latar belakang modal
@@ -291,7 +284,7 @@ export default function InputIntipForm({
         <div className="flex justify-end gap-3 p-4 rounded-b-xl">
           <Button
             type="button"
-            variant="outline"
+            variant="submit"
             onClick={handleCancel}
             className="rounded-full px-6"
             disabled={isSubmitting}

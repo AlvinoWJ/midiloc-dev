@@ -77,6 +77,7 @@ export function DetailPage() {
         type: "success",
         title: "Berhasil",
         message: "Data intip berhasil disimpan!",
+        duration: 4000,
       });
       setShowIntipForm(false);
       await refresh();

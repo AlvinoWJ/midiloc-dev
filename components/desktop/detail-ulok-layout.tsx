@@ -24,7 +24,6 @@ import Sidebar from "@/components/desktop/sidebar";
 import Navbar from "@/components/desktop/navbar";
 import WilayahSelector from "@/components/desktop/wilayahselector";
 import { DetailUlokSkeleton } from "./skleton";
-
 import { useUser } from "@/hooks/useUser";
 import { useSidebar } from "@/hooks/useSidebar";
 import { useDetailUlokForm } from "@/hooks/useDetailUlokForm";
@@ -47,10 +46,6 @@ interface DetailUlokLayoutProps {
   fileIntipUrl: string | null;
 }
 
-// =======================================================================
-// MENGEMBALIKAN BENTUK ASLI SESUAI UI MOBILE
-// Komponen ini akan menghasilkan kotak abu-abu seperti pada gambar Anda.
-// =======================================================================
 const DetailField = ({
   label,
   value,
@@ -249,16 +244,17 @@ export default function DesktopDetailUlokLayout(props: DetailUlokLayoutProps) {
                         })}
                       </span>
                     </div>
+                    <div className="flex items-center text-sm text-gray-500">
+                      <div className="w-2 h-2 bg-gray-400 rounded-full mr-2"></div>
+                      <span>Dibuat oleh {initialData.namaUser}</span>
+                      <span className="ml-1"></span>
+                    </div>
                   </div>
                   <div className="flex-shrink-0">
                     <StatusBadge status={initialData.approval_status} />
                   </div>
                 </div>
               </div>
-
-              {/* ============================================================== */}
-              {/* KARTU-KARTU DATA DENGAN UI GAYA MOBILE */}
-              {/* ============================================================== */}
 
               {/* --- KARTU DATA USULAN LOKASI --- */}
               <div className="bg-white rounded-xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)] mb-8">
