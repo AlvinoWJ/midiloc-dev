@@ -130,8 +130,6 @@ export async function POST(
     ulok_id,
     branch_id: ulokRow.branch_id ?? user.branch_id,
     kplt_approval: "In Progress",
-    kplt_approved_at: null,
-    kplt_approved_by: null,
     updated_at: now,
     updated_by: user.id,
     ...kpltFields,

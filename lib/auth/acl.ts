@@ -57,15 +57,17 @@ export function canKplt(
   action: "read" | "create" | "update" | "approve" | "final-approve",
   user: CurrentUser
 ) {
-  switch (user.position_nama) {
+  switch (user.position_nama?.toLowerCase()) {
     case "location specialist":
       return action === "read" || action === "create" || action === "update";
     case "location manager":
-      return action === "read" || action === "update"; // data baru
-    case "senior/branch manager":
-      return action === "read" || action === "approve";
+      return action === "read"; // data baru
+    case "branch manager":
+      return action === "read" || action === "update" || action === "create";
+    case "regional manager":
+      return action === "read" || action === "update" || action === "create";
     case "general manager":
-      return action === "read" || action === "final-approve";
+      return action === "read" || action === "create" || action === "update";
     case "admin branch":
       return action === "read"; // membaca untuk konteks progres
     default:

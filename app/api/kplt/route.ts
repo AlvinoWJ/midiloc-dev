@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/client";
-import { getCurrentUser, canUlok } from "@/lib/auth/acl";
+import { getCurrentUser,  canKplt } from "@/lib/auth/acl";
 
 type ViewMode = "all" | "ulok_ok" | "existing";
 
@@ -11,7 +11,7 @@ export async function GET(request: Request) {
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  if (!canUlok("read", user)) {
+  if (!canKplt("read", user)) {
     return NextResponse.json(
       { error: "Forbidden", message: "Access denied" },
       { status: 403 }

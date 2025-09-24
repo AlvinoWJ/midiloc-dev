@@ -83,7 +83,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Panggil RPC dengan filter
-    const { data, error } = await supabase.rpc("rpc_dashboard", {
+    const { data, error } = await supabase.rpc("fn_dashboard_ulok_kplt", {
       p_year,
       p_branch_id,
     });
