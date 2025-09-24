@@ -165,7 +165,7 @@ export default function TambahUlokForm({
       longitude: Number(formData.latlong.split(",")[1]) || 0,
       format_store: formData.formatStore,
       bentuk_objek: formData.bentukObjek,
-      alas_hak: formData.alasHak === "true",
+      alas_hak: formData.alasHak,
       jumlah_lantai: Number(formData.jumlahlantai),
       lebar_depan: Number(formData.lebardepan),
       panjang: Number(formData.panjang),
