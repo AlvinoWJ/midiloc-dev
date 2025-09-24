@@ -12,6 +12,7 @@ import { useAddUlokForm } from "@/hooks/useAddUlokForm"; // Import hook
 import MobileSidebar from "./sidebar";
 import MobileNavbar from "./navbar";
 import { useRouter } from "next/navigation";
+import { FileUpload } from "@/components/ui/uploadfile";
 
 interface TambahUlokFormProps {
   onSubmit: (data: UlokCreateInput) => Promise<void>;
@@ -33,6 +34,7 @@ export default function AddUlokFormMobile({
     isMapOpen,
     setIsMapOpen,
     handleChange,
+    handleFileChange,
     handleWilayahChange,
     handleMapSelect,
     handleFormSubmit,
@@ -264,6 +266,25 @@ export default function AddUlokFormMobile({
               <p className="text-red-500 text-xs mt-1">
                 {errors.kontakpemilik}
               </p>
+            )}
+          </div>
+        </div>
+
+        {/* === Form Kelengkapan === */}
+        <div className="bg-white shadow rounded px-4 pt-4 pb-8 space-y-4">
+          <h2 className="text-xl font-bold text-black border-b pb-2">
+            Form Kelengkapan
+          </h2>
+          <div>
+            {/* Area Upload yang Bisa Diklik */}
+            <FileUpload
+              label="Upload Form Kelengkapan"
+              name="formulok"
+              value={formData.formulok}
+              onChange={handleFileChange}
+            />
+            {errors.formulok && (
+              <p className="text-red-500 text-sm mt-1">{errors.formulok}</p>
             )}
           </div>
         </div>

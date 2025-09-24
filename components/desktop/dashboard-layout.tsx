@@ -47,8 +47,8 @@ const statsData = [
 ];
 
 const donutChartData = [
-  { label: "Approve", value: 73.3, color: "#22c55e" },
-  { label: "Pending", value: 26.7, color: "#f59e0b" },
+  { label: "Approve", value: 74 },
+  { label: "Pending", value: 26 },
 ];
 
 const barChartData = [
@@ -169,7 +169,7 @@ export default function DesktopDashboardLayout(props: DashboardPageProps) {
                 </div>
 
                 {/* Map Section */}
-                <div className="bg-white p-4 rounded-lg shadow-md border">
+                <div className="bg-white p-4 rounded-lg shadow-md shadow-[1px_1px_6px_rgba(0,0,0,0.25)]">
                   <div className="h-[400px] w-full">
                     <PetaLoader data={propertiData} />
                   </div>

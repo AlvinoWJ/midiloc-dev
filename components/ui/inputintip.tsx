@@ -5,6 +5,7 @@ import { Upload, Calendar, FileText } from "lucide-react";
 import CustomSelect from "@/components/ui/customselect"; // Import CustomSelect component
 import { Button } from "@/components/ui/button";
 import { useAlert } from "@/components/desktop/alertcontext";
+import { FileUpload } from "@/components/ui/uploadfile";
 
 // Tipe untuk props yang akan diterima komponen ini
 interface InputIntipFormProps {
@@ -94,7 +95,9 @@ const DetailField = ({
 
   return (
     <div>
-      <label className="block font-semibold mb-2">{label}*</label>
+      <label className="block font-semibold mb-2">
+        {label} <span className="text-red-500">*</span>
+      </label>
       <div className="relative">
         <input
           type={type}
@@ -271,12 +274,13 @@ export default function InputIntipForm({
             type="date"
             onChange={handleInputChange}
           />
-          <DetailField
+          <FileUpload
             label="Bukti Approval INTIP"
             value={formData.file_intip}
             name="file_intip"
-            type="file"
-            onChange={handleInputChange}
+            onChange={(file) =>
+              setFormData((prev) => ({ ...prev, file_intip: file }))
+            }
           />
         </div>
 

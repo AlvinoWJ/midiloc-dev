@@ -60,12 +60,7 @@ export default function TambahUlokForm({
     const { name, value } = e.target;
 
     // Fields that should only accept numeric input
-    const numericOnlyFields = [
-      "jumlahlantai",
-      "lebardepan",
-      "panjang",
-      "luas",
-    ];
+    const numericOnlyFields = ["jumlahlantai", "lebardepan", "panjang", "luas"];
 
     let processedValue = value;
     if (numericOnlyFields.includes(name)) {
@@ -582,4 +577,3 @@ export default function TambahUlokForm({
     </>
   );
 }
-
