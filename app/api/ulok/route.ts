@@ -4,55 +4,41 @@ import { createClient } from "@/lib/supabase/client";
 import { UlokCreateSchema } from "@/lib/validations/ulok";
 import { getCurrentUser, canUlok } from "@/lib/auth/acl";
 
-// (Opsional) tipe respons umum
-type UlokSuccessResponse<T = any> = {
-  success: true;
-  data: T;
-  message?: string;
-  pagination?: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-  };
-  // Bisa tambahkan meta kalau perlu
-  meta?: any;
-};
-
-type UlokErrorResponse = {
-  success: false;
-  message: string;
-  error: string | any;
-};
-
-// Helper kirim error ringkas ala signUp
-function errorResponse(status: number, message: string, error: string | any) {
-  const body: UlokErrorResponse = {
-    success: false,
-    message,
-    error,
-  };
-  return NextResponse.json(body, { status });
+function slugify(name: string) {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9_.-]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 80);
 }
-  
-// Helper kirim sukses
-function successResponse<T>(
-  status: number,
-  data: T,
-  opts?: {
-    message?: string;
-    pagination?: UlokSuccessResponse["pagination"];
-    meta?: any;
+
+function buildObjectPath(ulokId: string, originalName: string) {
+  const ext = originalName.includes(".")
+    ? "." + originalName.split(".").pop()!.toLowerCase()
+    : "";
+  const base = slugify(originalName.replace(/\.[^.]+$/, "")) || "file";
+  return `${ulokId}/${Date.now()}-${base}${ext}`;
+}
+
+async function isPdfFile(
+  file: File,
+  strictSignature = true
+): Promise<{ ok: boolean; reason?: string }> {
+  const nameOk = file.name.toLowerCase().endsWith(".pdf");
+  if (!nameOk) return { ok: false, reason: "Ekstensi harus .pdf" };
+  if (file.type && file.type !== "application/pdf") {
+    return {
+      ok: false,
+      reason: `MIME bukan application/pdf (detected: ${file.type})`,
+    };
   }
-) {
-  const body: UlokSuccessResponse<T> = {
-    success: true,
-    data,
-    ...(opts?.message ? { message: opts.message } : {}),
-    ...(opts?.pagination ? { pagination: opts.pagination } : {}),
-    ...(opts?.meta ? { meta: opts.meta } : {}),
-  };
-  return NextResponse.json(body, { status });
+  if (!strictSignature) return { ok: true };
+  const header = new Uint8Array(await file.slice(0, 5).arrayBuffer());
+  const sig = new TextDecoder().decode(header);
+  if (!sig.startsWith("%PDF-"))
+    return { ok: false, reason: "Header file bukan signature PDF (%PDF-)" };
+  return { ok: true };
 }
 
 // GET /api/ulok?page=1&limit=10
@@ -62,13 +48,22 @@ export async function GET(request: Request) {
     const user = await getCurrentUser();
 
     if (!user) {
-      return errorResponse(401, "Unauthorized", "User must login");
+      return NextResponse.json(
+        { success: false, message: "Unauthorized", error: "User must login" },
+        { status: 401 }
+      );
     }
     if (!canUlok("read", user)) {
-      return errorResponse(403, "Forbidden", "Access denied");
+      return NextResponse.json(
+        { success: false, message: "Forbidden", error: "Access denied" },
+        { status: 403 }
+      );
     }
     if (!user.branch_id) {
-      return errorResponse(403, "Forbidden", "User has no branch");
+      return NextResponse.json(
+        { success: false, message: "Forbidden", error: "User has no branch" },
+        { status: 403 }
+      );
     }
 
     const { searchParams } = new URL(request.url);
@@ -106,7 +101,14 @@ export async function GET(request: Request) {
     const { data, error, count } = await query;
 
     if (error) {
-      return errorResponse(500, "Gagal mengambil data ULOK", error.message);
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Gagal mengambil data ULOK",
+          error: error.message,
+        },
+        { status: 500 }
+      );
     }
 
     const total = count ?? 0;
@@ -117,17 +119,26 @@ export async function GET(request: Request) {
       totalPages: total ? Math.ceil(total / safeLimit) : 0,
     };
 
-    return successResponse(200, data, {
-      pagination,
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        data: data,
+        pagination,
+      },
+      { status: 200 }
+    );
   } catch (err: any) {
     // Fallback internal error
-    return errorResponse(
-      500,
-      "Terjadi kesalahan server internal",
-      process.env.NODE_ENV === "development"
-        ? err?.message ?? String(err)
-        : "Internal server error"
+    return NextResponse.json(
+      {
+        success: false,
+        message: "Terjadi kesalahan server internal",
+        error:
+          process.env.NODE_ENV === "development"
+            ? err?.message ?? String(err)
+            : "Internal server error",
+      },
+      { status: 500 }
     );
   }
 }
@@ -139,60 +150,177 @@ export async function POST(request: Request) {
     const user = await getCurrentUser();
 
     if (!user) {
-      return errorResponse(401, "Unauthorized", "User must login");
+      return NextResponse.json(
+        { success: false, message: "Unauthorized" },
+        { status: 401 }
+      );
     }
     if (!canUlok("create", user)) {
-      return errorResponse(403, "Forbidden", "Access denied");
+      return NextResponse.json(
+        { success: false, message: "Forbidden" },
+        { status: 403 }
+      );
+    }
+    if (!user.branch_id) {
+      return NextResponse.json(
+        { success: false, message: "User has no branch" },
+        { status: 403 }
+      );
     }
 
-    const body = await request.json().catch(() => null);
-    if (!body) {
-      return errorResponse(400, "Request body invalid", "Invalid JSON body");
-    }
-
-    const parsed = UlokCreateSchema.safeParse(body);
-    if (!parsed.success) {
-      // Kamu bisa pilih apakah mau hanya string ringkas atau seluruh issues
-      return NextResponse.json<UlokErrorResponse>(
+    const contentType = request.headers.get("content-type") || "";
+    if (!contentType.startsWith("multipart/form-data")) {
+      return NextResponse.json(
         {
           success: false,
-          message: "Validasi gagal",
-          error: parsed.error.issues, // front-end bisa mapping sendiri
+          message:
+            "Harus multipart/form-data karena wajib upload file form_ulok",
+        },
+        { status: 400 }
+      );
+    }
+
+    const form = await request.formData().catch(() => null);
+    if (!form) {
+      return NextResponse.json(
+        { success: false, message: "Invalid multipart form-data" },
+        { status: 400 }
+      );
+    }
+
+    // Ambil file
+    const file = form.get("form_ulok") as File | null;
+    // alternatif: kalau kamu ingin key "form_ulok" saja:
+    // const file = form.get("form_ulok") as File | null;
+    if (!file || !(file instanceof File)) {
+      return NextResponse.json(
+        { success: false, message: "File form_ulok wajib dikirim" },
+        { status: 422 }
+      );
+    }
+    if (file.size === 0) {
+      return NextResponse.json(
+        { success: false, message: "File kosong" },
+        { status: 422 }
+      );
+    }
+    if (file.size > 15 * 1024 * 1024) {
+      return NextResponse.json(
+        { success: false, message: "File melebihi 15MB" },
+        { status: 422 }
+      );
+    }
+    // Validasi PDF only
+    const pdfCheck = await isPdfFile(file, true); // true = cek signature
+    if (!pdfCheck.ok) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "File bukan PDF valid",
+          detail: pdfCheck.reason,
         },
         { status: 422 }
       );
     }
 
-    const payload = parsed.data;
+    // Ambil field text → parse
+    const raw: Record<string, unknown> = {};
+    form.forEach((val, keyOrig) => {
+      if (val instanceof File) return;
+      const key = keyOrig.trim();
+      if (key === "form_ulok") return; // ignore kalau user nakal
+      raw[key] = val;
+    });
+
+    const parsed = UlokCreateSchema.safeParse(raw);
+    if (!parsed.success) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Validasi gagal",
+          error: parsed.error.issues,
+        },
+        { status: 422 }
+      );
+    }
+
+    const newUlokId = crypto.randomUUID();
+    const objectPath = buildObjectPath(newUlokId, file.name);
+
+    // Upload fisik
+    const { error: uploadErr } = await supabase.storage
+      .from("form_ulok")
+      .upload(objectPath, file, { upsert: false });
+
+    if (uploadErr) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Gagal upload file",
+          error: uploadErr.message,
+        },
+        { status: 500 }
+      );
+    }
+
+    // Ambil public URL (BUTUH bucket public)
+    // const { data: pub } = supabase.storage
+    //   .from("form_ulok")
+    //   .getPublicUrl(objectPath);
+    // const publicUrl = pub.publicUrl;
+
+    // Pilihan A: Simpan publicUrl ke kolom form_ulok
+    const fileUrlToStore = objectPath;
+
+    // (Jika mau path saja: const fileUrlToStore = objectPath;)
+
+    const insertPayload = {
+      id: newUlokId,
+      users_id: user.id,
+      branch_id: user.branch_id,
+      form_ulok: fileUrlToStore, // langsung simpan link
+      ...parsed.data,
+    };
 
     const { data, error } = await supabase
       .from("ulok")
-      .insert({
-        users_id: user.id,
-        branch_id: user.branch_id,
-        ...payload,
-      })
+      .insert(insertPayload)
       .select("*")
       .single();
 
     if (error) {
-      // Mapping beberapa kode Postgres umum (opsional)
-      if (error.code === "23505") {
-        return errorResponse(409, "Konflik data", "Data sudah terdaftar");
-      }
-      return errorResponse(500, "Gagal membuat data ULOK", error.message);
+      // (Optional) hapus file kalau insert gagal
+      await supabase.storage
+        .from("form_ulok")
+        .remove([objectPath])
+        .catch(() => {});
+      return NextResponse.json(
+        { success: false, message: "Gagal insert ulok", error: error.message },
+        { status: 500 }
+      );
     }
 
-    return successResponse(201, data, {
-      message: "Data ULOK berhasil dibuat",
-    });
-  } catch (err: any) {
-    return errorResponse(
-      500,
-      "Terjadi kesalahan server internal",
-      process.env.NODE_ENV === "development"
-        ? err?.message ?? String(err)
-        : "Internal server error"
+    return NextResponse.json(
+      {
+        success: true,
+        message: "Data ULOK + file form_ulok berhasil dibuat",
+        data,
+        stored_form_ulok: fileUrlToStore,
+        object_path: objectPath, // info tambahan
+      },
+      { status: 201 }
+    );
+  } catch (e: any) {
+    return NextResponse.json(
+      {
+        success: false,
+        message: "Terjadi kesalahan server internal",
+        error:
+          process.env.NODE_ENV === "development"
+            ? e?.message
+            : "Internal error",
+      },
+      { status: 500 }
     );
   }
 }

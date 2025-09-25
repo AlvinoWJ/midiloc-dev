@@ -52,6 +52,26 @@ function buildPath(ulokId: string, originalName: string) {
   return `${ulokId}/${Date.now()}-${base}${ext}`;
 }
 
+async function isPdfFile(
+  file: File,
+  strictSignature = true
+): Promise<{ ok: boolean; reason?: string }> {
+  const nameOk = file.name.toLowerCase().endsWith(".pdf");
+  if (!nameOk) return { ok: false, reason: "Ekstensi harus .pdf" };
+  if (file.type && file.type !== "application/pdf") {
+    return {
+      ok: false,
+      reason: `MIME bukan application/pdf (detected: ${file.type})`,
+    };
+  }
+  if (!strictSignature) return { ok: true };
+  const header = new Uint8Array(await file.slice(0, 5).arrayBuffer());
+  const sig = new TextDecoder().decode(header);
+  if (!sig.startsWith("%PDF-"))
+    return { ok: false, reason: "Header file bukan signature PDF (%PDF-)" };
+  return { ok: true };
+}
+
 // GET /api/ulok/:id
 export async function GET(
   _request: Request,
@@ -69,7 +89,12 @@ export async function GET(
 
   const { id } = params;
 
-  let query = supabase.from("ulok").select("*, users!ulok_users_id_fkey(nama, no_telp), approved_by (nama), updated_by (nama), branch_id( nama)").eq("id", id);
+  let query = supabase
+    .from("ulok")
+    .select(
+      "*, users!ulok_users_id_fkey(nama, no_telp), approved_by (nama), updated_by (nama), branch_id( nama)"
+    )
+    .eq("id", id);
 
   //validate query by position
   if (user.position_nama === "location specialist") {
@@ -259,11 +284,125 @@ export async function PATCH(
     return NextResponse.json({ data: updated });
   }
 
-  // ========= BRANCH: LOCATION SPECIALIST (JSON – tanpa file_intip) =========
+  // ========= LOCATION SPECIALIST =========
   if (user.position_nama === "location specialist") {
+    // ----- LS MULTIPART (form_ulok replace) -----
+    if (contentType.startsWith("multipart/form-data")) {
+      const form = await req.formData().catch(() => null);
+      if (!form) {
+        return NextResponse.json(
+          { error: "Invalid form-data" },
+          { status: 400 }
+        );
+      }
+
+      // Pastikan row milik LS
+      const { data: existing, error: existErr } = await supabase
+        .from("ulok")
+        .select("id, users_id, branch_id, form_ulok")
+        .eq("id", id)
+        .eq("users_id", user.id)
+        .eq("branch_id", user.branch_id)
+        .single();
+
+      if (existErr || !existing) {
+        return NextResponse.json({ error: "Not Found" }, { status: 404 });
+      }
+
+      const file = form.get("form_ulok");
+      if (!(file instanceof File)) {
+        return NextResponse.json(
+          { error: "form_ulok file is required in multipart" },
+          { status: 422 }
+        );
+      }
+      if (file.size === 0) {
+        return NextResponse.json(
+          { error: "Empty form_ulok file" },
+          { status: 422 }
+        );
+      }
+      if (file.size > 15 * 1024 * 1024) {
+        return NextResponse.json(
+          { error: "form_ulok file too large (max 15MB)" },
+          { status: 422 }
+        );
+      }
+      // Validasi PDF only
+      const pdfCheck = await isPdfFile(file, true); // true = cek signature
+      if (!pdfCheck.ok) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "File bukan PDF valid",
+            detail: pdfCheck.reason,
+          },
+          { status: 422 }
+        );
+      }
+
+      const newPath = buildPath(id, file.name);
+      const { error: uploadErr } = await supabase.storage
+        .from("form_ulok")
+        .upload(newPath, file, { upsert: false });
+
+      if (uploadErr) {
+        return NextResponse.json(
+          { error: "Upload form_ulok failed: " + uploadErr.message },
+          { status: 500 }
+        );
+      }
+
+      let removedOld = false;
+      const oldPath = existing.form_ulok as string | null;
+      if (oldPath && oldPath.includes("/") && oldPath !== newPath) {
+        // coba hapus file lama
+        await supabase.storage
+          .from("form_ulok")
+          .remove([oldPath])
+          .then(() => {
+            removedOld = true;
+          })
+          .catch(() => {});
+      }
+
+      const { data: updated, error: updErr } = await supabase
+        .from("ulok")
+        .update({
+          form_ulok: newPath,
+          updated_by: user.id,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", id)
+        .eq("users_id", user.id)
+        .eq("branch_id", user.branch_id)
+        .select("*")
+        .single();
+
+      if (updErr) {
+        // rollback file baru jika DB update gagal
+        await supabase.storage
+          .from("form_ulok")
+          .remove([newPath])
+          .catch(() => {});
+        return NextResponse.json(
+          { error: "Update DB failed", detail: updErr.message },
+          { status: 500 }
+        );
+      }
+
+      return NextResponse.json({
+        data: updated,
+        new_form_ulok: newPath,
+        removed_old: removedOld,
+        old_form_ulok: oldPath,
+      });
+    }
+
+    // ----- LS JSON (field non-file) -----
     if (!contentType.startsWith("application/json")) {
       return NextResponse.json(
-        { error: "Use application/json for LS update" },
+        { error: "Use application/json or multipart/form-data" },
         { status: 400 }
       );
     }
@@ -273,7 +412,7 @@ export async function PATCH(
       return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
     }
 
-    // Tolak LM fields (termasuk file_intip)
+    // LS dilarang ubah LM fields & file/form kolom langsung
     const forbiddenLM = (LM_FIELDS as unknown as string[]).filter((k) =>
       Object.prototype.hasOwnProperty.call(body, k)
     );
@@ -283,6 +422,8 @@ export async function PATCH(
         { status: 400 }
       );
     }
+    if ("form_ulok" in body) delete body.form_ulok;
+    if ("file_intip" in body) delete body.file_intip;
 
     const forbiddenKeys = [
       "id",
@@ -294,6 +435,12 @@ export async function PATCH(
       "is_active",
       "branch_id",
       "file_intip",
+      "form_ulok",
+      "approved_at",
+      "approved_by",
+      "approval_status",
+      "approval_intip",
+      "tanggal_approval_intip",
     ] as const;
 
     const allowedPayload = omit(
