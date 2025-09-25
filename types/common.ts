@@ -110,13 +110,13 @@ export interface UlokPageProps {
 }
 
 // Dashboard
-import { User } from "@supabase/supabase-js"; // Atau tipe User Anda yang sesuai
+
 import { DashboardData } from "@/hooks/useDashboard"; // Tipe data dari API dashboard
 
 export interface DashboardPageProps {
   propertiData?: DashboardData; // Data dari hook useDashboard, opsional karena bisa 'undefined' saat loading
   isLoading: boolean; // Untuk menampilkan skeleton/loading state
   isError: any; // Untuk menampilkan pesan error
-  user: User | null; // Data user yang sedang login
+  user: CurrentUser | null; // Data user yang sedang login
   setYear: (year: number | null) => void; // Fungsi untuk filter tahun
 }

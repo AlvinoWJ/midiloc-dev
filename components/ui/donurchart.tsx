@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 
 interface DonutChartProps {
   data: {
+    status: string;
     label: string;
     value: number;
   }[];
@@ -11,10 +12,11 @@ interface DonutChartProps {
 // Komponen Legend dan interface LegendProps sudah dihapus dari sini
 
 export function DonutChart({ data, title }: DonutChartProps) {
-  const colorPalette = [
-    "#22C55E", // green-500
-    "#F59E0B", // yellow-500
-  ];
+  const statusColorMap: { [key: string]: string } = {
+    OK: "#22C55E", // Hijau untuk status "OK" (Approve)
+    "In Progress": "#F59E0B", // Kuning untuk "In Progress"
+    NOK: "#da3a3aff",
+  };
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [animationProgress, setAnimationProgress] = useState(0);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
@@ -68,7 +70,7 @@ export function DonutChart({ data, title }: DonutChartProps) {
               strokeWidth="8"
             />
             {data.map((item, index) => {
-              const color = colorPalette[index % colorPalette.length];
+              const color = statusColorMap[item.status];
               const percentage = (item.value / total) * 100;
               const path = createPath(percentage, cumulativePercentage);
               cumulativePercentage += percentage;
@@ -125,7 +127,7 @@ export function DonutChart({ data, title }: DonutChartProps) {
         </div>
         <div className="flex items-center">
           <span className="w-3 h-3 rounded-full bg-progress mr-2"></span>
-          <span>Pending</span>
+          <span>In Progress</span>
         </div>
       </div>
 
@@ -139,7 +141,7 @@ export function DonutChart({ data, title }: DonutChartProps) {
             transform: "translate(0, -100%)",
           }}
         >
-          <div className="text-sm font-medium">{data[hoveredIndex].label}</div>
+          <div className="text-sm font-medium">{data[hoveredIndex].status}</div>
           <div className="text-xs opacity-90">
             Value : {data[hoveredIndex].value} (
             {Math.round((data[hoveredIndex].value / total) * 100)}

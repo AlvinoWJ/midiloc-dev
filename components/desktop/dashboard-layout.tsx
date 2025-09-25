@@ -69,24 +69,26 @@ export default function DesktopDashboardLayout(props: DashboardPageProps) {
     if (!dashboardData) return {};
     // Donut charts: Ubah 'count' menjadi 'value' sesuai kebutuhan komponen
     const ulokDonut = dashboardData.donut_ulok.map((item) => ({
+      status: item.status,
       label: item.label,
       value: item.count,
     }));
     const kpltDonut = dashboardData.donut_kplt.map((item) => ({
+      status: item.status,
       label: item.label,
       value: item.count,
     }));
 
     // Bar charts: Ubah 'bulan' menjadi 'month' dan hitung 'pending'
     const ulokBar = dashboardData.perbulan_ulok.map((item) => ({
-      month: item.bulan.substring(0, 3), // Ambil 3 huruf pertama
+      month: item.bulan.substring(0, 3),
       approved: item.ulok_approves ?? 0,
-      pending: (item.total_ulok ?? 0) - (item.ulok_approves ?? 0),
+      status: (item.total_ulok ?? 0) - (item.ulok_approves ?? 0),
     }));
     const kpltBar = dashboardData.perbulan_kplt.map((item) => ({
-      month: item.bulan.substring(0, 3), // Ambil 3 huruf pertama
+      month: item.bulan.substring(0, 3),
       approved: item.kplt_approves ?? 0,
-      pending: (item.total_kplt ?? 0) - (item.kplt_approves ?? 0),
+      status: (item.total_kplt ?? 0) - (item.kplt_approves ?? 0),
     }));
 
     return { ulokDonut, kpltDonut, ulokBar, kpltBar };
@@ -189,14 +191,8 @@ export default function DesktopDashboardLayout(props: DashboardPageProps) {
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <DonutChart data={ulokDonut || []} title="Status ULOK" />
                     <DonutChart data={kpltDonut || []} title="Status KPLT" />
-                    <BarChart
-                      data={ulokBar || []}
-                      title="Grafik ULOK Per Bulan"
-                    />
-                    <BarChart
-                      data={kpltBar || []}
-                      title="Grafik KPLT Per Bulan"
-                    />
+                    <BarChart data={ulokBar || []} title="Grafik ULOK " />
+                    <BarChart data={kpltBar || []} title="Grafik KPLT" />
                   </div>
 
                   {/* Map Section */}

@@ -4,16 +4,16 @@ interface BarChartProps {
   data: {
     month: string;
     approved: number;
-    pending: number;
+    status: number;
   }[];
   title: string;
 }
 
 export function BarChart({ data, title }: BarChartProps) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
-  const [hoveredType, setHoveredType] = useState<"approved" | "pending" | null>(
-    null
-  );
+  const [hoveredType, setHoveredType] = useState<
+    "approved" | "in progress" | null
+  >(null);
   const [animationProgress, setAnimationProgress] = useState(0);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 
@@ -31,7 +31,7 @@ export function BarChart({ data, title }: BarChartProps) {
     setMousePosition({ x: event.clientX, y: event.clientY });
   };
 
-  const handleBarHover = (index: number, type: "approved" | "pending") => {
+  const handleBarHover = (index: number, type: "approved" | "in progress") => {
     setHoveredIndex(index);
     setHoveredType(type);
   };
@@ -71,14 +71,14 @@ export function BarChart({ data, title }: BarChartProps) {
             {/* Bars container */}
             <div className="absolute bottom-0 left-0 w-full h-full flex items-end justify-around px-2">
               {data.map((item, index) => {
-                const totalValue = item.approved + item.pending;
+                const totalValue = item.approved + item.status;
                 const cappedTotal = Math.min(totalValue, maxValue);
                 const totalHeightPercentage =
                   (cappedTotal / maxValue) * 100 * animationProgress;
 
                 const pendingHeight =
                   totalValue > 0
-                    ? (item.pending / totalValue) * totalHeightPercentage
+                    ? (item.status / totalValue) * totalHeightPercentage
                     : 0;
                 const approvedHeight =
                   totalValue > 0
@@ -124,7 +124,7 @@ export function BarChart({ data, title }: BarChartProps) {
                       className={`w-full bg-yellow-500 cursor-pointer transition-all duration-300 ${
                         hoveredIndex === null
                           ? "opacity-80"
-                          : isHovered && hoveredType === "pending"
+                          : isHovered && hoveredType === "in progress"
                           ? "opacity-100 shadow-lg"
                           : "opacity-50"
                       }`}
@@ -132,7 +132,7 @@ export function BarChart({ data, title }: BarChartProps) {
                         height: `${(chartHeightPx / 100) * pendingHeight}px`,
                         borderRadius: approvedHeight > 0 ? "0" : "2px",
                       }}
-                      onMouseEnter={() => handleBarHover(index, "pending")}
+                      onMouseEnter={() => handleBarHover(index, "in progress")}
                       onMouseLeave={handleBarLeave}
                     />
                   </div>
@@ -183,10 +183,10 @@ export function BarChart({ data, title }: BarChartProps) {
           <div className="text-xs opacity-90">
             {hoveredType === "approved"
               ? `Approved : ${data[hoveredIndex].approved}`
-              : `Pending : ${data[hoveredIndex].pending}`}
+              : `in progress : ${data[hoveredIndex].status}`}
           </div>
           <div className="text-xs opacity-75">
-            Total : {data[hoveredIndex].approved + data[hoveredIndex].pending}
+            Total : {data[hoveredIndex].approved + data[hoveredIndex].status}
           </div>
         </div>
       )}

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Edit3 } from "lucide-react";
 import { StatusBadge } from "@/components/shared/statusbadge";
-import { formatDate } from "@/utils/ulok-utils";
+import { formatDate } from "@/components/ui/ulok-utils";
 
 interface MobileInfoCardProps {
   id: string;
