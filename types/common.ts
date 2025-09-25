@@ -41,14 +41,26 @@ export interface KpltExisting {
   nama_kplt: string; // ✅ sesuai kebutuhan UI
   alamat: string; // ✅ sesuai kebutuhan UI
   created_at: string;
-  approval_status: string; // ✅ sesuai kebutuhan UI
+  kplt_approval: string; // ✅ sesuai kebutuhan UI
 }
 
 // Tipe untuk setiap objek di dalam array "kplt_from_ulok_ok"
 export interface UlokForKplt {
   ulok_id: string;
   nama_ulok: string;
+  alamat: string;
+  created_at: string;
+  ui_status: string;
   approval_status: string;
+}
+
+// Tipe data terpadu untuk ditampilkan di card UI
+export interface UnifiedKpltItem {
+  id: string;
+  nama: string;
+  alamat: string;
+  created_at: string;
+  status: string;
 }
 
 // Tipe untuk objek "meta" pada respons KPLT
@@ -74,11 +86,8 @@ export interface KpltPageProps {
   isError: boolean;
   user: CurrentUser | null;
 
-  // Data mentah dari API
-  kpltExisting: KpltExisting[];
-  ulokForKplt: UlokForKplt[];
-  meta?: KpltMeta;
-  filteredKplt: KpltExisting[];
+  // Kirim data yang sudah digabung dan difilter
+  displayData: UnifiedKpltItem[];
 
   // State UI
   searchQuery: string;

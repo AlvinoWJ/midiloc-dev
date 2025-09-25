@@ -16,7 +16,7 @@ export default function DesktopKpltLayout(props: KpltPageProps) {
     isLoading,
     isError,
     activeTab,
-    filteredKplt,
+    displayData,
     searchQuery,
     filterMonth,
     filterYear,
@@ -82,14 +82,11 @@ export default function DesktopKpltLayout(props: KpltPageProps) {
                   onTabChange={onTabChange}
                   activeTab={activeTab}
                 />
-                {isLocationSpecialist() && (
-                  <AddButton onClick={() => router.push("/kplt/tambah")} />
-                )}
               </div>
 
               {/* Cards Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {filteredKplt.length === 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {displayData.length === 0 ? (
                   <div className="col-span-full flex flex-col items-center justify-center py-16">
                     <div className="text-gray-300 text-6xl mb-4">📍</div>
                     <h3 className="text-lg font-medium text-gray-900 mb-2">
@@ -118,14 +115,15 @@ export default function DesktopKpltLayout(props: KpltPageProps) {
                       )}
                   </div>
                 ) : (
-                  filteredKplt.map((kplt) => (
+                  displayData.map((kplt) => (
                     <InfoCard
                       key={kplt.id}
                       id={kplt.id}
-                      nama_ulok={kplt.nama_kplt ?? "Nama KPLT tidak ada"} // ✅ pakai nama_kplt
-                      alamat={kplt.alamat ?? "-"} // ✅ pakai alamat yang ada di interface
+                      nama={kplt.nama}
+                      alamat={kplt.alamat}
                       created_at={kplt.created_at}
-                      approval_status={kplt.approval_status}
+                      status={kplt.status}
+                      detailPath="/form_kplt/detail"
                     />
                   ))
                 )}
