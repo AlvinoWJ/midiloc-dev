@@ -21,6 +21,26 @@ function buildObjectPath(ulokId: string, originalName: string) {
   return `${ulokId}/${Date.now()}-${base}${ext}`;
 }
 
+async function isPdfFile(
+  file: File,
+  strictSignature = true
+): Promise<{ ok: boolean; reason?: string }> {
+  const nameOk = file.name.toLowerCase().endsWith(".pdf");
+  if (!nameOk) return { ok: false, reason: "Ekstensi harus .pdf" };
+  if (file.type && file.type !== "application/pdf") {
+    return {
+      ok: false,
+      reason: `MIME bukan application/pdf (detected: ${file.type})`,
+    };
+  }
+  if (!strictSignature) return { ok: true };
+  const header = new Uint8Array(await file.slice(0, 5).arrayBuffer());
+  const sig = new TextDecoder().decode(header);
+  if (!sig.startsWith("%PDF-"))
+    return { ok: false, reason: "Header file bukan signature PDF (%PDF-)" };
+  return { ok: true };
+}
+
 // GET /api/ulok?page=1&limit=10
 export async function GET(request: Request) {
   try {
@@ -190,13 +210,25 @@ export async function POST(request: Request) {
         { status: 422 }
       );
     }
+    // Validasi PDF only
+    const pdfCheck = await isPdfFile(file, true); // true = cek signature
+    if (!pdfCheck.ok) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "File bukan PDF valid",
+          detail: pdfCheck.reason,
+        },
+        { status: 422 }
+      );
+    }
 
     // Ambil field text → parse
     const raw: Record<string, unknown> = {};
     form.forEach((val, keyOrig) => {
       if (val instanceof File) return;
       const key = keyOrig.trim();
-      if (key === "form_ulok" || key === "form_ulok_file") return; // ignore kalau user nakal
+      if (key === "form_ulok") return; // ignore kalau user nakal
       raw[key] = val;
     });
 

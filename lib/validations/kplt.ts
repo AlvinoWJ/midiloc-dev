@@ -1,72 +1,42 @@
 import { z } from "zod";
 
-// Helper umum
-const NonEmptyString = z.string().trim().min(1);
-const UrlString = z.string().url();
-const Num = z.coerce.number();
-
-// Field dasar KPLT yang bisa diisi oleh client (tidak termasuk field server-managed)
-const KpltBaseFields = z
+// Catatan: FE cukup kirim field khusus KPLT + override opsional.
+// Field yang disalin dari ULOK tidak perlu dikirim (kecuali mau override nama_kplt, lat/long, tanggal_approval_intip, file_intip).
+export const KpltCreatePayloadSchema = z
   .object({
-    karakter_lokasi: NonEmptyString.optional(),
-    sosial_ekonomi: NonEmptyString.optional(),
-    skor_fpl: Num.optional(),
-    std: Num.optional(),
-    apc: Num.optional(),
-    spd: Num.optional(),
-    pe_status: NonEmptyString.optional(),
-    pe_rab: Num.optional(),
-
-    // File/URL fields (opsional, jika diisi harus URL valid)
-    pdf_foto: UrlString.optional(),
-    counting_kompetitor: UrlString.optional(), // bebas string
-    pdf_pembanding: UrlString.optional(),
-    pdf_kks: UrlString.optional(),
-    excel_fpl: UrlString.optional(),
-    excel_pe: UrlString.optional(),
-    pdf_form_ukur: UrlString.optional(),
-    video_traffic_siang: UrlString.optional(),
-    video_traffic_malam: UrlString.optional(),
-    video_360_siang: UrlString.optional(),
-    video_360_malam: UrlString.optional(),
-    peta_coverage: UrlString.optional(),
-
-    progress_toko: NonEmptyString.optional(),
+    // Override opsional dari field turunan ULOK
+    nama_kplt: z.string().min(1).optional(),
+    latitude: z.coerce.number().optional(),
+    longitude: z.coerce.number().optional(),
+    tanggal_approval_intip: z.coerce.date().optional(),
+    file_intip: z.string().optional(),
     is_active: z.boolean().optional(),
+
+    // Field Wajib KPLT
+    karakter_lokasi: z.string().min(1),
+    sosial_ekonomi: z.string().min(1),
+    skor_fpl: z.coerce.number(),
+    std: z.coerce.number(),
+    apc: z.coerce.number(),
+    spd: z.coerce.number(),
+    pe_status: z.string().min(1),
+    pe_rab: z.coerce.number(),
+
+    pdf_foto: z.string().min(1),
+    counting_kompetitor: z.string().min(1),
+    pdf_pembanding: z.string().min(1),
+    pdf_kks: z.string().min(1),
+    excel_fpl: z.string().min(1),
+    excel_pe: z.string().min(1),
+    pdf_form_ukur: z.string().min(1),
+    video_traffic_siang: z.string().min(1),
+    video_traffic_malam: z.string().min(1),
+    video_360_siang: z.string().min(1),
+    video_360_malam: z.string().min(1),
+    peta_coverage: z.string().min(1),
+
+    progress_toko: z.string().optional(),
   })
   .strict();
 
-// Create schema (nested route): body TANPA ulok_id, karena ulok_id dari path param
-export const KpltCreateSchema = KpltBaseFields.strict();
-export type KpltCreateInput = z.infer<typeof KpltCreateSchema>;
-
-// Create schema (non-nested route): body DENGAN ulok_id (wajib)
-export const KpltCreateWithUlokIdSchema = KpltBaseFields.extend({
-  ulok_id: z.string(),
-}).strict();
-export type KpltCreateWithUlokIdInput = z.infer<
-  typeof KpltCreateWithUlokIdSchema
->;
-
-// Update schema untuk Location Specialist (LS):
-// - Semua field pada base boleh diubah (kecuali yang sudah Anda blokir di handler: id, ulok_id, branch_id, approval fields, dst.)
-// - Minimal 1 field harus dikirim
-export const KpltUpdateLsSchema = KpltBaseFields.strict().refine(
-  (obj) => Object.keys(obj).length > 0,
-  { message: "Minimal 1 field untuk diupdate." }
-);
-export type KpltUpdateLsInput = z.infer<typeof KpltUpdateLsSchema>;
-
-// Update schema untuk Location Manager (LM) — fokus approval fields saja
-// Jika Anda punya enum untuk status approval, ganti ke z.enum([...]) sesuai enum DB Anda.
-export const KpltApprovalSchema = z
-  .object({
-    kplt_approval: z.string().optional(), // contoh: "In Progress" | "APPROVED" | "REJECTED"
-    kplt_approved_at: z.string().optional(),
-    kplt_approved_by: z.string().optional(),
-  })
-  .strict()
-  .refine((obj) => Object.keys(obj).length > 0, {
-    message: "Minimal 1 approval field untuk diupdate.",
-  });
-export type KpltLmApprovalInput = z.infer<typeof KpltApprovalSchema>;
+export type KpltCreatePayload = z.infer<typeof KpltCreatePayloadSchema>;
