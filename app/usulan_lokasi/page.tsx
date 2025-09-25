@@ -4,9 +4,9 @@ import { useState, useCallback } from "react";
 import SWRProvider from "@/app/swr-provider";
 import { useUser } from "@/hooks/useUser";
 import { useUlok } from "@/hooks/useUlok";
-import { useDeviceType } from "@/hooks/useDeviceType";
-import DesktopLayout from "@/components/desktop/ulok-layout";
-import MobileLayout from "@/components/mobile/ulok-layout";
+import { useDevice } from "@/app/context/DeviceContext";
+import DesktopUlokLayout from "@/components/desktop/ulok-layout";
+import MobileUlokLayout from "@/components/mobile/ulok-layout";
 
 export default function UlokPageWrapper() {
   // Jika nanti SWRProvider sudah ada di layout global, cukup return <UlokPage />
@@ -29,7 +29,7 @@ export function UlokPage() {
   const { ulokData, ulokLoading, ulokError } = useUlok();
 
   // 3. Device Detection
-  const { isMobile, isDeviceLoading } = useDeviceType(); // Ganti dengan isMobile || isTablet jika perlu
+  const { isMobile } = useDevice();
 
   // 4. Business Logic & Data Filtering
   const isLocationSpecialist = useCallback(() => {
@@ -79,15 +79,10 @@ export function UlokPage() {
     onFilterChange,
   };
 
-  if (isDeviceLoading) {
-    // Anda bisa mengganti ini dengan komponen Skeleton/Loader yang lebih baik
-    return <div className="min-h-screen bg-gray-50" />;
-  }
-
   // --- RENDER LAYOUT BERDASARKAN UKURAN LAYAR ---
   if (isMobile) {
-    return <MobileLayout {...layoutProps} />;
+    return <MobileUlokLayout {...layoutProps} />;
   }
 
-  return <DesktopLayout {...layoutProps} />;
+  return <DesktopUlokLayout {...layoutProps} />;
 }

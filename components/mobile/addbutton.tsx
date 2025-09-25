@@ -11,7 +11,7 @@ export default function MobileAddButton({
   return (
     <button
       onClick={onClick}
-      className="w-full bg-red-600 text-white py-3 px-6 rounded-lg font-semibold shadow-md hover:bg-red-700 transition-colors duration-200"
+      className="w-full bg-primary rounded-xl text-white py-3 px-6 rounded-lg font-semibold shadow-md hover:bg-red-700 transition-colors duration-200"
     >
       {label}
     </button>

@@ -7,7 +7,7 @@ import {
   useCallback,
   ReactNode,
 } from "react";
-import { useDeviceType } from "./useDeviceType";
+import { useDevice } from "@/app/context/DeviceContext";
 
 type SidebarContextType = {
   isCollapsed: boolean;
@@ -20,26 +20,26 @@ const LOCAL_STORAGE_KEY = "sidebarCollapsed";
 const SidebarContext = createContext<SidebarContextType | undefined>(undefined);
 
 export function SidebarProvider({ children }: { children: ReactNode }) {
-  const { isMobile } = useDeviceType();
-  const getInitialState = () => {
-    // Untuk mobile, sidebar selalu default terlipat (true).
-    // Untuk desktop, sidebar selalu default terbuka (false).
-    return isMobile ? true : false;
-  };
+  const { isMobile } = useDevice();
 
-  const [isCollapsed, setIsCollapsed] = useState<boolean>(getInitialState);
+  // default state dulu
+  const [isCollapsed, setIsCollapsed] = useState<boolean>(
+    isMobile ? true : false
+  );
 
+  // Load state dari localStorage hanya di client
   useEffect(() => {
-    // Saat tipe perangkat berubah (misal dari desktop ke mobile karena resize),
-    // atur ulang state ke nilai default yang sesuai.
-    setIsCollapsed(getInitialState());
-  }, [isMobile]);
+    if (typeof window === "undefined") return;
 
-  useEffect(() => {
-    if (!isMobile) {
-      const savedState = localStorage.getItem(LOCAL_STORAGE_KEY);
-      if (savedState !== null) {
-        setIsCollapsed(JSON.parse(savedState));
+    if (isMobile) {
+      setIsCollapsed(true);
+    } else {
+      try {
+        const savedState = localStorage.getItem(LOCAL_STORAGE_KEY);
+        setIsCollapsed(savedState !== null ? JSON.parse(savedState) : false);
+      } catch (error) {
+        console.error("Failed to parse sidebar state from localStorage", error);
+        setIsCollapsed(false);
       }
     }
   }, [isMobile]);
@@ -47,9 +47,12 @@ export function SidebarProvider({ children }: { children: ReactNode }) {
   const toggleSidebar = useCallback(() => {
     setIsCollapsed((prev) => {
       const newState = !prev;
-      // Simpan preferensi hanya jika pengguna di desktop
-      if (!isMobile) {
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(newState));
+      if (!isMobile && typeof window !== "undefined") {
+        try {
+          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(newState));
+        } catch (error) {
+          console.error("Failed to save sidebar state to localStorage", error);
+        }
       }
       return newState;
     });

@@ -1,20 +1,12 @@
 "use client";
 
+import { useDevice } from "@/app/context/DeviceContext";
 import { DesktopLoginForm } from "@/components/desktop/login-form";
 import { MobileLoginForm } from "@/components/mobile/login-form";
 
 export default function LoginPage() {
-  return (
-    <div className="min-h-screen">
-      {/* Mobile & Tablet */}
-      <div className="block lg:hidden">
-        <MobileLoginForm />
-      </div>
+  const { isMobile } = useDevice();
 
-      {/* Desktop */}
-      <div className="hidden lg:block">
-        <DesktopLoginForm />
-      </div>
-    </div>
-  );
+  // Render komponen yang sesuai berdasarkan nilai dari context
+  return isMobile ? <MobileLoginForm /> : <DesktopLoginForm />;
 }

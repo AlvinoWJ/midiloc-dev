@@ -22,7 +22,7 @@ export function useDetailUlokForm(
     const { name, value, type } = e.target;
 
     if (name === "hargasewa") {
-      const cleanValue = value.replace(/[^0-9]/g, ""); 
+      const cleanValue = value.replace(/[^0-9]/g, "");
       setEditedData((prev) => ({ ...prev, [name]: cleanValue }));
       if (errors[name]) {
         setErrors((prev) => ({ ...prev, [name]: undefined }));
@@ -99,6 +99,7 @@ export function useDetailUlokForm(
       harga_sewa: cleanedHargaSewa,
       nama_pemilik: editedData.namapemilik,
       kontak_pemilik: editedData.kontakpemilik,
+      form_ulok: editedData,
     };
 
     const validationResult = UlokUpdateSchema.safeParse(dataToValidate);
@@ -106,12 +107,12 @@ export function useDetailUlokForm(
     if (!validationResult.success) {
       const formattedErrors: Record<string, string> = {};
       for (const issue of validationResult.error.issues) {
-        const key = issue.path[0] as string; 
+        const key = issue.path[0] as string;
         formattedErrors[key] = issue.message;
       }
       setErrors(formattedErrors);
       console.error("Validation Failed:", formattedErrors);
-      return; 
+      return;
     }
 
     const success = await onSave(validationResult.data);

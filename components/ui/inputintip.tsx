@@ -5,6 +5,7 @@ import { Upload, Calendar, FileText } from "lucide-react";
 import CustomSelect from "@/components/ui/customselect"; // Import CustomSelect component
 import { Button } from "@/components/ui/button";
 import { useAlert } from "@/components/desktop/alertcontext";
+import { FileUpload } from "@/components/ui/uploadfile";
 
 // Tipe untuk props yang akan diterima komponen ini
 interface InputIntipFormProps {
@@ -94,7 +95,9 @@ const DetailField = ({
 
   return (
     <div>
-      <label className="block font-semibold mb-2">{label}*</label>
+      <label className="block font-semibold mb-2">
+        {label} <span className="text-red-500">*</span>
+      </label>
       <div className="relative">
         <input
           type={type}
@@ -198,13 +201,6 @@ export default function InputIntipForm({
 
       await onSubmit(dataToSend);
 
-      showToast({
-        type: "success",
-        title: "Berhasil Disimpan!",
-        message: "Data INTIP berhasil disimpan ke sistem.",
-        duration: 4000,
-      });
-
       onClose();
     } catch (error) {
       console.error("Error submitting INTIP data:", error);
@@ -245,7 +241,7 @@ export default function InputIntipForm({
     }
   };
 
-  const statusOptions = ["OK", "Not OK"];
+  const statusOptions = ["OK", "NOK"];
 
   return (
     // Latar belakang modal
@@ -278,12 +274,13 @@ export default function InputIntipForm({
             type="date"
             onChange={handleInputChange}
           />
-          <DetailField
+          <FileUpload
             label="Bukti Approval INTIP"
             value={formData.file_intip}
             name="file_intip"
-            type="file"
-            onChange={handleInputChange}
+            onChange={(file) =>
+              setFormData((prev) => ({ ...prev, file_intip: file }))
+            }
           />
         </div>
 
@@ -291,7 +288,7 @@ export default function InputIntipForm({
         <div className="flex justify-end gap-3 p-4 rounded-b-xl">
           <Button
             type="button"
-            variant="outline"
+            variant="submit"
             onClick={handleCancel}
             className="rounded-full px-6"
             disabled={isSubmitting}

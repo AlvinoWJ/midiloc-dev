@@ -19,7 +19,6 @@ const fetcher = async (url: string): Promise<UlokApiResponse> => {
 // 👇 2. Definisikan tipe untuk data yang sudah bersih/ter-mapping
 //    Ini adalah struktur yang akan digunakan oleh komponen UI Anda
 export type MappedUlokData = {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   id: any; // Sebaiknya ganti 'any' dengan tipe ID Anda, misal: number atau string
   namaUlok: string;
   provinsi: string;
@@ -46,6 +45,8 @@ export type MappedUlokData = {
 
   latitude: number | null;
   longitude: number | null;
+  namaUser: string | null;
+  formulok: string | null;
 };
 
 // 👇 3. Tambahkan tipe pada nilai kembalian hook
@@ -90,7 +91,6 @@ export function useUlokDetail(id: string | undefined): UseUlokDetailReturn {
         hargasewa: `Rp ${new Intl.NumberFormat("id-ID").format(
           raw.harga_sewa
         )}`,
-
         namapemilik: raw.nama_pemilik,
         kontakpemilik: raw.kontak_pemilik,
         approval_status: raw.approval_status,
@@ -99,6 +99,8 @@ export function useUlokDetail(id: string | undefined): UseUlokDetailReturn {
         approval_intip: raw.approval_intip,
         latitude: raw.latitude,
         longitude: raw.longitude,
+        namaUser: raw.users?.nama ?? null,
+        formulok: raw.form_ulok,
       }
     : null;
 
