@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Edit3 } from "lucide-react";
 import { StatusBadge } from "@/components/shared/statusbadge";
-import { formatDate } from "@/utils/ulok-utils";
+import { formatDate } from "@/components/ui/ulok-utils";
 
 interface MobileInfoCardProps {
   id: string;
@@ -22,7 +22,7 @@ export default function MobileInfoCard({
 
   return (
     <Link href={`/usulan_lokasi/detail/${id}`}>
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md hover:border-gray-300 transition-all duration-200 active:scale-[0.98]">
+      <div className="bg-white rounded-xl mb-4 shadow-sm border border-gray-200 p-4 hover:shadow-md hover:border-gray-300 transition-all duration-200 active:scale-[0.98]">
         {/* Header */}
         <div className="flex justify-between items-start mb-3">
           <div className="flex-1 min-w-0 pr-3">

@@ -1,14 +1,15 @@
 // app/dashboard/page.tsx
 "use client";
 
+import { useState } from "react";
 import SWRProvider from "@/app/swr-provider";
-import { useDeviceType } from "@/hooks/useDeviceType";
+import { useDevice } from "@/app/context/DeviceContext";
 import { useUser } from "@/hooks/useUser";
 // import { useProperti } from "@/hooks/useProperty"; // <-- 1. IMPORT hook baru
 import { DashboardPageProps } from "@/types/common";
 import DesktopDashboardLayout from "@/components/desktop/dashboard-layout";
 import MobileDashboardLayout from "@/components/mobile/dashboard-layout";
-import { useUlok } from "@/hooks/useUlok";
+import { useDashboard } from "@/hooks/useDashboard";
 
 export default function DashboardPageWrapper() {
   return (
@@ -19,25 +20,23 @@ export default function DashboardPageWrapper() {
 }
 
 export function DashboardPage() {
-  const { isMobile, isDeviceLoading } = useDeviceType();
+  const { isMobile } = useDevice();
   const { user } = useUser();
 
-  // 2. GUNAKAN hook baru untuk mengambil data properti
-  const { ulokData, ulokLoading, ulokError } = useUlok();
+  // state filter tahun
+  const [year, setYear] = useState<number | null>(new Date().getFullYear());
+
+  // Panggil hook useDashboard dengan state filter
+  const { dashboardData, isLoading, isError } = useDashboard({ year });
 
   // 4. Siapkan props untuk dikirim ke komponen layout
   const dashboardProps: DashboardPageProps = {
-    // Gunakan data dari hook, berikan array kosong sebagai fallback
-    propertiData: ulokData || [],
+    propertiData: dashboardData, // <-- Kirim data dari useDashboard
     user,
-    isLoading: ulokLoading,
-    isError: ulokError,
+    isLoading, // <-- Kirim status loading dari useDashboard
+    isError, // <-- Kirim status error dari useDashboard
+    setYear, // <-- Kirim fungsi untuk mengubah tahun
   };
-
-  if (isDeviceLoading) {
-    // Anda bisa mengganti ini dengan komponen Skeleton/Loader yang lebih baik
-    return <div className="min-h-screen bg-gray-50" />;
-  }
 
   if (isMobile) {
     return <MobileDashboardLayout {...dashboardProps} />;

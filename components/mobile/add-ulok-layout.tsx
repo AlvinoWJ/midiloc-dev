@@ -1,7 +1,7 @@
 "use client";
 
 import { Input } from "@/components/ui/input";
-import { MapPin } from "lucide-react";
+import { MapPin, ArrowLeft } from "lucide-react";
 import CustomSelect from "@/components/ui/customselect";
 import { Button } from "@/components/ui/button";
 import WilayahSelector from "@/components/desktop/wilayahselector"; // Bisa digunakan kembali jika responsif
@@ -11,6 +11,8 @@ import dynamic from "next/dynamic";
 import { useAddUlokForm } from "@/hooks/useAddUlokForm"; // Import hook
 import MobileSidebar from "./sidebar";
 import MobileNavbar from "./navbar";
+import { useRouter } from "next/navigation";
+import { FileUpload } from "@/components/ui/uploadfile";
 
 interface TambahUlokFormProps {
   onSubmit: (data: UlokCreateInput) => Promise<void>;
@@ -32,10 +34,12 @@ export default function AddUlokFormMobile({
     isMapOpen,
     setIsMapOpen,
     handleChange,
+    handleFileChange,
     handleWilayahChange,
     handleMapSelect,
     handleFormSubmit,
   } = useAddUlokForm({ onSubmit, isSubmitting });
+  const router = useRouter();
 
   const formatStoreOptions = ["Reguler", "Super", "Spesifik", "Franchise"];
   const bentukObjekOptions = ["Tanah", "Bangunan"];
@@ -45,13 +49,17 @@ export default function AddUlokFormMobile({
       <MobileSidebar />
       <MobileNavbar />
       <form onSubmit={handleFormSubmit} className="space-y-6 p-4">
+        <Button onClick={() => router.back()} variant="back">
+          <ArrowLeft size={20} className="mr-1" />
+          Kembali
+        </Button>
         {/* === BAGIAN DATA LOKASI === */}
-        <div className="bg-white shadow rounded-lg p-4 space-y-4">
-          <h2 className="text-lg font-bold text-gray-800 border-b pb-2">
+        <div className="bg-white shadow rounded px-4 pt-4 pb-8 space-y-4">
+          <h2 className="text-xl font-bold text-black border-b pb-2">
             Data Lokasi
           </h2>
           <div>
-            <label className="block font-semibold text-sm mb-1">
+            <label className="block font-semibold text-base mb-1">
               Nama ULOK <span className="text-primary">*</span>
             </label>
             <Input
@@ -72,7 +80,7 @@ export default function AddUlokFormMobile({
 
           {/* Alamat */}
           <div>
-            <label className="block font-semibold text-sm mb-1">
+            <label className="block font-semibold text-base mb-1">
               Alamat <span className="text-red-500">*</span>
             </label>
             <textarea
@@ -81,7 +89,7 @@ export default function AddUlokFormMobile({
               value={formData.alamat}
               onChange={handleChange}
               rows={3}
-              className="w-full text-sm px-3 py-2 border rounded"
+              className="w-full text-base px-3 py-1 border border-gray-300 rounded shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
             />
             {errors.alamat && (
               <p className="text-red-500 text-xs mt-1">{errors.alamat}</p>
@@ -89,7 +97,7 @@ export default function AddUlokFormMobile({
           </div>
 
           <div>
-            <label className="block font-semibold text-sm mb-1">
+            <label className="block font-semibold text-base mb-1">
               LatLong <span className="text-red-500">*</span>
             </label>
             <div className="flex items-center gap-2">
@@ -114,8 +122,8 @@ export default function AddUlokFormMobile({
         </div>
 
         {/* === BAGIAN DATA STORE === */}
-        <div className="bg-white shadow rounded-lg p-4 space-y-4">
-          <h2 className="text-lg font-bold text-gray-800 border-b pb-2">
+        <div className="bg-white shadow rounded px-4 pt-4 pb-8 space-y-4">
+          <h2 className="text-xl font-bold text-black border-b pb-2">
             Data Store
           </h2>
           <CustomSelect
@@ -149,7 +157,7 @@ export default function AddUlokFormMobile({
             error={errors.alasHak}
           />
           <div>
-            <label className="block font-semibold text-sm mb-1">
+            <label className="block font-semibold text-base mb-1">
               Jumlah Lantai <span className="text-red-500">*</span>
             </label>
             <Input
@@ -164,7 +172,7 @@ export default function AddUlokFormMobile({
             )}
           </div>
           <div>
-            <label className="block font-semibold text-sm mb-1">
+            <label className="block font-semibold text-base mb-1">
               Lebar Depan(m) <span className="text-red-500">*</span>
             </label>
             <Input
@@ -179,7 +187,7 @@ export default function AddUlokFormMobile({
             )}
           </div>
           <div>
-            <label className="block font-semibold text-sm mb-1">
+            <label className="block font-semibold text-base mb-1">
               Panjang(m) <span className="text-red-500">*</span>
             </label>
             <Input
@@ -194,7 +202,7 @@ export default function AddUlokFormMobile({
             )}
           </div>
           <div>
-            <label className="block font-semibold text-sm mb-1">
+            <label className="block font-semibold text-base mb-1">
               Luas(m²) <span className="text-red-500">*</span>
             </label>
             <Input
@@ -209,7 +217,7 @@ export default function AddUlokFormMobile({
             )}
           </div>
           <div>
-            <label className="block font-semibold text-sm mb-1">
+            <label className="block font-semibold text-base mb-1">
               Harga Sewa (+PPH 10%) <span className="text-red-500">*</span>
             </label>
             <Input
@@ -226,12 +234,12 @@ export default function AddUlokFormMobile({
         </div>
 
         {/* === BAGIAN DATA PEMILIK === */}
-        <div className="bg-white shadow rounded-lg p-4 space-y-4">
-          <h2 className="text-lg font-bold text-gray-800 border-b pb-2">
+        <div className="bg-white shadow rounded px-4 pt-4 pb-8 space-y-4">
+          <h2 className="text-xl font-bold text-black border-b pb-2">
             Data Pemilik
           </h2>
           <div>
-            <label className="block font-semibold text-sm mb-1">
+            <label className="block font-semibold text-base mb-1">
               Nama Pemilik <span className="text-red-500">*</span>
             </label>
             <Input
@@ -245,7 +253,7 @@ export default function AddUlokFormMobile({
             )}
           </div>
           <div>
-            <label className="block font-semibold text-sm mb-1">
+            <label className="block font-semibold text-base mb-1">
               Kontak Pemilik <span className="text-red-500">*</span>
             </label>
             <Input
@@ -262,12 +270,31 @@ export default function AddUlokFormMobile({
           </div>
         </div>
 
-        <div className="pt-4">
+        {/* === Form Kelengkapan === */}
+        <div className="bg-white shadow rounded px-4 pt-4 pb-8 space-y-4">
+          <h2 className="text-xl font-bold text-black border-b pb-2">
+            Form Kelengkapan
+          </h2>
+          <div>
+            {/* Area Upload yang Bisa Diklik */}
+            <FileUpload
+              label="Upload Form Kelengkapan"
+              name="formulok"
+              value={formData.formulok}
+              onChange={handleFileChange}
+            />
+            {errors.formulok && (
+              <p className="text-red-500 text-sm mt-1">{errors.formulok}</p>
+            )}
+          </div>
+        </div>
+
+        <div className="mt-0">
           <Button
             type="submit"
             variant="submit"
             size="lg"
-            className="w-full"
+            className="w-full rounded-xl"
             disabled={isSubmitting}
           >
             {isSubmitting ? "Menyimpan..." : "Simpan Usulan Lokasi"}

@@ -1,7 +1,7 @@
 "use client";
 
 import { Input } from "@/components/ui/input";
-import { MapPin, ArrowLeft } from "lucide-react";
+import { MapPin, ArrowLeft, FileUp } from "lucide-react";
 import CustomSelect from "@/components/ui/customselect";
 import { Button } from "@/components/ui/button";
 import WilayahSelector from "@/components/desktop/wilayahselector";
@@ -13,6 +13,7 @@ import Navbar from "./navbar";
 import Sidebar from "./sidebar";
 import { useSidebar } from "@/hooks/useSidebar";
 import { useRouter } from "next/navigation";
+import { FileUpload } from "@/components/ui/uploadfile";
 
 // Pastikan hook ini di-import
 
@@ -38,6 +39,7 @@ export default function AddUlokFormDesktop({
     isMapOpen,
     setIsMapOpen,
     handleChange,
+    handleFileChange,
     handleWilayahChange,
     handleMapSelect,
     handleFormSubmit,
@@ -347,6 +349,32 @@ export default function AddUlokFormDesktop({
                   {errors.kontakpemilik && (
                     <p className="text-red-500 text-sm mt-1">
                       {errors.kontakpemilik}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* From Kelengkapan */}
+            <div className="mt-10 relative max-w-7xl mx-auto">
+              {/* Tab Merah di Atas */}
+              <div className="absolute -top-4 left-6 bg-red-600 text-white px-4 py-1 rounded shadow-md font-bold">
+                Form Kelengkapan
+              </div>
+
+              {/* Kontainer Putih */}
+              <div className="bg-white shadow-[1px_1px_6px_rgba(0,0,0,0.25)] rounded-lg p-6">
+                <div>
+                  {/* Area Upload yang Bisa Diklik */}
+                  <FileUpload
+                    label="Upload Form Kelengkapan"
+                    name="formulok"
+                    value={formData.formulok}
+                    onChange={handleFileChange}
+                  />
+                  {errors.formulok && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.formulok}
                     </p>
                   )}
                 </div>

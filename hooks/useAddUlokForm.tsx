@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useAlert } from "@/components/desktop/alertcontext";
 import { UlokCreateSchema, UlokCreateInput } from "@/lib/validations/ulok";
 
-// Props yang dibutuhkan oleh hook
 interface UseAddUlokFormProps {
   onSubmit: (data: UlokCreateInput) => Promise<void>;
   isSubmitting: boolean;
@@ -33,6 +32,7 @@ export function useAddUlokForm({
     hargasewa: "",
     namapemilik: "",
     kontakpemilik: "",
+    formulok: null as File | null,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -54,8 +54,19 @@ export function useAddUlokForm({
     }
   };
 
+  // handler khusus untuk file upload
+  const handleFileChange = (file: File | null) => {
+    setFormData((prev) => ({ ...prev, formulok: file }));
+    if (errors["formulok"]) {
+      setErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors["formulok"];
+        return newErrors;
+      });
+    }
+  };
+
   const handleWilayahChange = (field: string, name: string) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const updatedData: Record<string, any> = { [field]: name };
     if (field === "provinsi") {
       updatedData.kabupaten = "";
@@ -101,13 +112,26 @@ export function useAddUlokForm({
       hargasewa: "Harga Sewa wajib diisi",
       namapemilik: "Nama Pemilik wajib diisi",
       kontakpemilik: "Kontak Pemilik wajib diisi",
+      formulok: "Form Kelengkapan wajib diisi",
     };
+
     const fieldErrors: Record<string, string> = {};
 
-    // Cek field yang wajib diisi
     Object.keys(requiredFields).forEach((field) => {
       const value = formData[field as keyof typeof formData];
-      if (!value || value.toString().trim() === "") {
+
+      if (field === "formulok") {
+        if (!value) {
+          fieldErrors[field] =
+            requiredFields[field as keyof typeof requiredFields];
+        } else {
+          // ✅ validasi tambahan: hanya PDF
+          const file = value as File;
+          if (file.type !== "application/pdf") {
+            fieldErrors[field] = "File harus berupa PDF";
+          }
+        }
+      } else if (!value || value.toString().trim() === "") {
         fieldErrors[field] =
           requiredFields[field as keyof typeof requiredFields];
       }
@@ -129,7 +153,6 @@ export function useAddUlokForm({
     numericFields.forEach((field) => {
       const value = formData[field as keyof typeof formData];
       if (value) {
-        // Hanya validasi jika ada isinya
         if (isNaN(Number(value))) {
           fieldErrors[field] = `Input harus berupa angka`;
         } else if (Number(value) <= 0) {
@@ -138,13 +161,12 @@ export function useAddUlokForm({
       }
     });
 
-    // Jika ada error dari validasi manual, tampilkan dan hentikan proses
     if (Object.keys(fieldErrors).length > 0) {
       setErrors(fieldErrors);
       return;
     }
 
-    // Lanjutkan ke validasi Zod jika validasi manual lolos
+    // --- VALIDASI ZOD
     const result = UlokCreateSchema.safeParse({
       nama_ulok: formData.namaUlok,
       provinsi: formData.provinsi,
@@ -156,7 +178,7 @@ export function useAddUlokForm({
       longitude: Number(formData.latlong.split(",")[1]?.trim() || 0),
       format_store: formData.formatStore,
       bentuk_objek: formData.bentukObjek,
-      alas_hak: formData.alasHak, // Sesuaikan jika inputnya berbeda
+      alas_hak: formData.alasHak,
       jumlah_lantai: Number(formData.jumlahlantai),
       lebar_depan: Number(formData.lebardepan),
       panjang: Number(formData.panjang),
@@ -164,12 +186,13 @@ export function useAddUlokForm({
       harga_sewa: Number(formData.hargasewa),
       nama_pemilik: formData.namapemilik,
       kontak_pemilik: formData.kontakpemilik,
+      form_ulok: formData.formulok,
     });
 
     if (!result.success) {
       const schemaErrors: Record<string, string> = {};
       const schemaFieldMap: Record<string, string> = {
-        nama_ulok: "namaUlok",
+        nama_ulok: "namaulok",
         desa_kelurahan: "kelurahan",
         latitude: "latlong",
         longitude: "latlong",
@@ -183,12 +206,12 @@ export function useAddUlokForm({
         harga_sewa: "hargasewa",
         nama_pemilik: "namapemilik",
         kontak_pemilik: "kontakpemilik",
+        form_ulok: "formulok",
       };
       result.error.issues.forEach((err) => {
         const schemaField = err.path[0] as string;
         const formField = schemaFieldMap[schemaField] || schemaField;
         if (!schemaErrors[formField]) {
-          // Hanya ambil error pertama untuk setiap field
           schemaErrors[formField] = err.message;
         }
       });
@@ -226,7 +249,6 @@ export function useAddUlokForm({
     }
   };
 
-  // Mengembalikan semua state dan handler yang dibutuhkan oleh UI
   return {
     formData,
     errors,
@@ -234,6 +256,7 @@ export function useAddUlokForm({
     isSubmitting,
     setIsMapOpen,
     handleChange,
+    handleFileChange,
     handleWilayahChange,
     handleMapSelect,
     handleFormSubmit,

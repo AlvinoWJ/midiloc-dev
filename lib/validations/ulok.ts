@@ -48,7 +48,7 @@ export const UlokBaseSchema = z
     harga_sewa: z.coerce.number(),
     nama_pemilik: z.string().min(1),
     kontak_pemilik: z.string().min(1),
-    // form_ulok: z.string().min(1).optional(), form ulok diproses di server backend  
+    form_ulok: z.string().min(1),
   })
   .strict();
 
