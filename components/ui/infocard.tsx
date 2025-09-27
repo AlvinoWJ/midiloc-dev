@@ -33,10 +33,8 @@ export function InfoCard({
     year: "numeric",
   });
 
-  const href = `${detailPath}/${id}`;
-
   return (
-    <Link href={`/usulan_lokasi/detail/${id}`}>
+    <Link href={`${detailPath}/${id}`}>
       <Card className="w-full shadow-[1px_1px_6px_rgba(0,0,0,0.25)] hover:shadow-lg transition-shadow duration-300">
         <CardHeader className="flex flex-row justify-between items-start space-y-0">
           <div className="flex-1 min-w-0">

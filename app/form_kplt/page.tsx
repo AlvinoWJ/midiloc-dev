@@ -8,7 +8,7 @@ import { useUser } from "@/hooks/useUser";
 import { useKplt } from "@/hooks/useKplt";
 import { KpltPageProps, UnifiedKpltItem } from "@/types/common"; // Import tipe baru
 import DesktopKPLTLayout from "@/components/desktop/kplt-layout";
-import MobileKPLTLayout from "@/components/mobile/kplt-layout";
+// import MobileKPLTLayout from "@/components/mobile/kplt-layout";
 
 export default function KPLTPageWrapper() {
   return (
@@ -130,9 +130,9 @@ export function KPLTPage() {
     isLocationSpecialist,
   };
 
-  if (isMobile) {
-    return <MobileKPLTLayout {...kpltProps} />;
-  }
+  // if (isMobile) {
+  //   return <MobileKPLTLayout {...kpltProps} />;
+  // }
 
   return <DesktopKPLTLayout {...kpltProps} />;
 }

@@ -1,7 +1,7 @@
 // types/common.ts
 
 // ==================================
-// 1. TIPE MODEL DATA (DATA MODELS)
+// TIPE MODEL DATA (KPLT DATA MODELS)
 // ==================================
 
 // Tipe untuk pengguna yang sedang login
@@ -76,10 +76,6 @@ export interface ApiKpltResponse {
   kplt_from_ulok_ok: UlokForKplt[];
 }
 
-// ==================================
-// 2. TIPE PROPERTI HALAMAN (PAGE PROPS)
-// ==================================
-
 // Tipe untuk KpltPageProps yang sudah sesuai dengan data dari API
 export interface KpltPageProps {
   isLoading: boolean;
@@ -102,6 +98,10 @@ export interface KpltPageProps {
   isLocationSpecialist: () => boolean;
 }
 
+// ==================================
+// ULOK page props
+// ==================================
+
 // Tipe untuk UlokPageProps (bisa dibuat lebih spesifik atau generik sesuai kebutuhan)
 export interface UlokPageProps {
   isLoading: boolean;
@@ -118,7 +118,9 @@ export interface UlokPageProps {
   isLocationSpecialist: () => boolean;
 }
 
-// Dashboard
+// ==================================
+// DASHBOARD page props
+// ==================================
 
 import { DashboardData } from "@/hooks/useDashboard"; // Tipe data dari API dashboard
 
@@ -129,3 +131,43 @@ export interface DashboardPageProps {
   user: CurrentUser | null; // Data user yang sedang login
   setYear: (year: number | null) => void; // Fungsi untuk filter tahun
 }
+
+// ==================================
+// KPLT page props
+// ==================================
+
+export type KpltBaseData = {
+  luas: number;
+  alamat: string;
+  panjang: number;
+  alas_hak: string; // Tipe string, bukan boolean, berdasarkan contoh "false"
+  latitude: string;
+  provinsi: string;
+  form_ulok: string; // Bisa jadi null
+  is_active: boolean;
+  kabupaten: string;
+  kecamatan: string;
+  longitude: string;
+  nama_kplt: string;
+  file_intip: string; // Bisa jadi null
+  harga_sewa: number;
+  lebar_depan: number;
+  bentuk_objek: string;
+  format_store: string;
+  nama_pemilik: string;
+  jumlah_lantai: number;
+  desa_kelurahan: string;
+  kontak_pemilik: string;
+  approval_intip_status: string;
+  tanggal_approval_intip: string; // Bisa jadi null
+};
+
+/**
+ * Merepresentasikan struktur data lengkap yang dikembalikan
+ * oleh API prefill KPLT.
+ */
+export type PrefillKpltResponse = {
+  base: KpltBaseData;
+  ulok_id: string; // UUID
+  exists_kplt: boolean;
+};

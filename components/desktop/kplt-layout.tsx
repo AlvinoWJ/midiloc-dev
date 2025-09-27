@@ -6,7 +6,6 @@ import { useSidebar } from "@/hooks/useSidebar";
 import Sidebar from "@/components/desktop/sidebar";
 import Navbar from "@/components/desktop/navbar";
 import DesktopTabs from "@/components/desktop/tabs";
-import AddButton from "@/components/ui/addbutton";
 import SearchWithFilter from "@/components/desktop/searchwithfilter";
 import { InfoCard } from "@/components/ui/infocard";
 import { useRouter } from "next/navigation";
@@ -101,18 +100,6 @@ export default function DesktopKpltLayout(props: KpltPageProps) {
                         ? "Mulai dengan menambahkan KPLT baru."
                         : "Belum ada data riwayat KPLT."}
                     </p>
-                    {isLocationSpecialist() &&
-                      !searchQuery &&
-                      !filterMonth &&
-                      !filterYear &&
-                      activeTab === "Recent" && (
-                        <button
-                          onClick={() => router.push("/kplt/tambah")}
-                          className="mt-4 bg-red-500 text-white px-6 py-2 rounded-lg hover:bg-red-600 transition-colors"
-                        >
-                          Tambah KPLT
-                        </button>
-                      )}
                   </div>
                 ) : (
                   displayData.map((kplt) => (
@@ -123,7 +110,7 @@ export default function DesktopKpltLayout(props: KpltPageProps) {
                       alamat={kplt.alamat}
                       created_at={kplt.created_at}
                       status={kplt.status}
-                      detailPath="/form_kplt/detail"
+                      detailPath="/form_kplt/tambah"
                     />
                   ))
                 )}

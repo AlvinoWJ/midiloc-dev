@@ -274,12 +274,15 @@ export async function POST(request: Request) {
 
     // (Jika mau path saja: const fileUrlToStore = objectPath;)
 
+    // Remove 'form_ulok' from parsed.data to avoid duplicate key
+    const { form_ulok, ...parsedDataWithoutFormUlok } = parsed.data;
+
     const insertPayload = {
       id: newUlokId,
       users_id: user.id,
       branch_id: user.branch_id,
       form_ulok: fileUrlToStore, // langsung simpan link
-      ...parsed.data,
+      ...parsedDataWithoutFormUlok,
     };
 
     const { data, error } = await supabase

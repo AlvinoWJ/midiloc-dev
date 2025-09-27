@@ -12,8 +12,8 @@ import {
   Edit3,
   Store,
   UserSquare,
+  LinkIcon,
 } from "lucide-react";
-
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
 import { StatusBadge } from "@/components/ui/statusbadge";
@@ -168,7 +168,7 @@ export default function DesktopDetailUlokLayout(props: DetailUlokLayoutProps) {
           }`}
         >
           <Navbar />
-          <main className="flex-1 p-4 md:p-6 hide-scrollbar">
+          <main className="flex-1 p-4 md:p-6">
             <div className="max-w-7xl mx-auto">
               {/* --- HEADER TOMBOL --- */}
               <div className="flex justify-between items-center mb-6">
@@ -256,13 +256,20 @@ export default function DesktopDetailUlokLayout(props: DetailUlokLayoutProps) {
                 </div>
               </div>
 
+              {/* --- PETA LOKASI (Hanya di mode read) --- */}
+              {!isEditing && (
+                <div className="mb-8">
+                  <DetailMapCard id={initialData.id} />
+                </div>
+              )}
+
               {/* --- KARTU DATA USULAN LOKASI --- */}
               <div className="bg-white rounded-xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)] mb-8">
                 <div className="border-b border-gray-200 px-6 py-4">
                   <div className="flex items-center">
                     <MapPin className="text-red-500 mr-3" size={20} />
                     <h2 className="text-lg font-semibold text-gray-900">
-                      Data Usulan Lokasi
+                      Detail Lokasi
                     </h2>
                   </div>
                 </div>
@@ -326,12 +333,7 @@ export default function DesktopDetailUlokLayout(props: DetailUlokLayoutProps) {
                         label="Kelurahan/Desa"
                         value={editedData?.kelurahan}
                       />
-                      <div className="md:col-span-2">
-                        <DetailField
-                          label="Alamat"
-                          value={editedData?.alamat}
-                        />
-                      </div>
+                      <DetailField label="Alamat" value={editedData?.alamat} />
                       <DetailField
                         label="LatLong"
                         value={`${editedData.latitude ?? ""}, ${
@@ -349,7 +351,7 @@ export default function DesktopDetailUlokLayout(props: DetailUlokLayoutProps) {
                   <div className="flex items-center">
                     <Store className="text-red-500 mr-3" size={20} />
                     <h2 className="text-lg font-semibold text-gray-900">
-                      Data Store
+                      Detail Store
                     </h2>
                   </div>
                 </div>
@@ -399,7 +401,7 @@ export default function DesktopDetailUlokLayout(props: DetailUlokLayoutProps) {
                           onChange={handleInputChange}
                         />
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <DetailField
                           label="Lebar Depan (m)"
                           value={editedData.lebardepan}
@@ -416,6 +418,8 @@ export default function DesktopDetailUlokLayout(props: DetailUlokLayoutProps) {
                           type="number"
                           onChange={handleInputChange}
                         />
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <DetailField
                           label="Luas (m²)"
                           value={editedData.luas}
@@ -424,14 +428,14 @@ export default function DesktopDetailUlokLayout(props: DetailUlokLayoutProps) {
                           type="number"
                           onChange={handleInputChange}
                         />
+                        <DetailField
+                          label="Harga Sewa (+PPH 10%)"
+                          value={editedData.hargasewa}
+                          isEditing={true}
+                          name="hargasewa"
+                          onChange={handleInputChange}
+                        />
                       </div>
-                      <DetailField
-                        label="Harga Sewa (+PPH 10%)"
-                        value={editedData.hargasewa}
-                        isEditing={true}
-                        name="hargasewa"
-                        onChange={handleInputChange}
-                      />
                     </div>
                   ) : (
                     <>
@@ -453,7 +457,7 @@ export default function DesktopDetailUlokLayout(props: DetailUlokLayoutProps) {
                           value={editedData?.jumlahlantai}
                         />
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-4 mt-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 mt-4">
                         <DetailField
                           label="Lebar Depan (m)"
                           value={editedData?.lebardepan}
@@ -462,12 +466,12 @@ export default function DesktopDetailUlokLayout(props: DetailUlokLayoutProps) {
                           label="Panjang (m)"
                           value={editedData?.panjang}
                         />
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 mt-4">
                         <DetailField
                           label="Luas (m²)"
                           value={editedData?.luas}
                         />
-                      </div>
-                      <div className="mt-4">
                         <DetailField
                           label="Harga Sewa (+PPH 10%)"
                           value={editedData?.hargasewa}
@@ -516,10 +520,9 @@ export default function DesktopDetailUlokLayout(props: DetailUlokLayoutProps) {
                 </div>
               </div>
 
-              {/* --- PETA & KARTU INTIP (Hanya di mode view) --- */}
+              {/* --- KARTU INTIP (Hanya di mode view) --- */}
               {!isEditing && (
                 <>
-                  <DetailMapCard id={initialData.id} />
                   {isIntipDone && (
                     <div className="bg-white rounded-xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)] my-8">
                       <div className="border-b border-gray-200 px-6 py-4">
@@ -553,42 +556,40 @@ export default function DesktopDetailUlokLayout(props: DetailUlokLayoutProps) {
                                 : "-"
                             }
                           />
-                          <div className="md:col-span-2">
-                            <label className="text-gray-600 font-medium text-sm mb-1 block">
-                              Bukti Approval
-                            </label>
-                            {fileIntipUrl &&
-                              (() => {
-                                const isImage =
-                                  /\.(jpeg|jpg|gif|png|webp)$/i.test(
-                                    initialData.file_intip || ""
-                                  );
-                                return isImage ? (
-                                  <a
-                                    href={fileIntipUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                  >
-                                    <img
-                                      src={fileIntipUrl}
-                                      alt="Preview"
-                                      className="rounded-lg shadow-md max-w-xs max-h-60 object-contain border"
-                                    />
-                                  </a>
-                                ) : (
-                                  <a
-                                    href={fileIntipUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="flex items-center gap-2 p-3 bg-gray-100 rounded-lg text-sm text-red-600 hover:text-red-800 font-semibold max-w-md"
-                                  >
-                                    <FileText className="h-4 w-4" />
-                                    <span>
-                                      Lihat File: {initialData.file_intip}
-                                    </span>
-                                  </a>
-                                );
-                              })()}
+                          <div className="md:col-span-2 space-y-4">
+                            {/* Tampilkan komponen ini hanya jika fileIntipUrl ada */}
+                            <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border">
+                              <span className="text-sm text-gray-800 font-medium">
+                                Form Ulok
+                              </span>
+                              <a
+                                href={initialData.formulok!}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-1.5 px-3 rounded-lg transition-colors duration-200"
+                              >
+                                {/* Pastikan Anda sudah meng-import komponen LinkIcon */}
+                                <LinkIcon className="w-3 h-3 mr-1.5" />
+                                Lihat
+                              </a>
+                            </div>
+                            {fileIntipUrl && (
+                              <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border">
+                                <span className="text-sm text-gray-800 font-medium">
+                                  File Intip
+                                </span>
+                                <a
+                                  href={fileIntipUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-1.5 px-3 rounded-lg transition-colors duration-200"
+                                >
+                                  {/* Pastikan Anda sudah meng-import komponen LinkIcon */}
+                                  <LinkIcon className="w-3 h-3 mr-1.5" />
+                                  Lihat
+                                </a>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
