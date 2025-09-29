@@ -79,7 +79,7 @@ export function KPLTPage() {
       const lowerCaseStatus = item.status.toLowerCase();
       let matchTab = false; // Default ke false
       if (activeTab === "Recent") {
-        const recentStatuses = ["need input", "inprogress"];
+        const recentStatuses = ["need input", "in progress"];
         matchTab = recentStatuses.includes(lowerCaseStatus);
       } else if (activeTab === "History") {
         const historyStatuses = ["ok", "NOK"];

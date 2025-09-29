@@ -102,17 +102,27 @@ export default function DesktopKpltLayout(props: KpltPageProps) {
                     </p>
                   </div>
                 ) : (
-                  displayData.map((kplt) => (
-                    <InfoCard
-                      key={kplt.id}
-                      id={kplt.id}
-                      nama={kplt.nama}
-                      alamat={kplt.alamat}
-                      created_at={kplt.created_at}
-                      status={kplt.status}
-                      detailPath="/form_kplt/tambah"
-                    />
-                  ))
+                  displayData.map((kplt) => {
+                    // ▼▼▼ LOGIKA NAVIGASI KONDISIONAL DIMULAI DI SINI ▼▼▼
+
+                    const status = kplt.status.toLowerCase();
+                    const destinationUrl =
+                      status === "need input"
+                        ? `/form_kplt/tambah/` // Arahkan ke halaman tambah
+                        : `/form_kplt/detail/`; // Status lain (In Progress, History) arahkan ke halaman detail
+
+                    return (
+                      <InfoCard
+                        key={kplt.id}
+                        id={kplt.id}
+                        nama={kplt.nama}
+                        alamat={kplt.alamat}
+                        created_at={kplt.created_at}
+                        status={kplt.status}
+                        detailPath={destinationUrl} // Gunakan URL dinamis yang sudah kita tentukan
+                      />
+                    );
+                  })
                 )}
               </div>
             </>

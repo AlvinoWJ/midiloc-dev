@@ -5,7 +5,7 @@ import { KpltCreatePayloadSchema } from "@/lib/validations/kplt";
 
 export async function POST(
   req: Request,
-  { params }: { params: { id: string } }
+  { params: { id } }: { params: { id: string } }
 ) {
   const supabase = await createClient();
   const user = await getCurrentUser();
@@ -14,14 +14,26 @@ export async function POST(
   if (!canKplt("create", user))
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const { id } = params;
   // Validasi UUID sederhana
   if (!/^[0-9a-fA-F-]{36}$/.test(id)) {
     return NextResponse.json({ error: "Invalid ulok_id" }, { status: 422 });
   }
 
-  const json = await req.json().catch(() => null);
-  const parsed = KpltCreatePayloadSchema.safeParse(json);
+  // const json = await req.json().catch(() => null);
+
+  const form = await req.formData().catch(() => null);
+  if (!form) {
+    return NextResponse.json({ error: "Invalid form data" }, { status: 400 });
+  }
+  const raw: Record<string, unknown> = {};
+  form.forEach((val, keyOrig) => {
+    if (val instanceof File) return;
+    const key = keyOrig.trim();
+    if (key === "form_ulok" || key === "file_intip") return; // ignore file fields
+    raw[key] = val;
+  });
+
+  const parsed = KpltCreatePayloadSchema.safeParse(raw);
   if (!parsed.success) {
     return NextResponse.json(
       { error: "Validation failed", detail: parsed.error.issues },

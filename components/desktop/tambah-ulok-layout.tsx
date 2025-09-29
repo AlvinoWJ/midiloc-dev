@@ -155,7 +155,7 @@ export default function AddUlokFormDesktop({
             </div>
 
             {/* Bagian Data Store */}
-            <div className="mt-10 relative max-w-7xl mx-auto">
+            <div className="mt-10 relative mx-auto">
               <div className="absolute -top-4 left-6 bg-red-600 text-white px-4 py-1 rounded shadow-md font-semibold">
                 Data Store
               </div>
@@ -307,7 +307,7 @@ export default function AddUlokFormDesktop({
             </div>
 
             {/* Bagian Data Pemilik */}
-            <div className="mt-10 relative max-w-7xl mx-auto">
+            <div className="mt-10 relative mx-auto">
               <div className="absolute -top-4 left-6 bg-red-600 text-white px-4 py-1 rounded shadow-md font-bold">
                 Data Pemilik
               </div>
@@ -356,7 +356,7 @@ export default function AddUlokFormDesktop({
             </div>
 
             {/* From Kelengkapan */}
-            <div className="mt-10 relative max-w-7xl mx-auto">
+            <div className="mt-10 relative mx-auto">
               {/* Tab Merah di Atas */}
               <div className="absolute -top-4 left-6 bg-red-600 text-white px-4 py-1 rounded shadow-md font-bold">
                 Form Kelengkapan

@@ -351,7 +351,7 @@ export default function DesktopDetailUlokLayout(props: DetailUlokLayoutProps) {
                   <div className="flex items-center">
                     <Store className="text-red-500 mr-3" size={20} />
                     <h2 className="text-lg font-semibold text-gray-900">
-                      Detail Store
+                      Detail~ Store
                     </h2>
                   </div>
                 </div>
