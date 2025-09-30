@@ -2,13 +2,11 @@
 
 import { useState, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
-import useSWR from "swr";
 import { useTambahKplt } from "@/hooks/useTambahkplt"; // Hook form kita
 import TambahKpltLayout from "@/components/desktop/tambah-kplt-layout"; // Komponen UI
-import { mapKpltRowToMappedData } from "@/hooks/useKpltDetail";
 import SWRProvider from "@/app/swr-provider";
 import { useAlert } from "@/components/desktop/alertcontext"; // Untuk notifikasi
-import { PrefillKpltResponse } from "@/types/common";
+import { useKpltPrefill } from "@/hooks/useKpltPrefill";
 import { KpltCreatePayload } from "@/lib/validations/kplt";
 
 // Wrapper tidak perlu diubah, sudah benar
@@ -27,42 +25,23 @@ const PageStatus = ({ message }: { message: string }) => (
   </div>
 );
 
-// Fetcher untuk SWR
-const fetcher = async (url: string) => {
-  const res = await fetch(url);
-  if (!res.ok) {
-    const errorData = await res.json();
-    throw new Error(errorData.error || "Gagal memuat data.");
-  }
-  return res.json();
-};
-
 function TambahKpltPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const { showToast } = useAlert();
-  const ulokId = params?.id || "";
-
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const ulokId = params?.id;
 
-  // 1. FETCH DATA PREFILL (Hanya untuk ditampilkan di atas form)
+  if (!ulokId) {
+    return <PageStatus message="ID ULOK tidak ditemukan di URL." />;
+  }
+
   const {
-    data: prefillApiResponse,
-    error: prefillError,
+    data: mappedPrefillData, // Ini data yang sudah bersih
+    rawData: prefillApiResponse, // Ini data mentah untuk form
     isLoading: isPrefillLoading,
-  } = useSWR<PrefillKpltResponse>(
-    ulokId ? `/api/ulok/${ulokId}/kplt/prefill` : null,
-    fetcher
-  );
-
-  // 2. MAPPING DATA PREFILL
-  const mappedPrefillData = useMemo(
-    () =>
-      prefillApiResponse?.base
-        ? mapKpltRowToMappedData(prefillApiResponse)
-        : undefined,
-    [prefillApiResponse]
-  );
+    error: prefillError,
+  } = useKpltPrefill(ulokId);
 
   // 3. Setup hook form
   const { formData, errors, handleChange, handleFileChange, handleFormSubmit } =

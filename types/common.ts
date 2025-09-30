@@ -162,6 +162,32 @@ export type KpltBaseData = {
   tanggal_approval_intip: string; // Bisa jadi null
 };
 
+export type KpltBaseUIMapped = {
+  namaKplt: string;
+  alamat: string;
+  luas: number;
+  panjang: number;
+  lebarDepan: number;
+  provinsi: string;
+  kabupaten: string;
+  kecamatan: string;
+  desaKelurahan: string;
+  latitude: string;
+  longitude: string;
+  formatStore: string;
+  hargaSewa: number;
+  namaPemilik: string;
+  kontakPemilik: string;
+  alasHak: string;
+  bentukObjek: string;
+  jumlahLantai: number;
+  isActive: boolean;
+  formUlok: string | null;
+  fileIntip: string | null;
+  approvalIntipStatus: string;
+  tanggalApprovalIntip: string | null;
+};
+
 /**
  * Merepresentasikan struktur data lengkap yang dikembalikan
  * oleh API prefill KPLT.
@@ -171,3 +197,31 @@ export type PrefillKpltResponse = {
   ulok_id: string; // UUID
   exists_kplt: boolean;
 };
+
+// // types/common.ts
+// export interface KpltDetailResponse {
+//   data: {
+//     karakter_lokasi: string;
+//     sosial_ekonomi: string;
+//     skor_fpl: number;
+//     std: number;
+//     apc: number;
+//     spd: number;
+//     pe_status: string;
+//     pe_rab: number;
+//   };
+//   files: {
+//     pdf_foto_url: string | null;
+//     counting_kompetitor_url: string | null;
+//     pdf_pembanding_url: string | null;
+//     pdf_kks_url: string | null;
+//     excel_fpl_url: string | null;
+//     excel_pe_url: string | null;
+//     pdf_form_ukur_url: string | null;
+//     video_traffic_siang_url: string | null;
+//     video_traffic_malam_url: string | null;
+//     video_360_siang_url: string | null;
+//     video_360_malam_url: string | null;
+//     peta_coverage_url: string | null;
+//   };
+// }

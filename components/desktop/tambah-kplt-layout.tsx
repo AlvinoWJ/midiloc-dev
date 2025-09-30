@@ -4,7 +4,6 @@ import React, { useState } from "react";
 import Sidebar from "@/components/desktop/sidebar";
 import Navbar from "@/components/desktop/navbar";
 import { useSidebar } from "@/hooks/useSidebar";
-import { MappedKpltData } from "@/hooks/useKpltDetail";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input"; // Asumsi path ini benar
 import { Label } from "@/components/ui/label"; // Asumsi path ini benar
@@ -13,10 +12,11 @@ import { useRouter } from "next/navigation";
 import CustomSelect from "../ui/customselect";
 import { KpltCreatePayload } from "@/lib/validations/kplt";
 import PrefillKpltCard from "./prefillkpltcard";
+import { KpltBaseUIMapped } from "@/types/common";
 
 // --- 1. PROPS DISESUAIKAN UNTUK MENERIMA LOGIKA DARI PARENT ---
 interface TambahKpltLayoutProps {
-  prefillData: MappedKpltData | undefined; // Menggantikan 'data'
+  prefillData: KpltBaseUIMapped | undefined; // Menggantikan 'data'
   formData: any;
   errors: any;
   isSubmitting: boolean;
@@ -47,18 +47,6 @@ interface FileInputConfig {
   label: string;
   accept: string;
 }
-
-// --- Komponen DetailField (Tidak ada perubahan) ---
-const DetailField = ({ label, value }: { label: string; value: any }) => (
-  <div>
-    <label className="text-gray-600 font-medium text-sm mb-1 block">
-      {label}
-    </label>
-    <div className="text-gray-900 py-2 text-sm bg-gray-100 rounded-lg px-3 min-h-[40px] flex items-center w-full break-words">
-      {value || "-"}
-    </div>
-  </div>
-);
 
 // --- Komponen FileLink untuk menampilkan link file ---
 const FileLink = ({ label, url }: { label: string; url: string | null }) => {
@@ -368,7 +356,7 @@ export default function TambahKpltLayout({
               <Button
                 type="submit"
                 variant="submit"
-                size="default"
+                size="lg"
                 disabled={isSubmitting}
               >
                 {isSubmitting ? "Menyimpan..." : "Simpan Data KPLT"}

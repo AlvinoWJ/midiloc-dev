@@ -19,12 +19,12 @@ const buttonVariants = cva(
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
         submit:
-          "bg-submit text-submit-foreground shadow rounded-full hover:bg-green-600",
+          "bg-submit text-submit-foreground shadow rounded-xl hover:bg-green-600",
       },
       size: {
-        default: "h-11 px-8 py-4 text-md",
+        default: "h-10 px-4 py-4 text-md",
         sm: "h-8 rounded-md px-3 text-xs",
-        lg: "h-10 rounded-md px-8",
+        lg: "h-11 px-8 py-4 text-lg",
         icon: "h-9 w-9",
       },
     },

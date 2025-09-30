@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { MappedKpltData } from "@/hooks/useKpltDetail";
+import { KpltBaseUIMapped } from "@/types/common";
 import { LinkIcon } from "lucide-react";
 import {
   ChevronDownIcon,
@@ -43,7 +43,7 @@ const FileLink = ({ label, url }: { label: string; url: string | null }) => {
 };
 
 // Komponen Utama Kartu Prefill
-export default function PrefillKpltCard({ data }: { data: MappedKpltData }) {
+export default function PrefillKpltCard({ data }: { data: KpltBaseUIMapped }) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
@@ -74,7 +74,10 @@ export default function PrefillKpltCard({ data }: { data: MappedKpltData }) {
                 <DetailField label="Provinsi" value={data.provinsi} />
                 <DetailField label="Kabupaten/Kota" value={data.kabupaten} />
                 <DetailField label="Kecamatan" value={data.kecamatan} />
-                <DetailField label="Kelurahan/Desa" value={data.desa} />
+                <DetailField
+                  label="Kelurahan/Desa"
+                  value={data.desaKelurahan}
+                />
                 <DetailField
                   label="Lat/Long"
                   value={`${data.latitude}, ${data.longitude}`}
@@ -120,7 +123,7 @@ export default function PrefillKpltCard({ data }: { data: MappedKpltData }) {
                 Pemilik
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <DetailField label="Nama Pemilik" value={data.pemilik} />
+                <DetailField label="Nama Pemilik" value={data.namaPemilik} />
                 <DetailField
                   label="Kontak Pemilik"
                   value={data.kontakPemilik}
