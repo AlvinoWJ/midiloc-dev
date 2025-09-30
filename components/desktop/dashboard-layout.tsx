@@ -18,16 +18,45 @@ export default function DesktopDashboardLayout(props: DashboardPageProps) {
     propertiData: dashboardData, // Mengganti nama variabel agar lebih jelas
     isLoading,
     isError,
+    user,
     setYear,
-    // setBranchId, // Anda bisa uncomment jika ada filter cabang
+    selectedSpecialistId,
+    onSpecialistChange,
   } = props;
-  const { isCollapsed } = useSidebar();
 
-  // 1. MEMPROSES DATA KPI UNTUK STATS CARD
-  // Gunakan useMemo agar kalkulasi tidak diulang setiap kali render
+  const { isCollapsed } = useSidebar();
+  const isLocationManager = dashboardData?.filters?.role === "location manager";
+
+  // 🔹 Proses KPI dinamis (per specialist kalau dipilih)
   const dynamicStatsData = useMemo(() => {
     if (!dashboardData) return [];
-    const { kpis } = dashboardData;
+
+    let kpis = dashboardData.kpis;
+
+    // Kalau ada specialist dipilih → pakai datanya
+    if (selectedSpecialistId && dashboardData.breakdown?.rows) {
+      const specialistRow = dashboardData.breakdown.rows.find(
+        (row) => row.user_id === selectedSpecialistId
+      );
+
+      if (specialistRow) {
+        kpis = {
+          total_kplt: specialistRow.kplt_total,
+          total_ulok: specialistRow.ulok_total,
+          total_kplt_approves: specialistRow.kplt_ok,
+          total_ulok_approves: specialistRow.ulok_ok,
+          presentase_kplt_approves:
+            specialistRow.kplt_total > 0
+              ? (specialistRow.kplt_ok / specialistRow.kplt_total) * 100
+              : 0,
+          presentase_ulok_approves:
+            specialistRow.ulok_total > 0
+              ? (specialistRow.ulok_ok / specialistRow.ulok_total) * 100
+              : 0,
+        };
+      }
+    }
+
     const formatPercent = (val: number = 0) => `${val.toFixed(1)}%`;
 
     return [
@@ -62,37 +91,93 @@ export default function DesktopDashboardLayout(props: DashboardPageProps) {
         color: "green" as const,
       },
     ];
-  }, [dashboardData]);
+  }, [dashboardData, selectedSpecialistId]);
 
-  // 2. MEMPROSES DATA UNTUK SEMUA CHART
+  // 🔹 Data donut & bar dinamis (ikut specialist kalau dipilih)
   const { ulokDonut, kpltDonut, ulokBar, kpltBar } = useMemo(() => {
     if (!dashboardData) return {};
-    // Donut charts: Ubah 'count' menjadi 'value' sesuai kebutuhan komponen
-    const ulokDonut = dashboardData.donut_ulok.map((item) => ({
-      status: item.status,
-      label: item.label,
-      value: item.count,
-    }));
-    const kpltDonut = dashboardData.donut_kplt.map((item) => ({
-      status: item.status,
-      label: item.label,
-      value: item.count,
-    }));
 
-    // Bar charts: Ubah 'bulan' menjadi 'month' dan hitung 'pending'
-    const ulokBar = dashboardData.perbulan_ulok.map((item) => ({
+    // default pakai data total dari API
+    let ulokDonut = dashboardData.donut_ulok.map((item) => ({
+      status: item.status,
+      label: item.label,
+      value: item.count,
+    }));
+    let kpltDonut = dashboardData.donut_kplt.map((item) => ({
+      status: item.status,
+      label: item.label,
+      value: item.count,
+    }));
+    let ulokBar = dashboardData.perbulan_ulok.map((item) => ({
       month: item.bulan.substring(0, 3),
       approved: item.ulok_approves ?? 0,
       status: (item.total_ulok ?? 0) - (item.ulok_approves ?? 0),
     }));
-    const kpltBar = dashboardData.perbulan_kplt.map((item) => ({
+    let kpltBar = dashboardData.perbulan_kplt.map((item) => ({
       month: item.bulan.substring(0, 3),
       approved: item.kplt_approves ?? 0,
       status: (item.total_kplt ?? 0) - (item.kplt_approves ?? 0),
     }));
 
+    // kalau ada specialist dipilih → hitung ulang berdasarkan breakdown
+    if (selectedSpecialistId && dashboardData.breakdown?.rows) {
+      const specialistRow = dashboardData.breakdown.rows.find(
+        (row) => row.user_id === selectedSpecialistId
+      );
+
+      if (specialistRow) {
+        // 🔸 Donut ULOK/KPLT → hanya 2 kategori (OK vs Belum OK)
+        ulokDonut = [
+          { status: "OK", label: "Approve", value: specialistRow.ulok_ok },
+          {
+            status: "In Progress",
+            label: "Belum Approve",
+            value: specialistRow.ulok_total - specialistRow.ulok_ok,
+          },
+        ];
+        kpltDonut = [
+          { status: "OK", label: "Approve", value: specialistRow.kplt_ok },
+          {
+            status: "In Progress",
+            label: "Belum Approve",
+            value: specialistRow.kplt_total - specialistRow.kplt_ok,
+          },
+        ];
+
+        // 🔸 Bar chart per bulan → di breakdown tidak ada data bulanan,
+        // jadi bisa bikin data dummy per bulan (semua 0 kecuali total akhir).
+        // Kalau API nanti support perbulan per specialist, tinggal ganti mapping-nya.
+        ulokBar = dashboardData.perbulan_ulok.map((item) => ({
+          month: item.bulan.substring(0, 3),
+          approved: 0,
+          status: 0,
+        }));
+        kpltBar = dashboardData.perbulan_kplt.map((item) => ({
+          month: item.bulan.substring(0, 3),
+          approved: 0,
+          status: 0,
+        }));
+
+        // Atau kalau mau langsung taruh totalnya di bulan terakhir:
+        if (ulokBar.length > 0) {
+          ulokBar[ulokBar.length - 1] = {
+            month: "Total",
+            approved: specialistRow.ulok_ok,
+            status: specialistRow.ulok_total - specialistRow.ulok_ok,
+          };
+        }
+        if (kpltBar.length > 0) {
+          kpltBar[kpltBar.length - 1] = {
+            month: "Total",
+            approved: specialistRow.kplt_ok,
+            status: specialistRow.kplt_total - specialistRow.kplt_ok,
+          };
+        }
+      }
+    }
+
     return { ulokDonut, kpltDonut, ulokBar, kpltBar };
-  }, [dashboardData]);
+  }, [dashboardData, selectedSpecialistId]);
 
   return (
     <div className="flex">
@@ -158,6 +243,28 @@ export default function DesktopDashboardLayout(props: DashboardPageProps) {
                     </p>
                   </div>
                   <div className="flex items-center space-x-2">
+                    {/* --- FILTER BARU HANYA UNTUK MANAGER --- */}
+                    {isLocationManager && dashboardData.breakdown && (
+                      <select
+                        value={selectedSpecialistId || ""}
+                        onChange={(e) =>
+                          onSpecialistChange(e.target.value || null)
+                        }
+                        className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                      >
+                        <option value="">Semua Specialist</option>
+                        {/* Ambil daftar specialist dari `dashboardData.breakdown.rows` */}
+                        {dashboardData.breakdown.rows.map((specialist) => (
+                          <option
+                            key={specialist.user_id}
+                            value={specialist.user_id}
+                          >
+                            {specialist.nama}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                    {/* Filter Tahun */}
                     <select
                       value={
                         dashboardData.filters.year || new Date().getFullYear()

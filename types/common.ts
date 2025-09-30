@@ -15,6 +15,63 @@ export interface CurrentUser {
   position_nama?: string | null;
 }
 
+// --- TIPE UNTUK DASHBOARD---
+interface KpiData {
+  total_kplt: number;
+  total_ulok: number;
+  total_kplt_approves: number;
+  total_ulok_approves: number;
+  presentase_kplt_approves: number;
+  presentase_ulok_approves: number;
+}
+
+interface FilterData {
+  role?: string;
+  year: number | null;
+  branch_id: string;
+  branch_name: string;
+}
+
+interface BreakdownRow {
+  nama: string;
+  user_id: string;
+  kplt_ok: number;
+  ulok_ok: number;
+  kplt_total: number;
+  ulok_total: number;
+}
+
+interface BreakdownData {
+  rows: BreakdownRow[];
+  type: string;
+}
+
+interface DonutChartItem {
+  count: number;
+  label: string;
+  status: string;
+  percentage: number;
+}
+
+interface MonthlyDataItem {
+  bulan: string;
+  month_start: string;
+  total_kplt?: number;
+  kplt_approves?: number;
+  total_ulok?: number;
+  ulok_approves?: number;
+}
+
+export interface DashboardData {
+  kpis: KpiData;
+  filters: FilterData;
+  breakdown?: BreakdownData;
+  donut_kplt: DonutChartItem[];
+  donut_ulok: DonutChartItem[];
+  perbulan_kplt: MonthlyDataItem[];
+  perbulan_ulok: MonthlyDataItem[];
+}
+
 // --- Tipe untuk ULOK ---
 export interface Ulok {
   id: string;
@@ -121,15 +178,14 @@ export interface UlokPageProps {
 // ==================================
 // DASHBOARD page props
 // ==================================
-
-import { DashboardData } from "@/hooks/useDashboard"; // Tipe data dari API dashboard
-
 export interface DashboardPageProps {
-  propertiData?: DashboardData; // Data dari hook useDashboard, opsional karena bisa 'undefined' saat loading
-  isLoading: boolean; // Untuk menampilkan skeleton/loading state
-  isError: any; // Untuk menampilkan pesan error
-  user: CurrentUser | null; // Data user yang sedang login
-  setYear: (year: number | null) => void; // Fungsi untuk filter tahun
+  propertiData?: DashboardData;
+  isLoading: boolean;
+  isError: any;
+  user: CurrentUser | null; // <-- Ini sudah benar menggunakan CurrentUser
+  setYear: (year: number | null) => void;
+  selectedSpecialistId: string | null;
+  onSpecialistChange: (id: string | null) => void;
 }
 
 // ==================================
