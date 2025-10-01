@@ -3,18 +3,8 @@
 
 import React from "react";
 import { useParams } from "next/navigation";
-import SWRProvider from "@/app/swr-provider";
 import DetailKpltLayout from "@/components/desktop/detail-kplt-layout";
 import { useKpltDetail } from "@/hooks/useKpltDetail";
-
-// Komponen Wrapper SWR (tidak perlu diubah)
-export default function DetailKpltPageWrapper() {
-  return (
-    <SWRProvider>
-      <DetailKpltPage />
-    </SWRProvider>
-  );
-}
 
 // Komponen helper status (tidak perlu diubah)
 const PageStatus = ({ message }: { message: string }) => (
@@ -25,7 +15,7 @@ const PageStatus = ({ message }: { message: string }) => (
 
 // --- PERUBAHAN 2: Hapus fungsi fetcher dari sini ---
 
-function DetailKpltPage() {
+export default function DetailKpltPage() {
   const params = useParams<{ id: string }>();
   const kpltId = params?.id;
 

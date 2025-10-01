@@ -47,7 +47,7 @@ export default function PrefillKpltCard({ data }: { data: KpltBaseUIMapped }) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
-    <div className="bg-white rounded-xl shadow-md transition-all duration-500">
+    <div className="bg-white rounded-xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)] transition-all duration-500">
       <div className="p-6">
         <div className="flex flex-col md:flex-row justify-between md:items-center">
           <div className="flex-1 min-w-0 pr-4">

@@ -2,29 +2,17 @@
 "use client";
 
 import { useState, useCallback, useMemo } from "react"; // Tambahkan useMemo
-import SWRProvider from "@/app/swr-provider";
-import { useDevice } from "@/app/context/DeviceContext";
 import { useUser } from "@/hooks/useUser";
 import { useKplt } from "@/hooks/useKplt";
 import { KpltPageProps, UnifiedKpltItem } from "@/types/common"; // Import tipe baru
 import DesktopKPLTLayout from "@/components/desktop/kplt-layout";
-// import MobileKPLTLayout from "@/components/mobile/kplt-layout";
 
-export default function KPLTPageWrapper() {
-  return (
-    <SWRProvider>
-      <KPLTPage />
-    </SWRProvider>
-  );
-}
-
-export function KPLTPage() {
+export default function KPLTPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterMonth, setFilterMonth] = useState("");
   const [filterYear, setFilterYear] = useState("");
   const [activeTab, setActiveTab] = useState("Recent");
 
-  const { isMobile } = useDevice();
   const { user, loadingUser, userError } = useUser();
 
   const isLocationSpecialist = useCallback(() => {

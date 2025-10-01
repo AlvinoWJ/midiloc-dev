@@ -2,8 +2,6 @@
 
 import { useState } from "react";
 import { useParams } from "next/navigation";
-import SWRProvider from "@/app/swr-provider";
-import { useDevice } from "@/app/context/DeviceContext";
 import { useUlokDetail } from "@/hooks/useUlokDetail";
 import { useAlert } from "@/components/desktop/alertcontext";
 import { UlokUpdateInput } from "@/lib/validations/ulok";
@@ -11,20 +9,10 @@ import DesktopDetailUlok from "@/components/desktop/detail-ulok-layout";
 import MobileDetailUlok from "@/components/mobile/detail-ulok-layout";
 import InputIntipForm from "@/components/ui/inputintip";
 
-// Komponen Wrapper untuk SWR, tidak berubah
-export default function DetailPageWrapper() {
-  return (
-    <SWRProvider>
-      <DetailPage />
-    </SWRProvider>
-  );
-}
-
 // Komponen Halaman Inti
-export function DetailPage() {
+export default function DetailPage() {
   // --- SETUP & HOOKS ---
   const { id } = useParams<{ id: string }>();
-  const { isMobile } = useDevice();
   const { ulokData, isLoading, errorMessage, refresh } = useUlokDetail(id);
   const { showToast, showConfirmation } = useAlert();
   const [showIntipForm, setShowIntipForm] = useState(false);
@@ -164,10 +152,6 @@ export function DetailPage() {
 
     return (
       <>
-        {/* Versi Mobile: Tampil di layar kecil, tersembunyi di layar 'md' ke atas */}
-        <div className="md:hidden">
-          <MobileDetailUlok {...loadingProps} />
-        </div>
         {/* Versi Desktop: Tersembunyi di layar kecil, tampil di layar 'md' ke atas */}
         <div className="hidden md:block">
           <DesktopDetailUlok {...loadingProps} />
@@ -201,11 +185,7 @@ export function DetailPage() {
 
   return (
     <>
-      {isMobile ? (
-        <MobileDetailUlok {...pageProps} />
-      ) : (
-        <DesktopDetailUlok {...pageProps} />
-      )}
+      <DesktopDetailUlok {...pageProps} />
 
       {/* Modal dirender di level ini agar bisa tampil di atas layout manapun */}
       {showIntipForm && (

@@ -125,7 +125,7 @@ export function useAddUlokForm({
           fieldErrors[field] =
             requiredFields[field as keyof typeof requiredFields];
         } else {
-          // ✅ validasi tambahan: hanya PDF
+          // ✅ hanya boleh PDF
           const file = value as File;
           if (file.type !== "application/pdf") {
             fieldErrors[field] = "File harus berupa PDF";
@@ -166,8 +166,8 @@ export function useAddUlokForm({
       return;
     }
 
-    // --- VALIDASI ZOD
-    const result = UlokCreateSchema.safeParse({
+    // --- VALIDASI ZOD (ubah file -> string)
+    const payloadToValidate = {
       nama_ulok: formData.namaUlok,
       provinsi: formData.provinsi,
       kabupaten: formData.kabupaten,
@@ -187,7 +187,9 @@ export function useAddUlokForm({
       nama_pemilik: formData.namapemilik,
       kontak_pemilik: formData.kontakpemilik,
       form_ulok: formData.formulok,
-    });
+    };
+
+    const result = UlokCreateSchema.safeParse(payloadToValidate);
 
     if (!result.success) {
       const schemaErrors: Record<string, string> = {};

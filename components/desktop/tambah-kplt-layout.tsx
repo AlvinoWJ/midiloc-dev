@@ -1,8 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import Sidebar from "@/components/desktop/sidebar";
-import Navbar from "@/components/desktop/navbar";
 import { useSidebar } from "@/hooks/useSidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input"; // Asumsi path ini benar
@@ -121,250 +119,233 @@ export default function TambahKpltLayout({
 
   return (
     <div className="flex">
-      <Sidebar />
-      <div
-        className={`flex-1 flex flex-col bg-gray-100 min-h-screen transition-all duration-300 ${
-          isCollapsed ? "ml-[80px]" : "ml-[270px]"
-        }`}
-      >
-        <Navbar />
-        <main className="flex-1 p-4 md:p-6">
-          {/* Form akan membungkus semua konten input */}
-          <form
-            onSubmit={handleFormSubmit}
-            noValidate
-            className="max-w-7xl mx-auto"
+      <main className="flex-1 p-4 md:p-4">
+        {/* Form akan membungkus semua konten input */}
+        <form
+          onSubmit={handleFormSubmit}
+          noValidate
+          className="max-w-7xl mx-auto"
+        >
+          <Button
+            type="button" // Type button agar tidak submit form
+            onClick={() => router.back()}
+            variant="back"
+            className="mb-6 bg-white"
           >
-            <Button
-              type="button" // Type button agar tidak submit form
-              onClick={() => router.back()}
-              variant="back"
-              className="mb-6 bg-white"
-            >
-              <ArrowLeft size={16} className="mr-2" />
-              Kembali
-            </Button>
+            <ArrowLeft size={16} className="mr-2" />
+            Kembali
+          </Button>
 
-            {/* Bagian ini sekarang menampilkan prefillData */}
-            {prefillData && <PrefillKpltCard data={prefillData} />}
+          {/* Bagian ini sekarang menampilkan prefillData */}
+          {prefillData && <PrefillKpltCard data={prefillData} />}
 
-            {/* --- MULAI AREA FORM INPUT KPLT --- */}
-            <div className="relative mt-10 mx-auto max-w-7xl">
-              {/* Header */}
-              <div className="absolute -top-4 left-6 bg-red-600 text-white px-4 py-1 rounded-md shadow-md font-semibold">
-                Analisis Kelayakan Lokasi
-              </div>
+          {/* --- MULAI AREA FORM INPUT KPLT --- */}
+          <div className="relative mt-10 mx-auto max-w-7xl">
+            {/* Header */}
+            <div className="absolute -top-4 left-6 bg-red-600 text-white px-4 py-1 rounded-md shadow-md font-semibold">
+              Analisis Kelayakan Lokasi
+            </div>
 
-              {/* Card */}
-              <div className="bg-white shadow-[1px_1px_6px_rgba(0,0,0,0.25)] rounded-xl p-6 space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Karakter Lokasi */}
-                  <CustomSelect
-                    id="karakter_lokasi"
-                    name="karakter_lokasi"
-                    label="Karakter Lokasi"
-                    placeholder="Pilih Karakter Lokasi"
-                    options={karakterLokasiOptions}
-                    value={formData.karakter_lokasi}
-                    onChange={handleChange}
-                    error={errors.karakter_lokasi}
-                  />
+            {/* Card */}
+            <div className="bg-white shadow-[1px_1px_6px_rgba(0,0,0,0.25)] rounded-xl p-6 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Karakter Lokasi */}
+                <CustomSelect
+                  id="karakter_lokasi"
+                  name="karakter_lokasi"
+                  label="Karakter Lokasi"
+                  placeholder="Pilih Karakter Lokasi"
+                  options={karakterLokasiOptions}
+                  value={formData.karakter_lokasi}
+                  onChange={handleChange}
+                  error={errors.karakter_lokasi}
+                />
 
-                  {/* Sosial Ekonomi */}
-                  <CustomSelect
-                    id="sosial_ekonomi"
-                    name="sosial_ekonomi"
-                    label="Sosial Ekonomi"
-                    placeholder="Pilih Sosial Ekonomi"
-                    options={SocialEconomyOptions}
-                    value={formData.sosial_ekonomi}
-                    onChange={handleChange}
-                    error={errors.sosial_ekonomi}
-                  />
+                {/* Sosial Ekonomi */}
+                <CustomSelect
+                  id="sosial_ekonomi"
+                  name="sosial_ekonomi"
+                  label="Sosial Ekonomi"
+                  placeholder="Pilih Sosial Ekonomi"
+                  options={SocialEconomyOptions}
+                  value={formData.sosial_ekonomi}
+                  onChange={handleChange}
+                  error={errors.sosial_ekonomi}
+                />
 
-                  {/* Skor FPL */}
-                  <div className="flex-1">
-                    <div className="space-y-2">
-                      <Label
-                        htmlFor="skor_fpl"
-                        className="font-semibold text-base"
-                      >
-                        Skor FPL <span className="text-red-500">*</span>
-                      </Label>
-                      <Input
-                        id="skor_fpl"
-                        name="skor_fpl"
-                        type="number"
-                        placeholder="Masukkan skor FPL"
-                        value={formData.skor_fpl}
-                        onChange={handleChange}
-                        className={errors.apc ? "border-red-500" : ""}
-                      />
-                      {errors.skor_fpl && (
-                        <p className="text-sm text-red-500 mt-1">
-                          {errors.skor_fpl}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* STD */}
-                  <div className="flex-1">
-                    <div className="space-y-2">
-                      <Label htmlFor="std" className="font-semibold text-base">
-                        STD <span className="text-red-500">*</span>
-                      </Label>
-                      <Input
-                        id="std"
-                        name="std"
-                        type="number"
-                        placeholder="Masukkan std"
-                        value={formData.std}
-                        onChange={handleChange}
-                        className={errors.apc ? "border-red-500" : ""}
-                      />
-                      {errors.std && (
-                        <p className="text-sm text-red-500 mt-1">
-                          {errors.std}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* APC */}
-                  <div className="flex-1">
-                    <div className="space-y-2">
-                      <Label htmlFor="apc" className="font-semibold text-base">
-                        APC <span className="text-red-500">*</span>
-                      </Label>
-                      <Input
-                        id="apc"
-                        name="apc"
-                        type="number"
-                        placeholder="Masukkan apc"
-                        value={formData.apc}
-                        onChange={handleChange}
-                        className={errors.apc ? "border-red-500" : ""}
-                      />
-                      {errors.apc && (
-                        <p className="text-sm text-red-500 mt-1">
-                          {errors.apc}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* SPD */}
-                  <div className="flex-1">
-                    <div className="space-y-2">
-                      <Label htmlFor="spd" className="font-semibold text-base">
-                        SPD <span className="text-red-500">*</span>
-                      </Label>
-                      <Input
-                        id="spd"
-                        name="spd"
-                        type="number"
-                        placeholder="Masukkan spd"
-                        value={formData.spd}
-                        onChange={handleChange}
-                        className={errors.spd ? "border-red-500" : ""}
-                      />
-                      {errors.spd && (
-                        <p className="text-sm text-red-500 mt-1">
-                          {errors.spd}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex-1">
-                    {/* PE Status */}
-                    <CustomSelect
-                      id="pe_status"
-                      name="pe_status"
-                      label="PE Status"
-                      placeholder="Pilih Status PE"
-                      options={PeStatusOptions}
-                      value={formData.pe_status}
+                {/* Skor FPL */}
+                <div className="flex-1">
+                  <div className="space-y-2">
+                    <Label
+                      htmlFor="skor_fpl"
+                      className="font-semibold text-base"
+                    >
+                      Skor FPL <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="skor_fpl"
+                      name="skor_fpl"
+                      type="number"
+                      placeholder="Masukkan skor FPL"
+                      value={formData.skor_fpl}
                       onChange={handleChange}
-                      error={errors.pe_status}
+                      className={errors.apc ? "border-red-500" : ""}
                     />
+                    {errors.skor_fpl && (
+                      <p className="text-sm text-red-500 mt-1">
+                        {errors.skor_fpl}
+                      </p>
+                    )}
                   </div>
+                </div>
 
-                  {/* PE RAB */}
-                  <div className="flex-1">
-                    <div className="space-y-2">
-                      <Label
-                        htmlFor="pe_rab"
-                        className="font-semibold text-base"
-                      >
-                        PE RAB <span className="text-red-500">*</span>
-                      </Label>
-                      <Input
-                        id="pe_rab"
-                        name="pe_rab"
-                        type="number"
-                        placeholder="Masukkan PE RAB"
-                        value={formData.pe_rab}
-                        onChange={handleChange}
-                        disabled={isSubmitting}
-                        className={errors.pe_rab ? "border-red-500" : ""}
-                      />
-                      {errors.pe_rab && (
-                        <p className="text-sm text-red-500 mt-1">
-                          {errors.pe_rab}
-                        </p>
-                      )}
-                    </div>
+                {/* STD */}
+                <div className="flex-1">
+                  <div className="space-y-2">
+                    <Label htmlFor="std" className="font-semibold text-base">
+                      STD <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="std"
+                      name="std"
+                      type="number"
+                      placeholder="Masukkan std"
+                      value={formData.std}
+                      onChange={handleChange}
+                      className={errors.apc ? "border-red-500" : ""}
+                    />
+                    {errors.std && (
+                      <p className="text-sm text-red-500 mt-1">{errors.std}</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* APC */}
+                <div className="flex-1">
+                  <div className="space-y-2">
+                    <Label htmlFor="apc" className="font-semibold text-base">
+                      APC <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="apc"
+                      name="apc"
+                      type="number"
+                      placeholder="Masukkan apc"
+                      value={formData.apc}
+                      onChange={handleChange}
+                      className={errors.apc ? "border-red-500" : ""}
+                    />
+                    {errors.apc && (
+                      <p className="text-sm text-red-500 mt-1">{errors.apc}</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* SPD */}
+                <div className="flex-1">
+                  <div className="space-y-2">
+                    <Label htmlFor="spd" className="font-semibold text-base">
+                      SPD <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="spd"
+                      name="spd"
+                      type="number"
+                      placeholder="Masukkan spd"
+                      value={formData.spd}
+                      onChange={handleChange}
+                      className={errors.spd ? "border-red-500" : ""}
+                    />
+                    {errors.spd && (
+                      <p className="text-sm text-red-500 mt-1">{errors.spd}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex-1">
+                  {/* PE Status */}
+                  <CustomSelect
+                    id="pe_status"
+                    name="pe_status"
+                    label="PE Status"
+                    placeholder="Pilih Status PE"
+                    options={PeStatusOptions}
+                    value={formData.pe_status}
+                    onChange={handleChange}
+                    error={errors.pe_status}
+                  />
+                </div>
+
+                {/* PE RAB */}
+                <div className="flex-1">
+                  <div className="space-y-2">
+                    <Label htmlFor="pe_rab" className="font-semibold text-base">
+                      PE RAB <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="pe_rab"
+                      name="pe_rab"
+                      type="number"
+                      placeholder="Masukkan PE RAB"
+                      value={formData.pe_rab}
+                      onChange={handleChange}
+                      disabled={isSubmitting}
+                      className={errors.pe_rab ? "border-red-500" : ""}
+                    />
+                    {errors.pe_rab && (
+                      <p className="text-sm text-red-500 mt-1">
+                        {errors.pe_rab}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
             </div>
+          </div>
 
-            {/* Seksi: Kelengkapan Dokumen (File Inputs) */}
-            <div className="relative mt-10">
-              <div className="absolute -top-4 left-6 bg-red-600 text-white px-4 py-1 rounded shadow-md font-semibold">
-                Evalasi Lokasi Potensial
-              </div>
-              <div className="bg-white shadow-[1px_1px_6px_rgba(0,0,0,0.25)] rounded-xl p-6 pt-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {fileInputList.map((file) => (
-                  <div className="space-y-2" key={file.name}>
-                    <Label htmlFor={file.name} className="font-semibold">
-                      {file.label} <span className="text-red-500">*</span>
-                    </Label>
-                    <Input
-                      id={file.name}
-                      name={file.name}
-                      type="file"
-                      onChange={handleFileChange}
-                      disabled={isSubmitting}
-                      className={`file:mr-4 ...`}
-                      accept={file.accept}
-                    />
-                    {errors[file.name] && (
-                      <p className="text-sm text-red-600 mt-1">
-                        {errors[file.name]}
-                      </p>
-                    )}
-                  </div>
-                ))}
-              </div>
+          {/* Seksi: Kelengkapan Dokumen (File Inputs) */}
+          <div className="relative mt-10">
+            <div className="absolute -top-4 left-6 bg-red-600 text-white px-4 py-1 rounded shadow-md font-semibold">
+              Evalasi Lokasi Potensial
             </div>
+            <div className="bg-white shadow-[1px_1px_6px_rgba(0,0,0,0.25)] rounded-xl p-6 pt-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {fileInputList.map((file) => (
+                <div className="space-y-2" key={file.name}>
+                  <Label htmlFor={file.name} className="font-semibold">
+                    {file.label} <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id={file.name}
+                    name={file.name}
+                    type="file"
+                    onChange={handleFileChange}
+                    disabled={isSubmitting}
+                    className={`file:mr-4 ...`}
+                    accept={file.accept}
+                  />
+                  {errors[file.name] && (
+                    <p className="text-sm text-red-600 mt-1">
+                      {errors[file.name]}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
 
-            {/* Tombol Aksi Submit */}
-            <div className="flex justify-end mt-8">
-              <Button
-                type="submit"
-                variant="submit"
-                size="lg"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? "Menyimpan..." : "Simpan Data KPLT"}
-              </Button>
-            </div>
-          </form>
-        </main>
-      </div>
+          {/* Tombol Aksi Submit */}
+          <div className="flex justify-end mt-8">
+            <Button
+              type="submit"
+              variant="submit"
+              size="lg"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Menyimpan..." : "Simpan Data KPLT"}
+            </Button>
+          </div>
+        </form>
+      </main>
     </div>
   );
 }

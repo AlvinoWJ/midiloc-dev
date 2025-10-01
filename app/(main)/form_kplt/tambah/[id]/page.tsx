@@ -1,22 +1,12 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useTambahKplt } from "@/hooks/useTambahkplt"; // Hook form kita
 import TambahKpltLayout from "@/components/desktop/tambah-kplt-layout"; // Komponen UI
-import SWRProvider from "@/app/swr-provider";
 import { useAlert } from "@/components/desktop/alertcontext"; // Untuk notifikasi
 import { useKpltPrefill } from "@/hooks/useKpltPrefill";
 import { KpltCreatePayload } from "@/lib/validations/kplt";
-
-// Wrapper tidak perlu diubah, sudah benar
-export default function TambahkpltPageWrapper() {
-  return (
-    <SWRProvider>
-      <TambahKpltPage />
-    </SWRProvider>
-  );
-}
 
 // Komponen helper untuk menampilkan status halaman
 const PageStatus = ({ message }: { message: string }) => (
@@ -25,7 +15,7 @@ const PageStatus = ({ message }: { message: string }) => (
   </div>
 );
 
-function TambahKpltPage() {
+export default function TambahKpltPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const { showToast } = useAlert();

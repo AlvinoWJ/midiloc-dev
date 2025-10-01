@@ -2,12 +2,7 @@
 "use client";
 
 import React, { useMemo } from "react";
-import { useSidebar } from "@/hooks/useSidebar";
-import Sidebar from "@/components/desktop/sidebar";
-import Navbar from "@/components/desktop/navbar";
 import { DashboardPageProps } from "@/types/common";
-
-// UI Components
 import { StatsCard } from "../ui/statscard";
 import { DonutChart } from "../ui/donurchart";
 import { BarChart } from "../ui/barchart";
@@ -24,7 +19,6 @@ export default function DesktopDashboardLayout(props: DashboardPageProps) {
     onSpecialistChange,
   } = props;
 
-  const { isCollapsed } = useSidebar();
   const isLocationManager = dashboardData?.filters?.role === "location manager";
 
   // 🔹 Proses KPI dinamis (per specialist kalau dipilih)
@@ -181,142 +175,134 @@ export default function DesktopDashboardLayout(props: DashboardPageProps) {
 
   return (
     <div className="flex">
-      <Sidebar />
-      <div
-        className={`flex-1 flex flex-col bg-gray-50 min-h-screen transition-all duration-300 ${
-          isCollapsed ? "ml-[80px]" : "ml-[270px]"
-        }`}
-      >
-        <Navbar />
-        <main className="flex-1 p-6">
-          {isLoading ? (
-            // SKELETON LOADING STATE (sudah bagus)
-            <div className="space-y-6">
-              <div className="h-9 w-1/3 bg-gray-200 rounded animate-pulse"></div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                {[...Array(5)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="h-24 bg-gray-200 rounded-lg animate-pulse"
-                  ></div>
-                ))}
-              </div>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="h-80 bg-gray-200 rounded-lg animate-pulse"></div>
-                <div className="h-80 bg-gray-200 rounded-lg animate-pulse"></div>
-              </div>
-              <div className="h-[400px] bg-gray-200 rounded-lg animate-pulse"></div>
+      <main className="flex-1 p-6">
+        {isLoading ? (
+          // SKELETON LOADING STATE (sudah bagus)
+          <div className="space-y-6">
+            <div className="h-9 w-1/3 bg-gray-200 rounded animate-pulse"></div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+              {[...Array(5)].map((_, i) => (
+                <div
+                  key={i}
+                  className="h-24 bg-gray-200 rounded-lg animate-pulse"
+                ></div>
+              ))}
             </div>
-          ) : isError ? (
-            // ERROR STATE (sudah bagus)
-            <div className="flex items-center justify-center min-h-[60vh] text-center">
-              <div className="bg-white p-8 rounded-lg shadow-sm border">
-                <div className="text-red-500 text-4xl mb-4">⚠️</div>
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Gagal Memuat Data
-                </h3>
-                <p className="text-gray-600 mb-4">
-                  Terjadi kesalahan saat memuat data dashboard.
-                </p>
-                <button
-                  onClick={() => window.location.reload()}
-                  className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600"
-                >
-                  Muat Ulang
-                </button>
-              </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="h-80 bg-gray-200 rounded-lg animate-pulse"></div>
+              <div className="h-80 bg-gray-200 rounded-lg animate-pulse"></div>
             </div>
-          ) : (
-            // CONTENT LOADED STATE
-            dashboardData && (
-              <>
-                <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-                  <div>
-                    <h1 className="text-3xl font-bold text-gray-800">
-                      Dashboard Performa
-                    </h1>
-                    <p className="text-gray-500 mt-1">
-                      Menampilkan data untuk cabang:{" "}
-                      <span className="font-semibold text-gray-700">
-                        {dashboardData.filters.branch_name}
-                      </span>
-                    </p>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    {/* --- FILTER BARU HANYA UNTUK MANAGER --- */}
-                    {isLocationManager && dashboardData.breakdown && (
-                      <select
-                        value={selectedSpecialistId || ""}
-                        onChange={(e) =>
-                          onSpecialistChange(e.target.value || null)
-                        }
-                        className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                      >
-                        <option value="">Semua Specialist</option>
-                        {/* Ambil daftar specialist dari `dashboardData.breakdown.rows` */}
-                        {dashboardData.breakdown.rows.map((specialist) => (
-                          <option
-                            key={specialist.user_id}
-                            value={specialist.user_id}
-                          >
-                            {specialist.nama}
-                          </option>
-                        ))}
-                      </select>
-                    )}
-                    {/* Filter Tahun */}
+            <div className="h-[400px] bg-gray-200 rounded-lg animate-pulse"></div>
+          </div>
+        ) : isError ? (
+          // ERROR STATE (sudah bagus)
+          <div className="flex items-center justify-center min-h-[60vh] text-center">
+            <div className="bg-white p-8 rounded-lg shadow-sm border">
+              <div className="text-red-500 text-4xl mb-4">⚠️</div>
+              <h3 className="text-lg font-semibold text-gray-900">
+                Gagal Memuat Data
+              </h3>
+              <p className="text-gray-600 mb-4">
+                Terjadi kesalahan saat memuat data dashboard.
+              </p>
+              <button
+                onClick={() => window.location.reload()}
+                className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600"
+              >
+                Muat Ulang
+              </button>
+            </div>
+          </div>
+        ) : (
+          // CONTENT LOADED STATE
+          dashboardData && (
+            <>
+              <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+                <div>
+                  <h1 className="text-3xl font-bold text-gray-800">
+                    Dashboard Performa
+                  </h1>
+                  <p className="text-gray-500 mt-1">
+                    Menampilkan data untuk cabang:{" "}
+                    <span className="font-semibold text-gray-700">
+                      {dashboardData.filters.branch_name}
+                    </span>
+                  </p>
+                </div>
+                <div className="flex items-center space-x-2">
+                  {/* --- FILTER BARU HANYA UNTUK MANAGER --- */}
+                  {isLocationManager && dashboardData.breakdown && (
                     <select
-                      value={
-                        dashboardData.filters.year || new Date().getFullYear()
+                      value={selectedSpecialistId || ""}
+                      onChange={(e) =>
+                        onSpecialistChange(e.target.value || null)
                       }
-                      onChange={(e) => setYear(Number(e.target.value))}
                       className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
                     >
-                      <option value={2025}>2025</option>
-                      <option value={2024}>2024</option>
-                      <option value={2023}>2023</option>
+                      <option value="">Semua Specialist</option>
+                      {/* Ambil daftar specialist dari `dashboardData.breakdown.rows` */}
+                      {dashboardData.breakdown.rows.map((specialist) => (
+                        <option
+                          key={specialist.user_id}
+                          value={specialist.user_id}
+                        >
+                          {specialist.nama}
+                        </option>
+                      ))}
                     </select>
-                    {/* Anda bisa menambahkan filter cabang di sini jika perlu */}
-                  </div>
+                  )}
+                  {/* Filter Tahun */}
+                  <select
+                    value={
+                      dashboardData.filters.year || new Date().getFullYear()
+                    }
+                    onChange={(e) => setYear(Number(e.target.value))}
+                    className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  >
+                    <option value={2025}>2025</option>
+                    <option value={2024}>2024</option>
+                    <option value={2023}>2023</option>
+                  </select>
+                  {/* Anda bisa menambahkan filter cabang di sini jika perlu */}
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                {/* Stats Cards Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                  {dynamicStatsData.map((stat, index) => (
+                    <StatsCard
+                      key={index}
+                      title={stat.title}
+                      value={stat.value}
+                      icon={stat.icon}
+                      color={stat.color}
+                    />
+                  ))}
                 </div>
 
-                <div className="space-y-6">
-                  {/* Stats Cards Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                    {dynamicStatsData.map((stat, index) => (
-                      <StatsCard
-                        key={index}
-                        title={stat.title}
-                        value={stat.value}
-                        icon={stat.icon}
-                        color={stat.color}
-                      />
-                    ))}
-                  </div>
+                {/* Charts Section */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <DonutChart data={ulokDonut || []} title="Status ULOK" />
+                  <DonutChart data={kpltDonut || []} title="Status KPLT" />
+                  <BarChart data={ulokBar || []} title="Grafik ULOK " />
+                  <BarChart data={kpltBar || []} title="Grafik KPLT" />
+                </div>
 
-                  {/* Charts Section */}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <DonutChart data={ulokDonut || []} title="Status ULOK" />
-                    <DonutChart data={kpltDonut || []} title="Status KPLT" />
-                    <BarChart data={ulokBar || []} title="Grafik ULOK " />
-                    <BarChart data={kpltBar || []} title="Grafik KPLT" />
-                  </div>
-
-                  {/* Map Section */}
-                  <div className="bg-white p-4 rounded-lg shadow-md shadow-[1px_1px_6px_rgba(0,0,0,0.25)]">
-                    <h3 className="text-lg font-semibold mb-2">Peta Sebaran</h3>
-                    <div className="h-[400px] w-full">
-                      {/* CATATAN: Response API saat ini tidak menyertakan data koordinat (lat/lng).
+                {/* Map Section */}
+                <div className="bg-white p-4 rounded-lg shadow-md shadow-[1px_1px_6px_rgba(0,0,0,0.25)]">
+                  <h3 className="text-lg font-semibold mb-2">Peta Sebaran</h3>
+                  <div className="h-[400px] w-full">
+                    {/* CATATAN: Response API saat ini tidak menyertakan data koordinat (lat/lng).
                           Anda perlu menyesuaikan API atau komponen ini jika data peta ada di tempat lain. */}
-                      <PetaLoader data={[]} />
-                    </div>
+                    <PetaLoader data={[]} />
                   </div>
                 </div>
-              </>
-            )
-          )}
-        </main>
-      </div>
+              </div>
+            </>
+          )
+        )}
+      </main>
     </div>
   );
 }

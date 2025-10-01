@@ -234,6 +234,7 @@ export async function POST(request: Request) {
 
     const parsed = UlokCreateSchema.safeParse(raw);
     if (!parsed.success) {
+      console.log("VALIDATION ERROR:", parsed.error.issues);
       return NextResponse.json(
         {
           success: false,

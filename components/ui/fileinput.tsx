@@ -1,28 +1,39 @@
 import { useState } from "react";
 import { Upload, FileText, X } from "lucide-react";
 
-// Anda bisa meletakkan ini di dalam komponen utama atau sebagai komponen terpisah
-const FileInputModern = ({ label, formErrors, onFileChange, name }) => {
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [previewUrl, setPreviewUrl] = useState(null);
+interface FileInputModernProps {
+  label: string;
+  formErrors?: string;
+  onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  name: string;
+}
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
+const FileInputModern: React.FC<FileInputModernProps> = ({
+  label,
+  formErrors,
+  onFileChange,
+  name,
+}) => {
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
     if (file) {
       setSelectedFile(file);
       setPreviewUrl(URL.createObjectURL(file));
-      onFileChange(e); // Meneruskan event ke form handler utama
+      onFileChange(e); // kirim ke form handler utama
     }
   };
 
   const handleRemoveFile = () => {
     setSelectedFile(null);
     setPreviewUrl(null);
-    // Reset nilai input file
-    document.getElementById(name).value = "";
+    const input = document.getElementById(name) as HTMLInputElement;
+    if (input) input.value = ""; // reset input
   };
 
-  const isImage = selectedFile && selectedFile.type.startsWith("image/");
+  const isImage = selectedFile?.type?.startsWith("image/") ?? false;
 
   return (
     <div>
@@ -30,7 +41,7 @@ const FileInputModern = ({ label, formErrors, onFileChange, name }) => {
         {label} <span className="text-red-500">*</span>
       </h2>
 
-      {/* Tampilkan Preview Jika File Sudah Dipilih */}
+      {/* Preview File */}
       {selectedFile && previewUrl ? (
         <div className="p-4 border border-gray-300 rounded-lg relative max-w-sm bg-gray-50">
           <button
@@ -56,7 +67,7 @@ const FileInputModern = ({ label, formErrors, onFileChange, name }) => {
           )}
         </div>
       ) : (
-        /* Tampilan Dropzone Jika Belum Ada File */
+        /* Dropzone */
         <>
           <label
             htmlFor={name}
@@ -80,8 +91,10 @@ const FileInputModern = ({ label, formErrors, onFileChange, name }) => {
         </>
       )}
 
-      {/* Tampilkan pesan error jika ada */}
+      {/* Error message */}
       {formErrors && <p className="text-red-500 text-sm mt-1">{formErrors}</p>}
     </div>
   );
 };
+
+export default FileInputModern;

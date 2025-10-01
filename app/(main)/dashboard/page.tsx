@@ -2,24 +2,12 @@
 "use client";
 
 import { useState } from "react";
-import SWRProvider from "@/app/swr-provider";
-import { useDevice } from "@/app/context/DeviceContext";
 import { useUser } from "@/hooks/useUser";
 import { DashboardPageProps } from "@/types/common";
 import DesktopDashboardLayout from "@/components/desktop/dashboard-layout";
-import MobileDashboardLayout from "@/components/mobile/dashboard-layout";
 import { useDashboard } from "@/hooks/useDashboard";
 
-export default function DashboardPageWrapper() {
-  return (
-    <SWRProvider>
-      <DashboardPage />
-    </SWRProvider>
-  );
-}
-
-export function DashboardPage() {
-  const { isMobile } = useDevice();
+export default function DashboardPage() {
   const { user } = useUser();
 
   // state filter tahun
@@ -43,10 +31,6 @@ export function DashboardPage() {
     selectedSpecialistId,
     onSpecialistChange: setSelectedSpecialistId, // handler dropdown specialist
   };
-
-  // if (isMobile) {
-  //   return <MobileDashboardLayout {...dashboardProps} />;
-  // }
 
   return <DesktopDashboardLayout {...dashboardProps} />;
 }
