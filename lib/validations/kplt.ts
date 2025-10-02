@@ -35,7 +35,7 @@ export const KpltCreatePayloadSchema = z
     video_360_malam: z.string().min(1),
     peta_coverage: z.string().min(1),
 
-    progress_toko: z.string().optional(),
+    progress_toko: z.string().nullable().optional(),
   })
   .strict();
 

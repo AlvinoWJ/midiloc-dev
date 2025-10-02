@@ -34,7 +34,7 @@ export function DesktopLoginForm({
         password,
       });
       if (error) throw error;
-      router.push("/dashboard");
+      router.push("/main/dashboard");
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : "An error occurred");
     } finally {

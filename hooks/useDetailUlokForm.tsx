@@ -1,4 +1,4 @@
-// hooks/useDetailUlokForm.ts
+// mengatur form edit detail Ulok: input data, validasi, dan menyimpan ke backend.
 
 import { useState, useEffect } from "react";
 import { MappedUlokData } from "@/hooks/useUlokDetail";

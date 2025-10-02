@@ -1,4 +1,5 @@
 "use client";
+
 import {
   createContext,
   useContext,
@@ -7,7 +8,6 @@ import {
   useCallback,
   ReactNode,
 } from "react";
-import { useDevice } from "@/app/context/DeviceContext";
 
 type SidebarContextType = {
   isCollapsed: boolean;
@@ -16,38 +16,57 @@ type SidebarContextType = {
 };
 
 const LOCAL_STORAGE_KEY = "sidebarCollapsed";
+const MOBILE_BREAKPOINT = 768; // Lebar layar dalam pixel untuk dianggap mobile (bisa disesuaikan)
 
 const SidebarContext = createContext<SidebarContextType | undefined>(undefined);
 
 export function SidebarProvider({ children }: { children: ReactNode }) {
-  const { isMobile } = useDevice();
+  // State default adalah 'false' (terbuka), useEffect akan menyesuaikannya.
+  const [isCollapsed, setIsCollapsed] = useState<boolean>(false);
 
-  // default state dulu
-  const [isCollapsed, setIsCollapsed] = useState<boolean>(
-    isMobile ? true : false
-  );
-
-  // Load state dari localStorage hanya di client
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    // Fungsi ini akan mengecek ukuran layar dan mengatur state
+    const checkScreenSize = () => {
+      const isMobileScreen = window.innerWidth < MOBILE_BREAKPOINT;
 
-    if (isMobile) {
-      setIsCollapsed(true);
-    } else {
-      try {
-        const savedState = localStorage.getItem(LOCAL_STORAGE_KEY);
-        setIsCollapsed(savedState !== null ? JSON.parse(savedState) : false);
-      } catch (error) {
-        console.error("Failed to parse sidebar state from localStorage", error);
-        setIsCollapsed(false);
+      if (isMobileScreen) {
+        // Jika layar mobile, selalu paksa sidebar untuk collapsed
+        setIsCollapsed(true);
+      } else {
+        // Jika layar desktop, coba ambil state dari localStorage
+        try {
+          const savedState = localStorage.getItem(LOCAL_STORAGE_KEY);
+          // Jika ada state tersimpan, gunakan itu. Jika tidak, default-nya 'false' (terbuka).
+          setIsCollapsed(savedState !== null ? JSON.parse(savedState) : false);
+        } catch (error) {
+          console.error(
+            "Failed to parse sidebar state from localStorage",
+            error
+          );
+          setIsCollapsed(false);
+        }
       }
-    }
-  }, [isMobile]);
+    };
+
+    // Jalankan pengecekan saat komponen pertama kali dimuat
+    checkScreenSize();
+
+    // Tambahkan event listener untuk memantau perubahan ukuran window
+    window.addEventListener("resize", checkScreenSize);
+
+    // Cleanup: Hapus event listener saat komponen di-unmount untuk mencegah memory leak
+    return () => {
+      window.removeEventListener("resize", checkScreenSize);
+    };
+  }, []); // Dependency array kosong agar useEffect ini hanya berjalan sekali saat mount
 
   const toggleSidebar = useCallback(() => {
     setIsCollapsed((prev) => {
       const newState = !prev;
-      if (!isMobile && typeof window !== "undefined") {
+      const isMobileScreen = window.innerWidth < MOBILE_BREAKPOINT;
+
+      // Hanya simpan state ke localStorage jika di layar desktop
+      if (!isMobileScreen) {
         try {
           localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(newState));
         } catch (error) {
@@ -56,7 +75,7 @@ export function SidebarProvider({ children }: { children: ReactNode }) {
       }
       return newState;
     });
-  }, [isMobile]);
+  }, []);
 
   const value = { isCollapsed, setIsCollapsed, toggleSidebar };
 

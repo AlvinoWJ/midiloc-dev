@@ -70,6 +70,7 @@ export async function GET(
   _request: Request,
   { params }: { params: { id: string } }
 ) {
+  console.log("✅✅✅ SERVER MENJALANKAN KODE TERBARU DI FILE INI! ✅✅✅");
   //get supabase & user data
   const supabase = await createClient();
   const user = await getCurrentUser();

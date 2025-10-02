@@ -1,23 +1,11 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import SWRProvider from "@/app/swr-provider";
 import { useUser } from "@/hooks/useUser";
 import { useUlok } from "@/hooks/useUlok";
-import { useDevice } from "@/app/context/DeviceContext";
 import DesktopUlokLayout from "@/components/desktop/ulok-layout";
-import MobileUlokLayout from "@/components/mobile/ulok-layout";
 
-export default function UlokPageWrapper() {
-  // Jika nanti SWRProvider sudah ada di layout global, cukup return <UlokPage />
-  return (
-    <SWRProvider>
-      <UlokPage />
-    </SWRProvider>
-  );
-}
-
-export function UlokPage() {
+export default function UlokPage() {
   // 1. State Management
   const [searchQuery, setSearchQuery] = useState("");
   const [filterMonth, setFilterMonth] = useState("");
@@ -27,9 +15,6 @@ export function UlokPage() {
   // 2. Data Fetching (SWR Hooks Anda tetap sama)
   const { user } = useUser();
   const { ulokData, ulokLoading, ulokError } = useUlok();
-
-  // 3. Device Detection
-  const { isMobile } = useDevice();
 
   // 4. Business Logic & Data Filtering
   const isLocationSpecialist = useCallback(() => {
@@ -78,11 +63,6 @@ export function UlokPage() {
     onSearch: setSearchQuery,
     onFilterChange,
   };
-
-  // --- RENDER LAYOUT BERDASARKAN UKURAN LAYAR ---
-  if (isMobile) {
-    return <MobileUlokLayout {...layoutProps} />;
-  }
 
   return <DesktopUlokLayout {...layoutProps} />;
 }
