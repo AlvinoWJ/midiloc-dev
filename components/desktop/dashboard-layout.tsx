@@ -10,26 +10,25 @@ import PetaLoader from "@/components/map/PetaLoader";
 
 export default function DesktopDashboardLayout(props: DashboardPageProps) {
   const {
-    propertiData: dashboardData, // Mengganti nama variabel agar lebih jelas
+    propertiData, // Mengganti nama variabel agar lebih jelas
     isLoading,
     isError,
-    user,
     setYear,
     selectedSpecialistId,
     onSpecialistChange,
   } = props;
 
-  const isLocationManager = dashboardData?.filters?.role === "location manager";
+  const isLocationManager = propertiData?.filters?.role === "location manager";
 
   // 🔹 Proses KPI dinamis (per specialist kalau dipilih)
   const dynamicStatsData = useMemo(() => {
-    if (!dashboardData) return [];
+    if (!propertiData) return [];
 
-    let kpis = dashboardData.kpis;
+    let kpis = propertiData.kpis;
 
     // Kalau ada specialist dipilih → pakai datanya
-    if (selectedSpecialistId && dashboardData.breakdown?.rows) {
-      const specialistRow = dashboardData.breakdown.rows.find(
+    if (selectedSpecialistId && propertiData.breakdown?.rows) {
+      const specialistRow = propertiData.breakdown.rows.find(
         (row) => row.user_id === selectedSpecialistId
       );
 
@@ -85,37 +84,37 @@ export default function DesktopDashboardLayout(props: DashboardPageProps) {
         color: "green" as const,
       },
     ];
-  }, [dashboardData, selectedSpecialistId]);
+  }, [propertiData, selectedSpecialistId]);
 
   // 🔹 Data donut & bar dinamis (ikut specialist kalau dipilih)
   const { ulokDonut, kpltDonut, ulokBar, kpltBar } = useMemo(() => {
-    if (!dashboardData) return {};
+    if (!propertiData) return {};
 
     // default pakai data total dari API
-    let ulokDonut = dashboardData.donut_ulok.map((item) => ({
+    let ulokDonut = propertiData.donut_ulok.map((item) => ({
       status: item.status,
       label: item.label,
       value: item.count,
     }));
-    let kpltDonut = dashboardData.donut_kplt.map((item) => ({
+    let kpltDonut = propertiData.donut_kplt.map((item) => ({
       status: item.status,
       label: item.label,
       value: item.count,
     }));
-    let ulokBar = dashboardData.perbulan_ulok.map((item) => ({
+    let ulokBar = propertiData.perbulan_ulok.map((item) => ({
       month: item.bulan.substring(0, 3),
       approved: item.ulok_approves ?? 0,
       status: (item.total_ulok ?? 0) - (item.ulok_approves ?? 0),
     }));
-    let kpltBar = dashboardData.perbulan_kplt.map((item) => ({
+    let kpltBar = propertiData.perbulan_kplt.map((item) => ({
       month: item.bulan.substring(0, 3),
       approved: item.kplt_approves ?? 0,
       status: (item.total_kplt ?? 0) - (item.kplt_approves ?? 0),
     }));
 
     // kalau ada specialist dipilih → hitung ulang berdasarkan breakdown
-    if (selectedSpecialistId && dashboardData.breakdown?.rows) {
-      const specialistRow = dashboardData.breakdown.rows.find(
+    if (selectedSpecialistId && propertiData.breakdown?.rows) {
+      const specialistRow = propertiData.breakdown.rows.find(
         (row) => row.user_id === selectedSpecialistId
       );
 
@@ -141,12 +140,12 @@ export default function DesktopDashboardLayout(props: DashboardPageProps) {
         // 🔸 Bar chart per bulan → di breakdown tidak ada data bulanan,
         // jadi bisa bikin data dummy per bulan (semua 0 kecuali total akhir).
         // Kalau API nanti support perbulan per specialist, tinggal ganti mapping-nya.
-        ulokBar = dashboardData.perbulan_ulok.map((item) => ({
+        ulokBar = propertiData.perbulan_ulok.map((item) => ({
           month: item.bulan.substring(0, 3),
           approved: 0,
           status: 0,
         }));
-        kpltBar = dashboardData.perbulan_kplt.map((item) => ({
+        kpltBar = propertiData.perbulan_kplt.map((item) => ({
           month: item.bulan.substring(0, 3),
           approved: 0,
           status: 0,
@@ -171,7 +170,7 @@ export default function DesktopDashboardLayout(props: DashboardPageProps) {
     }
 
     return { ulokDonut, kpltDonut, ulokBar, kpltBar };
-  }, [dashboardData, selectedSpecialistId]);
+  }, [propertiData, selectedSpecialistId]);
 
   return (
     <div className="flex">
@@ -215,7 +214,7 @@ export default function DesktopDashboardLayout(props: DashboardPageProps) {
           </div>
         ) : (
           // CONTENT LOADED STATE
-          dashboardData && (
+          propertiData && (
             <>
               <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
                 <div>
@@ -225,13 +224,13 @@ export default function DesktopDashboardLayout(props: DashboardPageProps) {
                   <p className="text-gray-500 mt-1">
                     Menampilkan data untuk cabang:{" "}
                     <span className="font-semibold text-gray-700">
-                      {dashboardData.filters.branch_name}
+                      {propertiData.filters.branch_name}
                     </span>
                   </p>
                 </div>
                 <div className="flex items-center space-x-2">
                   {/* --- FILTER BARU HANYA UNTUK MANAGER --- */}
-                  {isLocationManager && dashboardData.breakdown && (
+                  {isLocationManager && propertiData.breakdown && (
                     <select
                       value={selectedSpecialistId || ""}
                       onChange={(e) =>
@@ -240,8 +239,8 @@ export default function DesktopDashboardLayout(props: DashboardPageProps) {
                       className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
                     >
                       <option value="">Semua Specialist</option>
-                      {/* Ambil daftar specialist dari `dashboardData.breakdown.rows` */}
-                      {dashboardData.breakdown.rows.map((specialist) => (
+                      {/* Ambil daftar specialist dari `propertiData.breakdown.rows` */}
+                      {propertiData.breakdown.rows.map((specialist) => (
                         <option
                           key={specialist.user_id}
                           value={specialist.user_id}
@@ -254,7 +253,7 @@ export default function DesktopDashboardLayout(props: DashboardPageProps) {
                   {/* Filter Tahun */}
                   <select
                     value={
-                      dashboardData.filters.year || new Date().getFullYear()
+                      propertiData.filters.year || new Date().getFullYear()
                     }
                     onChange={(e) => setYear(Number(e.target.value))}
                     className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
