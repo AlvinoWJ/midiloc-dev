@@ -202,7 +202,6 @@ function mapKpltDetailResponse(
 // CUSTOM HOOK DENGAN SWR
 // =========================================================================
 export function useKpltDetail(id: string | undefined) {
-  // Kunci SWR akan null jika ID tidak ada, sehingga fetch tidak akan dijalankan
   const key = id ? `/api/kplt/${id}` : null;
 
   const {
@@ -216,11 +215,11 @@ export function useKpltDetail(id: string | undefined) {
   const data = mapKpltDetailResponse(rawData);
 
   return {
-    data, // Data yang sudah bersih dan siap pakai
-    rawData, // Data asli jika sewaktu-waktu dibutuhkan
+    data,
+    rawData,
     isLoading,
     isError: !!error,
     error,
-    mutate, // Fungsi untuk re-fetch data secara manual
+    mutate,
   };
 }

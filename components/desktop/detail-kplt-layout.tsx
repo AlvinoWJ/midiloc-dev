@@ -2,8 +2,6 @@
 "use client";
 
 import React from "react";
-import Sidebar from "@/components/desktop/sidebar";
-import Navbar from "@/components/desktop/navbar";
 import { useSidebar } from "@/hooks/useSidebar";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Link as LinkIcon } from "lucide-react";
@@ -53,7 +51,6 @@ const FileLink = ({ label, url }: { label: string; url: string | null }) => {
 };
 
 export default function DetailKpltLayout({ data }: DetailKpltLayoutProps) {
-  const { isCollapsed } = useSidebar();
   const router = useRouter();
 
   // Asumsi struktur data dari API seperti ini. Sesuaikan jika berbeda.
