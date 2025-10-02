@@ -32,7 +32,7 @@ export async function GET(
   if (mode === "proxy") {
     // PROXY MODE
     const { data: fileData, error: dlErr } = await supabase.storage
-      .from("file_intip")
+      .from("file_storage")
       .download(path);
     if (dlErr || !fileData)
       return NextResponse.json({ error: "Download failed" }, { status: 500 });
@@ -52,7 +52,7 @@ export async function GET(
 
   // REDIRECT MODE (default)
   const { data: signed, error: signErr } = await supabase.storage
-    .from("file_intip")
+    .from("file_storage")
     .createSignedUrl(path, 60 * 5);
 
   if (signErr || !signed?.signedUrl)

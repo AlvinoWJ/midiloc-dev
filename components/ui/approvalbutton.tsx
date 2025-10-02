@@ -30,7 +30,7 @@ export function ApprovalStatusbutton({
             onClick={() => onApprove("NOK")}
             variant="default"
             size="default"
-            className="flex-1 sm:flex-none min-w-[100px]"
+            className="flex-1 sm:flex-none min-w-[200px]"
           >
             {disabled || loading ? "Memproses..." : "NOK"}
           </Button>
@@ -39,7 +39,7 @@ export function ApprovalStatusbutton({
             onClick={() => onApprove("OK")}
             variant="submit"
             size="default"
-            className="flex-1 sm:flex-none min-w-[100px]"
+            className="flex-1 sm:flex-none min-w-[200px]"
           >
             {disabled || loading ? "Memproses..." : "OK"}
           </Button>

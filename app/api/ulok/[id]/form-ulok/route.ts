@@ -28,10 +28,14 @@ export async function GET(
   const mode = new URL(req.url).searchParams.get("mode") || "redirect";
   const path = ulok.form_ulok.replace(/^form_ulok\//, "");
 
+  // --- BAGIAN PENTING UNTUK DEBUGGING ---
+  console.log("Bucket yang digunakan:", "file_storage");
+  console.log("Path yang akan dibuatkan URL:", path);
+
   if (mode === "proxy") {
     // PROXY MODE
     const { data: fileData, error: dlErr } = await supabase.storage
-      .from("form_ulok")
+      .from("file_storage")
       .download(path);
     if (dlErr || !fileData)
       return NextResponse.json({ error: "Download failed" }, { status: 500 });
@@ -51,11 +55,14 @@ export async function GET(
 
   // REDIRECT MODE (default)
   const { data: signed, error: signErr } = await supabase.storage
-    .from("form_ulok")
+    .from("file_storage")
     .createSignedUrl(path, 60 * 5);
 
   if (signErr || !signed?.signedUrl)
-    return NextResponse.json({ error: "Sign failed" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Sign failed", message: signErr?.message },
+      { status: 500 }
+    );
 
   return NextResponse.redirect(signed.signedUrl, 302);
 }

@@ -7,7 +7,6 @@ import { Dialog } from "@headlessui/react";
 import {
   MapPin,
   CheckCircle2,
-  FileText,
   ArrowLeft,
   Edit3,
   Store,
@@ -20,8 +19,6 @@ import { StatusBadge } from "@/components/ui/statusbadge";
 import CustomSelect from "@/components/ui/customselect";
 import { ApprovalStatusbutton } from "@/components/ui/approvalbutton";
 import DetailMapCard from "@/components/ui/DetailMapCard";
-import Sidebar from "@/components/desktop/sidebar";
-import Navbar from "@/components/desktop/navbar";
 import WilayahSelector from "@/components/desktop/wilayahselector";
 import { DetailUlokSkeleton } from "./skleton";
 import { useUser } from "@/hooks/useUser";
@@ -44,6 +41,7 @@ interface DetailUlokLayoutProps {
   onOpenIntipForm: () => void;
   onApprove: (status: "OK" | "NOK") => void;
   fileIntipUrl: string | null;
+  formulokUrl: string | null;
 }
 
 const DetailField = ({
@@ -93,9 +91,9 @@ export default function DesktopDetailUlokLayout(props: DetailUlokLayoutProps) {
     onOpenIntipForm,
     onApprove,
     fileIntipUrl,
+    formulokUrl,
   } = props;
 
-  const { isCollapsed } = useSidebar();
   const router = useRouter();
   const { user } = useUser();
   const [isApproving, setIsApproving] = useState(false);
@@ -510,7 +508,7 @@ export default function DesktopDetailUlokLayout(props: DetailUlokLayoutProps) {
                     Form Ulok
                   </span>
                   <a
-                    href={initialData.formulok!}
+                    href={formulokUrl!}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-1.5 px-3 rounded-lg transition-colors duration-200"

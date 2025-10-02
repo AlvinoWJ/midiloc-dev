@@ -6,10 +6,8 @@ import { useUlokDetail } from "@/hooks/useUlokDetail";
 import { useAlert } from "@/components/desktop/alertcontext";
 import { UlokUpdateInput } from "@/lib/validations/ulok";
 import DesktopDetailUlok from "@/components/desktop/detail-ulok-layout";
-import MobileDetailUlok from "@/components/mobile/detail-ulok-layout";
 import InputIntipForm from "@/components/ui/inputintip";
 
-// Komponen Halaman Inti
 export default function DetailPage() {
   // --- SETUP & HOOKS ---
   const { id } = useParams<{ id: string }>();
@@ -138,16 +136,15 @@ export default function DetailPage() {
 
   // 1. Tangani state saat deteksi perangkat sedang berjalan
   if (isLoading) {
-    // Buat props dummy untuk skeleton. initialData harus ada untuk menghindari error props.
     const loadingProps = {
       isLoading: true,
       initialData: null as any, // Diberi `null` karena skeleton tidak butuh data
-      // Sisa props bisa di-dummy karena tidak akan digunakan oleh skeleton
       onSave: async () => false,
       isSubmitting: false,
       onOpenIntipForm: () => {},
       onApprove: () => {},
       fileIntipUrl: null,
+      formulokUrl: null,
     };
 
     return (
@@ -180,6 +177,9 @@ export default function DetailPage() {
     onApprove: handleSetApproval,
     fileIntipUrl: ulokData?.file_intip
       ? `/api/ulok/${ulokData.id}/file-intip`
+      : null,
+    formulokUrl: ulokData?.formulok
+      ? `/api/ulok/${ulokData.id}/form-ulok`
       : null,
   };
 
