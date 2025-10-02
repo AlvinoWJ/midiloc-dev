@@ -20,29 +20,51 @@ export default function DetailPage() {
 
   // --- API HANDLERS (Fungsi-fungsi ini tetap di sini karena ini adalah "otak" dari halaman) ---
 
-  const handleSaveData = async (data: UlokUpdateInput): Promise<boolean> => {
+  const handleSaveData = async (
+    data: UlokUpdateInput | FormData
+  ): Promise<boolean> => {
     setIsSubmitting(true);
     try {
-      await fetch(`/api/ulok/${id}`, {
-        // Menggunakan path relatif lebih baik
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
+      let response;
+
+      // Cek tipe data yang dikirim dari hook
+      if (data instanceof FormData) {
+        // Jika data adalah FormData, kirim sebagai multipart/form-data
+        // Ini untuk use case upload file form_ulok
+        response = await fetch(`/api/ulok/${id}`, {
+          method: "PATCH",
+          body: data,
+          // Header 'Content-Type' tidak perlu di-set, browser akan menanganinya
+        });
+      } else {
+        // Jika bukan, kirim sebagai JSON biasa untuk update data teks
+        response = await fetch(`/api/ulok/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+        });
+      }
+
+      // Penanganan error yang konsisten untuk kedua jenis request
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Gagal menyimpan perubahan.");
+      }
+
       showToast({
         type: "success",
         title: "Berhasil",
         message: "Data ULOK telah diperbarui.",
       });
-      await refresh();
-      return true;
-    } catch (error) {
+      await refresh(); // Muat ulang data untuk menampilkan perubahan
+      return true; // Sinyal sukses ke hook
+    } catch (error: any) {
       showToast({
         type: "error",
-        title: "Gagal",
-        message: "Gagal menyimpan pembaruan.",
+        title: "Gagal Menyimpan",
+        message: error.message || "Gagal menyimpan pembaruan.",
       });
-      return false;
+      return false; // Sinyal gagal ke hook
     } finally {
       setIsSubmitting(false);
     }
