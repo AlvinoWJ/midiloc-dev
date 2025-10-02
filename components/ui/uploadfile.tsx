@@ -17,8 +17,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   name,
   value,
   onChange,
-  accept = ".pdf,.doc,.docx,.jpg,.jpeg,.png",
-  maxSizeMB = 10,
+  accept = ".pdf,.doc,.docx",
+  maxSizeMB = 15,
 }) => {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
