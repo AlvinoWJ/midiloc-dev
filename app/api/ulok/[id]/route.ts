@@ -2,6 +2,16 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/client";
 import { getCurrentUser, canUlok } from "@/lib/auth/acl";
 import { UlokUpdateSchema } from "@/lib/validations/ulok";
+import { buildPathByField } from "@/lib/storage/path";
+import { MIME } from "@/lib/storage/path";
+
+const BUCKET = "file_storage";
+const MAX_PDF_SIZE = 15 * 1024 * 1024; // 15MB
+function isUuid(v: string) {
+  return /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/.test(
+    v
+  );
+}
 
 type AnyObj = Record<string, unknown>;
 // function pick<T extends AnyObj>(obj: T, keys: readonly string[]): Partial<T> {
@@ -34,23 +44,6 @@ const LM_FIELDS = [
 ] as const;
 
 const LM_FIELDS_SET = new Set<string>(LM_FIELDS as unknown as string[]);
-
-function slugify(name: string) {
-  return name
-    .toLowerCase()
-    .replace(/[^a-z0-9_.-]+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "")
-    .slice(0, 80);
-}
-
-function buildPath(ulokId: string, originalName: string) {
-  const ext = originalName.includes(".")
-    ? "." + originalName.split(".").pop()!.toLowerCase()
-    : "";
-  const base = slugify(originalName.replace(/\.[^.]+$/, "")) || "file";
-  return `${ulokId}/${Date.now()}-${base}${ext}`;
-}
 
 async function isPdfFile(
   file: File,
@@ -136,6 +129,10 @@ export async function PATCH(
   }
 
   const { id } = params;
+  if (!isUuid(id)) {
+    return NextResponse.json({ error: "Invalid ulok_id" }, { status: 422 });
+  }
+
   const contentType = req.headers.get("content-type") || "";
 
   // ========= BRANCH: LOCATION MANAGER (Mode B multipart) =========
@@ -180,7 +177,7 @@ export async function PATCH(
       }
     });
 
-    // Ambil file (optional kalau memang harus upload)
+    // Ambil file (optional)
     const file = form.get("file_intip");
     let newFilePath: string | undefined;
 
@@ -191,31 +188,60 @@ export async function PATCH(
           { status: 400 }
         );
       }
-      // Validasi ukuran (10MB contoh)
-      if (file.size > 10 * 1024 * 1024) {
+      if (file.size > MAX_PDF_SIZE) {
         return NextResponse.json(
-          { error: "File too large (max 10MB)" },
+          { error: "File too large (max 15MB)" },
           { status: 400 }
         );
       }
 
-      const path = buildPath(id, file.name);
+      // Validasi PDF
+      // Validasi PDF atau Image
+      const isAllowed =
+        Object.values(MIME).some((arr) => arr.includes(file.type));
+
+      if (!isAllowed) {
+        return NextResponse.json(
+          { error: "File harus PDF atau gambar (JPEG/PNG/JPG)", detail: `Tipe: ${file.type}` },
+          { status: 422 }
+        );
+      }
+
+      if (file.type === "application/pdf") {
+        const pdfCheck = await isPdfFile(file, true);
+        if (!pdfCheck.ok) {
+          return NextResponse.json(
+        { error: "File bukan PDF valid", detail: pdfCheck.reason },
+        { status: 422 }
+          );
+        }
+      }
+
+      // Path seragam: <ulokId>/ulok/<ts>_file_intip.pdf
+      const path = buildPathByField(
+        id,
+        "ulok",
+        "file_intip",
+        file.name,
+        file.type
+      );
+
+      // Upload file baru
       const { error: uploadErr } = await supabase.storage
-        .from("file_intip")
-        .upload(path, file, { upsert: false });
+        .from(BUCKET)
+        .upload(path, file, {
+          upsert: false,
+          contentType: "application/pdf",
+        });
 
       if (uploadErr) {
         return NextResponse.json(
-          { error: "Upload failed: " + uploadErr.message },
+          { error: "Upload failed", detail: uploadErr.message },
           { status: 500 }
         );
       }
-      newFilePath = path;
 
-      // (Opsional) Hapus file lama kalau berbeda:
-    } else {
-      // Jika Anda ingin file_intip WAJIB di setiap PATCH LM, aktifkan error ini:
-      // return NextResponse.json({ error: "file_intip file is required" }, { status: 400 });
+      newFilePath = path;
     }
 
     // Susun payload yang akan divalidasi
@@ -233,12 +259,20 @@ export async function PATCH(
       );
     }
 
+    // Validasi payload
     const validationResult = UlokUpdateSchema.safeParse(allowedPayload);
     if (!validationResult.success) {
       const fieldErrors = validationResult.error.flatten().fieldErrors;
       const errorMessage = Object.entries(fieldErrors)
         .map(([field, errors]) => `${field}: ${errors?.join(", ")}`)
         .join("; ");
+      // Rollback file baru bila validasi gagal
+      if (newFilePath) {
+        await supabase.storage
+          .from(BUCKET)
+          .remove([newFilePath])
+          .catch(() => {});
+      }
       return NextResponse.json(
         {
           error: "Validation failed",
@@ -251,7 +285,7 @@ export async function PATCH(
 
     const validatedPayload = validationResult.data as AnyObj;
 
-    // Approval stamping kalau ada field approval
+    // Approval stamping jika menyentuh field approval
     const touchingApproval =
       "approval_status" in validatedPayload ||
       "approval_intip" in validatedPayload ||
@@ -267,6 +301,8 @@ export async function PATCH(
       }
     }
 
+    // Update DB
+    const oldPath = (existing.file_intip as string | null) || null;
     const { data: updated, error: updateError } = await supabase
       .from("ulok")
       .update({
@@ -275,14 +311,41 @@ export async function PATCH(
         updated_at: new Date().toISOString(),
       })
       .eq("id", id)
+      .eq("branch_id", user.branch_id)
       .select("*")
       .single();
 
     if (updateError) {
+      // Rollback file baru jika ada
+      if (newFilePath) {
+        await supabase.storage
+          .from(BUCKET)
+          .remove([newFilePath])
+          .catch(() => {});
+      }
       return NextResponse.json({ error: updateError.message }, { status: 500 });
     }
 
-    return NextResponse.json({ data: updated });
+    // Hapus file lama hanya setelah DB update sukses dan ada file baru
+    let removedOld = false;
+    if (newFilePath && oldPath && oldPath !== newFilePath) {
+      await supabase.storage
+        .from(BUCKET)
+        .remove([oldPath])
+        .then(() => {
+          removedOld = true;
+        })
+        .catch(() => {
+          // best-effort: abaikan error hapus
+        });
+    }
+
+    return NextResponse.json({
+      data: updated,
+      new_file_intip: newFilePath,
+      removedOld,
+      old_file_intip: oldPath,
+    });
   }
 
   // ========= LOCATION SPECIALIST =========
@@ -323,29 +386,36 @@ export async function PATCH(
           { status: 422 }
         );
       }
-      if (file.size > 15 * 1024 * 1024) {
+      if (file.size > MAX_PDF_SIZE) {
         return NextResponse.json(
           { error: "form_ulok file too large (max 15MB)" },
           { status: 422 }
         );
       }
-      // Validasi PDF only
-      const pdfCheck = await isPdfFile(file, true); // true = cek signature
+      const pdfCheck = await isPdfFile(file, true);
       if (!pdfCheck.ok) {
         return NextResponse.json(
           {
-            success: false,
-            message: "File bukan PDF valid",
+            error: "File bukan PDF valid",
             detail: pdfCheck.reason,
           },
           { status: 422 }
         );
       }
 
-      const newPath = buildPath(id, file.name);
+      const newPath = buildPathByField(
+        id,
+        "ulok",
+        "form_ulok",
+        file.name,
+        file.type
+      );
       const { error: uploadErr } = await supabase.storage
-        .from("form_ulok")
-        .upload(newPath, file, { upsert: false });
+        .from(BUCKET)
+        .upload(newPath, file, {
+          upsert: false,
+          contentType: "application/pdf",
+        });
 
       if (uploadErr) {
         return NextResponse.json(
@@ -356,10 +426,9 @@ export async function PATCH(
 
       let removedOld = false;
       const oldPath = existing.form_ulok as string | null;
-      if (oldPath && oldPath.includes("/") && oldPath !== newPath) {
-        // coba hapus file lama
+      if (oldPath && oldPath !== newPath) {
         await supabase.storage
-          .from("form_ulok")
+          .from(BUCKET)
           .remove([oldPath])
           .then(() => {
             removedOld = true;
@@ -383,7 +452,7 @@ export async function PATCH(
       if (updErr) {
         // rollback file baru jika DB update gagal
         await supabase.storage
-          .from("form_ulok")
+          .from(BUCKET)
           .remove([newPath])
           .catch(() => {});
         return NextResponse.json(

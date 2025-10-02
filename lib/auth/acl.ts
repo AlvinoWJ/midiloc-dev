@@ -54,12 +54,12 @@ export function canUlok(
 }
 
 export function canKplt(
-  action: "read" | "create" | "update" | "approve" | "final-approve",
+  action: "read" | "create" | "update" | "approve" | "final-approve" | "delete",
   user: CurrentUser
 ) {
   switch (user.position_nama?.toLowerCase()) {
     case "location specialist":
-      return action === "read" || action === "create" || action === "update";
+      return action === "read" || action === "create" || action === "update" || action === "delete";
     case "location manager":
       return action === "read"; // data baru
     case "branch manager":

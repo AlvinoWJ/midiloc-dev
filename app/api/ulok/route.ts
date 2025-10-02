@@ -3,23 +3,10 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/client";
 import { UlokCreateSchema } from "@/lib/validations/ulok";
 import { getCurrentUser, canUlok } from "@/lib/auth/acl";
+import { buildPathByField } from "@/lib/storage/path";
 
-function slugify(name: string) {
-  return name
-    .toLowerCase()
-    .replace(/[^a-z0-9_.-]+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "")
-    .slice(0, 80);
-}
-
-function buildObjectPath(ulokId: string, originalName: string) {
-  const ext = originalName.includes(".")
-    ? "." + originalName.split(".").pop()!.toLowerCase()
-    : "";
-  const base = slugify(originalName.replace(/\.[^.]+$/, "")) || "file";
-  return `${ulokId}/${Date.now()}-${base}${ext}`;
-}
+const BUCKET = "file_storage";
+const MAX_PDF_SIZE = 15 * 1024 * 1024; // 15MB
 
 async function isPdfFile(
   file: File,
@@ -188,10 +175,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // Ambil file
     const file = form.get("form_ulok") as File | null;
-    // alternatif: kalau kamu ingin key "form_ulok" saja:
-    // const file = form.get("form_ulok") as File | null;
     if (!file || !(file instanceof File)) {
       return NextResponse.json(
         { success: false, message: "File form_ulok wajib dikirim" },
@@ -204,14 +188,14 @@ export async function POST(request: Request) {
         { status: 422 }
       );
     }
-    if (file.size > 15 * 1024 * 1024) {
+    if (file.size > MAX_PDF_SIZE) {
       return NextResponse.json(
         { success: false, message: "File melebihi 15MB" },
         { status: 422 }
       );
     }
-    // Validasi PDF only
-    const pdfCheck = await isPdfFile(file, true); // true = cek signature
+
+    const pdfCheck = await isPdfFile(file, true);
     if (!pdfCheck.ok) {
       return NextResponse.json(
         {
@@ -228,11 +212,14 @@ export async function POST(request: Request) {
     form.forEach((val, keyOrig) => {
       if (val instanceof File) return;
       const key = keyOrig.trim();
-      if (key === "form_ulok") return; // ignore kalau user nakal
+      if (key === "form_ulok") return;
       raw[key] = val;
     });
 
-    const parsed = UlokCreateSchema.safeParse(raw);
+    const UlokCreateInputSchema = UlokCreateSchema.omit({
+      form_ulok: true as any,
+    });
+    const parsed = UlokCreateInputSchema.safeParse(raw);
     if (!parsed.success) {
       console.log("VALIDATION ERROR:", parsed.error.issues);
       return NextResponse.json(
@@ -245,13 +232,23 @@ export async function POST(request: Request) {
       );
     }
 
+    // Generate ULOK ID sebelum upload → path seragam: <ulokId>/ulok/<ts>_form_ulok.pdf
     const newUlokId = crypto.randomUUID();
-    const objectPath = buildObjectPath(newUlokId, file.name);
+    const objectPath = buildPathByField(
+      newUlokId,
+      "ulok",
+      "form_ulok",
+      file.name,
+      file.type
+    );
 
-    // Upload fisik
+    // Upload file fisik ke bucket seragam
     const { error: uploadErr } = await supabase.storage
-      .from("form_ulok")
-      .upload(objectPath, file, { upsert: false });
+      .from(BUCKET)
+      .upload(objectPath, file, {
+        upsert: false,
+        contentType: "application/pdf",
+      });
 
     if (uploadErr) {
       return NextResponse.json(
@@ -264,16 +261,8 @@ export async function POST(request: Request) {
       );
     }
 
-    // Ambil public URL (BUTUH bucket public)
-    // const { data: pub } = supabase.storage
-    //   .from("form_ulok")
-    //   .getPublicUrl(objectPath);
-    // const publicUrl = pub.publicUrl;
-
-    // Pilihan A: Simpan publicUrl ke kolom form_ulok
-    const fileUrlToStore = objectPath;
-
-    // (Jika mau path saja: const fileUrlToStore = objectPath;)
+    // Simpan path (path relatif; untuk akses, FE bisa generate signed URL)
+    const filePathToStore = objectPath;
 
     // Remove 'form_ulok' from parsed.data to avoid duplicate key
     const { form_ulok, ...parsedDataWithoutFormUlok } = parsed.data;
@@ -282,8 +271,8 @@ export async function POST(request: Request) {
       id: newUlokId,
       users_id: user.id,
       branch_id: user.branch_id,
-      form_ulok: fileUrlToStore, // langsung simpan link
-      ...parsedDataWithoutFormUlok,
+      form_ulok: filePathToStore,
+      ...(parsed.data as Record<string, unknown>),
     };
 
     const { data, error } = await supabase
@@ -293,9 +282,9 @@ export async function POST(request: Request) {
       .single();
 
     if (error) {
-      // (Optional) hapus file kalau insert gagal
+      // Hapus file jika insert gagal (best-effort)
       await supabase.storage
-        .from("form_ulok")
+        .from(BUCKET)
         .remove([objectPath])
         .catch(() => {});
       return NextResponse.json(
@@ -309,8 +298,8 @@ export async function POST(request: Request) {
         success: true,
         message: "Data ULOK + file form_ulok berhasil dibuat",
         data,
-        stored_form_ulok: fileUrlToStore,
-        object_path: objectPath, // info tambahan
+        stored_form_ulok: filePathToStore,
+        object_path: objectPath,
       },
       { status: 201 }
     );
