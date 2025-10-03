@@ -53,7 +53,8 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
   return (
     <div className="relative" ref={dropdownRef}>
       <label htmlFor={id} className="block font-semibold mb-2">
-        {label} <span className="text-red-500">*</span>
+        {label}
+        <span className="text-red-500">*</span>
       </label>
       <div
         tabIndex={0}

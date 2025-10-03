@@ -56,8 +56,9 @@ const DetailField = ({
   onChange,
 }: any) => (
   <div>
-    <label className="text-gray-600 font-medium text-sm mb-1 block">
+    <label className="block font-bold mb-1">
       {label}
+      <span className="text-red-500">*</span>
     </label>
     {isEditing ? (
       type === "textarea" ? (
@@ -273,8 +274,8 @@ export default function DesktopDetailUlokLayout(props: DetailUlokLayoutProps) {
                       onChange={handleInputChange}
                     />
                     <div>
-                      <label className="text-gray-600 font-medium text-sm mb-1 block">
-                        LatLong
+                      <label className="block font-bold mb-1">
+                        LatLong<span className="text-red-500">*</span>
                       </label>
                       <div className="flex items-center gap-2">
                         <Input
@@ -513,8 +514,8 @@ export default function DesktopDetailUlokLayout(props: DetailUlokLayoutProps) {
                     {/* 1. Preview file yang sudah ada */}
                     {formulokUrl && (
                       <div>
-                        <label className="text-gray-600 font-medium text-sm mb-2 block">
-                          File Saat Ini
+                        <label className="block font-bold mb-1">
+                          File Saat Ini<span className="text-red-500">*</span>
                         </label>
                         <div className="flex items-center justify-between bg-gray-100 p-3 rounded-lg border">
                           <div className="flex items-center min-w-0">
