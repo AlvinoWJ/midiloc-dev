@@ -39,4 +39,19 @@ export const KpltCreatePayloadSchema = z
   })
   .strict();
 
+export const KpltCreateMultipartSchema = KpltCreatePayloadSchema.extend({
+  pdf_foto: z.string().optional(),
+  counting_kompetitor: z.string().optional(),
+  pdf_pembanding: z.string().optional(),
+  pdf_kks: z.string().optional(),
+  excel_fpl: z.string().optional(),
+  excel_pe: z.string().optional(),
+  pdf_form_ukur: z.string().optional(),
+  video_traffic_siang: z.string().optional(),
+  video_traffic_malam: z.string().optional(),
+  video_360_siang: z.string().optional(),
+  video_360_malam: z.string().optional(),
+  peta_coverage: z.string().optional(),
+}).strict();
+
 export type KpltCreatePayload = z.infer<typeof KpltCreatePayloadSchema>;

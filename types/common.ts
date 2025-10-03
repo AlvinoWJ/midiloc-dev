@@ -199,13 +199,13 @@ export type KpltBaseData = {
   alas_hak: string; // Tipe string, bukan boolean, berdasarkan contoh "false"
   latitude: string;
   provinsi: string;
-  form_ulok: string; // Bisa jadi null
+  form_ulok: File;
   is_active: boolean;
   kabupaten: string;
   kecamatan: string;
   longitude: string;
   nama_kplt: string;
-  file_intip: string; // Bisa jadi null
+  file_intip: File;
   harga_sewa: number;
   lebar_depan: number;
   bentuk_objek: string;
@@ -215,7 +215,7 @@ export type KpltBaseData = {
   desa_kelurahan: string;
   kontak_pemilik: string;
   approval_intip_status: string;
-  tanggal_approval_intip: string; // Bisa jadi null
+  tanggal_approval_intip: string;
 };
 
 export type KpltBaseUIMapped = {
@@ -238,8 +238,8 @@ export type KpltBaseUIMapped = {
   bentukObjek: string;
   jumlahLantai: number;
   isActive: boolean;
-  formUlok: string | null;
-  fileIntip: string | null;
+  formUlok: File | null;
+  fileIntip: File | null;
   approvalIntipStatus: string;
   tanggalApprovalIntip: string | null;
 };
