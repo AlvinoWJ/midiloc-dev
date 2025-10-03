@@ -2,7 +2,7 @@
 "use client";
 
 import React from "react";
-import { useSidebar } from "@/hooks/useSidebar";
+
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Link as LinkIcon } from "lucide-react";
 import { useRouter } from "next/navigation";

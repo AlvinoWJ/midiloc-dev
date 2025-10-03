@@ -49,7 +49,7 @@ function mapKpltPrefillData(
     lebarDepan: response.base.lebar_depan,
     bentukObjek: response.base.bentuk_objek,
     jumlahLantai: response.base.jumlah_lantai,
-    formUlok: response.base.form_ulok ?? null,
+    formUlok: response.base.form_ulok ? `/api/ulok/${ulokId}/form-ulok` : null,
     fileIntip: response.base.file_intip
       ? `/api/ulok/${ulokId}/file-intip`
       : null,

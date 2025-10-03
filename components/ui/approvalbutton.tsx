@@ -32,7 +32,7 @@ export function ApprovalStatusbutton({
             size="default"
             className="flex-1 sm:flex-none min-w-[200px]"
           >
-            {disabled || loading ? "Memproses..." : "NOK"}
+            NOK
           </Button>
           <Button
             disabled={disabled || loading}
@@ -41,7 +41,7 @@ export function ApprovalStatusbutton({
             size="default"
             className="flex-1 sm:flex-none min-w-[200px]"
           >
-            {disabled || loading ? "Memproses..." : "OK"}
+            OK
           </Button>
         </div>
       )}

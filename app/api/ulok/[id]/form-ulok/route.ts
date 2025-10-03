@@ -28,10 +28,6 @@ export async function GET(
   const mode = new URL(req.url).searchParams.get("mode") || "redirect";
   const path = ulok.form_ulok.replace(/^form_ulok\//, "");
 
-  // --- BAGIAN PENTING UNTUK DEBUGGING ---
-  console.log("Bucket yang digunakan:", "file_storage");
-  console.log("Path yang akan dibuatkan URL:", path);
-
   if (mode === "proxy") {
     // PROXY MODE
     const { data: fileData, error: dlErr } = await supabase.storage

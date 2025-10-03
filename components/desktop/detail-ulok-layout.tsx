@@ -13,7 +13,6 @@ import {
   UserSquare,
   LinkIcon,
   Paperclip,
-  UploadCloud,
   FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";

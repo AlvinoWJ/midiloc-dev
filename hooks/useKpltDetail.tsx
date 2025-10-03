@@ -135,8 +135,6 @@ function mapKpltDetailResponse(
 
   const { kplt, approvals, approvals_summary } = data;
 
-  // Helper untuk mengubah nama file menjadi URL lengkap
-  // Anda bisa sesuaikan base URL ini jika berbeda
   const createFileUrl = (fileName: string | null) =>
     fileName ? `/api/files/kplt/${kplt.id}/${fileName}` : null;
 
@@ -162,7 +160,7 @@ function mapKpltDetailResponse(
       bentukObjek: kplt.bentuk_objek,
       jumlahLantai: kplt.jumlah_lantai,
       isActive: kplt.is_active,
-      formUlok: kplt.form_ulok,
+      formUlok: kplt.form_ulok ? `/api/ulok/${kplt.ulok_id}/form-ulok` : null,
       fileIntip: kplt.file_intip
         ? `/api/ulok/${kplt.ulok_id}/file-intip`
         : null,
@@ -210,8 +208,6 @@ export function useKpltDetail(id: string | undefined) {
     isLoading,
     mutate,
   } = useSWR<KpltDetailApiResponse>(key, fetcher);
-
-  // Memetakan data mentah ke format yang lebih bersih
   const data = mapKpltDetailResponse(rawData);
 
   return {
