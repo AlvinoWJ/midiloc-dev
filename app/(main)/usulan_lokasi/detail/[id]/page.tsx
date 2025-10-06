@@ -34,10 +34,8 @@ export default function DetailPage() {
         response = await fetch(`/api/ulok/${id}`, {
           method: "PATCH",
           body: data,
-          // Header 'Content-Type' tidak perlu di-set, browser akan menanganinya
         });
       } else {
-        // Jika bukan, kirim sebagai JSON biasa untuk update data teks
         response = await fetch(`/api/ulok/${id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },

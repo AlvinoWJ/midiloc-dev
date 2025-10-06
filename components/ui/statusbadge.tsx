@@ -13,6 +13,7 @@ const statusColors: Record<Status, string> = {
   OK: "bg-submit text-primary-foreground",
   NOK: "bg-primary text-primary-foreground",
   "need input": "bg-[#d9d9d9] text-primary-foreground",
+  "waiting for forum": "bg-red text-primary-foreground",
 };
 
 export function StatusBadge({ status, className }: StatusBadgeProps) {
