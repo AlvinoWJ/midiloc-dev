@@ -79,7 +79,7 @@ function LoginFormFields({
           <div className="mt-1 text-right text-sm">
             <Link
               href="/auth/forgot-password"
-              className="underline underline-offset-4 font-semibold text-black"
+              className="text-primary"
             >
               Forgot Password?
             </Link>
@@ -186,9 +186,6 @@ export function LoginForm({
                 height={60}
                 priority
               />
-              <p className="px-8 text-center text-sm text-gray-500">
-                Platform digital terpusat untuk proses pengembangan lokasi.
-              </p>
             </CardHeader>
             <CardContent className="px-6 pb-8">
               <LoginFormFields {...formProps} />
