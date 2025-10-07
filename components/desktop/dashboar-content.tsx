@@ -2,7 +2,7 @@
 "use client";
 import React from "react";
 import { StatsCard } from "../ui/statscard";
-import { DonutChart } from "../ui/donutchart";
+import { DonutChart } from "../ui/donurchart ";
 import { BarChart } from "../ui/barchart";
 import PetaLoader from "@/components/map/PetaLoader";
 import { DashboardPageProps } from "@/types/common";

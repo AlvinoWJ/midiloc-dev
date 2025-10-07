@@ -6,11 +6,24 @@ import { DashboardPageProps } from "@/types/common";
 import { StatsCard } from "../ui/statscard";
 import { DonutChart } from "../ui/donurchart";
 import { BarChart } from "../ui/barchart";
-import PetaLoader from "@/components/map/PetaLoader";
+import dynamic from "next/dynamic";
+
+const PetaLokasiInteraktif = dynamic(
+  () => import("@/components/map/PetaLokasiInteraktif"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[400px] w-full bg-gray-200 animate-pulse rounded-lg flex items-center justify-center">
+        <p>Memuat Peta...</p>
+      </div>
+    ),
+  }
+);
 
 export default function DesktopDashboardLayout(props: DashboardPageProps) {
   const {
     propertiData, // Mengganti nama variabel agar lebih jelas
+    propertiUntukPeta, // Data properti untuk peta
     isLoading,
     isError,
     setYear,
@@ -172,6 +185,47 @@ export default function DesktopDashboardLayout(props: DashboardPageProps) {
     return { ulokDonut, kpltDonut, ulokBar, kpltBar };
   }, [propertiData, selectedSpecialistId]);
 
+  const filteredProperti = useMemo(() => {
+    // Pastikan propertiUntukPeta adalah array. Jika undefined/null, gunakan array kosong.
+    const dataToFilter = propertiUntukPeta || [];
+
+    if (dataToFilter.length === 0) {
+      return []; // Tidak ada data, kembalikan array kosong
+    }
+
+    const selectedYear = propertiData?.filters.year;
+
+    // Jika tidak ada tahun yang dipilih, kembalikan semua data
+    if (!selectedYear) {
+      return dataToFilter;
+    }
+
+    console.log(dataToFilter);
+
+    // Lakukan pemilahan/filter di sini
+    return dataToFilter.filter((lokasi) => {
+      // Pastikan lokasi.created_at ada sebelum membuat Date object
+      if (!lokasi.created_at) {
+        console.warn("Properti tanpa created_at ditemukan:", lokasi);
+        return false;
+      }
+      const lokasiYear = new Date(lokasi.created_at).getFullYear();
+
+      console.log(
+        "Membandingkan: Tahun Data (${lokasiYear}) === Tahun Filter (${selectedYear})"
+      );
+
+      return lokasiYear === selectedYear;
+    });
+  }, [propertiUntukPeta, propertiData?.filters.year]);
+
+  console.log("3. LAYOUT MENGIRIM KE PETA:", filteredProperti);
+
+  console.log("Jumlah properti terfilter:", filteredProperti.length);
+  if (filteredProperti.length > 0) {
+    console.log("Contoh properti terfilter pertama:", filteredProperti[0]);
+  }
+
   return (
     <div className="flex">
       <main className="flex-1 p-6">
@@ -292,9 +346,10 @@ export default function DesktopDashboardLayout(props: DashboardPageProps) {
                 <div className="bg-white p-4 rounded-lg shadow-md shadow-[1px_1px_6px_rgba(0,0,0,0.25)]">
                   <h3 className="text-lg font-semibold mb-2">Peta Sebaran</h3>
                   <div className="h-[400px] w-full">
-                    {/* CATATAN: Response API saat ini tidak menyertakan data koordinat (lat/lng).
-                          Anda perlu menyesuaikan API atau komponen ini jika data peta ada di tempat lain. */}
-                    <PetaLoader data={[]} />
+                    <PetaLokasiInteraktif
+                      data={filteredProperti}
+                      isLoading={isLoading}
+                    />
                   </div>
                 </div>
               </div>

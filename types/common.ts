@@ -180,12 +180,34 @@ export interface UlokPageProps {
 // ==================================
 export interface DashboardPageProps {
   propertiData?: DashboardData;
+  propertiUntukPeta?: Properti[];
   isLoading: boolean;
   isError: any;
   user: CurrentUser | null; // <-- Ini sudah benar menggunakan CurrentUser
   setYear: (year: number | null) => void;
   selectedSpecialistId: string | null;
   onSpecialistChange: (id: string | null) => void;
+}
+
+export interface Properti {
+  id: string;
+  latitude: string;
+  longitude: string;
+  nama_ulok?: string; // sudah ada
+  alamat?: string; // sudah ada
+  approval_status: string; // sudah ada
+  created_at?: string; // sudah ada
+}
+
+export interface UlokApiResponse {
+  success: boolean;
+  data: Properti[]; // 'data' berisi array dari Properti/Ulok
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
 }
 
 // ==================================

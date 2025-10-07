@@ -20,7 +20,7 @@ import { Input, Textarea } from "@/components/ui/input";
 import { StatusBadge } from "@/components/ui/statusbadge";
 import CustomSelect from "@/components/ui/customselect";
 import { ApprovalStatusbutton } from "@/components/ui/approvalbutton";
-import DetailMapCard from "@/components/ui/DetailMapCard";
+import DetailMapCard from "@/components/map/DetailMapCard";
 import WilayahSelector from "@/components/desktop/wilayahselector";
 import { DetailUlokSkeleton } from "./skleton";
 import { useUser } from "@/hooks/useUser";

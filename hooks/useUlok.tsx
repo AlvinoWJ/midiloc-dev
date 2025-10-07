@@ -2,6 +2,7 @@
 
 import useSWR from "swr";
 import type { AppUser } from "./useUser";
+import { UlokApiResponse } from "@/types/common";
 
 export type Ulok = {
   id: string;
