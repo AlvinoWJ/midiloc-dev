@@ -35,10 +35,15 @@ interface FilterData {
 interface BreakdownRow {
   nama: string;
   user_id: string;
-  kplt_ok: number;
-  ulok_ok: number;
-  kplt_total: number;
   ulok_total: number;
+  ulok_ok: number;
+  ulok_nok: number;
+  ulok_in_progress: number;
+  kplt_total: number;
+  kplt_ok: number;
+  kplt_nok: number;
+  kplt_in_progress: number;
+  kplt_waiting_for_forum: number;
 }
 
 interface BreakdownData {
@@ -57,9 +62,14 @@ interface MonthlyDataItem {
   bulan: string;
   month_start: string;
   total_kplt?: number;
-  kplt_approves?: number;
+  kplt_ok?: number;
+  kplt_nok?: number;
+  kplt_in_progress?: number;
+  kplt_waiting_for_forum?: number;
   total_ulok?: number;
-  ulok_approves?: number;
+  ulok_ok?: number;
+  ulok_nok?: number;
+  ulok_in_progress?: number;
 }
 
 export interface DashboardData {

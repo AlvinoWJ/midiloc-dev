@@ -16,6 +16,7 @@ export function DonutChart({ data, title }: DonutChartProps) {
     OK: "#22C55E", // Hijau untuk status "OK" (Approve)
     "In Progress": "#F59E0B", // Kuning untuk "In Progress"
     NOK: "#da3a3aff",
+    "Waiting for Forum": "#3b82f6",
   };
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [animationProgress, setAnimationProgress] = useState(0);

@@ -22,8 +22,8 @@ const PetaLokasiInteraktif = dynamic(
 
 export default function DesktopDashboardLayout(props: DashboardPageProps) {
   const {
-    propertiData, // Mengganti nama variabel agar lebih jelas
-    propertiUntukPeta, // Data properti untuk peta
+    propertiData,
+    propertiUntukPeta,
     isLoading,
     isError,
     setYear,
@@ -33,18 +33,15 @@ export default function DesktopDashboardLayout(props: DashboardPageProps) {
 
   const isLocationManager = propertiData?.filters?.role === "location manager";
 
-  // 🔹 Proses KPI dinamis (per specialist kalau dipilih)
+  // 🔹 Proses KPI dinamis (tidak ada perubahan, sudah sesuai)
   const dynamicStatsData = useMemo(() => {
     if (!propertiData) return [];
-
     let kpis = propertiData.kpis;
 
-    // Kalau ada specialist dipilih → pakai datanya
     if (selectedSpecialistId && propertiData.breakdown?.rows) {
       const specialistRow = propertiData.breakdown.rows.find(
         (row) => row.user_id === selectedSpecialistId
       );
-
       if (specialistRow) {
         kpis = {
           total_kplt: specialistRow.kplt_total,
@@ -99,11 +96,11 @@ export default function DesktopDashboardLayout(props: DashboardPageProps) {
     ];
   }, [propertiData, selectedSpecialistId]);
 
-  // 🔹 Data donut & bar dinamis (ikut specialist kalau dipilih)
+  // 🔹 Data donut & bar dinamis disesuaikan
   const { ulokDonut, kpltDonut, ulokBar, kpltBar } = useMemo(() => {
     if (!propertiData) return {};
 
-    // default pakai data total dari API
+    // Tampilan default (semua specialist)
     let ulokDonut = propertiData.donut_ulok.map((item) => ({
       status: item.status,
       label: item.label,
@@ -114,117 +111,75 @@ export default function DesktopDashboardLayout(props: DashboardPageProps) {
       label: item.label,
       value: item.count,
     }));
+    // Data Bar Chart akan selalu menampilkan data total
     let ulokBar = propertiData.perbulan_ulok.map((item) => ({
       month: item.bulan.substring(0, 3),
-      approved: item.ulok_approves ?? 0,
-      status: (item.total_ulok ?? 0) - (item.ulok_approves ?? 0),
+      approved: item.ulok_ok ?? 0,
+      nok: item.ulok_nok ?? 0,
+      inProgress: item.ulok_in_progress ?? 0,
     }));
     let kpltBar = propertiData.perbulan_kplt.map((item) => ({
       month: item.bulan.substring(0, 3),
-      approved: item.kplt_approves ?? 0,
-      status: (item.total_kplt ?? 0) - (item.kplt_approves ?? 0),
+      approved: item.kplt_ok ?? 0,
+      nok: item.kplt_nok ?? 0,
+      inProgress: item.kplt_in_progress ?? 0,
+      waiting: item.kplt_waiting_for_forum ?? 0,
     }));
 
-    // kalau ada specialist dipilih → hitung ulang berdasarkan breakdown
+    // Tampilan jika ada specialist yang dipilih
     if (selectedSpecialistId && propertiData.breakdown?.rows) {
       const specialistRow = propertiData.breakdown.rows.find(
         (row) => row.user_id === selectedSpecialistId
       );
 
       if (specialistRow) {
-        // 🔸 Donut ULOK/KPLT → hanya 2 kategori (OK vs Belum OK)
         ulokDonut = [
           { status: "OK", label: "Approve", value: specialistRow.ulok_ok },
+          { status: "NOK", label: "Reject", value: specialistRow.ulok_nok },
           {
             status: "In Progress",
-            label: "Belum Approve",
-            value: specialistRow.ulok_total - specialistRow.ulok_ok,
+            label: "In Progress",
+            value: specialistRow.ulok_in_progress,
           },
-        ];
+        ].filter((item) => item.value > 0);
+
         kpltDonut = [
           { status: "OK", label: "Approve", value: specialistRow.kplt_ok },
+          { status: "NOK", label: "Reject", value: specialistRow.kplt_nok },
           {
             status: "In Progress",
-            label: "Belum Approve",
-            value: specialistRow.kplt_total - specialistRow.kplt_ok,
+            label: "In Progress",
+            value: specialistRow.kplt_in_progress,
           },
-        ];
-
-        // 🔸 Bar chart per bulan → di breakdown tidak ada data bulanan,
-        // jadi bisa bikin data dummy per bulan (semua 0 kecuali total akhir).
-        // Kalau API nanti support perbulan per specialist, tinggal ganti mapping-nya.
-        ulokBar = propertiData.perbulan_ulok.map((item) => ({
-          month: item.bulan.substring(0, 3),
-          approved: 0,
-          status: 0,
-        }));
-        kpltBar = propertiData.perbulan_kplt.map((item) => ({
-          month: item.bulan.substring(0, 3),
-          approved: 0,
-          status: 0,
-        }));
-
-        // Atau kalau mau langsung taruh totalnya di bulan terakhir:
-        if (ulokBar.length > 0) {
-          ulokBar[ulokBar.length - 1] = {
-            month: "Total",
-            approved: specialistRow.ulok_ok,
-            status: specialistRow.ulok_total - specialistRow.ulok_ok,
-          };
-        }
-        if (kpltBar.length > 0) {
-          kpltBar[kpltBar.length - 1] = {
-            month: "Total",
-            approved: specialistRow.kplt_ok,
-            status: specialistRow.kplt_total - specialistRow.kplt_ok,
-          };
-        }
+          {
+            status: "Waiting for Forum",
+            label: "Waiting for Forum",
+            value: specialistRow.kplt_waiting_for_forum,
+          },
+        ].filter((item) => item.value > 0);
       }
     }
 
     return { ulokDonut, kpltDonut, ulokBar, kpltBar };
   }, [propertiData, selectedSpecialistId]);
 
+  // 🔹 Logika filter peta (tidak ada perubahan)
   const filteredProperti = useMemo(() => {
-    // Pastikan propertiUntukPeta adalah array. Jika undefined/null, gunakan array kosong.
     const dataToFilter = propertiUntukPeta || [];
-
-    if (dataToFilter.length === 0) {
-      return []; // Tidak ada data, kembalikan array kosong
-    }
+    if (dataToFilter.length === 0) return [];
 
     const selectedYear = propertiData?.filters.year;
+    if (!selectedYear) return dataToFilter;
 
-    // Jika tidak ada tahun yang dipilih, kembalikan semua data
-    if (!selectedYear) {
-      return dataToFilter;
-    }
-
-    console.log(dataToFilter);
-
-    // Lakukan pemilahan/filter di sini
     return dataToFilter.filter((lokasi) => {
-      // Pastikan lokasi.created_at ada sebelum membuat Date object
-      if (!lokasi.created_at) {
-        console.warn("Properti tanpa created_at ditemukan:", lokasi);
-        return false;
-      }
+      if (!lokasi.created_at) return false;
       const lokasiYear = new Date(lokasi.created_at).getFullYear();
-
-      console.log(
-        "Membandingkan: Tahun Data (${lokasiYear}) === Tahun Filter (${selectedYear})"
-      );
-
       return lokasiYear === selectedYear;
     });
   }, [propertiUntukPeta, propertiData?.filters.year]);
 
-  console.log("3. LAYOUT MENGIRIM KE PETA:", filteredProperti);
-
-  console.log("Jumlah properti terfilter:", filteredProperti.length);
-  if (filteredProperti.length > 0) {
-    console.log("Contoh properti terfilter pertama:", filteredProperti[0]);
-  }
+  console.log("ulokBar:", ulokBar);
+  console.log("kpltBar:", kpltBar);
 
   return (
     <div className="flex">

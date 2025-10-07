@@ -30,8 +30,7 @@ export default function DetailMapCard({ id }: { id: string }) {
       (position) => {
         const { latitude: userLat, longitude: userLng } = position.coords;
         const [destLat, destLng] = ulokData.latlong.split(",");
-        const googleMapsUrl =
-          "https://www.google.com/maps/dir/${userLat},${userLng}/${destLat.trim()},${destLng.trim()}";
+        const googleMapsUrl = `https://www.google.com/maps/dir/${userLat},${userLng}/${destLat.trim()},${destLng.trim()}`;
 
         window.open(googleMapsUrl, "_blank");
         setIsGettingLocation(false);
@@ -43,8 +42,7 @@ export default function DetailMapCard({ id }: { id: string }) {
         );
 
         const [destLat, destLng] = ulokData.latlong.split(",");
-        const fallbackUrl =
-          "https://www.google.com/maps/dir/?api=1&destination=${destLat.trim()},${destLng.trim()}";
+        const fallbackUrl = `https://www.google.com/maps/dir/?api=1&destination=${destLat.trim()},${destLng.trim()}`;
 
         window.open(fallbackUrl, "_blank");
         setIsGettingLocation(false);
