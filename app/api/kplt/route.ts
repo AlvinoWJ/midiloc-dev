@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/client";
 import { getCurrentUser, canKplt } from "@/lib/auth/acl";
-import { KpltCreatePayloadSchema } from "@/lib/validations/kplt";
+import { KpltCreateMultipartSchema } from "@/lib/validations/kplt";
 import {
   buildPathByField,
   EXCEL_FIELDS,
@@ -276,7 +276,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     // Validasi payload non-file (field-file sudah berupa path string)
     // KpltCreatePayloadSchema sebaiknya .strict() TANPA ulok_id
-    const parsed = KpltCreatePayloadSchema.safeParse(payload);
+    const parsed = KpltCreateMultipartSchema.safeParse(payload);
     if (!parsed.success) {
       return NextResponse.json(
         { error: "Validation failed", detail: parsed.error.issues },
