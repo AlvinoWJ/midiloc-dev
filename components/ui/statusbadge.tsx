@@ -13,14 +13,14 @@ const statusColors: Record<Status, string> = {
   OK: "bg-submit text-primary-foreground",
   NOK: "bg-primary text-primary-foreground",
   "need input": "bg-[#d9d9d9] text-primary-foreground",
-  "waiting for forum": "bg-red text-primary-foreground",
+  "Waiting for Forum": "bg-progress text-primary-foreground",
 };
 
 export function StatusBadge({ status, className }: StatusBadgeProps) {
   return (
     <span
       className={cn(
-        "px-3 py-1 text-sm font-medium text-center inline-block rounded w-28",
+        "min-h-[48px] px-3 py-1 text-sm font-medium flex items-center justify-center rounded w-28",
         statusColors[status],
         className
       )}
