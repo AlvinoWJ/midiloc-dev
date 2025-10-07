@@ -1,10 +1,8 @@
-import { headers } from "next/headers";
 import type { Metadata } from "next";
 import { ThemeProvider } from "next-themes";
 import { Poppins } from "next/font/google";
 import { SidebarProvider } from "@/hooks/useSidebar";
 import { AlertProvider } from "@/components/desktop/alertcontext";
-import { DeviceProvider } from "./context/DeviceContext";
 import "./globals.css";
 
 // Pakai Poppins
@@ -28,26 +26,19 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  //Logika deteksi perangkat di sisi server
-  const headersList = await headers();
-  const userAgent = headersList.get("user-agent") || "";
-  const isMobile = /Mobi|Android|iPhone/i.test(userAgent);
-
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${poppins.className} antialiased`}>
-        <DeviceProvider isMobile={isMobile}>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-          >
-            <AlertProvider>
-              <SidebarProvider>{children}</SidebarProvider>
-            </AlertProvider>
-          </ThemeProvider>
-        </DeviceProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <AlertProvider>
+            <SidebarProvider>{children}</SidebarProvider>
+          </AlertProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

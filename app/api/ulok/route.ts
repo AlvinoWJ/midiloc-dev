@@ -221,6 +221,7 @@ export async function POST(request: Request) {
     });
     const parsed = UlokCreateInputSchema.safeParse(raw);
     if (!parsed.success) {
+      console.log("VALIDATION ERROR:", parsed.error.issues);
       return NextResponse.json(
         {
           success: false,
@@ -262,6 +263,9 @@ export async function POST(request: Request) {
 
     // Simpan path (path relatif; untuk akses, FE bisa generate signed URL)
     const filePathToStore = objectPath;
+
+    // Remove 'form_ulok' from parsed.data to avoid duplicate key
+    const { form_ulok, ...parsedDataWithoutFormUlok } = parsed.data;
 
     const insertPayload = {
       id: newUlokId,

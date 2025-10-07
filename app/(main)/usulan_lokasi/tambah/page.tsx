@@ -4,13 +4,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { UlokCreateInput } from "@/lib/validations/ulok";
 import { useAlert } from "@/components/desktop/alertcontext";
-import { useDevice } from "@/app/context/DeviceContext";
-import AddUlokFormDesktop from "@/components/desktop/add-ulok-layout"; // Pastikan path dan nama file sesuai
+import AddUlokFormDesktop from "@/components/desktop/tambah-ulok-layout"; // Pastikan path dan nama file sesuai
 import AddUlokFormMobile from "@/components/mobile/add-ulok-layout"; // Pastikan path dan nama file sesuai
 
 export default function TambahUlokPage() {
   // --- HOOKS ---
-  const { isMobile } = useDevice();
   const router = useRouter();
   const { showToast } = useAlert();
 
@@ -73,9 +71,5 @@ export default function TambahUlokPage() {
   };
 
   // 3. Render komponen yang sesuai berdasarkan hasil deteksi perangkat
-  return isMobile ? (
-    <AddUlokFormMobile {...formProps} />
-  ) : (
-    <AddUlokFormDesktop {...formProps} />
-  );
+  return <AddUlokFormDesktop {...formProps} />;
 }
