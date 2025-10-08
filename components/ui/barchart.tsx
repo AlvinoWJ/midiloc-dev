@@ -1,16 +1,28 @@
 import React, { useState, useEffect } from "react";
 
+const barColors: { [key: string]: string } = {
+  approved: "#22C55E", // green-500
+  nok: "#EF4444", // red-500
+  inProgress: "#F59E0B", // yellow-500
+  waitingforforum: "#3B82F6", // blue-500 (untuk KPLT)
+};
+
 interface BarChartProps {
   data: {
     month: string;
     approved: number;
     nok: number;
     inProgress: number;
+    waitingforforum?: number;
   }[];
   title: string;
+  legendConfig: {
+    key: string; // 'approved', 'nok', 'inProgress', etc.
+    label: string; // "Approved", "NOK", "In Progress", etc.
+  }[];
 }
 
-export function BarChart({ data, title }: BarChartProps) {
+export function BarChart({ data, title, legendConfig }: BarChartProps) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [hoveredType, setHoveredType] = useState<
     "approved" | "in progress" | "nok" | null
@@ -173,20 +185,17 @@ export function BarChart({ data, title }: BarChartProps) {
         </div>
       </div>
 
-      {/* Legend */}
-      <div className="flex items-center justify-center space-x-6 mt-6">
-        <div className="flex items-center">
-          <div className="w-4 h-3 bg-green-500 mr-2"></div>
-          <span className="text-sm text-gray-700">Approved</span>
-        </div>
-        <div className="flex items-center">
-          <div className="w-4 h-3 bg-yellow-500 mr-2"></div>
-          <span className="text-sm text-gray-700">In Progress</span>
-        </div>
-        <div className="flex items-center">
-          <div className="w-4 h-3 bg-red-500 mr-2"></div>
-          <span className="text-sm text-gray-700">NOK</span>
-        </div>
+      {/* Legend Dinamis */}
+      <div className="flex items-center justify-center flex-wrap gap-x-6 gap-y-2 mt-6">
+        {legendConfig.map((item) => (
+          <div key={item.key} className="flex items-center">
+            <div
+              className="w-4 h-3 mr-2 rounded-sm"
+              style={{ backgroundColor: barColors[item.key] }}
+            ></div>
+            <span className="text-sm text-gray-700">{item.label}</span>
+          </div>
+        ))}
       </div>
 
       {/* Tooltip */}

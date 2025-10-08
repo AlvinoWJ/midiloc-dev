@@ -7,11 +7,15 @@ interface DonutChartProps {
     value: number;
   }[];
   title: string;
+  legendConfig: {
+    status: string;
+    label: string;
+  }[];
 }
 
 // Komponen Legend dan interface LegendProps sudah dihapus dari sini
 
-export function DonutChart({ data, title }: DonutChartProps) {
+export function DonutChart({ data, title, legendConfig }: DonutChartProps) {
   const statusColorMap: { [key: string]: string } = {
     OK: "#22C55E", // Hijau untuk status "OK" (Approve)
     "In Progress": "#F59E0B", // Kuning untuk "In Progress"
@@ -88,7 +92,7 @@ export function DonutChart({ data, title }: DonutChartProps) {
                     transform: isHovered ? "scale(1.05)" : "scale(1)",
                     transformOrigin: "50px 50px",
                     filter: isHovered
-                      ? "drop-shadow(0 4px 8px rgba(0,0,0,0.2))"
+                      ? "drop-shadow(0 2px 4px rgba(0,0,0,0.15))"
                       : "none",
                   }}
                   onMouseEnter={() => setHoveredIndex(index)}
@@ -110,8 +114,8 @@ export function DonutChart({ data, title }: DonutChartProps) {
               </div>
               <div className="text-sm text-gray-600">
                 {hoveredIndex !== null
-                  ? data[hoveredIndex].label
-                  : data[0]?.label}
+                  ? data[hoveredIndex].status
+                  : data[0]?.status}
               </div>
             </div>
           </div>
@@ -121,15 +125,16 @@ export function DonutChart({ data, title }: DonutChartProps) {
       {/* ======================================== */}
       {/* == LEGEND STATIS BARU DITAMBAHKAN DI SINI == */}
       {/* ======================================== */}
-      <div className="mt-6 flex justify-center items-center space-x-6 text-sm text-gray-600">
-        <div className="flex items-center">
-          <span className="w-3 h-3 rounded-full bg-submit mr-2"></span>
-          <span>Approve</span>
-        </div>
-        <div className="flex items-center">
-          <span className="w-3 h-3 rounded-full bg-progress mr-2"></span>
-          <span>In Progress</span>
-        </div>
+      <div className="mt-6 flex justify-center items-center flex-wrap gap-x-6 gap-y-2 text-sm text-gray-600">
+        {legendConfig.map((item, index) => (
+          <div key={index} className="flex items-center">
+            <span
+              className="w-3 h-3 rounded-full mr-2"
+              style={{ backgroundColor: statusColorMap[item.status] }}
+            ></span>
+            <span>{item.label}</span>
+          </div>
+        ))}
       </div>
 
       {/* Tooltip */}

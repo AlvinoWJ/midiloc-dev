@@ -44,13 +44,20 @@ export default function TambahKpltPage() {
           formPayload.append("ulok_id", ulokId);
 
           Object.entries(data).forEach(([key, value]) => {
-            if (value instanceof File) {
-              formPayload.append(key, value);
-            } else if (value !== null && value !== undefined) {
-              formPayload.append(key, String(value));
+            //   if (value instanceof File) {
+            //     formPayload.append(key, value);
+            //   } else if (value !== null && value !== undefined) {
+            //     formPayload.append(key, String(value));
+            //   }
+            // });
+            if (value !== null && value !== undefined) {
+              if (value instanceof File) {
+                formPayload.append(key, value);
+              } else {
+                formPayload.append(key, String(value));
+              }
             }
           });
-
           const res = await fetch(`/api/kplt`, {
             method: "POST",
             body: formPayload,
