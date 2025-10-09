@@ -3,15 +3,10 @@
 
 import { useState } from "react";
 import { useUser } from "@/hooks/useUser";
-import { DashboardPageProps, Properti } from "@/types/common";
+import { DashboardPageProps } from "@/types/common";
 import DesktopDashboardLayout from "@/components/desktop/dashboard-layout";
 import { useDashboard } from "@/hooks/useDashboard";
-import useSWR from "swr";
-
-const fetcher = (url: string) =>
-  fetch(url)
-    .then((res) => res.json())
-    .then((json) => json.data);
+import { useUlok } from "@/hooks/useUlok";
 
 export default function DashboardPage() {
   const { user } = useUser();
@@ -30,20 +25,16 @@ export default function DashboardPage() {
   });
 
   //Kode tambahan untuk data peta (dipindahkan ke sini)
-  const {
-    data: propertiUntukPeta,
-    error: mapError,
-    isLoading: isMapLoading, // 👈 diganti namanya di sini
-  } = useSWR<Properti[]>("/api/ulok", fetcher);
+  const { ulokData, ulokLoading, ulokError } = useUlok();
 
-  console.log("1. PAGE MENERIMA DARI SWR:", propertiUntukPeta);
+  console.log("1. PAGE MENERIMA DARI SWR:", ulokData);
 
-  const isPageLoading = isLoading || isMapLoading; // Gabungkan isLoading asli dengan isMapLoading
-  const isPageError = isError || isMapLoading; // Gabungkan isError asli dengan mapError
+  const isPageLoading = isLoading || ulokLoading; // Gabungkan isLoading asli dengan isMapLoading
+  const isPageError = isError || ulokError; // Gabungkan isError asli dengan mapError
 
   const dashboardProps: DashboardPageProps = {
     propertiData: dashboardData,
-    propertiUntukPeta: propertiUntukPeta,
+    propertiUntukPeta: ulokData,
     user,
     isLoading: isPageLoading,
     isError: isPageError,

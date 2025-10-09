@@ -4,7 +4,7 @@
 import React, { useMemo } from "react";
 import { DashboardPageProps } from "@/types/common";
 import { StatsCard } from "../ui/statscard";
-import { DonutChart } from "../ui/donurchart";
+import { DonutChart } from "../ui/donutchart";
 import { BarChart } from "../ui/barchart";
 import dynamic from "next/dynamic";
 
@@ -140,18 +140,18 @@ export default function DesktopDashboardLayout(props: DashboardPageProps) {
       value: item.count,
     }));
     // Data Bar Chart akan selalu menampilkan data total
-    let ulokBar = propertiData.perbulan_ulok.map((item) => ({
+    const ulokBar = propertiData.perbulan_ulok.map((item) => ({
       month: item.bulan.substring(0, 3),
       approved: item.ulok_ok ?? 0,
       nok: item.ulok_nok ?? 0,
       inProgress: item.ulok_in_progress ?? 0,
     }));
-    let kpltBar = propertiData.perbulan_kplt.map((item) => ({
+    const kpltBar = propertiData.perbulan_kplt.map((item) => ({
       month: item.bulan.substring(0, 3),
       approved: item.kplt_ok ?? 0,
       nok: item.kplt_nok ?? 0,
       inProgress: item.kplt_in_progress ?? 0,
-      waiting: item.kplt_waiting_for_forum ?? 0,
+      waitingforforum: item.kplt_waiting_for_forum ?? 0,
     }));
 
     // Tampilan jika ada specialist yang dipilih
@@ -187,13 +187,14 @@ export default function DesktopDashboardLayout(props: DashboardPageProps) {
         ].filter((item) => item.value > 0);
       }
     }
-
     return { ulokDonut, kpltDonut, ulokBar, kpltBar };
   }, [propertiData, selectedSpecialistId]);
 
   // 🔹 Logika filter peta (tidak ada perubahan)
   const filteredProperti = useMemo(() => {
-    const dataToFilter = propertiUntukPeta || [];
+    const dataToFilter = Array.isArray(propertiUntukPeta)
+      ? propertiUntukPeta
+      : [];
     if (dataToFilter.length === 0) return [];
 
     const selectedYear = propertiData?.filters.year;
@@ -261,7 +262,7 @@ export default function DesktopDashboardLayout(props: DashboardPageProps) {
                   <p className="text-gray-500 mt-2">
                     Menampilkan data untuk cabang:{" "}
                     <span className="font-semibold text-gray-700">
-                      {propertiData.filters.branch_id}
+                      {propertiData.filters.branch_name}
                     </span>
                   </p>
                 </div>

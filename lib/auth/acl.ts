@@ -50,6 +50,11 @@ export function canUlok(
   if (user.position_nama === "location specialist") return true;
   if (user.position_nama === "location manager")
     return action === "read" || action === "update";
+  if (
+    user.position_nama === "branch manager" ||
+    user.position_nama === "regional manager"
+  )
+    return action === "read";
   return false;
 }
 
@@ -59,7 +64,12 @@ export function canKplt(
 ) {
   switch (user.position_nama?.toLowerCase()) {
     case "location specialist":
-      return action === "read" || action === "create" || action === "update" || action === "delete";
+      return (
+        action === "read" ||
+        action === "create" ||
+        action === "update" ||
+        action === "delete"
+      );
     case "location manager":
       return action === "read"; // data baru
     case "branch manager":
