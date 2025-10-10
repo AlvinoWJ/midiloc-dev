@@ -22,12 +22,12 @@ import CustomSelect from "@/components/ui/customselect";
 import { ApprovalStatusbutton } from "@/components/ui/approvalbutton";
 import DetailMapCard from "@/components/map/DetailMapCard";
 import WilayahSelector from "@/components/ui/customselectwilayah";
-import { DetailUlokSkeleton } from "./skleton";
+import { DetailUlokSkeleton } from "./desktop/skleton";
 import { useUser } from "@/hooks/useUser";
 import { useDetailUlokForm } from "@/hooks/useDetailUlokForm";
 import { MappedUlokData } from "@/hooks/useUlokDetail";
 import { UlokUpdateInput } from "@/lib/validations/ulok";
-import { FileUpload } from "../ui/uploadfile";
+import { FileUpload } from "./ui/uploadfile";
 
 // Dynamic import untuk komponen peta
 const LocationPickerModal = dynamic(
@@ -672,7 +672,7 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
                         ${
                           isAtBottom
                             ? "bg-transparent shadow-none border-transparent"
-                            : "bg-white border-t border-gray-200 shadow-[0_-2px_10px_rgba(0,0,0,0.1)]"
+                            : "bg-background border-t border-gray-200 shadow-[0_-2px_10px_rgba(0,0,0,0.1)]"
                         }
                     `}
         >

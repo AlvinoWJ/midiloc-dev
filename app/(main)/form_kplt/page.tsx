@@ -5,7 +5,7 @@ import { useState, useCallback, useMemo } from "react";
 import { useUser } from "@/hooks/useUser";
 import { useKplt } from "@/hooks/useKplt";
 import { KpltPageProps, UnifiedKpltItem } from "@/types/common";
-import DesktopKPLTLayout from "@/components/desktop/kplt-layout";
+import KpltLayout from "@/components/kplt_layout";
 
 export default function KPLTPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -147,5 +147,5 @@ export default function KPLTPage() {
     isLocationSpecialist,
   };
 
-  return <DesktopKPLTLayout {...kpltProps} />;
+  return <KpltLayout {...kpltProps} />;
 }

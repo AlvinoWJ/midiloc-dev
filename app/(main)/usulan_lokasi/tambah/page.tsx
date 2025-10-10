@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { UlokCreateInput } from "@/lib/validations/ulok";
 import { useAlert } from "@/components/desktop/alertcontext";
-import TambahUlokForm from "@/components/tambah-ulok-layout";
+import TambahUlokForm from "@/components/tambah_ulok_layout";
 
 export default function TambahUlokPage() {
   const router = useRouter();

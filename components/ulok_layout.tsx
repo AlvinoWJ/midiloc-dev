@@ -2,8 +2,8 @@
 
 import { UlokPageProps } from "@/types/common";
 import { InfoCard } from "@/components/ui/infocard"; // Gunakan satu InfoCard yang responsif
-import Tabs from "@/components/ui/tabs"; // Gunakan satu komponen Tabs yang responsif
 import AddButton from "@/components/ui/addbutton"; // Gunakan satu AddButton yang responsif
+import Tabs from "@/components/ui/tabs"; // Gunakan satu komponen Tabs yang responsif
 import SearchWithFilter from "@/components/ui/searchwithfilter"; // Gunakan satu Search yang responsif
 import { UlokPageSkeleton } from "@/components/ui/skleton"; // Gunakan satu Skeleton yang responsif
 import { useRouter } from "next/navigation";

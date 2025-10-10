@@ -106,7 +106,7 @@ export default function SearchWithFilter({
             placeholder="Cari usulan lokasi..."
             value={search}
             onChange={(e) => handleSearchChange(e.target.value)}
-            className="w-full pl-10 pr-12 py-3 border border-gray-300 bg-transparent px-3 py-1 text-base shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+            className="w-full pl-10 pr-12 py-3 border border-gray-300 bg-white px-3 py-1 text-base shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
           />
           <button
             onClick={() => setShowFilter(!showFilter)}
