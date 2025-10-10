@@ -29,7 +29,7 @@ export default function MainLayout({
           }
         >
           <Navbar />
-          <main className="flex-1 p- md:p-6">{children}</main>
+          <main className="flex-1 p-4 md:p-6">{children}</main>
         </div>
       </div>
     </SWRProvider>
