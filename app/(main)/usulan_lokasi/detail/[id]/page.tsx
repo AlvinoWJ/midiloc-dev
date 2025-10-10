@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import { useUlokDetail } from "@/hooks/useUlokDetail";
 import { useAlert } from "@/components/desktop/alertcontext";
 import { UlokUpdateInput } from "@/lib/validations/ulok";
-import DesktopDetailUlok from "@/components/desktop/detail-ulok-layout";
+import DetailUlokLayout from "@/components/desktop/detail-ulok-layout";
 import InputIntipForm from "@/components/ui/inputintip";
 
 export default function DetailPage() {
@@ -171,7 +171,7 @@ export default function DetailPage() {
       <>
         {/* Versi Desktop: Tersembunyi di layar kecil, tampil di layar 'md' ke atas */}
         <div className="hidden md:block">
-          <DesktopDetailUlok {...loadingProps} />
+          <DetailUlokLayout {...loadingProps} />
         </div>
       </>
     );
@@ -205,7 +205,7 @@ export default function DetailPage() {
 
   return (
     <>
-      <DesktopDetailUlok {...pageProps} />
+      <DetailUlokLayout {...pageProps} />
 
       {/* Modal dirender di level ini agar bisa tampil di atas layout manapun */}
       {showIntipForm && (

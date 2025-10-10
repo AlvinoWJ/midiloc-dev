@@ -22,7 +22,7 @@ const LocationPickerModal = dynamic(
   { ssr: false }
 );
 
-export default function AddUlokFormDesktop({
+export default function TambahUlokForm({
   onSubmit,
   isSubmitting,
 }: TambahUlokFormProps) {
@@ -136,13 +136,9 @@ export default function AddUlokFormDesktop({
                     onChange={handleChange}
                     className="flex-grow h-10 lg:h-11 text-sm lg:text-base"
                   />
-                  <button
-                    type="button"
-                    onClick={() => setIsMapOpen(true)}
-                    className="p-2 lg:p-2.5 border rounded-md hover:bg-gray-100 flex-shrink-0"
-                  >
-                    <MapPin className="text-red-500" size={20} />
-                  </button>
+                  <Button type="button" onClick={() => setIsMapOpen(true)}>
+                    <MapPin className="h-4 w-4" />
+                  </Button>
                 </div>
                 {errors.latlong && (
                   <p className="text-red-500 text-xs lg:text-sm mt-1">
