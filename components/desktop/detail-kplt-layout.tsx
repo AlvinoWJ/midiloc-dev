@@ -2,18 +2,22 @@
 "use client";
 
 import React from "react";
-import Sidebar from "@/components/desktop/sidebar";
-import Navbar from "@/components/desktop/navbar";
-import { useSidebar } from "@/hooks/useSidebar";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Link as LinkIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { MappedKpltDetail } from "@/hooks/useKpltDetail";
+import { MappedKpltDetail, ApprovalsSummary } from "@/hooks/useKpltDetail";
 import PrefillKpltCard from "./prefillkpltcard";
+import { ApprovalStatusbutton } from "../ui/approvalbutton";
+import { useUser } from "@/hooks/useUser";
 
 // Props untuk komponen ini, hanya menerima 'data'
 interface DetailKpltLayoutProps {
   data: MappedKpltDetail; // Tipe data sesuai respons API fn_kplt_detail
+  showApprovalSection: boolean;
+  isAlreadyApproved: boolean;
+  isApproving: boolean;
+  onApprove: (status: "OK" | "NOK") => void;
 }
 
 // Komponen kecil untuk menampilkan field key-value agar rapi
@@ -52,12 +56,26 @@ const FileLink = ({ label, url }: { label: string; url: string | null }) => {
   );
 };
 
-export default function DetailKpltLayout({ data }: DetailKpltLayoutProps) {
-  const { isCollapsed } = useSidebar();
+export default function DetailKpltLayout({
+  data,
+  showApprovalSection, // Ambil prop ini
+  isApproving, // Ambil prop ini
+  isAlreadyApproved,
+  onApprove, // Ambil prop ini
+}: DetailKpltLayoutProps) {
   const router = useRouter();
+  const { user } = useUser();
 
-  // Asumsi struktur data dari API seperti ini. Sesuaikan jika berbeda.
-  const { base, analytics, files } = data;
+  const canApprove =
+    user &&
+    (user.position_id === "branch manager" ||
+      user.position_id === "regional manager" ||
+      (user.position_nama &&
+        ["branch manager", "regional manager"].includes(
+          user.position_nama.toLowerCase()
+        )));
+
+  const { base, analytics, files, approvalsSummary } = data;
 
   return (
     <div className="flex">
@@ -133,6 +151,26 @@ export default function DetailKpltLayout({ data }: DetailKpltLayoutProps) {
               <FileLink label="Peta Coverage" url={files.petaCoverage} />
             </div>
           </div>
+
+          {showApprovalSection && canApprove && !isAlreadyApproved && (
+            <div className="mt-6 flex justify-end">
+              <ApprovalStatusbutton
+                show={true}
+                disabled={isApproving} // Tombol disable saat loading
+                onApprove={onApprove} // Langsung panggil prop onApprove
+                fileUploaded={true}
+                loading={isApproving} // Tampilkan spinner saat loading
+                currentStatus={null}
+              />
+
+              {isAlreadyApproved && (
+                <div className="bg-green-100 text-green-800 p-4 rounded-lg font-semibold border border-green-200">
+                  Anda sudah memberikan approval untuk KPLT ini.
+                  {/* Di sini nanti Anda bisa meletakkan komponen ApprovalSummary yang sebenarnya */}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </main>
     </div>

@@ -4,17 +4,25 @@ import { useState, useEffect } from "react";
 import { MappedUlokData } from "@/hooks/useUlokDetail";
 import { UlokUpdateSchema, UlokUpdateInput } from "@/lib/validations/ulok";
 
+type SaveData = UlokUpdateInput | FormData;
+
 export function useDetailUlokForm(
   initialData: MappedUlokData,
-  onSave: (data: UlokUpdateInput) => Promise<boolean>
+  onSave: (data: SaveData) => Promise<boolean>
 ) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedData, setEditedData] = useState(initialData);
   const [errors, setErrors] = useState<Record<string, string | undefined>>({});
 
+  const [newFormUlokFile, setNewFormUlokFile] = useState<File | null>(null);
+
   useEffect(() => {
     setEditedData(initialData);
   }, [initialData]);
+
+  const handleFileChange = (file: File | null) => {
+    setNewFormUlokFile(file);
+  };
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -76,6 +84,17 @@ export function useDetailUlokForm(
   };
 
   const handleSaveWrapper = async () => {
+    if (newFormUlokFile) {
+      const formData = new FormData();
+      formData.append("form_ulok", newFormUlokFile);
+      const success = await onSave(formData);
+      if (success) {
+        setIsEditing(false);
+        setNewFormUlokFile(null);
+      }
+      return; // Hentikan eksekusi di sini setelah mengirim file
+    }
+
     const cleanedHargaSewa = editedData.hargasewa
       ? parseInt(editedData.hargasewa.toString().replace(/[^0-9]/g, ""), 10)
       : 0;
@@ -99,7 +118,6 @@ export function useDetailUlokForm(
       harga_sewa: cleanedHargaSewa,
       nama_pemilik: editedData.namapemilik,
       kontak_pemilik: editedData.kontakpemilik,
-      form_ulok: editedData,
     };
 
     const validationResult = UlokUpdateSchema.safeParse(dataToValidate);
@@ -125,6 +143,7 @@ export function useDetailUlokForm(
     setEditedData(initialData);
     setErrors({});
     setIsEditing(false);
+    setNewFormUlokFile(null);
   };
 
   return {
@@ -132,6 +151,8 @@ export function useDetailUlokForm(
     setIsEditing,
     editedData,
     errors,
+    newFormUlokFile,
+    handleFileChange,
     handleInputChange,
     handleSelectChange,
     handleSaveWrapper,

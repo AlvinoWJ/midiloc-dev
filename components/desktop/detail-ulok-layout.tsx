@@ -7,28 +7,27 @@ import { Dialog } from "@headlessui/react";
 import {
   MapPin,
   CheckCircle2,
-  FileText,
   ArrowLeft,
   Edit3,
   Store,
   UserSquare,
   LinkIcon,
+  Paperclip,
+  FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
 import { StatusBadge } from "@/components/ui/statusbadge";
 import CustomSelect from "@/components/ui/customselect";
 import { ApprovalStatusbutton } from "@/components/ui/approvalbutton";
-import DetailMapCard from "@/components/ui/DetailMapCard";
-import Sidebar from "@/components/desktop/sidebar";
-import Navbar from "@/components/desktop/navbar";
+import DetailMapCard from "@/components/map/DetailMapCard";
 import WilayahSelector from "@/components/desktop/wilayahselector";
 import { DetailUlokSkeleton } from "./skleton";
 import { useUser } from "@/hooks/useUser";
-import { useSidebar } from "@/hooks/useSidebar";
 import { useDetailUlokForm } from "@/hooks/useDetailUlokForm";
 import { MappedUlokData } from "@/hooks/useUlokDetail";
 import { UlokUpdateInput } from "@/lib/validations/ulok";
+import { FileUpload } from "../ui/uploadfile";
 
 // Dynamic import untuk komponen peta
 const LocationPickerModal = dynamic(
@@ -39,11 +38,12 @@ const LocationPickerModal = dynamic(
 interface DetailUlokLayoutProps {
   isLoading?: boolean;
   initialData: MappedUlokData;
-  onSave: (data: UlokUpdateInput) => Promise<boolean>;
+  onSave: (data: UlokUpdateInput | FormData) => Promise<boolean>;
   isSubmitting: boolean;
   onOpenIntipForm: () => void;
   onApprove: (status: "OK" | "NOK") => void;
   fileIntipUrl: string | null;
+  formulokUrl: string | null;
 }
 
 const DetailField = ({
@@ -55,8 +55,9 @@ const DetailField = ({
   onChange,
 }: any) => (
   <div>
-    <label className="text-gray-600 font-medium text-sm mb-1 block">
+    <label className="block font-bold mb-1">
       {label}
+      <span className="text-red-500">*</span>
     </label>
     {isEditing ? (
       type === "textarea" ? (
@@ -93,9 +94,9 @@ export default function DesktopDetailUlokLayout(props: DetailUlokLayoutProps) {
     onOpenIntipForm,
     onApprove,
     fileIntipUrl,
+    formulokUrl,
   } = props;
 
-  const { isCollapsed } = useSidebar();
   const router = useRouter();
   const { user } = useUser();
   const [isApproving, setIsApproving] = useState(false);
@@ -106,6 +107,8 @@ export default function DesktopDetailUlokLayout(props: DetailUlokLayoutProps) {
     setIsEditing,
     editedData,
     errors,
+    newFormUlokFile,
+    handleFileChange,
     handleInputChange,
     handleSelectChange,
     handleSaveWrapper,
@@ -270,8 +273,8 @@ export default function DesktopDetailUlokLayout(props: DetailUlokLayoutProps) {
                       onChange={handleInputChange}
                     />
                     <div>
-                      <label className="text-gray-600 font-medium text-sm mb-1 block">
-                        LatLong
+                      <label className="block font-bold mb-1">
+                        LatLong<span className="text-red-500">*</span>
                       </label>
                       <div className="flex items-center gap-2">
                         <Input
@@ -498,28 +501,81 @@ export default function DesktopDetailUlokLayout(props: DetailUlokLayoutProps) {
             <div className="bg-white rounded-xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)] mb-8">
               <div className="border-b border-gray-200 px-6 py-4">
                 <div className="flex items-center">
-                  <UserSquare className="text-red-500 mr-3" size={20} />
+                  <Paperclip className="text-red-500 mr-3" size={20} />
                   <h2 className="text-lg font-semibold text-gray-900">
                     Form Ulok
                   </h2>
                 </div>
               </div>
               <div className="p-6">
-                <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border">
-                  <span className="text-sm text-gray-800 font-medium">
-                    Form Ulok
-                  </span>
-                  <a
-                    href={initialData.formulok!}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-1.5 px-3 rounded-lg transition-colors duration-200"
-                  >
-                    {/* Pastikan Anda sudah meng-import komponen LinkIcon */}
-                    <LinkIcon className="w-3 h-3 mr-1.5" />
-                    Lihat
-                  </a>
-                </div>
+                {isEditing && isLocationSpecialist ? (
+                  <div className="space-y-4">
+                    {/* 1. Preview file yang sudah ada */}
+                    {formulokUrl && (
+                      <div>
+                        <label className="block font-bold mb-1">
+                          File Saat Ini<span className="text-red-500">*</span>
+                        </label>
+                        <div className="flex items-center justify-between bg-gray-100 p-3 rounded-lg border">
+                          <div className="flex items-center min-w-0">
+                            <FileText className="w-5 h-5 mr-3 text-gray-500 flex-shrink-0" />
+                            <span className="text-sm text-gray-800 font-medium truncate">
+                              {/* Coba dapatkan nama file asli dari path */}
+                              {initialData.formulok?.split("/").pop() ||
+                                "form_ulok.pdf"}
+                            </span>
+                          </div>
+                          <a
+                            href={formulokUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-1.5 px-3 rounded-lg transition-colors duration-200"
+                          >
+                            <LinkIcon className="w-3 h-3 mr-1.5" />
+                            Lihat
+                          </a>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 2. Menggunakan komponen FileUpload Anda */}
+                    <FileUpload
+                      label={
+                        newFormUlokFile
+                          ? "File Baru Dipilih"
+                          : "Ganti File (PDF)"
+                      }
+                      name="form_ulok_upload"
+                      value={newFormUlokFile}
+                      onChange={handleFileChange}
+                      accept="application/pdf"
+                      maxSizeMB={15}
+                    />
+                    {/* --- AKHIR PERUBAHAN --- */}
+                  </div>
+                ) : (
+                  // --- UI MODE VIEW (YANG SUDAH ADA) ---
+                  <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border">
+                    <span className="text-sm text-gray-800 font-medium">
+                      Formulir Usulan Lokasi
+                    </span>
+                    {formulokUrl ? (
+                      <a
+                        href={formulokUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-1.5 px-3 rounded-lg transition-colors duration-200"
+                      >
+                        <LinkIcon className="w-3 h-3 mr-1.5" />
+                        Lihat
+                      </a>
+                    ) : (
+                      <span className="text-xs text-gray-500">
+                        File tidak tersedia
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 

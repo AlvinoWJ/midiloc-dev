@@ -149,7 +149,8 @@ const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
   return (
     <div className="relative" ref={dropdownRef}>
       <label htmlFor={id} className="block font-bold mb-1">
-        {label} <span className="text-red-500">*</span>
+        {label}
+        <span className="text-red-500">*</span>
       </label>
 
       <div
@@ -281,7 +282,9 @@ const WilayahSelector: React.FC<WilayahSelectorProps> = ({
         setProvinces(provincesList);
 
         if (initialProvince) {
-          const province = provincesList.find((p: Wilayah) => p.name === initialProvince);
+          const province = provincesList.find(
+            (p: Wilayah) => p.name === initialProvince
+          );
           if (province) {
             setSelectedProvince(province.code);
             setSelectedProvinceName(initialProvince);
@@ -301,13 +304,17 @@ const WilayahSelector: React.FC<WilayahSelectorProps> = ({
       const fetchRegencies = async () => {
         setLoadingStates((prev) => ({ ...prev, regencies: true }));
         try {
-          const resRegencies = await fetch(`/api/wilayah?type=regencies&code=${selectedProvince}`);
+          const resRegencies = await fetch(
+            `/api/wilayah?type=regencies&code=${selectedProvince}`
+          );
           const dataRegencies = await resRegencies.json();
           const regenciesList = dataRegencies.data || [];
           setRegencies(regenciesList);
-          
+
           if (initialRegency) {
-            const regency = regenciesList.find((r: Wilayah) => r.name === initialRegency);
+            const regency = regenciesList.find(
+              (r: Wilayah) => r.name === initialRegency
+            );
             if (regency) {
               setSelectedRegency(regency.code);
               setSelectedRegencyName(initialRegency);
@@ -332,13 +339,17 @@ const WilayahSelector: React.FC<WilayahSelectorProps> = ({
       const fetchDistricts = async () => {
         setLoadingStates((prev) => ({ ...prev, districts: true }));
         try {
-          const resDistricts = await fetch(`/api/wilayah?type=districts&code=${selectedRegency}`);
+          const resDistricts = await fetch(
+            `/api/wilayah?type=districts&code=${selectedRegency}`
+          );
           const dataDistricts = await resDistricts.json();
           const districtsList = dataDistricts.data || [];
           setDistricts(districtsList);
 
           if (initialDistrict) {
-            const district = districtsList.find((d: Wilayah) => d.name === initialDistrict);
+            const district = districtsList.find(
+              (d: Wilayah) => d.name === initialDistrict
+            );
             if (district) {
               setSelectedDistrict(district.code);
               setSelectedDistrictName(initialDistrict);
@@ -363,13 +374,17 @@ const WilayahSelector: React.FC<WilayahSelectorProps> = ({
       const fetchVillages = async () => {
         setLoadingStates((prev) => ({ ...prev, villages: true }));
         try {
-          const resVillages = await fetch(`/api/wilayah?type=villages&code=${selectedDistrict}`);
+          const resVillages = await fetch(
+            `/api/wilayah?type=villages&code=${selectedDistrict}`
+          );
           const dataVillages = await resVillages.json();
           const villagesList = dataVillages.data || [];
           setVillages(villagesList);
 
           if (initialVillage) {
-            const village = villagesList.find((v: Wilayah) => v.name === initialVillage);
+            const village = villagesList.find(
+              (v: Wilayah) => v.name === initialVillage
+            );
             if (village) {
               setSelectedVillage(village.code);
               setSelectedVillageName(initialVillage);

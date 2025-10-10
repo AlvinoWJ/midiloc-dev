@@ -5,27 +5,34 @@ import { useRouter } from "next/navigation";
 import { UlokCreateInput } from "@/lib/validations/ulok";
 import { useAlert } from "@/components/desktop/alertcontext";
 import AddUlokFormDesktop from "@/components/desktop/tambah-ulok-layout"; // Pastikan path dan nama file sesuai
-import AddUlokFormMobile from "@/components/mobile/add-ulok-layout"; // Pastikan path dan nama file sesuai
+// Pastikan path dan nama file sesuai
 
 export default function TambahUlokPage() {
   // --- HOOKS ---
   const router = useRouter();
   const { showToast } = useAlert();
 
-  // --- STATE MANAGEMENT ---
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // --- API HANDLER ---
-  // Logika ini menjadi "otak" halaman, yang akan di-pass ke komponen UI.
   const handleFormSubmit = async (data: UlokCreateInput) => {
     setIsSubmitting(true);
     try {
+      const formData = new FormData();
+
+      Object.entries(data).forEach(([key, value]) => {
+        if (value !== null && value !== undefined) {
+          if (value instanceof File) {
+            formData.append(key, value);
+          } else {
+            formData.append(key, String(value));
+          }
+        }
+      });
+
       const response = await fetch("/api/ulok", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
+
+        body: formData,
       });
 
       const resJson = await response.json();

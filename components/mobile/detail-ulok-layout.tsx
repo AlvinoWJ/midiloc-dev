@@ -8,7 +8,7 @@ import { StatusBadge } from "@/components/ui/statusbadge";
 import { useUser } from "@/hooks/useUser";
 import { CheckCircle2, FileText, ArrowLeft, Edit3, MapPin } from "lucide-react";
 import { ApprovalStatusbutton } from "@/components/ui/approvalbutton";
-import DetailMapCard from "@/components/ui/DetailMapCard";
+import DetailMapCard from "@/components/map/DetailMapCard";
 import MobileNavbar from "./navbar";
 import MobileSidebar from "./sidebar";
 import { MappedUlokData } from "@/hooks/useUlokDetail";

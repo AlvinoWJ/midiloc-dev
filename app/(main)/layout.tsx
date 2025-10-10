@@ -2,8 +2,8 @@
 "use client";
 
 import React from "react";
-import Sidebar from "@/components/desktop/sidebar";
-import Navbar from "@/components/desktop/navbar";
+import Sidebar from "@/components/sidebar";
+import Navbar from "@/components/navbar";
 import { useSidebar } from "@/hooks/useSidebar";
 import SWRProvider from "../swr-provider";
 
@@ -19,12 +19,17 @@ export default function MainLayout({
       <div className="flex">
         <Sidebar />
         <div
-          className={`flex-1 flex flex-col bg-gray-50 min-h-screen transition-all duration-300 ${
-            isCollapsed ? "ml-[80px]" : "ml-[270px]"
-          }`}
+          className={
+            // PERBAIKAN DI SINI:
+            // Margin kiri hanya diterapkan pada layar 'lg' ke atas.
+            // Di layar kecil, margin akan otomatis 0.
+            `flex-1 flex flex-col transition-all duration-300 ${
+              isCollapsed ? "lg:ml-[80px]" : "lg:ml-[270px]"
+            }`
+          }
         >
           <Navbar />
-          <main className="flex-1 p-6">{children}</main>
+          <main className="flex-1 p- md:p-6">{children}</main>
         </div>
       </div>
     </SWRProvider>

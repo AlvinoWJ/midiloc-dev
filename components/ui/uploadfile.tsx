@@ -17,8 +17,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   name,
   value,
   onChange,
-  accept = ".pdf,.doc,.docx,.jpg,.jpeg,.png",
-  maxSizeMB = 10,
+  accept = ".pdf,.doc,.docx",
+  maxSizeMB = 15,
 }) => {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -46,7 +46,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   return (
     <div className="col-span-2">
       <label className="block font-semibold mb-2">
-        {label} <span className="text-red-500">*</span>
+        {label}
+        <span className="text-red-500">*</span>
       </label>
       <div
         className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-red-400 transition-colors cursor-pointer bg-gray-50"

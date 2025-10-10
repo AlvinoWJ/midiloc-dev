@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import { useSidebar } from "@/hooks/useSidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input"; // Asumsi path ini benar
 import { Label } from "@/components/ui/label"; // Asumsi path ini benar
@@ -75,8 +74,6 @@ export default function TambahKpltLayout({
   handleFileChange,
   handleFormSubmit,
 }: TambahKpltLayoutProps) {
-  const { isCollapsed } = useSidebar();
-  const [isExpanded, setIsExpanded] = useState(false); // State lokal untuk UI tetap ada
   const router = useRouter();
 
   const karakterLokasiOptions = [

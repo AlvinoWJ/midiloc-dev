@@ -1,16 +1,13 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/client";
 import { getCurrentUser, canUlok } from "@/lib/auth/acl";
 
 const UlokIdSchema = z.string().trim().uuid();
 
-export async function GET(
-  _req: Request,
-  { params }: { params: { id: string } }
-) {
+export async function GET(_request: NextRequest) {
   // 1. Ambil raw param & trim
-  const rawParam = params?.id ?? "";
+  const rawParam = _request.nextUrl.searchParams.get("ulok_id") ?? "";
   const trimmed = rawParam.trim();
 
   // 2. Validasi UUID

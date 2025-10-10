@@ -38,7 +38,6 @@ interface KpltRow {
   id: string;
   ulok_id: string;
   kplt_approval?: string | null;
-  // file-path fields:
   [key: string]: unknown;
 }
 

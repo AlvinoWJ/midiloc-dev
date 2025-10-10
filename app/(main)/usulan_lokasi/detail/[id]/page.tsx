@@ -6,10 +6,8 @@ import { useUlokDetail } from "@/hooks/useUlokDetail";
 import { useAlert } from "@/components/desktop/alertcontext";
 import { UlokUpdateInput } from "@/lib/validations/ulok";
 import DesktopDetailUlok from "@/components/desktop/detail-ulok-layout";
-import MobileDetailUlok from "@/components/mobile/detail-ulok-layout";
 import InputIntipForm from "@/components/ui/inputintip";
 
-// Komponen Halaman Inti
 export default function DetailPage() {
   // --- SETUP & HOOKS ---
   const { id } = useParams<{ id: string }>();
@@ -22,29 +20,49 @@ export default function DetailPage() {
 
   // --- API HANDLERS (Fungsi-fungsi ini tetap di sini karena ini adalah "otak" dari halaman) ---
 
-  const handleSaveData = async (data: UlokUpdateInput): Promise<boolean> => {
+  const handleSaveData = async (
+    data: UlokUpdateInput | FormData
+  ): Promise<boolean> => {
     setIsSubmitting(true);
     try {
-      await fetch(`/api/ulok/${id}`, {
-        // Menggunakan path relatif lebih baik
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
+      let response;
+
+      // Cek tipe data yang dikirim dari hook
+      if (data instanceof FormData) {
+        // Jika data adalah FormData, kirim sebagai multipart/form-data
+        // Ini untuk use case upload file form_ulok
+        response = await fetch(`/api/ulok/${id}`, {
+          method: "PATCH",
+          body: data,
+        });
+      } else {
+        response = await fetch(`/api/ulok/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+        });
+      }
+
+      // Penanganan error yang konsisten untuk kedua jenis request
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Gagal menyimpan perubahan.");
+      }
+
       showToast({
         type: "success",
         title: "Berhasil",
         message: "Data ULOK telah diperbarui.",
       });
-      await refresh();
-      return true;
-    } catch (error) {
+      await refresh(); // Muat ulang data untuk menampilkan perubahan
+      return true; // Sinyal sukses ke hook
+    } catch (error: any) {
       showToast({
         type: "error",
-        title: "Gagal",
-        message: "Gagal menyimpan pembaruan.",
+        title: "Gagal Menyimpan",
+        message: error.message || "Gagal menyimpan pembaruan.",
       });
-      return false;
+      return false; // Sinyal gagal ke hook
     } finally {
       setIsSubmitting(false);
     }
@@ -138,16 +156,15 @@ export default function DetailPage() {
 
   // 1. Tangani state saat deteksi perangkat sedang berjalan
   if (isLoading) {
-    // Buat props dummy untuk skeleton. initialData harus ada untuk menghindari error props.
     const loadingProps = {
       isLoading: true,
       initialData: null as any, // Diberi `null` karena skeleton tidak butuh data
-      // Sisa props bisa di-dummy karena tidak akan digunakan oleh skeleton
       onSave: async () => false,
       isSubmitting: false,
       onOpenIntipForm: () => {},
       onApprove: () => {},
       fileIntipUrl: null,
+      formulokUrl: null,
     };
 
     return (
@@ -180,6 +197,9 @@ export default function DetailPage() {
     onApprove: handleSetApproval,
     fileIntipUrl: ulokData?.file_intip
       ? `/api/ulok/${ulokData.id}/file-intip`
+      : null,
+    formulokUrl: ulokData?.formulok
+      ? `/api/ulok/${ulokData.id}/form-ulok`
       : null,
   };
 
