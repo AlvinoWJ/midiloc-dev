@@ -40,17 +40,25 @@ export default function TambahKpltPage() {
         try {
           setIsSubmitting(true);
 
-          // Bungkus data ke FormData untuk upload file
           const formPayload = new FormData();
+          formPayload.append("ulok_id", ulokId);
+
           Object.entries(data).forEach(([key, value]) => {
-            if (value instanceof File) {
-              formPayload.append(key, value);
-            } else if (value !== null && value !== undefined) {
-              formPayload.append(key, String(value));
+            //   if (value instanceof File) {
+            //     formPayload.append(key, value);
+            //   } else if (value !== null && value !== undefined) {
+            //     formPayload.append(key, String(value));
+            //   }
+            // });
+            if (value !== null && value !== undefined) {
+              if (value instanceof File) {
+                formPayload.append(key, value);
+              } else {
+                formPayload.append(key, String(value));
+              }
             }
           });
-
-          const res = await fetch(`/api/ulok/${ulokId}/kplt`, {
+          const res = await fetch(`/api/kplt`, {
             method: "POST",
             body: formPayload,
           });
@@ -66,7 +74,7 @@ export default function TambahKpltPage() {
             message: "Data KPLT berhasil disimpan.",
           });
 
-          router.push(`/ulok/${ulokId}/kplt`);
+          router.push(`/form_kplt`);
         } catch (err) {
           showToast({
             type: "error",

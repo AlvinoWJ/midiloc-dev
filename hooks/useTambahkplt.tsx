@@ -111,7 +111,10 @@ export function useTambahKplt({
     e.preventDefault();
     setErrors({});
 
-    // --- VALIDASI MANUAL (BLOK BARU) ---
+    console.log("🚀 [DEBUG] Mulai submit KPLT");
+    console.log("📦 formData awal:", formData);
+
+    // --- VALIDASI MANUAL  ---
     const requiredFields = {
       karakter_lokasi: "Karakter Lokasi wajib diisi",
       sosial_ekonomi: "Sosial Ekonomi wajib diisi",
@@ -173,15 +176,8 @@ export function useTambahKplt({
       }
     });
 
-    // ▼▼▼ TAMBAHKAN BLOK DEBUGGING INI DI SINI ▼▼▼
-    //======================================================================
-    console.log("--- DEBUGGING VALIDASI MANUAL ---");
-    console.log("State formData saat submit:", formData);
-    console.log("Daftar error yang ditemukan:", fieldErrors);
-    console.log("Apakah ada error?", Object.keys(fieldErrors).length > 0);
-    //======================================================================
-
     if (Object.keys(fieldErrors).length > 0) {
+      console.warn("⚠️ [DEBUG] Validasi manual gagal:", fieldErrors);
       setErrors(fieldErrors);
       showToast({
         type: "error",
@@ -211,9 +207,11 @@ export function useTambahKplt({
         formData.progress_toko === "" ? null : formData.progress_toko,
     };
 
+    console.log("📜 [DEBUG] Payload untuk validasi Zod:", payloadToValidate);
     const result = KpltCreatePayloadSchema.safeParse(payloadToValidate);
 
     if (!result.success) {
+      console.error("❌ [DEBUG] Validasi Zod gagal:", result.error.issues);
       const newErrors: FormErrors = {};
       result.error.issues.forEach((issue) => {
         const fieldName = issue.path[0] as keyof KpltCreatePayload;
@@ -228,6 +226,8 @@ export function useTambahKplt({
       return;
     }
 
+    console.log("✅ [DEBUG] Validasi berhasil:", result.data);
+
     // --- Konfirmasi dan Submit (Tidak Diubah) ---
     const isConfirmed = await showConfirmation({
       title: "Konfirmasi Simpan KPLT",
@@ -237,8 +237,33 @@ export function useTambahKplt({
 
     if (isConfirmed) {
       try {
-        await onSubmit(result.data);
+        const convertedData: KpltCreatePayload = {
+          ...result.data,
+          // pastikan semua nilai numeric dikonversi dari string ke number
+          skor_fpl: Number(result.data.skor_fpl),
+          std: Number(result.data.std),
+          apc: Number(result.data.apc),
+          spd: Number(result.data.spd),
+          pe_rab: Number(result.data.pe_rab),
+        };
+
+        console.log(
+          "🚀 [DEBUG] Data final sebelum upload ke storage:",
+          convertedData
+        );
+        console.log("🗂️ [DEBUG] File yang akan diunggah:", {
+          pdf_foto: formData.pdf_foto,
+          counting_kompetitor: formData.counting_kompetitor,
+          pdf_pembanding: formData.pdf_pembanding,
+          pdf_kks: formData.pdf_kks,
+          excel_fpl: formData.excel_fpl,
+          excel_pe: formData.excel_pe,
+        });
+
+        await onSubmit(convertedData);
+        console.log("🎉 [DEBUG] Submit berhasil");
       } catch (error) {
+        console.error("🔥 [DEBUG] Gagal upload ke storage:", error);
         showToast({
           type: "error",
           title: "Proses Gagal",

@@ -56,7 +56,10 @@ export async function GET(
     .createSignedUrl(path, 60 * 5);
 
   if (signErr || !signed?.signedUrl)
-    return NextResponse.json({ error: "Sign failed" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Sign failed", message: signErr?.message },
+      { status: 500 }
+    );
 
   return NextResponse.redirect(signed.signedUrl, 302);
 }

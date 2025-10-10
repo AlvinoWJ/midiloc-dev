@@ -7,6 +7,24 @@ import { KpltBaseUIMapped } from "@/types/common";
 // DEFINISI TIPE BARU UNTUK API DETAIL KPLT
 // =========================================================================
 
+// --- Tipe baru untuk detail masing-masing approval ---
+export type ApprovalDetail = {
+  id: string;
+  kplt_id: string;
+  created_at: string;
+  approved_at: string;
+  approved_by: string;
+  is_approved: boolean;
+  position_nama: string;
+};
+
+// --- Tipe baru untuk ringkasan approval per peran ---
+export type ApprovalSummaryDetail = {
+  approved_at: string;
+  approved_by: string;
+  is_approved: boolean;
+};
+
 export type KpltDetailData = {
   id: string;
   ulok_id: string;
@@ -33,6 +51,7 @@ export type KpltDetailData = {
   file_intip: string | null;
   approval_intip_status: string;
   tanggal_approval_intip: string | null;
+  kplt_approval: string; // Status approval KPLT baru
   // --- Data Analitis & Skor ---
   apc: number;
   spd: number;
@@ -62,18 +81,16 @@ export type KpltDetailData = {
  */
 export type KpltDetailApiResponse = {
   kplt: KpltDetailData;
-  approvals: any[]; // Ganti `any` dengan tipe approval yang lebih spesifik jika ada
+  approvals: ApprovalDetail[]; // Menggunakan tipe yang lebih spesifik
   approvals_summary: {
-    bm: string | null;
-    gm: string | null;
-    rm: string | null;
+    bm: ApprovalSummaryDetail | null; // Tipe yang benar adalah objek, bukan string
+    gm: ApprovalSummaryDetail | null;
+    rm: ApprovalSummaryDetail | null;
   };
 };
 
-/**
- * Tipe data hasil mapping yang bersih dan siap pakai untuk UI.
- * Menggunakan camelCase.
- */
+export type ApprovalsSummary = KpltDetailApiResponse["approvals_summary"];
+
 export type MappedKpltDetail = {
   base: KpltBaseUIMapped;
   analytics: {
@@ -87,14 +104,10 @@ export type MappedKpltDetail = {
     karakterLokasi: string;
   };
   files: {
-    [key: string]: string | null; // Objek untuk menampung URL file
+    [key: string]: string | null;
   };
-  approvals: any[];
-  approvalsSummary: {
-    bm: string | null;
-    gm: string | null;
-    rm: string | null;
-  };
+  approvals: ApprovalDetail[];
+  approvalsSummary: ApprovalsSummary;
 };
 
 // =========================================================================
@@ -135,8 +148,6 @@ function mapKpltDetailResponse(
 
   const { kplt, approvals, approvals_summary } = data;
 
-  // Helper untuk mengubah nama file menjadi URL lengkap
-  // Anda bisa sesuaikan base URL ini jika berbeda
   const createFileUrl = (fileName: string | null) =>
     fileName ? `/api/files/kplt/${kplt.id}/${fileName}` : null;
 
@@ -162,12 +173,13 @@ function mapKpltDetailResponse(
       bentukObjek: kplt.bentuk_objek,
       jumlahLantai: kplt.jumlah_lantai,
       isActive: kplt.is_active,
-      formUlok: kplt.form_ulok,
+      formUlok: kplt.form_ulok ? `/api/ulok/${kplt.ulok_id}/form-ulok` : null,
       fileIntip: kplt.file_intip
         ? `/api/ulok/${kplt.ulok_id}/file-intip`
         : null,
       approvalIntipStatus: kplt.approval_intip_status,
       tanggalApprovalIntip: kplt.tanggal_approval_intip,
+      kpltapproval: kplt.kplt_approval || "",
     },
     analytics: {
       apc: kplt.apc,
@@ -202,7 +214,6 @@ function mapKpltDetailResponse(
 // CUSTOM HOOK DENGAN SWR
 // =========================================================================
 export function useKpltDetail(id: string | undefined) {
-  // Kunci SWR akan null jika ID tidak ada, sehingga fetch tidak akan dijalankan
   const key = id ? `/api/kplt/${id}` : null;
 
   const {
@@ -211,16 +222,14 @@ export function useKpltDetail(id: string | undefined) {
     isLoading,
     mutate,
   } = useSWR<KpltDetailApiResponse>(key, fetcher);
-
-  // Memetakan data mentah ke format yang lebih bersih
   const data = mapKpltDetailResponse(rawData);
 
   return {
-    data, // Data yang sudah bersih dan siap pakai
-    rawData, // Data asli jika sewaktu-waktu dibutuhkan
+    data,
+    rawData,
     isLoading,
     isError: !!error,
     error,
-    mutate, // Fungsi untuk re-fetch data secara manual
+    mutate,
   };
 }

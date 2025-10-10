@@ -2,11 +2,9 @@
 "use client";
 
 import { KpltPageProps } from "@/types/common";
-import { useSidebar } from "@/hooks/useSidebar";
 import DesktopTabs from "@/components/desktop/tabs";
 import SearchWithFilter from "@/components/desktop/searchwithfilter";
 import { InfoCard } from "@/components/ui/infocard";
-import { useRouter } from "next/navigation";
 
 export default function DesktopKpltLayout(props: KpltPageProps) {
   const {
@@ -17,14 +15,10 @@ export default function DesktopKpltLayout(props: KpltPageProps) {
     searchQuery,
     filterMonth,
     filterYear,
-    isLocationSpecialist,
     onSearch,
     onFilterChange,
     onTabChange,
   } = props;
-
-  const { isCollapsed } = useSidebar();
-  const router = useRouter();
 
   return (
     <div className="flex">

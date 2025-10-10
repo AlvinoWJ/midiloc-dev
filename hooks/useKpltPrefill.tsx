@@ -1,11 +1,31 @@
+// file: hooks/useKpltPrefill.ts
+
+import { useMemo } from "react";
 import useSWR from "swr";
 import { PrefillKpltResponse, KpltBaseUIMapped } from "@/types/common";
 
-// Fungsi mapping yang sebelumnya ada di useKpltDetail.ts
+// Fetcher tidak perlu diubah
+const fetcher = async (url: string) => {
+  const res = await fetch(url);
+  if (!res.ok) {
+    const error = new Error("An error occurred while fetching the data.");
+    try {
+      (error as any).info = await res.json();
+    } catch (e) {
+      (error as any).info = { message: "Failed to parse error JSON." };
+    }
+    (error as any).status = res.status;
+    throw error;
+  }
+  return res.json();
+};
+
+// Fungsi mapping tidak perlu diubah
 function mapKpltPrefillData(
-  response: PrefillKpltResponse | undefined
+  response: PrefillKpltResponse | undefined,
+  ulokId: string | undefined
 ): KpltBaseUIMapped | undefined {
-  if (!response?.base) return undefined;
+  if (!response?.base || !ulokId) return undefined;
 
   return {
     namaKplt: response.base.nama_kplt,
@@ -29,32 +49,22 @@ function mapKpltPrefillData(
     lebarDepan: response.base.lebar_depan,
     bentukObjek: response.base.bentuk_objek,
     jumlahLantai: response.base.jumlah_lantai,
-    formUlok: response.base.form_ulok ?? null,
+    formUlok: response.base.form_ulok ? `/api/ulok/${ulokId}/form-ulok` : null,
     fileIntip: response.base.file_intip
-      ? `/api/ulok/${response.ulok_id}/file-intip`
+      ? `/api/ulok/${ulokId}/file-intip`
       : null,
   };
 }
 
-// Fetcher bisa kita definisikan lagi di sini atau impor dari file utilitas
-const fetcher = async (url: string) => {
-  const res = await fetch(url);
-  if (!res.ok) {
-    const error = new Error("An error occurred while fetching the data.");
-    try {
-      (error as any).info = await res.json();
-    } catch (e) {
-      (error as any).info = { message: "Failed to parse error JSON." };
-    }
-    (error as any).status = res.status;
-    throw error;
-  }
-  return res.json();
-};
-
-// HOOK BARU KITA
+/**
+ * Hook untuk mengambil data prefill KPLT berdasarkan ID ULOK.
+ * @param ulokId ID dari ULOK.
+ */
 export function useKpltPrefill(ulokId: string | undefined) {
-  const key = ulokId ? `/api/ulok/${ulokId}/kplt/prefill` : null;
+  // ===================== PERUBAHAN DI SINI =====================
+  // URL disesuaikan dengan struktur route baru Anda, dimana ID ada di akhir.
+  const key = ulokId ? `/api/kplt/prefill?ulok_id=${ulokId}` : null;
+  // =============================================================
 
   const {
     data: rawData,
@@ -62,11 +72,15 @@ export function useKpltPrefill(ulokId: string | undefined) {
     isLoading,
   } = useSWR<PrefillKpltResponse>(key, fetcher);
 
-  const data = mapKpltPrefillData(rawData);
+  // Optimasi useMemo tetap dipertahankan
+  const data = useMemo(
+    () => mapKpltPrefillData(rawData, ulokId),
+    [rawData, ulokId]
+  );
 
   return {
-    data, // Data yang sudah bersih
-    rawData, // Data mentah, dibutuhkan untuk initialData form
+    data,
+    rawData,
     isLoading,
     isError: !!error,
     error,

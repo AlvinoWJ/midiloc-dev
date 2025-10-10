@@ -1,8 +1,7 @@
 "use client";
 
-import { DesktopLoginForm } from "@/components/desktop/login-form";
+import { LoginForm } from "@/components/auth/login/login-form";
 
 export default function LoginPage() {
-  // Render komponen yang sesuai berdasarkan nilai dari context
-  return <DesktopLoginForm />;
+  return <LoginForm />;
 }

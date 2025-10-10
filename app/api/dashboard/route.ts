@@ -7,16 +7,6 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export async function GET(req: NextRequest) {
-  // =================================================================
-  // == DEBUG 1: Lihat URL lengkap yang masuk dari frontend ==
-  console.log("\n--- DEBUG START ---");
-  console.log("URL Diterima:", req.nextUrl.href);
-
-  // == DEBUG 2: Coba baca parameter specialist secara manual ==
-  const specialistIdParam = req.nextUrl.searchParams.get("user_id_spec");
-  console.log("Nilai 'user_id_spec' yang terbaca dari URL:", specialistIdParam);
-  // =================================================================
-
   try {
     const supabase = await createClient();
     const user = await getCurrentUser();
@@ -51,20 +41,6 @@ export async function GET(req: NextRequest) {
       p_year = parsed;
     }
 
-    // =================================================================
-    // == DEBUG 3: Lihat objek yang SEBENARNYA dikirim ke Supabase ==
-    const rpcParams = {
-      p_user_id: user.id,
-      p_year,
-    };
-    console.log("Parameter AKTUAL yang DIKIRIM ke RPC:", rpcParams);
-    console.log("--- DEBUG END ---");
-    // =================================================================
-
-    // If param branch_id diberikan, gunakan itu; jika tidak, fallback ke user.branch_id
-    // Catatan:
-    // - Jika kolom branch_id di DB bertipe UUID: pastikan RPC didefinisikan p_branch_id uuid, dan kirim string UUID.
-    // - Jika kolom branch_id di DB bertipe INT: kirim number.
     let p_branch_id: string | number | null =
       branchParam && branchParam.trim() !== ""
         ? branchParam.trim()

@@ -1,7 +1,6 @@
 //detail Ulok dari API (pakai SWR)
 "use client";
 import useSWR from "swr";
-// 👇 1. Impor tipe data UlokRow dari definisi global Anda
 import { UlokRow } from "@/types/ulok";
 
 // Definisikan tipe untuk respons API mentah

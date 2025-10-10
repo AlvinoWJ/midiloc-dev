@@ -39,7 +39,7 @@ export function StatsCard({
 
   return (
     // DIUBAH: Padding disesuaikan agar lebih ringkas
-    <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-3.5">
+    <div className="bg-white rounded-2xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)] border border-gray-100 p-3.5">
       {/* DIUBAH: Menambahkan 'gap-4' untuk spasi konsisten */}
       <div className="flex items-center justify-between gap-4">
         <div className="flex-1">

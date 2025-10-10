@@ -1,10 +1,10 @@
 // app/kplt/page.tsx
 "use client";
 
-import { useState, useCallback, useMemo } from "react"; // Tambahkan useMemo
+import { useState, useCallback, useMemo } from "react";
 import { useUser } from "@/hooks/useUser";
 import { useKplt } from "@/hooks/useKplt";
-import { KpltPageProps, UnifiedKpltItem } from "@/types/common"; // Import tipe baru
+import { KpltPageProps, UnifiedKpltItem } from "@/types/common";
 import DesktopKPLTLayout from "@/components/desktop/kplt-layout";
 
 export default function KPLTPage() {
@@ -30,15 +30,13 @@ export default function KPLTPage() {
   const isPageLoading = loadingUser || loadingKPLT;
   const isPageError = !!userError || !!kpltError;
 
-  // Handler filter
   const onFilterChange = (month: string, year: string) => {
     setFilterMonth(month);
     setFilterYear(year);
   };
 
-  // 🔥 UTAMA: Gabungkan, transformasikan, dan filter data di sini
   const displayData = useMemo(() => {
-    // 1. Transformasi `kplt_existing`
+    // 1. Transformasi dan gabungkan data seperti sebelumnya
     const existingTransformed: UnifiedKpltItem[] = (kpltExisting || []).map(
       (item) => ({
         id: item.id,
@@ -48,8 +46,6 @@ export default function KPLTPage() {
         status: item.kplt_approval,
       })
     );
-
-    // 2. Transformasi `kplt_from_ulok_ok`
     const ulokTransformed: UnifiedKpltItem[] = (ulokForKplt || []).map(
       (item) => ({
         id: item.ulok_id,
@@ -61,16 +57,50 @@ export default function KPLTPage() {
     );
     const combinedData = [...existingTransformed, ...ulokTransformed];
 
-    // Lakukan SEMUA filtering pada data yang sudah digabung
+    // 🔥 Ambil role pengguna saat ini dan normalkan (lowercase)
+    const userRole = user?.position_nama?.trim().toLowerCase() || "";
+
     return combinedData.filter((item) => {
-      // 🔥 LOGIKA FILTER TAB (RECENT & HISTORY)
       const lowerCaseStatus = item.status.toLowerCase();
-      let matchTab = false; // Default ke false
+
+      // 🔥 LOGIKA BARU: FILTER BERDASARKAN ROLE PENGGUNA
+      let matchRole = true; // Defaultnya true, item akan ditampilkan
+      switch (lowerCaseStatus) {
+        case "need input":
+          const allowedForNeedInput = [
+            "location specialist",
+            "location manager",
+          ];
+          matchRole = allowedForNeedInput.includes(userRole);
+          break;
+
+        case "in progress":
+        case "waiting for forum":
+          const allowedForProgress = [
+            "location specialist",
+            "location manager",
+            "branch manager",
+            "regional manager",
+          ];
+          matchRole = allowedForProgress.includes(userRole);
+          break;
+
+        // Untuk status lain (seperti 'ok', 'NOK'), matchRole tetap true
+        default:
+          break;
+      }
+
+      // LOGIKA FILTER TAB (RECENT & HISTORY)
+      let matchTab = false;
       if (activeTab === "Recent") {
-        const recentStatuses = ["need input", "in progress"];
+        const recentStatuses = [
+          "need input",
+          "in progress",
+          "waiting for forum",
+        ];
         matchTab = recentStatuses.includes(lowerCaseStatus);
       } else if (activeTab === "History") {
-        const historyStatuses = ["ok", "NOK"];
+        const historyStatuses = ["ok", "nok"]; // Pastikan 'nok' juga lowercase
         matchTab = historyStatuses.includes(lowerCaseStatus);
       }
 
@@ -80,19 +110,17 @@ export default function KPLTPage() {
         item.alamat.toLowerCase().includes(searchQuery.toLowerCase()) ||
         item.id.toLowerCase().includes(searchQuery.toLowerCase());
 
-      // 🔥 LOGIKA FILTER BULAN & TAHUN
+      // LOGIKA FILTER BULAN & TAHUN
       const itemDate = new Date(item.created_at);
-      // Cek apakah filter bulan aktif, jika ya, bandingkan bulannya
       const matchMonth = filterMonth
         ? (itemDate.getMonth() + 1).toString() === filterMonth
         : true;
-      // Cek apakah filter tahun aktif, jika ya, bandingkan tahunnya
       const matchYear = filterYear
         ? itemDate.getFullYear().toString() === filterYear
         : true;
 
-      // Item akan ditampilkan jika cocok dengan SEMUA filter yang aktif
-      return matchTab && matchSearch && matchMonth && matchYear;
+      // 🔥 Item akan ditampilkan jika cocok dengan SEMUA filter, termasuk filter role
+      return matchRole && matchTab && matchSearch && matchMonth && matchYear;
     });
   }, [
     kpltExisting,
@@ -101,6 +129,7 @@ export default function KPLTPage() {
     filterMonth,
     filterYear,
     activeTab,
+    user,
   ]);
 
   const kpltProps: KpltPageProps = {
@@ -117,10 +146,6 @@ export default function KPLTPage() {
     onTabChange: setActiveTab,
     isLocationSpecialist,
   };
-
-  // if (isMobile) {
-  //   return <MobileKPLTLayout {...kpltProps} />;
-  // }
 
   return <DesktopKPLTLayout {...kpltProps} />;
 }
