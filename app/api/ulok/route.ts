@@ -264,9 +264,6 @@ export async function POST(request: Request) {
     // Simpan path (path relatif; untuk akses, FE bisa generate signed URL)
     const filePathToStore = objectPath;
 
-    // Remove 'form_ulok' from parsed.data to avoid duplicate key
-    const { form_ulok, ...parsedDataWithoutFormUlok } = parsed.data;
-
     const insertPayload = {
       id: newUlokId,
       users_id: user.id,
