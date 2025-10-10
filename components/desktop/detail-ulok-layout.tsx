@@ -21,7 +21,7 @@ import { StatusBadge } from "@/components/ui/statusbadge";
 import CustomSelect from "@/components/ui/customselect";
 import { ApprovalStatusbutton } from "@/components/ui/approvalbutton";
 import DetailMapCard from "@/components/map/DetailMapCard";
-import WilayahSelector from "@/components/desktop/wilayahselector";
+import WilayahSelector from "@/components/ui/customselectwilayah";
 import { DetailUlokSkeleton } from "./skleton";
 import { useUser } from "@/hooks/useUser";
 import { useDetailUlokForm } from "@/hooks/useDetailUlokForm";
