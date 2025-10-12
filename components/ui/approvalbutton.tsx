@@ -22,26 +22,26 @@ export function ApprovalStatusbutton({
   if (!show) return null;
 
   return (
-    <div className="mt-3 px-4 md:px-5">
+    <div className="w-full px-2 md:px-0">
       {fileUploaded && (
-        <div className="flex w-full gap-2 sm:w-auto sm:gap-4">
+        <div className="flex gap-3 w-full md:w-auto md:justify-end">
           <Button
             disabled={disabled || loading}
             onClick={() => onApprove("NOK")}
             variant="default"
             size="default"
-            className="flex-1 sm:flex-none min-w-[200px]"
+            className="flex-1 md:flex-initial md:min-w-[180px] lg:min-w-[200px] h-10 md:h-10"
           >
-            NOK
+            {loading ? "Processing..." : "NOK"}
           </Button>
           <Button
             disabled={disabled || loading}
             onClick={() => onApprove("OK")}
             variant="submit"
             size="default"
-            className="flex-1 sm:flex-none min-w-[200px]"
+            className="flex-1 md:flex-initial md:min-w-[180px] lg:min-w-[200px] h-10 md:h-10"
           >
-            OK
+            {loading ? "Processing..." : "OK"}
           </Button>
         </div>
       )}

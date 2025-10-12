@@ -8,7 +8,7 @@ import { ArrowLeft, LinkIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import CustomSelect from "./ui/customselect";
 import { KpltCreatePayload } from "@/lib/validations/kplt";
-import PrefillKpltCard from "./desktop/prefillkpltcard";
+import PrefillKpltCard from "./ui/prefillkpltcard";
 import { KpltBaseUIMapped } from "@/types/common";
 
 // --- 1. PROPS DISESUAIKAN UNTUK MENERIMA LOGIKA DARI PARENT ---
@@ -27,16 +27,16 @@ interface TambahKpltLayoutProps {
 }
 
 // --- Komponen Skeleton (Tidak ada perubahan) ---
-const TambahKpltSkeleton = () => (
-  <div className="animate-pulse">
-    <div className="h-8 w-1/3 bg-gray-200 rounded-md mb-6"></div>
-    <div className="bg-white rounded-xl shadow-md p-6">
-      <div className="h-6 w-3/4 bg-gray-200 rounded-md"></div>
-      <div className="h-4 w-1/2 bg-gray-200 rounded-md mt-2"></div>
-      <div className="h-4 w-1/3 bg-gray-200 rounded-md mt-4"></div>
-    </div>
-  </div>
-);
+// const TambahKpltSkeleton = () => (
+//   <div className="animate-pulse">
+//     <div className="h-8 w-1/3 bg-gray-200 rounded-md mb-6"></div>
+//     <div className="bg-white rounded-xl shadow-md p-6">
+//       <div className="h-6 w-3/4 bg-gray-200 rounded-md"></div>
+//       <div className="h-4 w-1/2 bg-gray-200 rounded-md mt-2"></div>
+//       <div className="h-4 w-1/3 bg-gray-200 rounded-md mt-4"></div>
+//     </div>
+//   </div>
+// );
 
 // --- TIPE UNTUK ARRAY FILE INPUT (MEMPERBAIKI ERROR TYPESCRIPT) ---
 interface FileInputConfig {

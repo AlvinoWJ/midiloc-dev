@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from "react";
 import { useParams } from "next/navigation";
-import DetailKpltLayout from "@/components/desktop/detail-kplt-layout";
+import DetailKpltLayout from "@/components/desktop/detail_kplt_layout";
 import { useKpltDetail } from "@/hooks/useKpltDetail";
 import { useAlert } from "@/components/desktop/alertcontext";
 import { useUser } from "@/hooks/useUser";

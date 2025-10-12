@@ -1,4 +1,3 @@
-// components/desktop/PrefillKpltCard.tsx
 "use client";
 
 import React, { useState } from "react";
@@ -51,8 +50,12 @@ export default function PrefillKpltCard({ data }: { data: KpltBaseUIMapped }) {
       <div className="p-6">
         <div className="flex flex-col md:flex-row justify-between md:items-center">
           <div className="flex-1 min-w-0 pr-4">
-            <h1 className="text-xl font-bold text-gray-800">{data.namaKplt}</h1>
-            <p className="text-lg text-gray-500 mt-1">{data.alamat}</p>
+            <h1 className="text-lg lg:text-xl font-bold text-gray-800">
+              {data.namaKplt}
+            </h1>
+            <p className="text-base lg:text-lg text-gray-500 mt-1">
+              {data.alamat}
+            </p>
           </div>
         </div>
       </div>
