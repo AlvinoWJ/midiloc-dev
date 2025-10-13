@@ -1,4 +1,3 @@
-// components/desktop/PrefillKpltCard.tsx
 "use client";
 
 import React, { useState } from "react";
@@ -15,10 +14,10 @@ import {
 // Komponen-komponen kecil ini kita pindahkan ke sini juga
 const DetailField = ({ label, value }: { label: string; value: any }) => (
   <div>
-    <label className="text-gray-600 font-medium text-sm mb-1 block">
+    <label className="text-gray-600 font-medium text-sm lg:text-base mb-1 block">
       {label}
     </label>
-    <div className="text-gray-900 py-2 text-sm bg-gray-100 rounded-lg px-3 min-h-[40px] flex items-center w-full break-words">
+    <div className="text-gray-900 py-2 text-sm lg:text-base bg-gray-100 rounded-lg px-3 min-h-[40px] flex items-center w-full break-words">
       {value || "-"}
     </div>
   </div>
@@ -51,8 +50,12 @@ export default function PrefillKpltCard({ data }: { data: KpltBaseUIMapped }) {
       <div className="p-6">
         <div className="flex flex-col md:flex-row justify-between md:items-center">
           <div className="flex-1 min-w-0 pr-4">
-            <h1 className="text-xl font-bold text-gray-800">{data.namaKplt}</h1>
-            <p className="text-lg text-gray-500 mt-1">{data.alamat}</p>
+            <h1 className="text-lg lg:text-xl font-bold text-gray-800">
+              {data.namaKplt}
+            </h1>
+            <p className="text-base lg:text-lg text-gray-500 mt-1">
+              {data.alamat}
+            </p>
           </div>
         </div>
       </div>
@@ -66,8 +69,8 @@ export default function PrefillKpltCard({ data }: { data: KpltBaseUIMapped }) {
           <div className="space-y-6">
             {/* --- DATA USULAN LOKASI --- */}
             <div className="border-t border-gray-300 pt-5">
-              <h4 className="flex items-center text-base font-semibold text-gray-700 mb-3">
-                <MapPinIcon className="w-5 h-5 mr-2 text-red-500" /> Data Usulan
+              <h4 className="flex items-center text-base lg:text-lg font-semibold text-gray-700 mb-3">
+                <MapPinIcon className="w-5 h-5 mr-2 text-red-500" />
                 Data Usulan Lokasi
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -87,7 +90,7 @@ export default function PrefillKpltCard({ data }: { data: KpltBaseUIMapped }) {
 
             {/* --- DATA STORE --- */}
             <div className="border-t border-gray-300 pt-5">
-              <h4 className="flex items-center text-base font-semibold text-gray-700 mb-3">
+              <h4 className="flex items-center text-base lg:text-lg font-semibold text-gray-700 mb-3">
                 <BuildingStorefrontIcon className="w-5 h-5 mr-2 text-blue-500" />{" "}
                 Data Store
               </h4>
@@ -118,7 +121,7 @@ export default function PrefillKpltCard({ data }: { data: KpltBaseUIMapped }) {
 
             {/* --- DATA PEMILIK --- */}
             <div className="border-t border-gray-300 pt-5">
-              <h4 className="flex items-center text-base font-semibold text-gray-700 mb-3">
+              <h4 className="flex items-center text-base lg:text-lg font-semibold text-gray-700 mb-3">
                 <UserIcon className="w-5 h-5 mr-2 text-green-500" /> Data
                 Pemilik
               </h4>
@@ -133,7 +136,7 @@ export default function PrefillKpltCard({ data }: { data: KpltBaseUIMapped }) {
 
             {/* --- FORM KELENGKAPAN --- */}
             <div className="border-t border-gray-300 pt-5">
-              <h4 className="flex items-center text-base font-semibold text-gray-700 mb-3">
+              <h4 className="flex items-center text-base lg:text-lg font-semibold text-gray-700 mb-3">
                 <DocumentTextIcon className="w-5 h-5 mr-2 text-purple-500" />{" "}
                 Form Kelengkapan
               </h4>

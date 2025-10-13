@@ -1,4 +1,4 @@
-// components/skeleton.tsx atau components/skeleton.jsx
+// desktop/skeleton.tsx
 
 export const Skeleton = ({ className = "" }: { className?: string }) => {
   return (
@@ -216,7 +216,7 @@ export const DetailUlokSkeleton = () => {
 // Skeleton untuk InfoCard
 export const InfoCardSkeleton = () => {
   return (
-    <div className="w-[330px] h-[151px] shadow-[1px_1px_6px_rgba(0,0,0,0.25)] bg-white rounded-lg border bg-border-white">
+    <div className="w-[330px] h-[151px] shadow-[1px_1px_6px_rgba(0,0,0,0.25)] bg-white rounded-xl">
       {/* CardHeader skeleton */}
       <div className="flex flex-row justify-between items-start space-y-0 p-6 pb-2">
         <div className="flex-1 min-w-0">
