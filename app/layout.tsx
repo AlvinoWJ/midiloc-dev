@@ -31,7 +31,7 @@ export default async function RootLayout({
       <body className={`${poppins.className} antialiased`}>
         <ThemeProvider
           attribute="class"
-          defaultTheme="system"
+          forcedTheme="light"
           enableSystem
           disableTransitionOnChange
         >
