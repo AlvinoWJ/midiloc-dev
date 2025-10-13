@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
-import { KpltBaseUIMapped } from "@/types/common";
+import { KpltBaseUIMapped, Properti } from "@/types/common";
 import { LinkIcon } from "lucide-react";
+import PetaLoader from "../map/PetaLoader";
 import {
   ChevronDownIcon,
   MapPinIcon,
@@ -44,6 +45,54 @@ const FileLink = ({ label, url }: { label: string; url: string | null }) => {
 // Komponen Utama Kartu Prefill
 export default function PrefillKpltCard({ data }: { data: KpltBaseUIMapped }) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
+
+  const handleRouteClick = () => {
+    if (!data.latitude || !data.longitude) {
+      alert("Koordinat tujuan tidak tersedia.");
+      return;
+    }
+
+    setIsGettingLocation(true);
+
+    if (!navigator.geolocation) {
+      alert("Browser Anda tidak mendukung Geolocation.");
+      setIsGettingLocation(false);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude: userLat, longitude: userLng } = position.coords;
+        const googleMapsUrl = `https://www.google.com/maps/dir/${userLat},${userLng}/${data.latitude},${data.longitude}`;
+        window.open(googleMapsUrl, "_blank");
+        setIsGettingLocation(false);
+      },
+      (error) => {
+        console.error("Geolocation Error:", error.message);
+        alert(
+          "Gagal mendapatkan lokasi Anda. Mencoba membuka rute tanpa lokasi awal."
+        );
+        const fallbackUrl = `https://www.google.com/maps/dir/?api=1&destination=${data.latitude},${data.longitude}`;
+        window.open(fallbackUrl, "_blank");
+        setIsGettingLocation(false);
+      }
+    );
+  };
+
+  // Menyiapkan data minimal yang dibutuhkan oleh PetaLoader
+  const markerData: Properti[] = [
+    {
+      id: data.id, // Asumsi 'data' memiliki 'id'
+      latitude: data.latitude,
+      longitude: data.longitude,
+      nama_ulok: data.namaKplt,
+      alamat: data.alamat,
+      approval_status: data.kpltapproval,
+      created_at: "",
+      type: "ulok",
+    },
+  ];
 
   return (
     <div className="bg-white rounded-xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)] transition-all duration-500">
@@ -77,14 +126,63 @@ export default function PrefillKpltCard({ data }: { data: KpltBaseUIMapped }) {
                 <DetailField label="Provinsi" value={data.provinsi} />
                 <DetailField label="Kabupaten/Kota" value={data.kabupaten} />
                 <DetailField label="Kecamatan" value={data.kecamatan} />
-                <DetailField
-                  label="Kelurahan/Desa"
-                  value={data.desaKelurahan}
-                />
-                <DetailField
-                  label="Lat/Long"
-                  value={`${data.latitude}, ${data.longitude}`}
-                />
+              </div>
+              {/* --- BAGIAN LAT/LONG DIGANTI DENGAN PETA INI --- */}
+              <div className="mt-4 col-span-1 md:col-span-2">
+                <label className="text-gray-600 font-medium text-sm mb-2 block">
+                  Peta Lokasi
+                </label>
+                <div className="w-full h-80 rounded-lg overflow-hidden border">
+                  {data.latitude && data.longitude ? (
+                    <PetaLoader
+                      data={markerData}
+                      centerPoint={[
+                        Number(data.latitude),
+                        Number(data.longitude),
+                      ]}
+                      showPopup={false}
+                    />
+                  ) : (
+                    <div className="h-full flex items-center justify-center bg-gray-100">
+                      <p>Koordinat tidak tersedia.</p>
+                    </div>
+                  )}
+                </div>
+                <p className="mt-2 text-xs font-medium text-blue-600">
+                  Koordinat: {data.latitude || "N/A"}, {data.longitude || "N/A"}
+                </p>
+
+                <div className="mt-4">
+                  <button
+                    onClick={handleRouteClick}
+                    disabled={isGettingLocation}
+                    className="flex items-center justify-center w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors disabled:bg-blue-400"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5 mr-2"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                      />
+                    </svg>
+                    {isGettingLocation
+                      ? "Mencari Lokasi..."
+                      : "Lihat Rute di Google Maps"}
+                  </button>
+                </div>
               </div>
             </div>
 

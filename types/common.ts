@@ -192,21 +192,27 @@ export interface DashboardPageProps {
   propertiData?: DashboardData;
   propertiUntukPeta?: Properti[];
   isLoading: boolean;
+  isMapLoading: boolean;
   isError: any;
   user: CurrentUser | null; // <-- Ini sudah benar menggunakan CurrentUser
   setYear: (year: number | null) => void;
   selectedSpecialistId: string | null;
   onSpecialistChange: (id: string | null) => void;
+  activeMapFilter: "ulok" | "kplt";
+  onMapFilterChange: (filter: "ulok" | "kplt") => void;
 }
 
 export interface Properti {
   id: string;
   latitude: string;
   longitude: string;
+  nama?: string;
   nama_ulok?: string; // sudah ada
   alamat?: string; // sudah ada
   approval_status: string; // sudah ada
   created_at?: string; // sudah ada
+  type: "ulok" | "kplt";
+  ulok_id?: string;
 }
 
 export interface UlokApiResponse {
@@ -251,6 +257,7 @@ export type KpltBaseData = {
 };
 
 export type KpltBaseUIMapped = {
+  id: string;
   namaKplt: string;
   alamat: string;
   luas: number;

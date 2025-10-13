@@ -53,10 +53,13 @@ export default function DesktopDashboardLayout(props: DashboardPageProps) {
     propertiData,
     propertiUntukPeta,
     isLoading,
+    isMapLoading,
     isError,
     setYear,
     selectedSpecialistId,
     onSpecialistChange,
+    activeMapFilter,
+    onMapFilterChange,
   } = props;
 
   const isLocationManager = propertiData?.filters?.role === "location manager";
@@ -479,12 +482,25 @@ export default function DesktopDashboardLayout(props: DashboardPageProps) {
                 </div>
 
                 {/* Map Section */}
-                <div className="bg-white p-4 rounded-lg shadow-[1px_1px_6px_rgba(0,0,0,0.25)] ">
-                  <h3 className="text-lg font-semibold mb-2">Peta Sebaran</h3>
+                <div className="bg-white p-4 rounded-lg shadow-md shadow-[1px_1px_6px_rgba(0,0,0,0.25)]">
+                  <div className="flex justify-between items-center mb-2">
+                    <h3 className="text-lg font-semibold">Peta Sebaran</h3>
+                    {/* Tombol-tombol filter */}
+                    <select
+                      value={activeMapFilter}
+                      onChange={(e) =>
+                        onMapFilterChange(e.target.value as "ulok" | "kplt")
+                      }
+                      className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white shadow-sm focus:outline-none focus:ring-1 focus:ring-red-500"
+                    >
+                      <option value="ulok">ULOK</option>
+                      <option value="kplt">KPLT</option>
+                    </select>
+                  </div>
                   <div className="h-[400px] w-full">
                     <PetaLokasiInteraktif
                       data={filteredProperti}
-                      isLoading={isLoading}
+                      isLoading={isMapLoading}
                     />
                   </div>
                 </div>

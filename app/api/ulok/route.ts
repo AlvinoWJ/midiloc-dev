@@ -120,6 +120,8 @@ export async function GET(request: Request) {
       "longitude",
     ].join(",");
 
+    const specialistId = searchParams.get("specialist_id");
+
     let query = supabase
       .from("ulok")
       .select(listColumns, { count: "exact" })
@@ -129,6 +131,10 @@ export async function GET(request: Request) {
 
     if (user.position_nama === "location specialist") {
       query = query.eq("users_id", user.id);
+    } else {
+      if (specialistId && specialistId !== "semua" && specialistId !== "") {
+        query = query.eq("users_id", specialistId);
+      }
     }
 
     const { data, error, count } = await query;
