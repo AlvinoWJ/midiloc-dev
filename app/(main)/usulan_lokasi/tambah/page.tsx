@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { UlokCreateInput } from "@/lib/validations/ulok";
 import { useAlert } from "@/components/desktop/alertcontext";
+import { invalidate } from "@/lib/swr-invalidate";
 import AddUlokFormDesktop from "@/components/desktop/tambah-ulok-layout"; // Pastikan path dan nama file sesuai
 // Pastikan path dan nama file sesuai
 
@@ -34,6 +35,8 @@ export default function TambahUlokPage() {
 
         body: formData,
       });
+      invalidate.ulok();
+
 
       const resJson = await response.json();
 

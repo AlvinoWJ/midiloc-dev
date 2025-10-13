@@ -7,6 +7,7 @@ import { useAlert } from "@/components/desktop/alertcontext";
 import { UlokUpdateInput } from "@/lib/validations/ulok";
 import DesktopDetailUlok from "@/components/desktop/detail-ulok-layout";
 import InputIntipForm from "@/components/ui/inputintip";
+import { invalidate } from "@/lib/swr-invalidate";
 
 export default function DetailPage() {
   // --- SETUP & HOOKS ---
@@ -35,12 +36,16 @@ export default function DetailPage() {
           method: "PATCH",
           body: data,
         });
+        invalidate.ulok();
+        invalidate.ulokDetail(id);
       } else {
         response = await fetch(`/api/ulok/${id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(data),
         });
+        invalidate.ulok();
+        invalidate.ulokDetail(id);
       }
 
       // Penanganan error yang konsisten untuk kedua jenis request
@@ -75,6 +80,8 @@ export default function DetailPage() {
         method: "PATCH",
         body: formData,
       });
+      invalidate.ulok();
+      invalidate.ulokDetail(id);
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || "Gagal menyimpan data intip.");
@@ -126,6 +133,8 @@ export default function DetailPage() {
         method: "PATCH",
         body: fd,
       });
+      invalidate.ulok();
+      invalidate.ulokDetail(id);
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
         throw new Error(j.error || "Gagal update status.");

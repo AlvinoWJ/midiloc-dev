@@ -28,6 +28,52 @@ async function isPdfFile(
   return { ok: true };
 }
 
+function dropForbiddenFields<T extends Record<string, unknown>>(obj: T) {
+  const forbidden = new Set([
+    "users_id",
+    "branch_id",
+    "approval_intip",
+    "tanggal_approval_intip",
+    "file_intip",
+    "approval_status",
+    "approved_at",
+    "approved_by",
+    "updated_at",
+    "updated_by",
+    "id",
+    "created_at",
+    "is_active",
+    "form_ulok", // file di-handle terpisah
+  ]);
+  const clean: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(obj)) {
+    if (!forbidden.has(k)) clean[k] = v;
+  }
+  return clean;
+}
+
+function coerceNumbers(raw: Record<string, unknown>) {
+  // Koersi numeric fields dari string → number
+  const numKeys = ["lebar_depan", "panjang", "luas", "harga_sewa"];
+  const intKeys = ["jumlah_lantai"];
+
+  for (const k of numKeys) {
+    if (raw[k] != null) {
+      const s = String(raw[k]).replace(",", ".").trim();
+      const n = s === "" ? NaN : Number(s);
+      raw[k] = Number.isFinite(n) ? n : raw[k];
+    }
+  }
+  for (const k of intKeys) {
+    if (raw[k] != null) {
+      const s = String(raw[k]).trim();
+      const n = s === "" ? NaN : Number.parseInt(s, 10);
+      raw[k] = Number.isFinite(n) ? n : raw[k];
+    }
+  }
+  return raw;
+}
+
 // GET /api/ulok?page=1&limit=10
 export async function GET(request: Request) {
   try {
@@ -216,12 +262,13 @@ export async function POST(request: Request) {
       raw[key] = val;
     });
 
+    const sanitized = dropForbiddenFields(coerceNumbers(raw));
+
     const UlokCreateInputSchema = UlokCreateSchema.omit({
       form_ulok: true as any,
     });
-    const parsed = UlokCreateInputSchema.safeParse(raw);
+    const parsed = UlokCreateInputSchema.safeParse(sanitized);
     if (!parsed.success) {
-      console.log("VALIDATION ERROR:", parsed.error.issues);
       return NextResponse.json(
         {
           success: false,
@@ -266,10 +313,10 @@ export async function POST(request: Request) {
 
     const insertPayload = {
       id: newUlokId,
+      ...(parsed.data as Record<string, unknown>),
       users_id: user.id,
       branch_id: user.branch_id,
       form_ulok: filePathToStore,
-      ...(parsed.data as Record<string, unknown>),
     };
 
     const { data, error } = await supabase
