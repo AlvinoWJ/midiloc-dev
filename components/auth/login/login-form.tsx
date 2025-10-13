@@ -37,7 +37,9 @@ function LoginFormFields({
       <div className="flex flex-col gap-6">
         {/* Email */}
         <div className="grid gap-2">
-          <Label htmlFor="email" className={"text-gray-900"}>Email</Label>
+          <Label htmlFor="email" className={"text-gray-900"}>
+            Email
+          </Label>
           <Input
             id="email"
             type="email"
@@ -51,7 +53,9 @@ function LoginFormFields({
 
         {/* Password */}
         <div className="grid gap-2">
-          <Label htmlFor="password" className={"text-gray-900"}>Password</Label>
+          <Label htmlFor="password" className={"text-gray-900"}>
+            Password
+          </Label>
           <div className="relative">
             <Input
               id="password"
@@ -77,10 +81,7 @@ function LoginFormFields({
           </div>
           {/* Forgot Password */}
           <div className="mt-1 text-right text-sm">
-            <Link
-              href="/auth/forgot-password"
-              className="text-primary"
-            >
+            <Link href="/auth/forgot-password" className="text-primary">
               Forgot Password?
             </Link>
           </div>
@@ -100,10 +101,7 @@ function LoginFormFields({
 
 type LoginFormProps = Readonly<React.ComponentPropsWithoutRef<"div">>;
 
-export function LoginForm({
-  className,
-  ...props
-}: LoginFormProps) {
+export function LoginForm({ className, ...props }: LoginFormProps) {
   // --- State dan logika handleLogin ---
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -210,4 +208,3 @@ export function LoginForm({
     </div>
   );
 }
-
