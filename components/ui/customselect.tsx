@@ -52,15 +52,16 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
 
   return (
     <div className="relative" ref={dropdownRef}>
-      <label htmlFor={id} className="block font-semibold mb-2">
+      <label
+        htmlFor={id}
+        className="block font-semibold text-base md:text-lg mb-2"
+      >
         {label}
         <span className="text-red-500">*</span>
       </label>
       <div
         tabIndex={0}
-        className={`flex h-9 w-full rounded border border-gray-300 bg-transparent px-3 py-1 text-base shadow-sm transition-colors justify-between items-center cursor-pointer
-        placeholder:text-muted-foreground 
-        focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary
+        className={`flex h-9 w-full rounded border border-gray-300 bg-transparent px-3 py-1 text-base shadow-sm transition-colors justify-between items-center cursor-pointer placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary
           ${error ? "border-red-500" : "border-gray-300"}
           ${value === "" ? "text-muted-foreground" : "text-black"}`}
         onClick={() => setIsOpen(!isOpen)}

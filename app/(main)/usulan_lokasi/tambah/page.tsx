@@ -5,11 +5,9 @@ import { useRouter } from "next/navigation";
 import { UlokCreateInput } from "@/lib/validations/ulok";
 import { useAlert } from "@/components/desktop/alertcontext";
 import { invalidate } from "@/lib/swr-invalidate";
-import AddUlokFormDesktop from "@/components/desktop/tambah-ulok-layout"; // Pastikan path dan nama file sesuai
-// Pastikan path dan nama file sesuai
+import TambahUlokForm from "@/components/tambah_ulok_layout";
 
 export default function TambahUlokPage() {
-  // --- HOOKS ---
   const router = useRouter();
   const { showToast } = useAlert();
 
@@ -81,5 +79,5 @@ export default function TambahUlokPage() {
   };
 
   // 3. Render komponen yang sesuai berdasarkan hasil deteksi perangkat
-  return <AddUlokFormDesktop {...formProps} />;
+  return <TambahUlokForm {...formProps} />;
 }

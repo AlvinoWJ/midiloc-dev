@@ -12,7 +12,11 @@ export default function AddButton({
   return (
     <button
       onClick={onClick}
-      className="bg-primary text-primary-foreground px-6 py-2 rounded-2xl font-semibold w-[183px] shadow-[1px_1px_6px_rgba(0,0,0,0.25)] hover:bg-red-700 text-xl"
+      className="
+        w-full bg-primary text-primary-foreground py-3 px-6 rounded-xl font-semibold shadow-md 
+        md:w-[183px] md:py-2 md:rounded-2xl md:text-xl md:shadow-[1px_1px_6px_rgba(0,0,0,0.25)]
+        hover:bg-red-700 transition-colors duration-200
+      "
     >
       {label}
     </button>

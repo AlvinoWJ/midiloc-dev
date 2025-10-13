@@ -1,4 +1,4 @@
-// Mobile Content Skeleton Components - Hanya untuk konten internal
+// Mobile Content Skeleton Components
 
 // Base Skeleton Component
 export const Skeleton = ({ className = "" }: { className?: string }) => {

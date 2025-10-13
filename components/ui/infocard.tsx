@@ -34,7 +34,7 @@ export function InfoCard({
   });
 
   return (
-    <Link href={`${detailPath}/${id}`}>
+    <Link href={`${detailPath}/${id}`} className="block">
       <Card className="w-full min-h-[192px] flex flex-col justify-between shadow-[1px_1px_6px_rgba(0,0,0,0.25)] hover:shadow-lg transition-shadow duration-300">
         <CardHeader className="flex flex-row justify-between items-start space-y-0">
           <div className="flex-1 min-w-0">

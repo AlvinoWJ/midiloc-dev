@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { MapPin } from "lucide-react";
 import CustomSelect from "@/components/ui/customselect";
 import { Button } from "@/components/ui/button";
-import WilayahSelector from "@/components/desktop/wilayahselector";
+import WilayahSelector from "@/components/ui/customselectwilayah";
 import { UlokCreateSchema, UlokCreateInput } from "@/lib/validations/ulok";
 import { Dialog } from "@headlessui/react";
 import { useAlert } from "@/components/desktop/alertcontext";
