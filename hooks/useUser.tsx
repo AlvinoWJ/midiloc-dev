@@ -1,6 +1,6 @@
 "use client";
 
-import useSWR from "swr";
+import useSWR, { mutate as globalMutate } from "swr";
 
 export type AppUser = {
   id: string;
@@ -16,28 +16,34 @@ interface ApiMeResponse {
   user: AppUser;
 }
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json());
-
 export function useUser() {
-  // Key '/api/me' akan dicache global oleh SWR
+  // Pakai global fetcher dari SWRProvider, dan revalidate saat mount
   const { data, error, isLoading, mutate } = useSWR<ApiMeResponse>(
     "/api/me",
-    fetcher
+    (url: string) => fetch(url).then((res) => res.json()),
+    { revalidateOnMount: true }
   );
 
   return {
     user: data?.user ?? null,
     loadingUser: isLoading,
     userError: error,
+
+    // Revalidate sekarang
     refreshUser: () => mutate(),
-    // Optimistic local update (misal update display name)
+
+    setUserCache: (user: NonNullable<AppUser>) =>
+      globalMutate("/api/me", { user }, false),
+
+    // Clear cache user (gunakan saat logout)
+    clearUserCache: () => globalMutate("/api/me", { user: null }, false),
+
+    // Optimistic local update
     updateUserLocal: (partial: Partial<NonNullable<AppUser>>) =>
       mutate((current) => {
         const prevUser = current?.user;
-        if (!prevUser || !prevUser.id) return current; // do not update if no user or id
-        return {
-          user: { ...prevUser, ...partial, id: prevUser.id },
-        };
+        if (!prevUser || !prevUser.id) return current;
+        return { user: { ...prevUser, ...partial, id: prevUser.id } };
       }, false),
   };
 }

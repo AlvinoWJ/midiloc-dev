@@ -1,4 +1,3 @@
-// app/dashboard/page.tsx
 "use client";
 
 import { useState } from "react";
@@ -18,10 +17,11 @@ export default function DashboardPage() {
     string | null
   >(null);
 
-  // Panggil hook useDashboard dengan state filter tahun saja
+  // Panggil hook useDashboard dengan filter tahun + ls_id
   const { dashboardData, isLoading, isError } = useDashboard({
     year,
-    // branchId: selectedSpecialistId,
+    lsId: selectedSpecialistId ?? undefined,
+    // branchId: selectedSpecialistId, // jangan: ini untuk cabang, bukan LS
   });
 
   //Kode tambahan untuk data peta (dipindahkan ke sini)

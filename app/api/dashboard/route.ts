@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/client";
 import { getCurrentUser } from "@/lib/auth/acl";
 
-// Always fetch fresh data (optional)
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
@@ -24,9 +23,9 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Optional filters: ?year=2024&branch_id=<id>
     const yearParam = req.nextUrl.searchParams.get("year");
     const branchParam = req.nextUrl.searchParams.get("branch_id");
+    const lsParam = req.nextUrl.searchParams.get("ls_id");
 
     // Parse year (optional)
     let p_year: number | null = null;
@@ -41,16 +40,16 @@ export async function GET(req: NextRequest) {
       p_year = parsed;
     }
 
+    // Branch: jika tidak diberikan, default ke branch user
+    // Sesuaikan tipe: jika branch_id di DB UUID, kirim string; jika INT, parse number.
     let p_branch_id: string | number | null =
       branchParam && branchParam.trim() !== ""
         ? branchParam.trim()
         : (user.branch_id as string | number);
 
-    // Validasi ringan: jika berupa digit saja, kirim sebagai number (untuk skema INT); jika bukan, kirim string (untuk UUID).
     if (typeof p_branch_id === "string") {
       const onlyDigits = /^\d+$/.test(p_branch_id);
       if (onlyDigits) {
-        // Kandidat INT
         const asNum = Number(p_branch_id);
         if (!Number.isFinite(asNum)) {
           return NextResponse.json(
@@ -63,25 +62,35 @@ export async function GET(req: NextRequest) {
         }
         p_branch_id = asNum;
       } else {
-        // Kandidat UUID, validasi sederhana
-        const uuidLike =
-          /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-            p_branch_id
-          );
-        if (!uuidLike && branchParam) {
-          // Jika bukan digit-only dan bukan UUID, tolak agar tidak mengirim tipe salah ke RPC
-          return NextResponse.json(
-            { error: "bad_request", message: "Invalid 'branch_id' format" },
-            { status: 400 }
-          );
-        }
+        // UUID ok, no-op
       }
     }
 
-    // Panggil RPC dengan filter
-    const { data, error } = await supabase.rpc("fn_dashboard_ulok_kplt", {
+    // Location specialist filter (UUID expected)
+    let p_ls_id: string | null = null;
+    if (lsParam && lsParam.trim() !== "") {
+      const ls = lsParam.trim();
+      const uuidLike =
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+          ls
+        );
+      if (!uuidLike) {
+        return NextResponse.json(
+          { error: "bad_request", message: "Invalid 'ls_id' format" },
+          { status: 400 }
+        );
+      }
+      p_ls_id = ls;
+    }
+
+    // Call RPC with filters; sesuaikan signature RPC Anda:
+    // rpc_dashboard(p_user_id uuid, p_year int, p_branch_filter uuid, p_ls_id uuid)
+    const { data, error } = await supabase.rpc("rpc_dashboard", {
       p_user_id: user.id,
       p_year,
+      p_branch_filter: typeof p_branch_id === "string" ? p_branch_id : null, // jika UUID
+      // Jika di DB branch_id bertipe INT, ubah signature RPC agar menerima INT, lalu kirim p_branch_filter: p_branch_id
+      p_ls_id,
     });
 
     if (error) {
@@ -108,18 +117,3 @@ export async function GET(req: NextRequest) {
     );
   }
 }
-
-/*
-Usage:
-- GET /api/dashboard
-- GET /api/dashboard?year=2024
-- GET /api/dashboard?branch_id=5          // jika branch_id di DB bertipe INT
-- GET /api/dashboard?branch_id=<uuid>      // jika branch_id di DB bertipe UUID
-
-Pastikan signature RPC sesuai tipe branch_id Anda:
-  -- INT
-  create or replace function rpc_dashboard(p_year int default null, p_branch_id int default null) returns jsonb ...
-
-  -- UUID
-  create or replace function rpc_dashboard(p_year int default null, p_branch_id uuid default null) returns jsonb ...
-*/

@@ -1,7 +1,6 @@
-// components/desktop/dashboard-layout.tsx
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, useEffect, useState } from "react";
 import { DashboardPageProps } from "@/types/common";
 import { StatsCard } from "../ui/statscard";
 import { DonutChart } from "../ui/donutchart";
@@ -60,6 +59,31 @@ export default function DesktopDashboardLayout(props: DashboardPageProps) {
   } = props;
 
   const isLocationManager = propertiData?.filters?.role === "location manager";
+
+  // 🔸 Cache daftar LS ketika belum ada filter LS aktif
+  const [lsOptionsCache, setLsOptionsCache] = useState<
+    Array<{ user_id: string; nama: string }>
+  >([]);
+
+  useEffect(() => {
+    const rows =
+      (propertiData?.breakdown?.rows as Array<{
+        user_id: string;
+        nama: string;
+      }>) ?? [];
+    // Saat tidak ada filter LS, simpan daftar terbaru ke cache
+    if (!selectedSpecialistId) {
+      setLsOptionsCache(rows);
+    }
+  }, [propertiData?.breakdown?.rows, selectedSpecialistId]);
+
+  // Saat filter LS aktif, gunakan cache; jika tidak, gunakan rows dari response
+  const lsOptions = selectedSpecialistId
+    ? lsOptionsCache
+    : (propertiData?.breakdown?.rows as Array<{
+        user_id: string;
+        nama: string;
+      }>) ?? [];
 
   // 🔹 Proses KPI dinamis (tidak ada perubahan, sudah sesuai)
   const dynamicStatsData = useMemo(() => {
@@ -295,7 +319,7 @@ export default function DesktopDashboardLayout(props: DashboardPageProps) {
                         className="appearance-none w-full sm:w-auto bg-white border border-gray-300 rounded-lg pl-10 pr-10 py-2.5 text-sm font-medium text-gray-700 hover:border-red-400 hover:shadow-md focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500 transition-all cursor-pointer min-w-[200px]"
                       >
                         <option value="">Semua Specialist</option>
-                        {propertiData.breakdown.rows.map((specialist) => (
+                        {(lsOptions || []).map((specialist) => (
                           <option
                             key={specialist.user_id}
                             value={specialist.user_id}
