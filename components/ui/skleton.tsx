@@ -326,3 +326,78 @@ export const DetailUlokSkeleton = () => {
     </div>
   );
 };
+
+// ============================================================================
+// DASHBOARD PERFORMA SKELETON - RESPONSIVE (100% MATCHED LAYOUT)
+// ============================================================================
+export const DashboardSkeleton = ({
+  showSpecialistFilter = false,
+}: {
+  showSpecialistFilter?: boolean;
+}) => {
+  return (
+    <div className="space-y-6">
+      {/* Header Section: Title + Filters */}
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+        {/* Title & Subtitle */}
+        <div>
+          <Skeleton className="h-9 w-64 mb-2 rounded" />
+          <Skeleton className="h-5 w-80 rounded" />
+        </div>
+
+        {/* Filter Controls */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          {/* Specialist Filter (conditional) */}
+          {showSpecialistFilter && (
+            <Skeleton className="h-[42px] min-w-[200px] w-full sm:w-auto rounded-lg" />
+          )}
+
+          {/* Year Filter */}
+          <Skeleton className="h-[42px] min-w-[140px] w-full sm:w-auto rounded-lg" />
+        </div>
+      </div>
+
+      {/* Stats Cards Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <Skeleton key={i} className="h-24 rounded-lg" />
+        ))}
+      </div>
+
+      {/* Charts Section - 2x2 Grid on Desktop */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Donut Chart 1 - ULOK */}
+        <div className="bg-gray p-6 rounded-lg shadow-[1px_1px_6px_rgba(0,0,0,0.25)]">
+          <Skeleton className="h-6 w-32 mb-4 rounded" />
+          <Skeleton className="h-80 w-full rounded" />
+        </div>
+
+        {/* Donut Chart 2 - KPLT */}
+        <div className="bg-gray p-6 rounded-lg shadow-[1px_1px_6px_rgba(0,0,0,0.25)]">
+          <Skeleton className="h-6 w-32 mb-4 rounded" />
+          <Skeleton className="h-80 w-full rounded" />
+        </div>
+
+        {/* Bar Chart 1 - ULOK Per Bulan */}
+        <div className="bg-white p-6 rounded-lg shadow-[1px_1px_6px_rgba(0,0,0,0.25)]">
+          <Skeleton className="h-6 w-48 mb-4 rounded" />
+          <Skeleton className="h-80 w-full rounded" />
+        </div>
+
+        {/* Bar Chart 2 - KPLT Per Bulan */}
+        <div className="bg-white p-6 rounded-lg shadow-[1px_1px_6px_rgba(0,0,0,0.25)]">
+          <Skeleton className="h-6 w-48 mb-4 rounded" />
+          <Skeleton className="h-80 w-full rounded" />
+        </div>
+      </div>
+
+      {/* Map Section */}
+      <div className="bg-white p-4 rounded-lg shadow-[1px_1px_6px_rgba(0,0,0,0.25)]">
+        <Skeleton className="h-6 w-32 mb-2 rounded" />
+        <div className="h-[400px] w-full">
+          <Skeleton className="h-full w-full rounded" />
+        </div>
+      </div>
+    </div>
+  );
+};
