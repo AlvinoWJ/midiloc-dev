@@ -209,7 +209,7 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
   return (
     <>
       {/* PERUBAHAN 2: Menambahkan padding yang lebih adaptif */}
-      <main className="space-y-4 lg:space-y-6 pb-20 lg:pb-6">
+      <main className="space-y-4 lg:space-y-6 pb-2 lg:pb-6">
         {/* --- HEADER TOMBOL --- */}
         <div className="flex justify-between items-center mb-6">
           <Button onClick={() => router.back()} variant="back">
@@ -273,11 +273,8 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
           </div>
         )}
 
-        {/* PERUBAHAN 3: Membuat layout grid utama yang responsif */}
         <div className="grid grid-cols-1 lg:grid-cols-3 lg:gap-8">
-          {/* --- KOLOM KONTEN UTAMA (2/3 LEBAR PADA DESKTOP) --- */}
           <div className="lg:col-span-3 space-y-8">
-            {/* --- KARTU DATA USULAN LOKASI --- */}
             <div className="bg-white rounded-xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)]">
               <div className="border-b border-gray-200 px-6 py-4">
                 <div className="flex items-center">
@@ -583,92 +580,88 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
                 )}
               </div>
             </div>
+            {/* --- KARTU INTIP (Hanya di mode read) --- */}
+            {!isEditing && isIntipDone && (
+              <div className="bg-white rounded-xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)]">
+                <div className="border-b border-gray-200 px-6 py-4">
+                  <div className="flex items-center">
+                    <CheckCircle2 className="text-green-600 mr-3" size={20} />
+                    <h2 className="text-lg font-semibold text-gray-900">
+                      Data Approval INTIP
+                    </h2>
+                  </div>
+                </div>
+                <div className="p-6">
+                  <div className="grid grid-cols-1 gap-y-4">
+                    <DetailField
+                      label="Status INTIP"
+                      value={initialData.approval_intip || "-"}
+                    />
+                    <DetailField
+                      label="Tanggal Approval"
+                      value={
+                        initialData.tanggal_approval_intip
+                          ? new Date(
+                              initialData.tanggal_approval_intip
+                            ).toLocaleDateString("id-ID", {
+                              day: "numeric",
+                              month: "long",
+                              year: "numeric",
+                            })
+                          : "-"
+                      }
+                    />
+                    {fileIntipUrl && (
+                      <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border mt-2">
+                        <span className="text-sm text-gray-800 font-medium">
+                          File Intip
+                        </span>
+                        <a
+                          href={fileIntipUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-1.5 px-3 rounded-lg"
+                        >
+                          <LinkIcon className="w-3 h-3 mr-1.5" />
+                          Lihat
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* --- TOMBOL AKSI MANAGER --- */}
+            {isLocationManager && isPendingApproval && !isEditing && (
+              <div className="mt-6">
+                {!isIntipDone ? (
+                  <Button
+                    onClick={onOpenIntipForm}
+                    size="lg"
+                    className="bg-blue-600 hover:bg-blue-700 text-white rounded-full w-full"
+                  >
+                    Input Data Intip
+                  </Button>
+                ) : (
+                  <ApprovalStatusbutton
+                    currentStatus={initialData.approval_status}
+                    show={true}
+                    fileUploaded={true}
+                    onApprove={handleApproveAction}
+                    loading={isApproving}
+                    disabled={isApproving}
+                  />
+                )}
+              </div>
+            )}
           </div>
-
-          {/* --- KARTU INTIP (Hanya di mode read) --- */}
-          {!isEditing && isIntipDone && (
-            <div className="bg-white rounded-xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)]">
-              <div className="border-b border-gray-200 px-6 py-4">
-                <div className="flex items-center">
-                  <CheckCircle2 className="text-green-600 mr-3" size={20} />
-                  <h2 className="text-lg font-semibold text-gray-900">
-                    Data Approval INTIP
-                  </h2>
-                </div>
-              </div>
-              <div className="p-6">
-                <div className="grid grid-cols-1 gap-y-4">
-                  <DetailField
-                    label="Status INTIP"
-                    value={initialData.approval_intip || "-"}
-                  />
-                  <DetailField
-                    label="Tanggal Approval"
-                    value={
-                      initialData.tanggal_approval_intip
-                        ? new Date(
-                            initialData.tanggal_approval_intip
-                          ).toLocaleDateString("id-ID", {
-                            day: "numeric",
-                            month: "long",
-                            year: "numeric",
-                          })
-                        : "-"
-                    }
-                  />
-                  {fileIntipUrl && (
-                    <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border">
-                      <span className="text-sm text-gray-800 font-medium">
-                        File Intip
-                      </span>
-                      <a
-                        href={fileIntipUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-1.5 px-3 rounded-lg"
-                      >
-                        <LinkIcon className="w-3 h-3 mr-1.5" />
-                        Lihat
-                      </a>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* --- TOMBOL AKSI MANAGER --- */}
-          {isLocationManager && isPendingApproval && !isEditing && (
-            <div className="bg-white rounded-xl shadow-md p-6">
-              <h3 className="font-bold text-center mb-4">Aksi Approval</h3>
-              {!isIntipDone ? (
-                <Button
-                  onClick={onOpenIntipForm}
-                  size="lg"
-                  className="bg-blue-600 hover:bg-blue-700 text-white rounded-full w-full"
-                >
-                  Input Data Intip
-                </Button>
-              ) : (
-                <ApprovalStatusbutton
-                  currentStatus={initialData.approval_status}
-                  show={true}
-                  fileUploaded={true}
-                  onApprove={handleApproveAction}
-                  loading={isApproving}
-                  disabled={isApproving}
-                />
-              )}
-            </div>
-          )}
         </div>
       </main>
 
       {isLocationSpecialist && isPendingApproval && (
         <div
-          className={`
-                        lg:hidden fixed bottom-0 left-0 right-0 z-40 p-4
-                        transition-all duration-300 ease-in-out
+          className={` lg:hidden fixed bottom-0 left-0 right-0 z-40 p-4 transition-all duration-300 ease-in-out
                         ${
                           isAtBottom
                             ? "bg-transparent shadow-none border-transparent"
@@ -682,7 +675,7 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
         </div>
       )}
 
-      {/* --- MODAL PETA (Tidak ada perubahan) --- */}
+      {/* --- MODAL PETA --- */}
       <Dialog
         open={isMapOpen}
         onClose={() => setIsMapOpen(false)}

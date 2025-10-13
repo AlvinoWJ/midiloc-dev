@@ -45,7 +45,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
 
   return (
     <div className="col-span-2">
-      <label className="block font-semibold mb-2">
+      <label className="block font-semibold mb-2 text-base lg:text-lg">
         {label}
         <span className="text-red-500">*</span>
       </label>

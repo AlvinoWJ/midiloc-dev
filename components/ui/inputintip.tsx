@@ -39,7 +39,7 @@ const DetailField = ({
       <div className="col-span-2">
         <label className="block font-semibold mb-2">{label}*</label>
         <div
-          className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-red-400 transition-colors cursor-pointer bg-gray-50"
+          className="border-2 border-dashed border-gray-300 rounded-lg p-4 lg:p-8 text-center hover:border-red-400 transition-colors cursor-pointer bg-gray-50"
           onClick={() => document.getElementById(name)?.click()}
         >
           <input
@@ -56,8 +56,10 @@ const DetailField = ({
               <div className="w-12 h-12 mx-auto mb-2 bg-green-100 rounded-full flex items-center justify-center">
                 <FileText className="w-6 h-6 text-green-600" />
               </div>
-              <p className="text-sm text-gray-600">{fileValue?.name}</p>
-              <p className="text-xs text-gray-400 mt-1">
+              <p className="text-sm lg:text-base text-gray-600">
+                {fileValue?.name}
+              </p>
+              <p className="text-xs lg:text-base text-gray-400 mt-1">
                 File berhasil diupload
               </p>
             </div>
@@ -95,7 +97,7 @@ const DetailField = ({
 
   return (
     <div>
-      <label className="block font-semibold mb-2">
+      <label className="block font-semibold mb-2 text-base lg:text-lg">
         {label} <span className="text-red-500">*</span>
       </label>
       <div className="relative">
@@ -248,17 +250,17 @@ export default function InputIntipForm({
     <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50">
       <form
         onSubmit={handleSubmit}
-        className="max-w-md w-full bg-white rounded-xl shadow-lg border border-gray-200"
+        className="w-[90%] max-w-md bg-white rounded-xl shadow-lg border border-gray-200 sm:w-[80%] lg:w-[70%]"
       >
         {/* Header */}
         <div className="border-b px-4 py-3">
-          <h2 className="text-base font-medium text-gray-900">
+          <h2 className="text-base lg:text-lg font-medium text-gray-900">
             Input Status INTIP
           </h2>
         </div>
 
         {/* Content */}
-        <div className="p-4 space-y-4 ">
+        <div className="p-6 lg:p-6 space-y-4 lg:space-y-4">
           <DetailField
             label="Status INTIP"
             value={formData.approval_intip}
@@ -282,26 +284,26 @@ export default function InputIntipForm({
               setFormData((prev) => ({ ...prev, file_intip: file }))
             }
           />
-        </div>
-
-        {/* Footer dengan tombol aksi */}
-        <div className="flex justify-end gap-3 p-4 rounded-b-xl">
-          <Button
-            type="button"
-            variant="submit"
-            onClick={handleCancel}
-            className="rounded-full px-6"
-            disabled={isSubmitting}
-          >
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            disabled={isSubmitting}
-            className="bg-submit hover:bg-green-600 text-white rounded-full px-6"
-          >
-            {isSubmitting ? "Menyimpan..." : "Save"}
-          </Button>
+          {/* Footer dengan tombol aksi */}
+          <div className="flex flex-col lg:flex-row justify-end gap-2 lg:gap-3 rounded-b-xl">
+            <Button
+              type="button"
+              variant="default"
+              onClick={handleCancel}
+              className="rounded-full px-4 py-2 text-sm lg:px-6 lg:text-base"
+              disabled={isSubmitting}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="submit"
+              disabled={isSubmitting}
+              className="hover:bg-green-600 text-white rounded-full px-4 py-2 text-sm lg:px-6 lg:text-base"
+            >
+              {isSubmitting ? "Menyimpan..." : "Save"}
+            </Button>
+          </div>
         </div>
       </form>
     </div>

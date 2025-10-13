@@ -54,7 +54,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
     <div className="relative" ref={dropdownRef}>
       <label
         htmlFor={id}
-        className="block font-semibold text-base md:text-lg mb-2"
+        className="block font-semibold text-base lg:text-lg mb-2"
       >
         {label}
         <span className="text-red-500">*</span>
