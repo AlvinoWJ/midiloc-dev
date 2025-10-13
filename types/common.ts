@@ -254,10 +254,10 @@ export type KpltBaseData = {
   kontak_pemilik: string;
   approval_intip_status: string;
   tanggal_approval_intip: string; // Bisa jadi null
+  kplt_approval: string;
 };
 
 export type KpltBaseUIMapped = {
-  id: string;
   namaKplt: string;
   alamat: string;
   luas: number;
@@ -281,7 +281,7 @@ export type KpltBaseUIMapped = {
   fileIntip: string | null;
   approvalIntipStatus: string;
   tanggalApprovalIntip: string | null;
-  kpltapproval: string;
+  kpltapproval?: string;
 };
 
 /**
