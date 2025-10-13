@@ -338,66 +338,96 @@ export const DashboardSkeleton = ({
   return (
     <div className="space-y-6">
       {/* Header Section: Title + Filters */}
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         {/* Title & Subtitle */}
         <div>
-          <Skeleton className="h-9 w-64 mb-2 rounded" />
-          <Skeleton className="h-5 w-80 rounded" />
+          <Skeleton className="h-9 w-64 mb-2" />
+          <Skeleton className="h-5 w-80" />
         </div>
 
         {/* Filter Controls */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
           {/* Specialist Filter (conditional) */}
           {showSpecialistFilter && (
-            <Skeleton className="h-[42px] min-w-[200px] w-full sm:w-auto rounded-lg" />
+            <Skeleton className="h-[42px] w-full sm:w-[200px] rounded-lg" />
           )}
 
           {/* Year Filter */}
-          <Skeleton className="h-[42px] min-w-[140px] w-full sm:w-auto rounded-lg" />
+          <Skeleton className="h-[42px] w-full sm:w-[140px] rounded-lg" />
         </div>
       </div>
 
       {/* Stats Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         {Array.from({ length: 5 }).map((_, i) => (
-          <Skeleton key={i} className="h-24 rounded-lg" />
+          <Skeleton key={i} className="h-[82px] rounded-xl" />
         ))}
       </div>
 
       {/* Charts Section - 2x2 Grid on Desktop */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Donut Chart 1 - ULOK */}
-        <div className="bg-gray p-6 rounded-lg shadow-[1px_1px_6px_rgba(0,0,0,0.25)]">
-          <Skeleton className="h-6 w-32 mb-4 rounded" />
-          <Skeleton className="h-80 w-full rounded" />
-        </div>
-
-        {/* Donut Chart 2 - KPLT */}
-        <div className="bg-gray p-6 rounded-lg shadow-[1px_1px_6px_rgba(0,0,0,0.25)]">
-          <Skeleton className="h-6 w-32 mb-4 rounded" />
-          <Skeleton className="h-80 w-full rounded" />
-        </div>
-
-        {/* Bar Chart 1 - ULOK Per Bulan */}
-        <div className="bg-white p-6 rounded-lg shadow-[1px_1px_6px_rgba(0,0,0,0.25)]">
-          <Skeleton className="h-6 w-48 mb-4 rounded" />
-          <Skeleton className="h-80 w-full rounded" />
-        </div>
-
-        {/* Bar Chart 2 - KPLT Per Bulan */}
-        <div className="bg-white p-6 rounded-lg shadow-[1px_1px_6px_rgba(0,0,0,0.25)]">
-          <Skeleton className="h-6 w-48 mb-4 rounded" />
-          <Skeleton className="h-80 w-full rounded" />
-        </div>
+        <Skeleton className="lg:h-[464px] rounded-lg" />
+        <Skeleton className="lg:h-[464px] rounded-lg" />
+        <Skeleton className="lg:h-[464px] rounded-lg" />
+        <Skeleton className="lg:h-[464px] rounded-lg" />
       </div>
 
       {/* Map Section */}
-      <div className="bg-white p-4 rounded-lg shadow-[1px_1px_6px_rgba(0,0,0,0.25)]">
-        <Skeleton className="h-6 w-32 mb-2 rounded" />
-        <div className="h-[400px] w-full">
-          <Skeleton className="h-full w-full rounded" />
+      <Skeleton className="h-[400px] rounded-lg" />
+    </div>
+  );
+};
+
+// ============================================================================
+// KPLT PAGE SKELETON - RESPONSIVE WITH ACCORDION
+// ============================================================================
+export const KpltSkeleton = ({
+  accordionCount = 3,
+  cardsPerAccordion = 3,
+}: {
+  accordionCount?: number;
+  cardsPerAccordion?: number;
+}) => {
+  return (
+    <main className="space-y-4 lg:space-y-6">
+      {/* Header: Title + Search/Filter */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <Skeleton className="h-9 md:h-10 w-32" />
+        <div className="flex items-center gap-5">
+          <Skeleton className="h-12 lg:h-[46px] w-full lg:w-80 rounded-lg lg:rounded-xl" />
+          <Skeleton className="hidden lg:block w-[46px] h-[46px] rounded-xl" />
         </div>
       </div>
-    </div>
+
+      {/* Tabs */}
+      <div className="flex items-center justify-between">
+        <div className="flex bg-gray-200 rounded-xl p-1 lg:inline-flex lg:w-[482px] lg:bg-white lg:rounded-2xl lg:shadow-[1px_1px_6px_rgba(0,0,0,0.25)]">
+          <Skeleton className="h-10 w-1/2 rounded-md lg:flex-1 lg:h-[40px] lg:rounded-xl lg:mr-1" />
+          <div className="w-1"></div>
+          <Skeleton className="h-10 w-1/2 rounded-md lg:flex-1 lg:h-[40px] lg:rounded-xl" />
+        </div>
+      </div>
+
+      {/* Accordion Sections */}
+      <div className="space-y-6">
+        {Array.from({ length: accordionCount }).map((_, i) => (
+          <div key={i}>
+            {/* Accordion Header */}
+            <div className="flex items-center gap-3 p-2">
+              <Skeleton className="w-6 h-6" />
+              <Skeleton className="h-6 w-32 md:w-40" />
+              <Skeleton className="h-8 w-12 rounded-full" />
+            </div>
+
+            {/* Cards Grid */}
+            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {Array.from({ length: cardsPerAccordion }).map((_, j) => (
+                <InfoCardSkeleton key={j} />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </main>
   );
 };

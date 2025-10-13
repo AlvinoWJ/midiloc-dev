@@ -5,6 +5,7 @@ import Tabs from "@/components/ui/tabs"; // Gunakan satu komponen Tabs yang resp
 import SearchWithFilter from "@/components/ui/searchwithfilter"; // Gunakan satu Search yang responsif
 import { InfoCard } from "@/components/ui/infocard";
 import { useState, useMemo } from "react";
+import { KpltSkeleton } from "./ui/skleton";
 
 // Helper component for the chevron icon to keep JSX cleaner
 const ChevronIcon = ({ isExpanded }: { isExpanded: boolean }) => (
@@ -66,6 +67,20 @@ export default function KpltLayout(props: KpltPageProps) {
     setExpandedStatuses((prev) => ({ ...prev, [status]: !prev[status] }));
   };
 
+  const getStatusBadgeClass = (status: string): string => {
+    const statusLower = status.toLowerCase();
+    switch (statusLower) {
+      case "need input":
+        return "bg-gray-300 text-white"; // Merah untuk menandakan butuh tindakan
+      case "in progress":
+        return "bg-progress text-white"; // Kuning untuk status berjalan
+      case "waiting for forum":
+        return "bg-progress text-white"; // Biru untuk status menunggu
+      default:
+        return "bg-gray-200 text-gray-800"; // Warna default
+    }
+  };
+
   const getStatusLabel = (status: string) => {
     switch (status.toLowerCase()) {
       case "need input":
@@ -82,10 +97,7 @@ export default function KpltLayout(props: KpltPageProps) {
   return (
     <main className="space-y-4 lg:space-y-6">
       {isLoading ? (
-        <div>
-          <div className="h-9 w-1/2 md:w-1/3 bg-gray-200 rounded animate-pulse"></div>
-          <div className="mt-6 h-[500px] w-full bg-gray-200 rounded-lg animate-pulse"></div>
-        </div>
+        <KpltSkeleton accordionCount={3} cardsPerAccordion={3} />
       ) : isError ? (
         <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
           <div className="bg-white p-6 rounded-lg shadow-sm border w-full max-w-md">
@@ -157,7 +169,11 @@ export default function KpltLayout(props: KpltPageProps) {
                       <h2 className="text-lg md:text-xl font-semibold text-gray-800">
                         {getStatusLabel(status)}
                       </h2>
-                      <span className="px-3 py-1 bg-gray-100 text-gray-700 text-sm font-medium rounded-full">
+                      <span
+                        className={`px-3 py-1 text-sm font-medium rounded-full ${getStatusBadgeClass(
+                          status
+                        )}`}
+                      >
                         {items.length}
                       </span>
                     </button>
