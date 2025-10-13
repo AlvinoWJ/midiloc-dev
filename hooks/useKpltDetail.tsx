@@ -1,7 +1,7 @@
 // hooks/useKpltDetail.ts
 
 import useSWR from "swr";
-import { KpltBaseUIMapped } from "@/types/common";
+import { KpltBaseUIMapped, KpltBaseData } from "@/types/common";
 
 // =========================================================================
 // DEFINISI TIPE BARU UNTUK API DETAIL KPLT
@@ -25,33 +25,9 @@ export type ApprovalSummaryDetail = {
   is_approved: boolean;
 };
 
-export type KpltDetailData = {
+export type KpltDetailData = KpltBaseData & {
   id: string;
   ulok_id: string;
-  nama_kplt: string;
-  alamat: string;
-  luas: number;
-  panjang: number;
-  lebar_depan: number;
-  provinsi: string;
-  kabupaten: string;
-  kecamatan: string;
-  desa_kelurahan: string;
-  latitude: string;
-  longitude: string;
-  format_store: string;
-  harga_sewa: number;
-  nama_pemilik: string;
-  kontak_pemilik: string;
-  alas_hak: string;
-  bentuk_objek: string;
-  jumlah_lantai: number;
-  is_active: boolean;
-  form_ulok: string | null;
-  file_intip: string | null;
-  approval_intip_status: string;
-  tanggal_approval_intip: string | null;
-  kplt_approval: string; // Status approval KPLT baru
   // --- Data Analitis & Skor ---
   apc: number;
   spd: number;

@@ -8,7 +8,6 @@ import { useAlert } from "@/components/desktop/alertcontext"; // Untuk notifikas
 import { useKpltPrefill } from "@/hooks/useKpltPrefill";
 import { KpltCreatePayload } from "@/lib/validations/kplt";
 
-// Komponen helper untuk menampilkan status halaman
 const PageStatus = ({ message }: { message: string }) => (
   <div className="flex items-center justify-center h-screen bg-gray-100">
     <p className="text-xl text-gray-600">{message}</p>
@@ -27,8 +26,8 @@ export default function TambahKpltPage() {
   }
 
   const {
-    data: mappedPrefillData, // Ini data yang sudah bersih
-    rawData: prefillApiResponse, // Ini data mentah untuk form
+    data: mappedPrefillData,
+    rawData: prefillApiResponse,
     isLoading: isPrefillLoading,
     error: prefillError,
   } = useKpltPrefill(ulokId);
@@ -44,12 +43,6 @@ export default function TambahKpltPage() {
           formPayload.append("ulok_id", ulokId);
 
           Object.entries(data).forEach(([key, value]) => {
-            //   if (value instanceof File) {
-            //     formPayload.append(key, value);
-            //   } else if (value !== null && value !== undefined) {
-            //     formPayload.append(key, String(value));
-            //   }
-            // });
             if (value !== null && value !== undefined) {
               if (value instanceof File) {
                 formPayload.append(key, value);

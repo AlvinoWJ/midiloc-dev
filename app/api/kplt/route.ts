@@ -108,12 +108,14 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     if (isMultipart) {
       const form = await req.formData().catch(() => null);
+
       if (!form) {
         return NextResponse.json(
           { error: "Bad Request", message: "Invalid multipart" },
           { status: 400 }
         );
       }
+      console.log("FormData keys:", Array.from(form.keys()));
 
       ulokId = String(form.get("ulok_id") ?? "").trim();
       if (!isUuid(ulokId)) {

@@ -126,6 +126,10 @@ export default function PrefillKpltCard({ data }: { data: KpltBaseUIMapped }) {
                 <DetailField label="Provinsi" value={data.provinsi} />
                 <DetailField label="Kabupaten/Kota" value={data.kabupaten} />
                 <DetailField label="Kecamatan" value={data.kecamatan} />
+                <DetailField
+                  label="Kelurahan/Desa"
+                  value={data.desaKelurahan}
+                />
               </div>
               {/* --- BAGIAN LAT/LONG DIGANTI DENGAN PETA INI --- */}
               <div className="mt-4 col-span-1 md:col-span-2">
