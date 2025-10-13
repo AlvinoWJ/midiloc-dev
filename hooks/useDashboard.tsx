@@ -16,15 +16,19 @@ const fetcher = async (url: string): Promise<DashboardData> => {
 
 interface UseDashboardProps {
   year?: number | null;
-  branchId?: string | number | null; // optional: tetap didukung kalau perlu
-  lsId?: string | null; // Location Specialist filter (UUID)
+  branchId?: string | number | null;
+  specialistId?: string | null;
 }
 
-export function useDashboard({ year, branchId, lsId }: UseDashboardProps = {}) {
+export function useDashboard({
+  year,
+  branchId,
+  specialistId,
+}: UseDashboardProps = {}) {
   const params = new URLSearchParams();
   if (year) params.append("year", year.toString());
   if (branchId) params.append("branch_id", branchId.toString());
-  if (lsId) params.append("ls_id", lsId.toString()); // tambahkan ls_id ke query
+  // if (specialistId) params.append("ls_id", specialistId.toString());
 
   const queryString = params.toString();
   const apiUrl = `/api/dashboard${queryString ? `?${queryString}` : ""}`;

@@ -269,7 +269,22 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
         {/* --- PETA LOKASI (Hanya di mode read) --- */}
         {!isEditing && (
           <div>
-            <DetailMapCard id={initialData.id} />
+            <DetailMapCard
+              id={initialData.id}
+              latitude={
+                initialData.latitude !== null &&
+                initialData.latitude !== undefined
+                  ? String(initialData.latitude)
+                  : null
+              }
+              longitude={
+                initialData.longitude !== null &&
+                initialData.longitude !== undefined
+                  ? String(initialData.longitude)
+                  : null
+              }
+              approval_status={initialData.approval_status}
+            />
           </div>
         )}
 

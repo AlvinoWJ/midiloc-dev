@@ -1,4 +1,3 @@
-// components/ui/DetailMapCard.tsx
 "use client";
 
 import { useState } from "react";
@@ -7,43 +6,44 @@ import { MapPin } from "lucide-react";
 import { useUlokDetail } from "@/hooks/useUlokDetail";
 import { Properti } from "@/types/common";
 
-export default function DetailMapCard({ id }: { id: string }) {
-  const { ulokData, isLoading, errorMessage } = useUlokDetail(id);
+interface DetailMapCardProps {
+  id: string; // ID tetap dibutuhkan untuk membuat data marker
+  latitude: string | null | undefined;
+  longitude: string | null | undefined;
+  approval_status: string;
+}
+
+export default function DetailMapCard({
+  id,
+  latitude,
+  longitude,
+  approval_status,
+}: DetailMapCardProps) {
   const [isGettingLocation, setIsGettingLocation] = useState(false);
 
   // --- ISI KEMBALI FUNGSI INI ---
   const handleRouteClick = () => {
-    if (!ulokData || !ulokData.latlong) {
+    if (!latitude || !longitude) {
       alert("Koordinat tujuan tidak tersedia.");
       return;
     }
 
     setIsGettingLocation(true);
 
-    if (!navigator.geolocation) {
-      alert("Browser Anda tidak mendukung Geolocation.");
-      setIsGettingLocation(false);
-      return;
-    }
-
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude: userLat, longitude: userLng } = position.coords;
-        const [destLat, destLng] = ulokData.latlong.split(",");
-        const googleMapsUrl = `https://www.google.com/maps/dir/${userLat},${userLng}/${destLat.trim()},${destLng.trim()}`;
-
+        const googleMapsUrl = `https://www.google.com/maps/dir/${userLat},${userLng}/${latitude},${longitude}`;
         window.open(googleMapsUrl, "_blank");
+
         setIsGettingLocation(false);
       },
       (error) => {
         console.error("Geolocation Error:", error.message);
         alert(
-          "Gagal mendapatkan lokasi Anda. Pastikan izin lokasi telah diberikan. Mencoba membuka rute tanpa lokasi awal."
+          "Gagal mendapatkan lokasi Anda. Pastikan izin lokasi telah diberikan."
         );
-
-        const [destLat, destLng] = ulokData.latlong.split(",");
-        const fallbackUrl = `https://www.google.com/maps/dir/?api=1&destination=${destLat.trim()},${destLng.trim()}`;
-
+        const fallbackUrl = `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`;
         window.open(fallbackUrl, "_blank");
         setIsGettingLocation(false);
       }
@@ -51,20 +51,31 @@ export default function DetailMapCard({ id }: { id: string }) {
   };
   // --- AKHIR DARI PERBAIKAN FUNGSI ---
 
-  if (isLoading || errorMessage || !ulokData) {
-    return <div>Memuat peta...</div>;
+  if (
+    !latitude ||
+    !longitude ||
+    isNaN(Number(latitude)) ||
+    isNaN(Number(longitude))
+  ) {
+    return (
+      <div className="bg-white rounded-xl shadow-md mb-8 p-6 h-64 flex items-center justify-center">
+        <p className="text-gray-500">
+          Koordinat lokasi tidak valid atau tidak tersedia.
+        </p>
+      </div>
+    );
   }
 
-  const [latitude, longitude] = ulokData.latlong.split(",");
   const markerData: Properti[] = [
     {
-      id: ulokData.id,
-      latitude: latitude.trim(),
-      longitude: longitude.trim(),
-      nama_ulok: ulokData.namaUlok,
-      alamat: ulokData.alamat,
-      approval_status: ulokData.approval_status,
-      created_at: ulokData.tanggalUlok,
+      id: id,
+      latitude: latitude,
+      longitude: longitude,
+      nama_ulok: "Lokasi Pilihan",
+      alamat: "",
+      approval_status: approval_status,
+      created_at: "",
+      type: "ulok",
     },
   ];
 
