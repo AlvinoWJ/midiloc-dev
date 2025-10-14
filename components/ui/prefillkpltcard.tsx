@@ -87,12 +87,12 @@ export default function PrefillKpltCard({ data }: { data: KpltBaseUIMapped }) {
   // Menyiapkan data minimal yang dibutuhkan oleh PetaLoader
   const markerData: Properti[] = [
     {
-      id: data.id,
+      id: data.id ?? "",
       latitude: data.latitude,
       longitude: data.longitude,
       nama_ulok: data.namaKplt,
       alamat: data.alamat,
-      approval_status: data.kpltapproval,
+      approval_status: data.kpltapproval ?? "",
       created_at: "",
       type: "ulok",
     },
