@@ -22,7 +22,8 @@ function isUuid(v: string) {
 function mimeFromExt(ext: string) {
   const e = ext.toLowerCase();
   if (e === ".pdf") return "application/pdf";
-  if (e === ".xlsx") return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+  if (e === ".xlsx")
+    return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
   if (e === ".xls") return "application/vnd.ms-excel";
   if (e === ".csv") return "text/csv";
   if (e === ".mp4") return "video/mp4";
@@ -35,12 +36,17 @@ function mimeFromExt(ext: string) {
   return "application/octet-stream";
 }
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
   const supabase = await createClient();
   const user = await getCurrentUser();
 
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!canKplt("read", user)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!user)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!canKplt("read", user))
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   if (!user.branch_id) {
     return NextResponse.json(
       { error: "Forbidden", message: "User has no branch" },
@@ -48,59 +54,73 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     );
   }
 
-  const { id } = params;
-  if (!isUuid(id)) {
-    return NextResponse.json({ error: "Bad Request", message: "Invalid id" }, { status: 400 });
-  }
-
-  // Validasi akses KPLT via RPC (selaras dengan route lain)
-  const { error: detailErr } = await supabase.rpc("fn_kplt_detail", {
-    p_user_id: user.id,
-    p_branch_id: user.branch_id,
-    p_position: String(user.position_nama ?? "").toLowerCase(),
-    p_kplt_id: id,
-  });
-  if (detailErr) {
-    return NextResponse.json({ error: "Not Found" }, { status: 404 });
+  const kpltId = params.id;
+  if (!isUuid(kpltId)) {
+    return NextResponse.json(
+      { error: "Bad Request", message: "Invalid id" },
+      { status: 400 }
+    );
   }
 
   const url = new URL(req.url);
   const mode = url.searchParams.get("mode") || "redirect"; // redirect | proxy
   const forceDownload = url.searchParams.get("download") === "1";
-  const expiresIn = Number(url.searchParams.get("expiresIn") || "300"); // detik, default 5 menit
+  const expiresIn = Number(url.searchParams.get("expiresIn") || "300"); // detik (default 5 menit)
 
-  // Tiga cara memilih file:
-  // 1) path = full path di bucket (contoh: "<id>/kplt/1759..._pdf_foto.pdf")
-  // 2) name = nama file di folder "<id>/kplt"
-  // 3) field = nama field/kolom, pilih file terbaru yang mengandung "_<field>"
-  const pathParam = url.searchParams.get("path");
-  const nameParam = url.searchParams.get("name");
-  const fieldParam = url.searchParams.get("field");
+  const pathParam = url.searchParams.get("path"); // full path: "<ulok_id>/kplt/ts_field.ext"
+  const nameParam = url.searchParams.get("name"); // filename di folder
+  const fieldParam = url.searchParams.get("field"); // nama field (ambil terbaru)
 
-  const folder = `${id}/kplt`;
+  // Ambil ulok_id dan branch_id via SELECT ringan
+  const { data: kpltRow, error: kpltErr } = await supabase
+    .from("kplt")
+    .select("ulok_id, branch_id")
+    .eq("id", kpltId)
+    .single();
+
+  if (kpltErr || !kpltRow?.ulok_id) {
+    return NextResponse.json({ error: "Not Found" }, { status: 404 });
+  }
+  // Validasi branch akses
+  if (
+    kpltRow.branch_id &&
+    user.branch_id &&
+    kpltRow.branch_id !== user.branch_id
+  ) {
+    return NextResponse.json(
+      { error: "Forbidden", message: "Cross-branch access" },
+      { status: 403 }
+    );
+  }
+
+  const ulokId = String(kpltRow.ulok_id);
+  const folder = `${ulokId}/kplt`;
+
+  // 1) Prioritas: path penuh dari tabel (paling hemat — tanpa list)
   let resolvedPath: string | null = null;
-
   if (pathParam) {
-    // Langsung gunakan path penuh (lebih andal, cocok dengan value di tabel)
-    if (!pathParam.startsWith(`${id}/kplt/`)) {
+    // pastikan path sesuai ulokId ini
+    if (!pathParam.startsWith(`${ulokId}/kplt/`)) {
       return NextResponse.json(
-        { error: "Forbidden", message: "Path must be under the current id/kplt folder" },
+        {
+          error: "Forbidden",
+          message: "Path must be under this ulok_id/kplt folder",
+        },
         { status: 403 }
       );
     }
     resolvedPath = pathParam;
   } else if (nameParam) {
-    // Langsung konstruksi path tanpa list (hindari masalah limit/pagination)
+    // 2) name -> langsung konstruksi path (tanpa list)
     resolvedPath = `${folder}/${nameParam}`;
   } else if (fieldParam) {
-    // Untuk field, kita list dengan filter 'search' dan limit besar agar lebih andal
+    // 3) field -> perlu list untuk mencari file terbaru yang match _<field>
     const slug = slugify(fieldParam);
     const { data: list, error: listErr } = await supabase.storage
       .from(BUCKET)
       .list(folder, {
         limit: 1000,
-        sortBy: { column: "name", order: "desc" },
-        search: `_${slug}`, // substring match
+        sortBy: { column: "name", order: "desc" }, // ts terbesar biasanya muncul dulu
       });
 
     if (listErr) {
@@ -109,20 +129,21 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
         { status: 500 }
       );
     }
-
-    // Cari match case-insensitive sebagai backstop
     const found = (list ?? []).find((o) =>
       o.name.toLowerCase().includes(`_${slug}`.toLowerCase())
     );
     if (!found) {
       return NextResponse.json(
-        { error: "Not Found", message: `File for field '${fieldParam}' not found` },
+        {
+          error: "Not Found",
+          message: `File for field '${fieldParam}' not found`,
+        },
         { status: 404 }
       );
     }
     resolvedPath = `${folder}/${found.name}`;
   } else {
-    // Tidak ada parameter seleksi -> kembalikan daftar (dengan pagination opsional)
+    // 4) Tidak ada seleksi -> kembalikan daftar (boleh dipaginasi)
     const page = Number(url.searchParams.get("page") || "1");
     const limit = Number(url.searchParams.get("limit") || "100");
     const safePage = Number.isFinite(page) && page > 0 ? page : 1;
@@ -153,13 +174,14 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
         field: guessedField,
         size: o.metadata?.size ?? null,
         last_modified: o.updated_at ?? null,
-        href: `/api/kplt/${id}/files?name=${encodeURIComponent(filename)}`,
+        href: `/api/kplt/${kpltId}/files?name=${encodeURIComponent(filename)}`,
       };
     });
 
     return NextResponse.json(
       {
-        id,
+        kplt_id: kpltId,
+        ulok_id: ulokId,
         folder,
         page: safePage,
         limit: safeLimit,
@@ -170,11 +192,14 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     );
   }
 
-  // Sampai sini, resolvedPath sudah ditentukan
   if (!resolvedPath) {
-    return NextResponse.json({ error: "Not Found", message: "No file selected" }, { status: 404 });
+    return NextResponse.json(
+      { error: "Not Found", message: "No file selected" },
+      { status: 404 }
+    );
   }
 
+  // Sajikan file
   if (mode === "proxy") {
     const { data: fileData, error: dlErr } = await supabase.storage
       .from(BUCKET)
@@ -182,7 +207,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
     if (dlErr || !fileData) {
       return NextResponse.json(
-        { error: "Download failed", message: dlErr?.message },
+        { error: "Download failed", message: dlErr?.message || "Not found" },
         { status: 404 }
       );
     }
@@ -196,15 +221,17 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       headers: {
         "Content-Type": ct,
         "Cache-Control": "private, max-age=60",
-        "Content-Disposition": `${forceDownload ? "attachment" : "inline"}; filename="${encodeURIComponent(
-          filename
-        )}"`,
+        "Content-Disposition": `${
+          forceDownload ? "attachment" : "inline"
+        }; filename="${encodeURIComponent(filename)}"`,
       },
     });
   }
 
-  // redirect (default) dengan signed URL
-  const downloadName = forceDownload ? resolvedPath.split("/").pop() || "file" : undefined;
+  // redirect (default)
+  const downloadName = forceDownload
+    ? resolvedPath.split("/").pop() || "file"
+    : undefined;
   const { data: signed, error: signErr } = await supabase.storage
     .from(BUCKET)
     .createSignedUrl(
@@ -215,7 +242,10 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
   if (signErr || !signed?.signedUrl) {
     return NextResponse.json(
-      { error: "Sign failed", message: signErr?.message || "Object may not exist" },
+      {
+        error: "Sign failed",
+        message: signErr?.message || "Object may not exist",
+      },
       { status: 404 }
     );
   }
