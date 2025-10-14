@@ -94,7 +94,7 @@ export default function PrefillKpltCard({ data }: { data: KpltBaseUIMapped }) {
       alamat: data.alamat,
       approval_status: data.kpltapproval ?? "",
       created_at: "",
-      type: "ulok",
+      type: "kplt",
     },
   ];
 
