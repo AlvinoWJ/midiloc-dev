@@ -2,12 +2,13 @@
 
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useTambahKplt } from "@/hooks/useTambahkplt"; // Hook form kita
+import { useTambahKplt, KpltFormData } from "@/hooks/useTambahkplt"; // Hook form kita
 import TambahKpltLayout from "@/components/tambah_kplt_layout"; // Komponen UI
 import { useAlert } from "@/components/desktop/alertcontext"; // Untuk notifikasi
 import { useKpltPrefill } from "@/hooks/useKpltPrefill";
 import { KpltCreatePayload } from "@/lib/validations/kplt";
 
+// Komponen helper untuk menampilkan status halaman
 const PageStatus = ({ message }: { message: string }) => (
   <div className="flex items-center justify-center h-screen bg-gray-100">
     <p className="text-xl text-gray-600">{message}</p>
@@ -26,8 +27,8 @@ export default function TambahKpltPage() {
   }
 
   const {
-    data: mappedPrefillData,
-    rawData: prefillApiResponse,
+    data: mappedPrefillData, // Ini data yang sudah bersih
+    rawData: prefillApiResponse, // Ini data mentah untuk form
     isLoading: isPrefillLoading,
     error: prefillError,
   } = useKpltPrefill(ulokId);
@@ -35,7 +36,7 @@ export default function TambahKpltPage() {
   // 3. Setup hook form
   const { formData, errors, handleChange, handleFileChange, handleFormSubmit } =
     useTambahKplt({
-      onSubmit: async (data: KpltCreatePayload) => {
+      onSubmit: async (data: KpltFormData) => {
         try {
           setIsSubmitting(true);
 

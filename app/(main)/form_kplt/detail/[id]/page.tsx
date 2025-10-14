@@ -83,6 +83,7 @@ export default function DetailKpltPage() {
 
   return (
     <DetailKpltLayout
+      id={kpltId}
       data={data}
       isApproving={isApproving}
       onApprove={handleApprove}

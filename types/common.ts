@@ -258,6 +258,7 @@ export type KpltBaseData = {
 };
 
 export type KpltBaseUIMapped = {
+  id?: string;
   namaKplt: string;
   alamat: string;
   luas: number;
@@ -290,7 +291,7 @@ export type KpltBaseUIMapped = {
  */
 export type PrefillKpltResponse = {
   base: KpltBaseData;
-  ulok_id: string; // UUID
+  ulok_id: string;
   exists_kplt: boolean;
 };
 

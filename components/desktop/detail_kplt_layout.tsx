@@ -2,15 +2,25 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Link as LinkIcon } from "lucide-react";
+import {
+  ArrowLeft,
+  Link as LinkIcon,
+  FileText,
+  Sheet,
+  Video,
+  FileQuestion,
+  Loader2,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { MappedKpltDetail, ApprovalsSummary } from "@/hooks/useKpltDetail";
+import { useKpltFiles, MappedKpltFile } from "@/hooks/useKpltfile";
 import PrefillKpltCard from "../ui/prefillkpltcard";
 import { ApprovalStatusbutton } from "../ui/approvalbutton";
 import { useUser } from "@/hooks/useUser";
 
 // Props untuk komponen ini, hanya menerima 'data'
 interface DetailKpltLayoutProps {
+  id: string;
   data: MappedKpltDetail; // Tipe data sesuai respons API fn_kplt_detail
   showApprovalSection: boolean;
   isAlreadyApproved: boolean;
@@ -31,30 +41,82 @@ const DetailField = ({ label, value }: { label: string; value: any }) => (
 );
 
 // Komponen kecil untuk menampilkan link ke file
-const FileLink = ({ label, url }: { label: string; url: string | null }) => {
-  if (!url) return <DetailField label={label} value="Tidak ada file" />;
+// const FileLink = ({ label, url }: { label: string; url: string | null }) => {
+//   if (!url) return <DetailField label={label} value="Tidak ada file" />;
+
+//   return (
+//     <div>
+//       <label className="text-gray-600 font-medium text-sm mb-1 block">
+//         {label}
+//       </label>
+//       <a
+//         href={url}
+//         target="_blank"
+//         rel="noopener noreferrer"
+//         className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border hover:bg-gray-100 transition-colors"
+//       >
+//         <span className="text-sm text-blue-600 font-semibold">
+//           Lihat Dokumen
+//         </span>
+//         <LinkIcon className="w-4 h-4 text-gray-500" />
+//       </a>
+//     </div>
+//   );
+// };
+
+const generateLabel = (field: string | null): string => {
+  if (!field) return "File Lainnya";
+  return field
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+};
+
+// Helper untuk memilih ikon berdasarkan tipe file
+const getIconForFileType = (fileType: MappedKpltFile["fileType"]) => {
+  switch (fileType) {
+    case "pdf":
+      return <FileText className="w-6 h-6 text-red-600 flex-shrink-0" />;
+    case "excel":
+      return <Sheet className="w-6 h-6 text-green-600 flex-shrink-0" />;
+    case "video":
+      return <Video className="w-6 h-6 text-blue-600 flex-shrink-0" />;
+    default:
+      return <FileQuestion className="w-6 h-6 text-gray-500 flex-shrink-0" />;
+  }
+};
+
+const FileListItem = ({ file }: { file: MappedKpltFile }) => {
+  const label = generateLabel(file.field);
 
   return (
-    <div>
-      <label className="text-gray-600 font-medium text-sm mb-1 block">
-        {label}
-      </label>
-      <a
-        href={url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border hover:bg-gray-100 transition-colors"
-      >
-        <span className="text-sm text-blue-600 font-semibold">
-          Lihat Dokumen
-        </span>
-        <LinkIcon className="w-4 h-4 text-gray-500" />
-      </a>
-    </div>
+    <a
+      href={file.href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex items-start gap-4 p-3 rounded-lg border bg-gray-50 hover:bg-gray-100 hover:shadow-sm transition-all duration-200"
+    >
+      {/* Ikon berdasarkan tipe file */}
+      {getIconForFileType(file.fileType)}
+
+      {/* Detail File */}
+      <div className="flex flex-col flex-grow">
+        <p className="font-semibold text-sm text-gray-800 leading-tight break-words">
+          {label}
+        </p>
+        <p className="text-xs text-gray-500 mt-1">
+          {file.sizeFormatted} &bull; {file.lastModifiedFormatted}
+        </p>
+      </div>
+
+      {/* Ikon Link Eksternal */}
+      <LinkIcon className="w-4 h-4 text-gray-400 flex-shrink-0 mt-1" />
+    </a>
   );
 };
 
 export default function DetailKpltLayout({
+  id,
   data,
   showApprovalSection, // Ambil prop ini
   isApproving, // Ambil prop ini
@@ -63,6 +125,12 @@ export default function DetailKpltLayout({
 }: DetailKpltLayoutProps) {
   const router = useRouter();
   const { user } = useUser();
+
+  const {
+    files,
+    isLoading: isLoadingFiles,
+    isError: isFilesError,
+  } = useKpltFiles(id);
 
   const canApprove =
     user &&
@@ -73,7 +141,7 @@ export default function DetailKpltLayout({
           user.position_nama.toLowerCase()
         )));
 
-  const { base, analytics, files, approvalsSummary } = data;
+  const { base, analytics, approvalsSummary } = data;
 
   return (
     <main className="space-y-4 lg:space-y-6">
@@ -118,32 +186,29 @@ export default function DetailKpltLayout({
           <div className="absolute -top-4 left-6 bg-red-600 text-white px-4 py-1 rounded shadow-md font-semibold">
             Dokumen Terlampir
           </div>
-          <div className="bg-white shadow-[1px_1px_6px_rgba(0,0,0,0.25)] rounded-xl p-6 pt-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Asumsikan nama field URL di `data.files` berakhiran _url */}
-            <FileLink label="Foto" url={files.pdfFoto} />
-            <FileLink
-              label="Counting Kompetitor"
-              url={files.countingKompetitor}
-            />
-            <FileLink label="Data Pembanding" url={files.pdfPembanding} />
-            <FileLink label="Kertas Kerja Survei" url={files.pdfKks} />
-            <FileLink
-              label="Form Pembobotan Lokasi (FPL)"
-              url={files.excelFpl}
-            />
-            <FileLink label="Project Evaluation (PE)" url={files.excelPe} />
-            <FileLink label="Form Ukur Lokasi" url={files.pdfFormUkur} />
-            <FileLink
-              label="Video Traffic Siang"
-              url={files.videoTrafficSiang}
-            />
-            <FileLink
-              label="Video Traffic Malam"
-              url={files.videoTrafficMalam}
-            />
-            <FileLink label="Video 360 Siang" url={files.video360Siang} />
-            <FileLink label="Video 360 Malam" url={files.video360Malam} />
-            <FileLink label="Peta Coverage" url={files.petaCoverage} />
+          <div className="bg-white shadow-[1px_1px_6px_rgba(0,0,0,0.25)] rounded-xl p-6 pt-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {isLoadingFiles && (
+              <div className="col-span-full flex justify-center items-center py-10">
+                <Loader2 className="w-8 h-8 animate-spin text-gray-500" />
+                <p className="ml-3 text-gray-600">Memuat daftar dokumen...</p>
+              </div>
+            )}
+            {isFilesError && (
+              <div className="col-span-full text-center py-10 text-red-600 bg-red-50 rounded-lg">
+                Gagal memuat daftar dokumen.
+              </div>
+            )}
+            {!isLoadingFiles &&
+              !isFilesError &&
+              (files && files.length > 0 ? (
+                files.map((file) => (
+                  <FileListItem key={file.name} file={file} />
+                ))
+              ) : (
+                <div className="col-span-full text-center py-10 text-gray-500">
+                  Tidak ada dokumen yang dilampirkan.
+                </div>
+              ))}
           </div>
         </div>
 
