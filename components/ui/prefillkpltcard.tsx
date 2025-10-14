@@ -1,7 +1,11 @@
 "use client";
 
 import React, { useState } from "react";
-import { KpltBaseUIMapped, Properti } from "@/types/common";
+import {
+  KpltBaseUIMapped,
+  Properti,
+  PrefillKpltResponse,
+} from "@/types/common";
 import { LinkIcon } from "lucide-react";
 import PetaLoader from "../map/PetaLoader";
 import {
@@ -83,7 +87,7 @@ export default function PrefillKpltCard({ data }: { data: KpltBaseUIMapped }) {
   // Menyiapkan data minimal yang dibutuhkan oleh PetaLoader
   const markerData: Properti[] = [
     {
-      id: data.id, // Asumsi 'data' memiliki 'id'
+      id: data.id,
       latitude: data.latitude,
       longitude: data.longitude,
       nama_ulok: data.namaKplt,

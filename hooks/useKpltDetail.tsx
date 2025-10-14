@@ -129,7 +129,6 @@ function mapKpltDetailResponse(
 
   return {
     base: {
-      // Data dasar KPLT dalam camelCase
       namaKplt: kplt.nama_kplt,
       alamat: kplt.alamat,
       luas: kplt.luas,

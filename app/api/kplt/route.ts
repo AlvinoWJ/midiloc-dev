@@ -34,60 +34,6 @@ async function upload(
   return path;
 }
 
-export async function GET(request: Request) {
-  const supabase = await createClient();
-  const user = await getCurrentUser();
-
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  if (!canKplt("read", user)) {
-    return NextResponse.json(
-      { error: "Forbidden", message: "Access denied" },
-      { status: 403 }
-    );
-  }
-  if (!user.branch_id) {
-    return NextResponse.json(
-      { error: "Forbidden", message: "User has no branch" },
-      { status: 403 }
-    );
-  }
-
-  const { searchParams } = new URL(request.url);
-  const viewParam = (searchParams.get("view") ?? "all").toLowerCase();
-  const view: ViewMode = (["all", "ulok_ok", "existing"] as const).includes(
-    viewParam as ViewMode
-  )
-    ? (viewParam as ViewMode)
-    : "all";
-
-  // 1 panggilan RPC saja
-  const { data, error } = await supabase.rpc("fn_kplt_dashboard", {
-    p_user_id: user.id,
-    p_branch_id: user.branch_id,
-    p_position: String(user.position_nama ?? "").toLowerCase(),
-    p_view: view,
-  });
-
-  if (error) {
-    return NextResponse.json(
-      { error: "Failed to fetch data", detail: error.message ?? error },
-      { status: 500 }
-    );
-  }
-
-  // data sudah berbentuk payload JSON dari DB
-  return NextResponse.json(
-    data ?? {
-      kplt_from_ulok_ok: [],
-      kplt_existing: [],
-      meta: { kplt_from_ulok_ok_count: 0, kplt_existing_count: 0 },
-    },
-    { status: 200 }
-  );
-}
-
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     const supabase = await createClient();
@@ -108,14 +54,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     if (isMultipart) {
       const form = await req.formData().catch(() => null);
-
       if (!form) {
         return NextResponse.json(
           { error: "Bad Request", message: "Invalid multipart" },
           { status: 400 }
         );
       }
-      console.log("FormData keys:", Array.from(form.keys()));
 
       ulokId = String(form.get("ulok_id") ?? "").trim();
       if (!isUuid(ulokId)) {
@@ -131,7 +75,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         }
       }
 
-      // Helper untuk validasi ukuran
+      // Helper untuk ubah string jadi null
+      if (payload.progress_toko === "") {
+        payload.progress_toko = null;
+      }
+
       const ensureSize = (f: File, max: number): void => {
         if (f.size === 0) throw new Error("Empty file");
         if (f.size > max)
@@ -276,10 +224,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       payload = rest;
     }
 
-    // Validasi payload non-file (field-file sudah berupa path string)
-    // KpltCreatePayloadSchema sebaiknya .strict() TANPA ulok_id
     const parsed = KpltCreateMultipartSchema.safeParse(payload);
     if (!parsed.success) {
+      console.error("❌ [DEBUG] Validation failed:", parsed.error.issues);
       return NextResponse.json(
         { error: "Validation failed", detail: parsed.error.issues },
         { status: 422 }
@@ -348,4 +295,58 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       { status: 500 }
     );
   }
+}
+
+export async function GET(request: Request) {
+  const supabase = await createClient();
+  const user = await getCurrentUser();
+
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (!canKplt("read", user)) {
+    return NextResponse.json(
+      { error: "Forbidden", message: "Access denied" },
+      { status: 403 }
+    );
+  }
+  if (!user.branch_id) {
+    return NextResponse.json(
+      { error: "Forbidden", message: "User has no branch" },
+      { status: 403 }
+    );
+  }
+
+  const { searchParams } = new URL(request.url);
+  const viewParam = (searchParams.get("view") ?? "all").toLowerCase();
+  const view: ViewMode = (["all", "ulok_ok", "existing"] as const).includes(
+    viewParam as ViewMode
+  )
+    ? (viewParam as ViewMode)
+    : "all";
+
+  // 1 panggilan RPC saja
+  const { data, error } = await supabase.rpc("fn_kplt_dashboard", {
+    p_user_id: user.id,
+    p_branch_id: user.branch_id,
+    p_position: String(user.position_nama ?? "").toLowerCase(),
+    p_view: view,
+  });
+
+  if (error) {
+    return NextResponse.json(
+      { error: "Failed to fetch data", detail: error.message ?? error },
+      { status: 500 }
+    );
+  }
+
+  // data sudah berbentuk payload JSON dari DB
+  return NextResponse.json(
+    data ?? {
+      kplt_from_ulok_ok: [],
+      kplt_existing: [],
+      meta: { kplt_from_ulok_ok_count: 0, kplt_existing_count: 0 },
+    },
+    { status: 200 }
+  );
 }
