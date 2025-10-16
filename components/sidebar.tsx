@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { Home, MapPin, FileText, User, X } from "lucide-react"; // Tambahkan ikon X
 import Image from "next/image";
@@ -24,6 +25,25 @@ export default function Sidebar() {
   // State untuk mobile sidebar
   const isOpen = !isCollapsed;
   const onClose = () => setIsCollapsed(true);
+
+  useEffect(() => {
+    // Efek ini hanya relevan secara visual di mobile karena backdrop
+    // hanya muncul di mobile saat 'isOpen' true.
+    if (isOpen) {
+      // Saat sidebar terbuka, cegah body di belakang agar tidak bisa di-scroll.
+      document.body.style.overflow = "hidden";
+    } else {
+      // Saat sidebar tertutup, kembalikan kemampuan scroll.
+      document.body.style.overflow = "auto";
+    }
+
+    // Cleanup function: Dijalankan saat komponen unmount.
+    // Ini untuk memastikan body scroll kembali normal jika pengguna pindah halaman
+    // saat sidebar masih terbuka.
+    return () => {
+      document.body.style.overflow = "auto";
+    };
+  }, [isOpen]);
 
   return (
     <>
@@ -147,20 +167,21 @@ export default function Sidebar() {
 
             {/* Sidebar Mobile Content */}
             <aside
-              className="fixed left-0 top-0 h-full w-80 max-w-[85vw] bg-white shadow-2xl z-50 transform transition-transform duration-300 flex flex-col data-[state=closed]:-translate-x-full"
+              className="fixed left-0 top-0 h-full w-80 max-w-[85vw] bg-white shadow-2xl z-50 transform transition-transform duration-300 overflow-y-auto flex flex-col"
               data-state={isOpen ? "open" : "closed"}
             >
               {/* Header */}
-              <div className="relative flex items-center justify-between p-4 border-b">
+              <div className="relative flex items-center justify-between p-4 ">
                 <Image
                   src="/alfamidi-logo.png"
                   alt="Alfamidi Logo"
                   width={120}
                   height={35}
+                  className="h-8 w-auto"
                 />
                 <button
                   onClick={onClose}
-                  className="p-2 rounded-lg hover:bg-gray-200"
+                  className="p-2 rounded-lg hover:bg-gray-200 transition-colors"
                   aria-label="Close menu"
                 >
                   <X size={24} />
@@ -168,28 +189,37 @@ export default function Sidebar() {
               </div>
 
               {/* Profile Section */}
-              <div className="p-6 flex items-center gap-4 border-b">
-                <User className="h-12 w-12 rounded-full border p-2 flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  {loadingUser ? (
-                    <div className="h-4 bg-gray-200 rounded animate-pulse w-24"></div>
-                  ) : userError ? (
-                    <p className="text-primary text-sm">Gagal memuat data</p>
-                  ) : (
-                    <>
-                      <p className="font-semibold text-foreground truncate capitalize">
-                        {user?.nama || "User"}
+              <div className="p-6 flex-shrink-0">
+                <div className="flex flex-col items-center text-center space-y-3">
+                  <div className="w-12 h-12 rounded-full flex items-center justify-center border-2 border-red-200 bg">
+                    <User size={24} className="text-red-600" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    {loadingUser ? (
+                      <div className="space-y-2">
+                        <div className="h-4 bg-gray-200 rounded animate-pulse w-24"></div>
+                        <div className="h-3 bg-gray-200 rounded animate-pulse w-32"></div>
+                      </div>
+                    ) : userError ? (
+                      <p className="text-red-600 text-sm font-medium">
+                        Error loading data
                       </p>
-                      <p className="font-medium text-gray-700 text-sm truncate capitalize">
-                        {user?.position_nama || "Position"}
-                      </p>
-                    </>
-                  )}
+                    ) : (
+                      <>
+                        <p className="font-semibold text-foreground text-center whitespace-nowrap overflow-hidden">
+                          {user?.nama || "User"}
+                        </p>
+                        <p className="font-medium text-gray-700 text-sm text-center whitespace-nowrap overflow-hidden">
+                          {user?.position_nama || "Position"}
+                        </p>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
 
               {/* Menu Items */}
-              <nav className="p-4 space-y-2 flex-1 overflow-y-auto">
+              <nav className="p-4 space-y-2 flex-1 ">
                 {menu.map((item) => {
                   const isActive = pathname.startsWith(item.href);
                   return (
@@ -197,11 +227,11 @@ export default function Sidebar() {
                       key={item.name}
                       href={item.href}
                       onClick={onClose} // Tutup sidebar saat menu di-klik
-                      className={`flex items-center gap-3 px-4 py-3 rounded text-sm font-medium
+                      className={`flex items-center gap-3 px-4 py-3 rounded text-sm font-medium transition-colors duration-200
                         ${
                           isActive
                             ? "bg-primary text-primary-foreground"
-                            : "text-gray-700 hover:bg-gray-100"
+                            : "text-gray-700 hover:bg-gray-100 active:bg-gray-200"
                         }
                       `}
                     >
@@ -213,8 +243,10 @@ export default function Sidebar() {
               </nav>
 
               {/* Logout Button */}
-              <div className="p-4 mt-auto border-t">
-                <LogoutButton isCollapsed={false} />
+              <div className="p-4 flex-shrink-0">
+                <div className="flex justify-center">
+                  <LogoutButton isCollapsed={false} />
+                </div>
               </div>
             </aside>
           </>

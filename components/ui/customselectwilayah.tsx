@@ -148,7 +148,10 @@ const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
 
   return (
     <div className="relative" ref={dropdownRef}>
-      <label htmlFor={id} className="block font-bold mb-1">
+      <label
+        htmlFor={id}
+        className="block font-semibold mb-1.5 lg:mb-2 text-sm lg:text-lg"
+      >
         {label}
         <span className="text-red-500">*</span>
       </label>

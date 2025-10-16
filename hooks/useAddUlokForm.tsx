@@ -44,7 +44,15 @@ export function useAddUlokForm({
     >
   ) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+
+    // Tambahkan logika khusus untuk input 'hargasewa'
+    if (name === "hargasewa") {
+      const numericValue = value.replace(/[^0-9]/g, "");
+      setFormData((prev) => ({ ...prev, [name]: numericValue }));
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    }
+
     if (errors[name]) {
       setErrors((prev) => {
         const newErrors = { ...prev };

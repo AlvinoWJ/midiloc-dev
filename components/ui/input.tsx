@@ -1,11 +1,5 @@
 import * as React from "react";
 
-/**
- * A simple utility function to merge Tailwind CSS classes.
- * This replaces the external `cn` utility which was causing an import error.
- * @param {...(string|undefined|null|boolean)[]} classes - A list of classes to combine.
- * @returns {string} - A single string of combined class names.
- */
 function cn(...classes: (string | undefined | null | boolean)[]) {
   return classes.filter(Boolean).join(" ");
 }
