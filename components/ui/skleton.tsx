@@ -330,11 +330,7 @@ export const DetailUlokSkeleton = () => {
 // ============================================================================
 // DASHBOARD PERFORMA SKELETON - RESPONSIVE (100% MATCHED LAYOUT)
 // ============================================================================
-export const DashboardSkeleton = ({
-  showSpecialistFilter = false,
-}: {
-  showSpecialistFilter?: boolean;
-}) => {
+export const DashboardSkeleton = () => {
   return (
     <div className="space-y-6">
       {/* Header Section: Title + Filters */}
@@ -346,14 +342,8 @@ export const DashboardSkeleton = ({
         </div>
 
         {/* Filter Controls */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-          {/* Specialist Filter (conditional) */}
-          {showSpecialistFilter && (
-            <Skeleton className="h-[42px] w-full sm:w-[200px] rounded-lg" />
-          )}
-
-          {/* Year Filter */}
-          <Skeleton className="h-[42px] w-full sm:w-[140px] rounded-lg" />
+        <div>
+          <Skeleton className="h-[42px] w-full lg:w-[424px] rounded-lg" />
         </div>
       </div>
 

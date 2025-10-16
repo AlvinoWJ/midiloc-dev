@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { Home, MapPin, FileText, User, X } from "lucide-react"; // Tambahkan ikon X
 import Image from "next/image";
@@ -22,28 +22,30 @@ export default function Sidebar() {
   const pathname = usePathname();
   const { user, loadingUser, userError } = useUser();
 
-  // State untuk mobile sidebar
+  const [isMobile, setIsMobile] = useState(false);
+
   const isOpen = !isCollapsed;
   const onClose = () => setIsCollapsed(true);
 
   useEffect(() => {
-    // Efek ini hanya relevan secara visual di mobile karena backdrop
-    // hanya muncul di mobile saat 'isOpen' true.
-    if (isOpen) {
-      // Saat sidebar terbuka, cegah body di belakang agar tidak bisa di-scroll.
+    const checkScreenSize = () => {
+      setIsMobile(window.innerWidth < 1024);
+    };
+    checkScreenSize();
+    window.addEventListener("resize", checkScreenSize);
+    return () => window.removeEventListener("resize", checkScreenSize);
+  }, []);
+
+  useEffect(() => {
+    if (isOpen && isMobile) {
       document.body.style.overflow = "hidden";
     } else {
-      // Saat sidebar tertutup, kembalikan kemampuan scroll.
       document.body.style.overflow = "auto";
     }
-
-    // Cleanup function: Dijalankan saat komponen unmount.
-    // Ini untuk memastikan body scroll kembali normal jika pengguna pindah halaman
-    // saat sidebar masih terbuka.
     return () => {
       document.body.style.overflow = "auto";
     };
-  }, [isOpen]);
+  }, [isOpen, isMobile]);
 
   return (
     <>

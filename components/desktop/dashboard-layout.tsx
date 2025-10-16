@@ -152,11 +152,9 @@ export default function DesktopDashboardLayout(props: DashboardPageProps) {
     ];
   }, [propertiData, selectedSpecialistId]);
 
-  // 🔹 Data donut & bar dinamis disesuaikan
   const { ulokDonut, kpltDonut, ulokBar, kpltBar } = useMemo(() => {
     if (!propertiData) return {};
 
-    // Tampilan default (semua specialist)
     let ulokDonut = propertiData.donut_ulok.map((item) => ({
       status: item.status,
       label: item.label,
@@ -167,7 +165,6 @@ export default function DesktopDashboardLayout(props: DashboardPageProps) {
       label: item.label,
       value: item.count,
     }));
-    // Data Bar Chart akan selalu menampilkan data total
     const ulokBar = propertiData.perbulan_ulok.map((item) => ({
       month: item.bulan.substring(0, 3),
       approved: item.ulok_ok ?? 0,
@@ -182,7 +179,6 @@ export default function DesktopDashboardLayout(props: DashboardPageProps) {
       waitingforforum: item.kplt_waiting_for_forum ?? 0,
     }));
 
-    // Tampilan jika ada specialist yang dipilih
     if (selectedSpecialistId && propertiData.breakdown?.rows) {
       const specialistRow = propertiData.breakdown.rows.find(
         (row) => row.user_id === selectedSpecialistId
@@ -238,12 +234,9 @@ export default function DesktopDashboardLayout(props: DashboardPageProps) {
   console.log("ulokBar:", ulokBar);
   console.log("kpltBar:", kpltBar);
 
-  return (
-    <main className="space-y-4 lg:space-y-6">
-      {isLoading ? (
-        <DashboardSkeleton showSpecialistFilter={isLocationManager} />
-      ) : isError ? (
-        // ERROR STATE (sudah bagus)
+  if (isError) {
+    return (
+      <main className="space-y-4 lg:space-y-6">
         <div className="flex items-center justify-center min-h-[60vh] text-center">
           <div className="bg-white p-8 rounded-lg shadow-sm border">
             <div className="text-red-500 text-4xl mb-4">⚠️</div>
@@ -261,109 +254,91 @@ export default function DesktopDashboardLayout(props: DashboardPageProps) {
             </button>
           </div>
         </div>
-      ) : (
-        // CONTENT LOADED STATE
-        propertiData && (
-          <>
-            <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-800">
-                  Dashboard Performa
-                </h1>
-                <p className="text-gray-500 mt-2">
-                  Menampilkan data untuk cabang:{" "}
-                  <span className="font-semibold text-gray-700">
-                    {propertiData.filters.branch_name}
-                  </span>
-                </p>
-              </div>
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                {/* --- FILTER BARU HANYA UNTUK MANAGER --- */}
-                {isLocationManager && propertiData.breakdown && (
-                  <div className="relative group">
-                    {/* Icon Users */}
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
-                      <svg
-                        className="w-4 h-4 text-gray-400"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
-                        />
-                      </svg>
-                    </div>
+      </main>
+    );
+  }
 
-                    <select
-                      value={selectedSpecialistId || ""}
-                      onChange={(e) =>
-                        onSpecialistChange(e.target.value || null)
-                      }
-                      className="appearance-none w-full sm:w-auto bg-white border border-gray-300 rounded-lg pl-10 pr-10 py-2.5 text-sm font-medium text-gray-700 hover:border-red-400 hover:shadow-md focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500 transition-all cursor-pointer min-w-[200px]"
+  // 2. Tampilkan skeleton jika sedang loading ATAU jika data belum siap
+  // Inilah kunci perbaikannya!
+  if (isLoading || !propertiData) {
+    return (
+      <main className="space-y-4 lg:space-y-6">
+        <DashboardSkeleton />
+      </main>
+    );
+  }
+
+  // 3. Jika lolos dari dua kondisi di atas, berarti data sudah pasti siap
+  // dan bisa langsung dirender.
+  return (
+    <main className="space-y-4 lg:space-y-6">
+      <>
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-800">
+              Dashboard Performa
+            </h1>
+            <p className="text-gray-500 mt-2">
+              Menampilkan data untuk cabang:{" "}
+              <span className="font-semibold text-gray-700">
+                {propertiData.filters.branch_name}
+              </span>
+            </p>
+          </div>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            {/* --- FILTER SPECIALIST --- */}
+            {isLocationManager && propertiData.breakdown && (
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
+                  <svg
+                    className="w-4 h-4 text-gray-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+                    />
+                  </svg>
+                </div>
+                <select
+                  value={selectedSpecialistId || ""}
+                  onChange={(e) => onSpecialistChange(e.target.value || null)}
+                  className="appearance-none w-full sm:w-auto bg-white border border-gray-300 rounded-lg pl-10 pr-10 py-2.5 text-sm font-medium text-gray-700 hover:border-red-400 hover:shadow-md focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500 transition-all cursor-pointer min-w-[200px]"
+                >
+                  <option value="">Semua Specialist</option>
+                  {(lsOptions || []).map((specialist) => (
+                    <option key={specialist.user_id} value={specialist.user_id}>
+                      {specialist.nama}
+                    </option>
+                  ))}
+                </select>
+                {selectedSpecialistId && (
+                  <button
+                    onClick={() => onSpecialistChange(null)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-red-500 transition-colors z-10"
+                    title="Hapus filter specialist"
+                  >
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
                     >
-                      <option value="">Semua Specialist</option>
-                      {(lsOptions || []).map((specialist) => (
-                        <option
-                          key={specialist.user_id}
-                          value={specialist.user_id}
-                        >
-                          {specialist.nama}
-                        </option>
-                      ))}
-                    </select>
-
-                    {/* Tombol X untuk Reset Specialist - Muncul jika ada yang dipilih */}
-                    {selectedSpecialistId && (
-                      <button
-                        onClick={() => onSpecialistChange(null)}
-                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-red-500 transition-colors z-10"
-                        title="Hapus filter specialist"
-                      >
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M6 18L18 6M6 6l12 12"
-                          />
-                        </svg>
-                      </button>
-                    )}
-
-                    {/* Icon Chevron Down - Muncul jika tidak ada yang dipilih */}
-                    {!selectedSpecialistId && (
-                      <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                        <svg
-                          className="w-4 h-4 text-gray-400"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M19 9l-7 7-7-7"
-                          />
-                        </svg>
-                      </div>
-                    )}
-                  </div>
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                  </button>
                 )}
-
-                {/* Year Filter */}
-                <div className="relative group">
-                  {/* Icon Calendar */}
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
+                {!selectedSpecialistId && (
+                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                     <svg
                       className="w-4 h-4 text-gray-400"
                       fill="none"
@@ -374,137 +349,146 @@ export default function DesktopDashboardLayout(props: DashboardPageProps) {
                         strokeLinecap="round"
                         strokeLinejoin="round"
                         strokeWidth={2}
-                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                        d="M19 9l-7 7-7-7"
                       />
                     </svg>
                   </div>
-
-                  <select
-                    value={
-                      propertiData.filters.year || new Date().getFullYear()
-                    }
-                    onChange={(e) => setYear(Number(e.target.value))}
-                    className="appearance-none w-full sm:w-auto bg-white border border-gray-300 rounded-lg pl-10 pr-10 py-2.5 text-sm font-medium text-gray-700 hover:border-red-400 hover:shadow-md focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500 transition-all cursor-pointer min-w-[140px]"
-                  >
-                    <option value={2025}>2025</option>
-                    <option value={2024}>2024</option>
-                    <option value={2023}>2023</option>
-                  </select>
-
-                  {/* Tombol X untuk Reset Tahun - Muncul jika bukan tahun default */}
-                  {propertiData.filters.year &&
-                    propertiData.filters.year !== new Date().getFullYear() && (
-                      <button
-                        onClick={() => setYear(new Date().getFullYear())}
-                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-red-500 transition-colors z-10"
-                        title="Reset ke tahun sekarang"
-                      >
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M6 18L18 6M6 6l12 12"
-                          />
-                        </svg>
-                      </button>
-                    )}
-
-                  {/* Icon Chevron Down - Muncul jika tahun default */}
-                  {(!propertiData.filters.year ||
-                    propertiData.filters.year === new Date().getFullYear()) && (
-                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                      <svg
-                        className="w-4 h-4 text-gray-400"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M19 9l-7 7-7-7"
-                        />
-                      </svg>
-                    </div>
-                  )}
-                </div>
-
-                {/* Anda bisa menambahkan filter cabang di sini jika perlu */}
+                )}
               </div>
-            </div>
+            )}
 
-            <div className="space-y-6">
-              {/* Stats Cards Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                {dynamicStatsData.map((stat, index) => (
-                  <StatsCard
-                    key={index}
-                    title={stat.title}
-                    value={stat.value}
-                    icon={stat.icon}
-                    color={stat.color}
+            {/* --- FILTER TAHUN --- */}
+            <div className="relative group">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
+                <svg
+                  className="w-4 h-4 text-gray-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
                   />
-                ))}
+                </svg>
               </div>
-
-              {/* Charts Section */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <DonutChart
-                  data={ulokDonut || []}
-                  title="Status ULOK"
-                  legendConfig={ulokLegendConfig}
-                />
-                <DonutChart
-                  data={kpltDonut || []}
-                  title="Status KPLT"
-                  legendConfig={kpltLegendConfig}
-                />
-                <BarChart
-                  data={ulokBar || []}
-                  title="Grafik ULOK Per Bulan"
-                  legendConfig={ulokBarLegendConfig}
-                />
-                <BarChart
-                  data={kpltBar || []}
-                  title="Grafik KPLT Per Bulan"
-                  legendConfig={kpltBarLegendConfig}
-                />
-              </div>
-
-              {/* Map Section */}
-              <div className="bg-white p-4 rounded-lg shadow-md shadow-[1px_1px_6px_rgba(0,0,0,0.25)]">
-                <div className="flex justify-between items-center mb-2">
-                  <h3 className="text-lg font-semibold">Peta Sebaran</h3>
-                  {/* Tombol-tombol filter */}
-                  <select
-                    value={activeMapFilter}
-                    onChange={(e) =>
-                      onMapFilterChange(e.target.value as "ulok" | "kplt")
-                    }
-                    className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white shadow-sm focus:outline-none focus:ring-1 focus:ring-red-500"
+              <select
+                value={propertiData.filters.year || new Date().getFullYear()}
+                onChange={(e) => setYear(Number(e.target.value))}
+                className="appearance-none w-full sm:w-auto bg-white border border-gray-300 rounded-lg pl-10 pr-10 py-2.5 text-sm font-medium text-gray-700 hover:border-red-400 hover:shadow-md focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500 transition-all cursor-pointer min-w-[140px]"
+              >
+                <option value={2025}>2025</option>
+                <option value={2024}>2024</option>
+                <option value={2023}>2023</option>
+              </select>
+              {propertiData.filters.year &&
+                propertiData.filters.year !== new Date().getFullYear() && (
+                  <button
+                    onClick={() => setYear(new Date().getFullYear())}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-red-500 transition-colors z-10"
+                    title="Reset ke tahun sekarang"
                   >
-                    <option value="ulok">ULOK</option>
-                    <option value="kplt">KPLT</option>
-                  </select>
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                  </button>
+                )}
+              {(!propertiData.filters.year ||
+                propertiData.filters.year === new Date().getFullYear()) && (
+                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                  <svg
+                    className="w-4 h-4 text-gray-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
                 </div>
-                <div className="h-[400px] w-full">
-                  <PetaLokasiInteraktif
-                    data={filteredProperti}
-                    isLoading={isMapLoading}
-                  />
-                </div>
-              </div>
+              )}
             </div>
-          </>
-        )
-      )}
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          {/* Stats Cards Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            {dynamicStatsData.map((stat, index) => (
+              <StatsCard
+                key={index}
+                title={stat.title}
+                value={stat.value}
+                icon={stat.icon}
+                color={stat.color}
+              />
+            ))}
+          </div>
+
+          {/* Charts Section */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <DonutChart
+              data={ulokDonut || []}
+              title="Status ULOK"
+              legendConfig={ulokLegendConfig}
+            />
+            <DonutChart
+              data={kpltDonut || []}
+              title="Status KPLT"
+              legendConfig={kpltLegendConfig}
+            />
+            <BarChart
+              data={ulokBar || []}
+              title="Grafik ULOK Per Bulan"
+              legendConfig={ulokBarLegendConfig}
+            />
+            <BarChart
+              data={kpltBar || []}
+              title="Grafik KPLT Per Bulan"
+              legendConfig={kpltBarLegendConfig}
+            />
+          </div>
+
+          {/* Map Section */}
+          <div className="bg-white p-4 rounded-lg shadow-md shadow-[1px_1px_6px_rgba(0,0,0,0.25)]">
+            <div className="flex justify-between items-center mb-2">
+              <h3 className="text-lg font-semibold">Peta Sebaran</h3>
+              <select
+                value={activeMapFilter}
+                onChange={(e) =>
+                  onMapFilterChange(e.target.value as "ulok" | "kplt")
+                }
+                className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white shadow-sm focus:outline-none focus:ring-1 focus:ring-red-500"
+              >
+                <option value="ulok">ULOK</option>
+                <option value="kplt">KPLT</option>
+              </select>
+            </div>
+            <div className="h-[400px] w-full">
+              <PetaLokasiInteraktif
+                data={filteredProperti}
+                isLoading={isMapLoading}
+              />
+            </div>
+          </div>
+        </div>
+      </>
     </main>
   );
 }
