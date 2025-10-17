@@ -14,7 +14,7 @@ export type KpltApprovalPostInput = z.infer<typeof KpltApprovalPostSchema>;
 
 export const KpltStatusPatchSchema = z
   .object({
-    approval_status: z.enum(["OK", "NOK"]),
+    kplt_approval: z.enum(["OK", "NOK"]),
   })
   .strict();
 

@@ -96,7 +96,7 @@ export async function PATCH(
     p_branch_id: user.branch_id,
     p_position: String(user.position_nama ?? "").toLowerCase(),
     p_kplt_id: p.data.id,
-    p_new_status: b.data.approval_status,
+    p_new_status: b.data.kplt_approval,
   });
 
   if (error) {
