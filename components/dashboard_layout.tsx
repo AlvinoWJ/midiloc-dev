@@ -48,7 +48,12 @@ const kpltBarLegendConfig = [
   { key: "nok", label: "Reject (NOK)" },
 ];
 
-export default function DesktopDashboardLayout(props: DashboardPageProps) {
+interface BranchOption {
+  branch_id: string;
+  nama_cabang: string;
+}
+
+export default function DashboardLayout(props: DashboardPageProps) {
   const {
     propertiData,
     propertiUntukPeta,
@@ -58,11 +63,42 @@ export default function DesktopDashboardLayout(props: DashboardPageProps) {
     setYear,
     selectedSpecialistId,
     onSpecialistChange,
+    selectedBranchId,
+    onBranchChange,
     activeMapFilter,
     onMapFilterChange,
   } = props;
 
-  const isLocationManager = propertiData?.filters?.role === "location manager";
+  const userRole = propertiData?.filters?.role;
+  const isLocationManager = userRole === "location manager";
+  const isRegionalManager = userRole === "regional manager";
+
+  const [branchOptionsCache, setBranchOptionsCache] = useState<BranchOption[]>(
+    []
+  );
+
+  useEffect(() => {
+    if (propertiData?.breakdown?.type === "branch") {
+      const rows: any[] = propertiData.breakdown.rows ?? [];
+
+      if (!selectedBranchId) {
+        const mappedOptions = rows.map((row) => ({
+          branch_id: String(row.branch_id),
+          nama_cabang: String(row.nama_cabang),
+        }));
+        setBranchOptionsCache(mappedOptions);
+      }
+    }
+  }, [propertiData?.breakdown, selectedBranchId]);
+
+  const branchOptions: BranchOption[] = selectedBranchId
+    ? branchOptionsCache
+    : propertiData?.breakdown?.type === "branch"
+    ? ((propertiData.breakdown.rows as any[]) ?? []).map((row) => ({
+        branch_id: String(row.branch_id),
+        nama_cabang: String(row.nama_cabang),
+      }))
+    : [];
 
   // 🔸 Cache daftar LS ketika belum ada filter LS aktif
   const [lsOptionsCache, setLsOptionsCache] = useState<
@@ -279,13 +315,83 @@ export default function DesktopDashboardLayout(props: DashboardPageProps) {
               Dashboard Performa
             </h1>
             <p className="text-gray-500 mt-2">
-              Menampilkan data untuk cabang:{" "}
+              Menampilkan data untuk Branch:{" "}
               <span className="font-semibold text-gray-700">
-                {propertiData.filters.branch_name}
+                {propertiData.filters.branch_filter_id}
               </span>
             </p>
           </div>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            {/* --- FILTER BRANCH --- */}
+            {isRegionalManager && branchOptions.length > 0 && (
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
+                  <svg
+                    className="w-4 h-4 text-gray-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                    />
+                  </svg>
+                </div>
+                <select
+                  value={selectedBranchId || ""}
+                  onChange={(e) => onBranchChange(e.target.value || null)}
+                  className="appearance-none w-full sm:w-auto bg-white border border-gray-300 rounded-lg pl-10 pr-10 py-2.5 text-sm font-medium text-gray-700 hover:border-red-400 hover:shadow-md focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500 transition-all cursor-pointer min-w-[200px]"
+                >
+                  <option value="">Semua Cabang</option>
+                  {branchOptions.map((branch) => (
+                    <option key={branch.branch_id} value={branch.branch_id}>
+                      {branch.nama_cabang}
+                    </option>
+                  ))}
+                </select>
+                {selectedBranchId && (
+                  <button
+                    onClick={() => onBranchChange(null)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-red-500 transition-colors z-10"
+                    title="Hapus filter cabang"
+                  >
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                  </button>
+                )}
+                {!selectedBranchId && (
+                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                    <svg
+                      className="w-4 h-4 text-gray-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
+                  </div>
+                )}
+              </div>
+            )}
             {/* --- FILTER SPECIALIST --- */}
             {isLocationManager && propertiData.breakdown && (
               <div className="relative group">

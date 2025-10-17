@@ -5,9 +5,14 @@ import { useUser } from "./useUser";
 interface UseDashboardProps {
   year?: number | null;
   specialistId?: string | null;
+  branchId?: string | null;
 }
 
-export function useDashboard({ year, specialistId }: UseDashboardProps = {}) {
+export function useDashboard({
+  year,
+  specialistId,
+  branchId,
+}: UseDashboardProps = {}) {
   const { user } = useUser();
 
   const { data, error, isLoading } = useSWR<DashboardData>(() => {
@@ -15,12 +20,15 @@ export function useDashboard({ year, specialistId }: UseDashboardProps = {}) {
       return null;
     }
 
-    // Jika sudah aman, baru buat dan kembalikan URL.
     const params = new URLSearchParams();
-    if (year) params.append("year", year.toString());
-    params.append("branch_id", user.branch_id);
+    if (year) {
+      params.append("year", year.toString());
+    }
 
-    // Jika perlu filter specialist di masa depan, logikanya di sini
+    if (branchId) {
+      params.append("branch_id", branchId);
+    }
+
     if (specialistId && user.position_nama === "Location Manager") {
       params.append("ls_id", specialistId);
     }
