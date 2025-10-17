@@ -309,19 +309,13 @@ export default function DashboardLayout(props: DashboardPageProps) {
   return (
     <main className="space-y-4 lg:space-y-6">
       <>
-        <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+        <div className="flex flex-wrap items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-800">
               Dashboard Performa
             </h1>
-            <p className="text-gray-500 mt-2">
-              Menampilkan data untuk Branch:{" "}
-              <span className="font-semibold text-gray-700">
-                {propertiData.filters.branch_filter_id}
-              </span>
-            </p>
           </div>
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-5">
             {/* --- FILTER BRANCH --- */}
             {isRegionalManager && branchOptions.length > 0 && (
               <div className="relative group">
