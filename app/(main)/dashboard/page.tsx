@@ -1,13 +1,12 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import useSWR from "swr";
 import { useUser } from "@/hooks/useUser";
 import { useDashboard } from "@/hooks/useDashboard";
 import { useMap } from "@/hooks/useMap";
 import { useUlok } from "@/hooks/useUlok";
 import { DashboardPageProps, Properti } from "@/types/common";
-import DesktopDashboardLayout from "@/components/desktop/dashboard-layout";
+import DesktopDashboardLayout from "@/components/dashboard_layout";
 
 export default function DashboardPage() {
   const { user } = useUser();

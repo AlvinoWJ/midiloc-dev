@@ -2,11 +2,11 @@
 
 import React, { useMemo, useEffect, useState } from "react";
 import { DashboardPageProps } from "@/types/common";
-import { StatsCard } from "../ui/statscard";
-import { DonutChart } from "../ui/donutchart";
-import { BarChart } from "../ui/barchart";
+import { StatsCard } from "./ui/statscard";
+import { DonutChart } from "./ui/donutchart";
+import { BarChart } from "./ui/barchart";
 import dynamic from "next/dynamic";
-import { DashboardSkeleton } from "../ui/skleton";
+import { DashboardSkeleton } from "./ui/skleton";
 
 const PetaLokasiInteraktif = dynamic(
   () => import("@/components/map/PetaLokasiInteraktif"),
