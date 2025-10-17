@@ -1,7 +1,7 @@
-// components/map/PetaLokasiInteraktif.tsx
 "use client";
 
 import { useState, useEffect } from "react";
+import React from "react";
 import {
   MapContainer,
   TileLayer,
@@ -13,7 +13,38 @@ import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { useRouter } from "next/navigation";
 import { Properti } from "@/types/common";
+import MarkerClusterGroup from "react-leaflet-markercluster";
+import "leaflet.markercluster/dist/MarkerCluster.css";
+import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 
+const createMarkerIcon = (color: string) => {
+  const markerHtml = `
+    <svg viewBox="0 0 24 24" width="40" height="40" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill="${color}" stroke="#fff" stroke-width="1.5"/>
+    </svg>`;
+
+  return L.divIcon({
+    html: markerHtml,
+    className: "custom-svg-icon",
+    iconSize: [40, 40],
+    iconAnchor: [20, 40],
+    popupAnchor: [0, -40],
+  });
+};
+
+const colorInProgress = "#F59E0B";
+const colorApprove = "#22C55E";
+const colorReject = "#EF4444";
+const colorWaiting = "#3B82F6";
+const colorNeedInput = "#6B7280";
+
+const inProgressIcon = createMarkerIcon(colorInProgress);
+const approveIcon = createMarkerIcon(colorApprove);
+const rejectIcon = createMarkerIcon(colorReject);
+const waitingForForumIcon = createMarkerIcon(colorWaiting);
+const needInputIcon = createMarkerIcon(colorNeedInput);
+
+// Fix untuk ikon default (biru)
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 
 L.Icon.Default.mergeOptions({
@@ -29,11 +60,15 @@ const StatusBadge = ({ status }: { status: Properti["approval_status"] }) => {
     "In Progress": "bg-yellow-100 text-yellow-800",
     OK: "bg-green-100 text-green-800",
     NOK: "bg-red-100 text-red-800",
+    "Waiting for Forum": "bg-blue-100 text-blue-800",
+    "Need Input": "bg-gray-100 text-gray-800",
   };
   const style = badgeStyles[status] || "bg-gray-100 text-gray-800";
 
   return (
-    <span className={`px-3 py-1 text-sm font-semibold rounded-full ${style}`}>
+    <span
+      className={`px-3 py-1 text-sm font-semibold rounded-full flex-shrink-0 ${style}`}
+    >
       {status}
     </span>
   );
@@ -72,27 +107,23 @@ export default function PetaLokasiInteraktif({
     setIsClient(true);
   }, []);
 
-  const handleDetailClick = (id: string | number) => {
-    // FIX: Menggunakan backticks (`) untuk template literal
-    router.push(`/usulan_lokasi/detail/${id}`);
+  const handleDetailClick = (id: string | number, type: "ulok" | "kplt") => {
+    const path =
+      type === "kplt" ? "/form-kplt/detail/" : "/usulan_lokasi/detail/";
+    router.push(`${path}${id}`);
   };
 
-  if (isLoading) {
+  if (isLoading || !isClient) {
     return (
-      <div className="flex items-center justify-center h-full w-full bg-gray-100 rounded-lg">
-        <p className="text-lg text-gray-500">Memuat data lokasi...</p>
+      <div className="h-full w-full bg-gray-200 animate-pulse rounded-lg flex items-center justify-center">
+        <p className="text-gray-500">Memuat Peta...</p>
       </div>
     );
   }
 
-  if (!isClient) {
-    return (
-      <div className="h-full w-full bg-gray-200 animate-pulse rounded-lg" />
-    );
-  }
-
-  const mapCenter: [number, number] = centerPoint || [-6.25, 106.65]; // Default: Tangerang Area
-  const zoomLevel = 13;
+  const mapCenter: [number, number] = centerPoint || [-6.25, 106.65];
+  const zoomLevel = centerPoint ? 15 : 13;
+  const validData = Array.isArray(data) ? data : [];
 
   return (
     <MapContainer
@@ -105,43 +136,63 @@ export default function PetaLokasiInteraktif({
         <LayersControl.BaseLayer checked name="Peta Jalan">
           <TileLayer
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            attribution="&copy; OpenStreetMap contributors"
           />
         </LayersControl.BaseLayer>
-        <LayersControl.BaseLayer name="Peta Satelit">
+        <LayersControl.BaseLayer name="Citra Satelit">
           <TileLayer
             url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
             attribution="&copy; Esri"
           />
         </LayersControl.BaseLayer>
       </LayersControl>
-
-      {data &&
-        data
-          .filter(
-            (lokasi) =>
-              lokasi.latitude &&
-              lokasi.longitude &&
-              lokasi.approval_status !== "NOK"
-          )
-          .map((lokasi) => {
+      <MarkerClusterGroup>
+        {validData
+          .filter((lokasi) => lokasi.latitude && lokasi.longitude)
+          .map((lokasi, index) => {
             const lat = parseFloat(lokasi.latitude);
             const lng = parseFloat(lokasi.longitude);
 
-            if (isNaN(lat) || isNaN(lng)) {
-              return null; // Lewati data dengan koordinat tidak valid
+            if (isNaN(lat) || isNaN(lng)) return null;
+
+            let markerIcon;
+            switch (lokasi.approval_status) {
+              case "Approve":
+              case "OK":
+                markerIcon = approveIcon;
+                break;
+              case "In Progress":
+                markerIcon = inProgressIcon;
+                break;
+              case "Reject":
+              case "NOK":
+                markerIcon = rejectIcon;
+                break;
+              case "Waiting for Forum":
+                markerIcon = waitingForForumIcon;
+                break;
+              case "need input":
+                markerIcon = needInputIcon;
+                break;
+              default:
+                markerIcon = needInputIcon;
             }
 
             return (
-              <Marker key={lokasi.id} position={[lat, lng]}>
+              // FIX: Sintaks key diperbaiki menggunakan template literal di dalam kurung kurawal
+              <Marker
+                key={`${lokasi.id}-${index}`}
+                position={[lat, lng]}
+                icon={markerIcon}
+              >
                 {showPopup && (
                   <Popup>
-                    <div className="w-64 p-1 space-y-2">
-                      <h3 className="font-bold text-base text-gray-800">
-                        {lokasi.nama_ulok}
+                    <div className="w-64 p-3 space-y-2">
+                      <h3 className="font-extrabold text-xl text-gray-800">
+                        {lokasi.nama || lokasi.nama_ulok}
                       </h3>
                       <p
-                        className="text-xs text-gray-600 truncate"
+                        className="text-sm text-gray-600 truncate"
                         title={lokasi.alamat}
                       >
                         {lokasi.alamat}
@@ -149,13 +200,15 @@ export default function PetaLokasiInteraktif({
                       <div className="border-b border-gray-200 pt-1"></div>
                       <div className="flex justify-between items-center gap-2 pt-1">
                         <StatusBadge status={lokasi.approval_status} />
-                        <span className="text-xs font-medium text-gray-500 text-right truncate">
+                        <span className="text-sm font-medium text-gray-500 text-right truncate">
                           {formatTanggal(lokasi.created_at)}
                         </span>
                       </div>
                       <button
-                        onClick={() => handleDetailClick(lokasi.id)}
-                        className="w-full mt-2 !ml-0 bg-blue-600 text-white font-bold py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                        onClick={() =>
+                          handleDetailClick(lokasi.id, lokasi.type)
+                        }
+                        className="w-full mt-2 !ml-0 bg-blue-600 text-white font-bold py-2 rounded-lg hover:bg-blue-700 transition-colors"
                       >
                         Lihat Detail
                       </button>
@@ -165,6 +218,7 @@ export default function PetaLokasiInteraktif({
               </Marker>
             );
           })}
+      </MarkerClusterGroup>
     </MapContainer>
   );
 }

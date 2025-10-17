@@ -42,6 +42,47 @@ export default function TambahUlokForm({
   const bentukObjekOptions = ["Tanah", "Bangunan"];
   const router = useRouter();
 
+  const formatNumberDisplay = (value: string) => {
+    if (!value) return "";
+    return new Intl.NumberFormat("id-ID").format(Number(value));
+  };
+  const unformatNumber = (value: string) => {
+    return value.replace(/\./g, "");
+  };
+
+  const handleNumericChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    const cleaned = value.replace(/[^\d]/g, "");
+    const formatted = formatNumberDisplay(cleaned);
+    handleChange({
+      target: { name, value: cleaned },
+    } as React.ChangeEvent<HTMLInputElement>);
+    e.target.value = formatted;
+  };
+
+  const formatRupiah = (angka: string) => {
+    if (!angka) return "";
+    const numberValue = Number(angka);
+    if (isNaN(numberValue)) {
+      return "";
+    }
+    return new Intl.NumberFormat("id-ID").format(numberValue);
+  };
+
+  const handleOnlyNumber = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    const allowedKeys = [
+      "Backspace",
+      "Tab",
+      "ArrowLeft",
+      "ArrowRight",
+      "Delete",
+    ];
+
+    if (!/^[0-9]$/.test(e.key) && !allowedKeys.includes(e.key)) {
+      e.preventDefault();
+    }
+  };
+
   return (
     <div className="space-y-4 lg:space-y-6">
       <form
@@ -70,7 +111,7 @@ export default function TambahUlokForm({
             <div>
               <label
                 htmlFor="namaUlok"
-                className="block font-bold mb-1.5 lg:mb-2 text-sm lg:text-base"
+                className="block font-bold mb-1.5 lg:mb-2 text-sm lg:text-lg"
               >
                 Nama ULOK <span className="text-primary">*</span>
               </label>
@@ -98,7 +139,7 @@ export default function TambahUlokForm({
             <div>
               <label
                 htmlFor="alamat"
-                className="block font-semibold mb-1.5 lg:mb-2 text-sm lg:text-base"
+                className="block font-semibold mb-1.5 lg:mb-2 text-sm lg:text-lg"
               >
                 Alamat <span className="text-red-500">*</span>
               </label>
@@ -123,7 +164,7 @@ export default function TambahUlokForm({
               <div>
                 <label
                   htmlFor="latlong"
-                  className="block font-bold mb-1.5 lg:mb-2 text-sm lg:text-base"
+                  className="block font-bold mb-1.5 lg:mb-2 text-sm lg:text-lg"
                 >
                   LatLong <span className="text-red-500">*</span>
                 </label>
@@ -185,7 +226,7 @@ export default function TambahUlokForm({
               <div>
                 <label
                   htmlFor="alasHak"
-                  className="block font-bold mb-1.5 lg:mb-2 text-sm lg:text-base"
+                  className="block font-bold mb-1.5 lg:mb-2 text-sm lg:text-lg"
                 >
                   Alas Hak <span className="text-red-500">*</span>
                 </label>
@@ -207,7 +248,7 @@ export default function TambahUlokForm({
               <div>
                 <label
                   htmlFor="jumlahlantai"
-                  className="block font-semibold mb-1.5 lg:mb-2 text-sm lg:text-base"
+                  className="block font-semibold mb-1.5 lg:mb-2 text-sm lg:text-lg"
                 >
                   Jumlah Lantai <span className="text-red-500">*</span>
                 </label>
@@ -217,6 +258,7 @@ export default function TambahUlokForm({
                   placeholder="Masukkan Jumlah Lantai"
                   value={formData.jumlahlantai}
                   onChange={handleChange}
+                  onKeyDown={handleOnlyNumber}
                   className="h-10 lg:h-11 text-sm lg:text-base"
                 />
                 {errors.jumlahlantai && (
@@ -232,7 +274,7 @@ export default function TambahUlokForm({
               <div>
                 <label
                   htmlFor="lebardepan"
-                  className="block font-bold mb-1.5 lg:mb-2 text-sm lg:text-base"
+                  className="block font-bold mb-1.5 lg:mb-2 text-sm lg:text-lg"
                 >
                   Lebar Depan(m) <span className="text-red-500">*</span>
                 </label>
@@ -240,8 +282,9 @@ export default function TambahUlokForm({
                   id="lebardepan"
                   name="lebardepan"
                   placeholder="Masukkan Lebar Depan"
-                  value={formData.lebardepan}
+                  value={formatNumberDisplay(formData.lebardepan)}
                   onChange={handleChange}
+                  onKeyDown={handleOnlyNumber}
                   className="h-10 lg:h-11 text-sm lg:text-base"
                 />
                 {errors.lebardepan && (
@@ -254,7 +297,7 @@ export default function TambahUlokForm({
               <div>
                 <label
                   htmlFor="Panjang"
-                  className="block font-bold mb-1.5 lg:mb-2 text-sm lg:text-base"
+                  className="block font-bold mb-1.5 lg:mb-2 text-sm lg:text-lg"
                 >
                   Panjang(m) <span className="text-red-500">*</span>
                 </label>
@@ -262,8 +305,9 @@ export default function TambahUlokForm({
                   id="Panjang"
                   name="panjang"
                   placeholder="Masukkan Panjang"
-                  value={formData.panjang}
+                  value={formatNumberDisplay(formData.panjang)}
                   onChange={handleChange}
+                  onKeyDown={handleOnlyNumber}
                   className="h-10 lg:h-11 text-sm lg:text-base"
                 />
                 {errors.panjang && (
@@ -276,7 +320,7 @@ export default function TambahUlokForm({
               <div>
                 <label
                   htmlFor="luas"
-                  className="block font-bold mb-1.5 lg:mb-2 text-sm lg:text-base"
+                  className="block font-bold mb-1.5 lg:mb-2 text-sm lg:text-lg"
                 >
                   Luas(m) <span className="text-red-500">*</span>
                 </label>
@@ -284,9 +328,11 @@ export default function TambahUlokForm({
                   id="luas"
                   name="luas"
                   placeholder="Masukkan Luas"
-                  value={formData.luas}
+                  value={formatNumberDisplay(formData.luas)}
                   onChange={handleChange}
+                  onKeyDown={handleOnlyNumber}
                   className="h-10 lg:h-11 text-sm lg:text-base"
+                  inputMode="numeric"
                 />
                 {errors.luas && (
                   <p className="text-red-500 text-xs lg:text-sm mt-1">
@@ -300,7 +346,7 @@ export default function TambahUlokForm({
             <div>
               <label
                 htmlFor="hargasewa"
-                className="block font-bold mb-1.5 lg:mb-2 text-sm lg:text-base"
+                className="block font-bold mb-1.5 lg:mb-2 text-sm lg:text-lg"
               >
                 Harga Sewa (+PPH 10%) <span className="text-red-500">*</span>
               </label>
@@ -308,9 +354,12 @@ export default function TambahUlokForm({
                 id="hargasewa"
                 name="hargasewa"
                 placeholder="Masukkan Harga Sewa"
-                value={formData.hargasewa}
+                value={formatRupiah(formData.hargasewa)}
                 onChange={handleChange}
+                onKeyDown={handleOnlyNumber}
                 className="h-10 lg:h-11 text-sm lg:text-base"
+                type="text"
+                inputMode="numeric"
               />
               {errors.hargasewa && (
                 <p className="text-red-500 text-xs lg:text-sm mt-1">
@@ -331,7 +380,7 @@ export default function TambahUlokForm({
             <div>
               <label
                 htmlFor="namapemilik"
-                className="block font-bold mb-1.5 lg:mb-2 text-sm lg:text-base"
+                className="block font-bold mb-1.5 lg:mb-2 text-sm lg:text-lg"
               >
                 Nama Pemilik <span className="text-red-500">*</span>
               </label>
@@ -354,7 +403,7 @@ export default function TambahUlokForm({
             <div>
               <label
                 htmlFor="kontakpemilik"
-                className="block font-bold mb-1.5 lg:mb-2 text-sm lg:text-base"
+                className="block font-bold mb-1.5 lg:mb-2 text-sm lg:text-lg"
               >
                 Kontak Pemilik <span className="text-red-500">*</span>
               </label>

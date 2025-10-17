@@ -125,49 +125,42 @@ export const UlokCardsSkeleton = ({ count }: { count: number }) => {
 };
 
 // ============================================================================
-// ULOK PAGE SKELETON - RESPONSIVE
+// ULOK PAGE SKELETON - RESPONSIVE (100% MATCHED LAYOUT)
 // ============================================================================
-export const UlokPageSkeleton = ({ cardCount = 6 }: { cardCount?: number }) => {
+export const UlokPageSkeleton = ({ cardCount = 9 }: { cardCount?: number }) => {
   return (
-    <div className="space-y-6">
-      {/* Title - Mobile */}
-      <div className="md:hidden">
-        <Skeleton className="h-8 w-40" />
-      </div>
+    <div className="space-y-4 lg:space-y-6">
+      {/* Header: Judul dan Search/Filter */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        {/* Title */}
+        <Skeleton className="h-8 lg:h-10 w-40 lg:w-56" />
 
-      {/* Header Section - Desktop: Title + Search */}
-      <div className="flex items-center justify-between">
-        {/* Desktop Title */}
-        <div className="hidden md:block">
-          <Skeleton className="h-10 w-56" />
-        </div>
-        {/* Desktop Search & Filter */}
-        <div className="hidden md:flex items-center gap-5">
-          <Skeleton className="h-[46px] w-80 rounded-xl" />
-          <Skeleton className="w-[46px] h-[46px] rounded-xl" />
+        {/* Search & Filter */}
+        <div className="flex items-center gap-5">
+          <Skeleton className="h-12 lg:h-[46px] w-full lg:w-80 rounded-lg lg:rounded-xl" />
+          <Skeleton className="hidden lg:block w-[46px] h-[46px] rounded-xl" />
         </div>
       </div>
 
-      {/* Search - Mobile Only */}
-      <div className="md:hidden">
-        <SearchWithFilterSkeleton />
-      </div>
-
-      {/* Tabs & Add Button Section */}
-      <div className="flex items-center justify-between">
-        <TabsSkeleton />
-        <div className="hidden md:block">
-          <AddButtonSkeleton />
+      {/* Kontrol: Tabs dan Tombol Tambah */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        {/* Tabs */}
+        <div className="flex bg-gray-200 rounded-xl p-1 lg:inline-flex lg:w-[482px] lg:bg-white lg:rounded-2xl lg:shadow-[1px_1px_6px_rgba(0,0,0,0.25)]">
+          <Skeleton className="h-10 w-1/2 rounded-md lg:flex-1 lg:h-[40px] lg:rounded-xl lg:mr-1" />
+          <div className="w-1"></div>
+          <Skeleton className="h-10 w-1/2 rounded-md lg:flex-1 lg:h-[40px] lg:rounded-xl" />
         </div>
+
+        {/* Add Button */}
+        <Skeleton className="h-12 w-full rounded-xl lg:w-[46px] lg:h-[46px] lg:rounded-full" />
       </div>
 
-      {/* Add Button - Mobile Only (full width) */}
-      <div className="md:hidden">
-        <AddButtonSkeleton />
+      {/* Cards Grid/List */}
+      <div className="space-y-6 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-6">
+        {Array.from({ length: cardCount }).map((_, i) => (
+          <InfoCardSkeleton key={i} />
+        ))}
       </div>
-
-      {/* Cards Grid */}
-      <UlokCardsSkeleton count={cardCount} />
     </div>
   );
 };
@@ -331,5 +324,100 @@ export const DetailUlokSkeleton = () => {
         </div>
       </div>
     </div>
+  );
+};
+
+// ============================================================================
+// DASHBOARD PERFORMA SKELETON - RESPONSIVE (100% MATCHED LAYOUT)
+// ============================================================================
+export const DashboardSkeleton = () => {
+  return (
+    <div className="space-y-6">
+      {/* Header Section: Title + Filters */}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        {/* Title & Subtitle */}
+        <div>
+          <Skeleton className="h-9 w-64 mb-2" />
+          <Skeleton className="h-5 w-80" />
+        </div>
+
+        {/* Filter Controls */}
+        <div>
+          <Skeleton className="h-[42px] w-full lg:w-[424px] rounded-lg" />
+        </div>
+      </div>
+
+      {/* Stats Cards Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <Skeleton key={i} className="h-[82px] rounded-xl" />
+        ))}
+      </div>
+
+      {/* Charts Section - 2x2 Grid on Desktop */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Skeleton className="lg:h-[464px] rounded-lg" />
+        <Skeleton className="lg:h-[464px] rounded-lg" />
+        <Skeleton className="lg:h-[464px] rounded-lg" />
+        <Skeleton className="lg:h-[464px] rounded-lg" />
+      </div>
+
+      {/* Map Section */}
+      <Skeleton className="h-[400px] rounded-lg" />
+    </div>
+  );
+};
+
+// ============================================================================
+// KPLT PAGE SKELETON - RESPONSIVE WITH ACCORDION
+// ============================================================================
+export const KpltSkeleton = ({
+  accordionCount = 3,
+  cardsPerAccordion = 3,
+}: {
+  accordionCount?: number;
+  cardsPerAccordion?: number;
+}) => {
+  return (
+    <main className="space-y-4 lg:space-y-6">
+      {/* Header: Title + Search/Filter */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <Skeleton className="h-9 md:h-10 w-32" />
+        <div className="flex items-center gap-5">
+          <Skeleton className="h-12 lg:h-[46px] w-full lg:w-80 rounded-lg lg:rounded-xl" />
+          <Skeleton className="hidden lg:block w-[46px] h-[46px] rounded-xl" />
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex items-center justify-between">
+        <div className="flex bg-gray-200 rounded-xl p-1 lg:inline-flex lg:w-[482px] lg:bg-white lg:rounded-2xl lg:shadow-[1px_1px_6px_rgba(0,0,0,0.25)]">
+          <Skeleton className="h-10 w-1/2 rounded-md lg:flex-1 lg:h-[40px] lg:rounded-xl lg:mr-1" />
+          <div className="w-1"></div>
+          <Skeleton className="h-10 w-1/2 rounded-md lg:flex-1 lg:h-[40px] lg:rounded-xl" />
+        </div>
+      </div>
+
+      {/* Accordion Sections */}
+      <div className="space-y-6">
+        {Array.from({ length: accordionCount }).map((_, i) => (
+          <div key={i}>
+            {/* Accordion Header */}
+            <div className="flex items-center gap-3 p-2">
+              <Skeleton className="w-6 h-6" />
+              <Skeleton className="h-6 w-32 md:w-40" />
+              <Skeleton className="h-8 w-12 rounded-full" />
+            </div>
+
+            {/* Cards Grid */}
+            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {Array.from({ length: cardsPerAccordion }).map((_, j) => (
+                <InfoCardSkeleton key={j} />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </main>
   );
 };

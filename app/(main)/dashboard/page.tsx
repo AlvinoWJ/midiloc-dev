@@ -1,46 +1,88 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import useSWR from "swr";
 import { useUser } from "@/hooks/useUser";
-import { DashboardPageProps } from "@/types/common";
-import DesktopDashboardLayout from "@/components/desktop/dashboard-layout";
 import { useDashboard } from "@/hooks/useDashboard";
+import { useMap } from "@/hooks/useMap";
 import { useUlok } from "@/hooks/useUlok";
+import { DashboardPageProps, Properti } from "@/types/common";
+import DesktopDashboardLayout from "@/components/desktop/dashboard-layout";
 
 export default function DashboardPage() {
   const { user } = useUser();
 
-  // state filter tahun
   const [year, setYear] = useState<number | null>(new Date().getFullYear());
-  // state filter specialist (UI only)
   const [selectedSpecialistId, setSelectedSpecialistId] = useState<
     string | null
   >(null);
+  const [activeMapFilter, setActiveMapFilter] = useState<"ulok" | "kplt">(
+    "ulok"
+  );
 
-  // Panggil hook useDashboard dengan filter tahun + ls_id
-  const { dashboardData, isLoading, isError } = useDashboard({
+  const {
+    dashboardData,
+    isLoading: isDashboardLoading,
+    isError: isDashboardError,
+  } = useDashboard({
     year,
-    lsId: selectedSpecialistId ?? undefined,
-    // branchId: selectedSpecialistId, // jangan: ini untuk cabang, bukan LS
+    specialistId:
+      selectedSpecialistId === "semua" ? null : selectedSpecialistId,
   });
 
-  //Kode tambahan untuk data peta (dipindahkan ke sini)
-  const { ulokData, ulokLoading, ulokError } = useUlok();
+  const specialistFilter = selectedSpecialistId || "semua";
+  const { ulokUntukPeta, kpltUntukPeta, isMapLoading, mapError } =
+    useMap(selectedSpecialistId);
+  const { ulokData } = useUlok();
 
-  console.log("1. PAGE MENERIMA DARI SWR:", ulokData);
+  // --- TAMBAHKAN CONSOLE.LOG DI SINI UNTUK MELACAK DATA ---
+  console.log("1. Data KPLT mentah dari useMap:", kpltUntukPeta);
+  console.log("2. Data ULOK (kamus) dari useUlok:", ulokData);
 
-  const isPageLoading = isLoading || ulokLoading; // Gabungkan isLoading asli dengan isMapLoading
-  const isPageError = isError || ulokError; // Gabungkan isError asli dengan mapError
+  // Membuat kamus nama dari data ULOK agar pencarian lebih efisien
+  const ulokNameMap = useMemo(() => {
+    if (!ulokData) return new Map<string, string>();
+    const map = new Map<string, string>();
+    ulokData.forEach((ulok) => {
+      if (ulok.id && ulok.nama_ulok) {
+        map.set(ulok.id, ulok.nama_ulok);
+      }
+    });
+    return map;
+  }, [ulokData]);
+
+  const kpltDenganNama = useMemo(() => {
+    if (!Array.isArray(kpltUntukPeta)) return [];
+
+    // 1. Simpan hasil .map() ke dalam variabel 'result'
+    const result = kpltUntukPeta.map((kplt) => ({
+      ...kplt,
+      nama: ulokNameMap.get(kplt.ulok_id || "") || "KPLT Tanpa Nama",
+    }));
+
+    console.log("4. Data KPLT setelah digabung dengan nama:", result);
+    return result;
+  }, [kpltUntukPeta, ulokNameMap]);
+
+  // Logika di bawah ini tidak berubah
+  const propertiUntukPeta =
+    activeMapFilter === "ulok" ? ulokUntukPeta : kpltDenganNama;
+
+  const isPageLoading = isDashboardLoading || isMapLoading;
+  const isPageError = isDashboardError || !!mapError;
 
   const dashboardProps: DashboardPageProps = {
     propertiData: dashboardData,
-    propertiUntukPeta: ulokData,
+    propertiUntukPeta: propertiUntukPeta,
     user,
     isLoading: isPageLoading,
+    isMapLoading: isMapLoading, // Anda bisa menyederhanakan ini jika tidak perlu state loading peta terpisah
     isError: isPageError,
     setYear,
     selectedSpecialistId,
-    onSpecialistChange: setSelectedSpecialistId, // handler dropdown specialist
+    onSpecialistChange: setSelectedSpecialistId,
+    activeMapFilter,
+    onMapFilterChange: setActiveMapFilter,
   };
 
   return <DesktopDashboardLayout {...dashboardProps} />;

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useTambahKplt } from "@/hooks/useTambahkplt"; // Hook form kita
+import { useTambahKplt, KpltFormData } from "@/hooks/useTambahkplt"; // Hook form kita
 import TambahKpltLayout from "@/components/tambah_kplt_layout"; // Komponen UI
 import { useAlert } from "@/components/desktop/alertcontext"; // Untuk notifikasi
 import { useKpltPrefill } from "@/hooks/useKpltPrefill";
@@ -36,7 +36,7 @@ export default function TambahKpltPage() {
   // 3. Setup hook form
   const { formData, errors, handleChange, handleFileChange, handleFormSubmit } =
     useTambahKplt({
-      onSubmit: async (data: KpltCreatePayload) => {
+      onSubmit: async (data: KpltFormData) => {
         try {
           setIsSubmitting(true);
 
@@ -44,12 +44,6 @@ export default function TambahKpltPage() {
           formPayload.append("ulok_id", ulokId);
 
           Object.entries(data).forEach(([key, value]) => {
-            //   if (value instanceof File) {
-            //     formPayload.append(key, value);
-            //   } else if (value !== null && value !== undefined) {
-            //     formPayload.append(key, String(value));
-            //   }
-            // });
             if (value !== null && value !== undefined) {
               if (value instanceof File) {
                 formPayload.append(key, value);

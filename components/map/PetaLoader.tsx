@@ -7,7 +7,7 @@ import { Properti } from "@/types/common";
 
 // Tambahkan 'centerPoint' ke props di sini juga
 interface PetaLoaderProps {
-  data: Properti[];
+  data: Properti[] | undefined;
   centerPoint?: [number, number];
   showPopup?: boolean;
 }
@@ -30,7 +30,6 @@ export default function PetaLoader({
     []
   );
 
-  // Teruskan (pass down) prop 'centerPoint' ke komponen peta
   return (
     <PetaLokasiInteraktif
       data={data}

@@ -85,20 +85,20 @@ export default function TambahKpltLayout({
   const PeStatusOptions = ["OK", "NOK"];
   const fileInputList: FileInputConfig[] = [
     { name: "pdf_foto", label: "Foto", accept: ".pdf" },
+    { name: "pdf_pembanding", label: "Data Pembanding", accept: ".pdf" },
+    { name: "pdf_kks", label: "Kertas Kerja Survei", accept: ".pdf" },
+    { name: "pdf_form_ukur", label: "Form Ukur Lokasi", accept: ".pdf" },
     {
       name: "counting_kompetitor",
       label: "Counting Kompetitor",
-      accept: ".pdf",
+      accept: ".xlsx, .xls",
     },
-    { name: "pdf_pembanding", label: "Data Pembanding", accept: ".pdf" },
-    { name: "pdf_kks", label: "Kertas Kerja Survei", accept: ".pdf" },
     {
       name: "excel_fpl",
       label: "Form Pembobotan Lokasi",
       accept: ".xlsx, .xls",
     },
     { name: "excel_pe", label: "Project Evaluation", accept: ".xlsx, .xls" },
-    { name: "pdf_form_ukur", label: "Form Ukur Lokasi", accept: ".pdf" },
     {
       name: "video_traffic_siang",
       label: "Video Traffic Siang",
@@ -111,7 +111,11 @@ export default function TambahKpltLayout({
     },
     { name: "video_360_siang", label: "Video 360 Siang", accept: "video/*" },
     { name: "video_360_malam", label: "Video 360 Malam", accept: "video/*" },
-    { name: "peta_coverage", label: "Peta Coverage", accept: ".pdf, image/*" },
+    {
+      name: "peta_coverage",
+      label: "Peta Coverage",
+      accept: "image/*",
+    },
   ];
 
   return (

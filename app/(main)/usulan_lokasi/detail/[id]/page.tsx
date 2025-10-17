@@ -216,7 +216,6 @@ export default function DetailPage() {
     <>
       <DetailUlokLayout {...pageProps} />
 
-      {/* Modal dirender di level ini agar bisa tampil di atas layout manapun */}
       {showIntipForm && (
         <InputIntipForm
           onClose={() => setShowIntipForm(false)}

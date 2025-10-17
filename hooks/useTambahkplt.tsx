@@ -8,9 +8,52 @@ import {
 } from "@/lib/validations/kplt";
 import { PrefillKpltResponse } from "@/types/common";
 
+export type KpltFormData = Omit<
+  KpltCreatePayload,
+  | "latitude"
+  | "longitude"
+  | "skor_fpl"
+  | "std"
+  | "apc"
+  | "spd"
+  | "pe_rab"
+  | "pdf_foto"
+  | "counting_kompetitor"
+  | "pdf_pembanding"
+  | "pdf_kks"
+  | "excel_fpl"
+  | "excel_pe"
+  | "pdf_form_ukur"
+  | "video_traffic_siang"
+  | "video_traffic_malam"
+  | "video_360_siang"
+  | "video_360_malam"
+  | "peta_coverage"
+> & {
+  latitude: string;
+  longitude: string;
+  skor_fpl: string;
+  std: string;
+  apc: string;
+  spd: string;
+  pe_rab: string;
+  pdf_foto: File | null;
+  counting_kompetitor: File | null;
+  pdf_pembanding: File | null;
+  pdf_kks: File | null;
+  excel_fpl: File | null;
+  excel_pe: File | null;
+  pdf_form_ukur: File | null;
+  video_traffic_siang: File | null;
+  video_traffic_malam: File | null;
+  video_360_siang: File | null;
+  video_360_malam: File | null;
+  peta_coverage: File | null;
+};
+
 // Definisikan props untuk hook (Tidak Diubah)
 interface UseTambahKpltProps {
-  onSubmit: (data: KpltCreatePayload) => Promise<void>;
+  onSubmit: (data: KpltFormData) => Promise<void>;
   isSubmitting: boolean;
   initialData?: PrefillKpltResponse | null;
 }
@@ -26,7 +69,7 @@ export function useTambahKplt({
   const { showConfirmation, showToast } = useAlert();
 
   // --- 1. State Management Eksplisit (Tidak Diubah) ---
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<KpltFormData>({
     nama_kplt: "",
     latitude: "",
     longitude: "",
@@ -248,19 +291,11 @@ export function useTambahKplt({
         };
 
         console.log(
-          "🚀 [DEBUG] Data final sebelum upload ke storage:",
-          convertedData
+          "🚀 [DEBUG] Data final sebelum dikirim ke page (berisi File):",
+          formData
         );
-        console.log("🗂️ [DEBUG] File yang akan diunggah:", {
-          pdf_foto: formData.pdf_foto,
-          counting_kompetitor: formData.counting_kompetitor,
-          pdf_pembanding: formData.pdf_pembanding,
-          pdf_kks: formData.pdf_kks,
-          excel_fpl: formData.excel_fpl,
-          excel_pe: formData.excel_pe,
-        });
-
-        await onSubmit(convertedData);
+        // Kirim formData asli yang masih berisi objek File, bukan hasil validasi Zod.
+        await onSubmit(formData);
         console.log("🎉 [DEBUG] Submit berhasil");
       } catch (error) {
         console.error("🔥 [DEBUG] Gagal upload ke storage:", error);
