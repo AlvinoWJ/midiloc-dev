@@ -22,7 +22,6 @@ export default function KPLTPage() {
   const {
     kpltExisting,
     ulokForKplt,
-    meta,
     isLoading: loadingKPLT,
     isError: kpltError,
   } = useKplt();
@@ -34,6 +33,7 @@ export default function KPLTPage() {
     setFilterMonth(month);
     setFilterYear(year);
   };
+  console.log("Data Mentah dari Hook:", { kpltExisting, ulokForKplt });
 
   const displayData = useMemo(() => {
     // 1. Transformasi dan gabungkan data seperti sebelumnya
@@ -61,10 +61,11 @@ export default function KPLTPage() {
     const userRole = user?.position_nama?.trim().toLowerCase() || "";
 
     return combinedData.filter((item) => {
-      const lowerCaseStatus = item.status.toLowerCase();
+      // Gunakan trim() untuk membersihkan spasi yang tidak diinginkan
+      const lowerCaseStatus = item.status.trim().toLowerCase();
 
-      // 🔥 LOGIKA BARU: FILTER BERDASARKAN ROLE PENGGUNA
-      let matchRole = true; // Defaultnya true, item akan ditampilkan
+      // ... (logika matchRole Anda tetap sama)
+      let matchRole = true;
       switch (lowerCaseStatus) {
         case "need input":
           const allowedForNeedInput = [
@@ -73,7 +74,6 @@ export default function KPLTPage() {
           ];
           matchRole = allowedForNeedInput.includes(userRole);
           break;
-
         case "in progress":
         case "waiting for forum":
           const allowedForProgress = [
@@ -84,8 +84,6 @@ export default function KPLTPage() {
           ];
           matchRole = allowedForProgress.includes(userRole);
           break;
-
-        // Untuk status lain (seperti 'ok', 'NOK'), matchRole tetap true
         default:
           break;
       }
@@ -100,7 +98,7 @@ export default function KPLTPage() {
         ];
         matchTab = recentStatuses.includes(lowerCaseStatus);
       } else if (activeTab === "History") {
-        const historyStatuses = ["ok", "nok"]; // Pastikan 'nok' juga lowercase
+        const historyStatuses = ["ok", "nok"];
         matchTab = historyStatuses.includes(lowerCaseStatus);
       }
 
@@ -119,7 +117,22 @@ export default function KPLTPage() {
         ? itemDate.getFullYear().toString() === filterYear
         : true;
 
-      // 🔥 Item akan ditampilkan jika cocok dengan SEMUA filter, termasuk filter role
+      // 🔥🔥 BLOK DEBUGGING: Cek item 'ok' dan 'nok' secara spesifik
+      if (lowerCaseStatus === "ok" || lowerCaseStatus === "nok") {
+        console.log(`
+        Mengecek item: ${item.nama} (Status: ${lowerCaseStatus})
+        ----------------------------------
+        - activeTab:      ${activeTab}
+        - matchTab:       ${matchTab}
+        - matchRole:      ${matchRole}
+        - matchSearch:    ${matchSearch} (Query: "${searchQuery}")
+        - matchMonth:     ${matchMonth} (Filter: ${filterMonth})
+        - matchYear:      ${matchYear} (Filter: ${filterYear})
+        ----------------------------------
+      `);
+      }
+
+      // Item akan ditampilkan jika cocok dengan SEMUA filter
       return matchRole && matchTab && matchSearch && matchMonth && matchYear;
     });
   }, [
