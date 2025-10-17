@@ -1,13 +1,12 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import useSWR from "swr";
 import { useUser } from "@/hooks/useUser";
 import { useDashboard } from "@/hooks/useDashboard";
 import { useMap } from "@/hooks/useMap";
 import { useUlok } from "@/hooks/useUlok";
-import { DashboardPageProps, Properti } from "@/types/common";
-import DesktopDashboardLayout from "@/components/desktop/dashboard-layout";
+import { DashboardPageProps } from "@/types/common";
+import DashboardLayout from "@/components/dashboard_layout";
 
 export default function DashboardPage() {
   const { user } = useUser();
@@ -16,6 +15,7 @@ export default function DashboardPage() {
   const [selectedSpecialistId, setSelectedSpecialistId] = useState<
     string | null
   >(null);
+  const [selectedBranchId, setSelectedBranchId] = useState<string | null>(null);
   const [activeMapFilter, setActiveMapFilter] = useState<"ulok" | "kplt">(
     "ulok"
   );
@@ -28,6 +28,7 @@ export default function DashboardPage() {
     year,
     specialistId:
       selectedSpecialistId === "semua" ? null : selectedSpecialistId,
+    branchId: selectedBranchId === "semua" ? null : selectedBranchId,
   });
 
   const specialistFilter = selectedSpecialistId || "semua";
@@ -81,9 +82,11 @@ export default function DashboardPage() {
     setYear,
     selectedSpecialistId,
     onSpecialistChange: setSelectedSpecialistId,
+    selectedBranchId,
+    onBranchChange: setSelectedBranchId,
     activeMapFilter,
     onMapFilterChange: setActiveMapFilter,
   };
 
-  return <DesktopDashboardLayout {...dashboardProps} />;
+  return <DashboardLayout {...dashboardProps} />;
 }

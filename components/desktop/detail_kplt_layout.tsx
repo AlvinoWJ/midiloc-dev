@@ -132,6 +132,11 @@ export default function DetailKpltLayout({
     isError: isFilesError,
   } = useKpltFiles(id);
 
+  // =================================================================
+  // LANGKAH 1: Cek data mentah yang datang dari hook
+  // =================================================================
+  console.log("Data mentah dari hook 'files':", files);
+
   const canApprove =
     user &&
     (user.position_id === "branch manager" ||

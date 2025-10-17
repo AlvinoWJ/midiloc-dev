@@ -30,6 +30,7 @@ interface FilterData {
   year: number | null;
   branch_id: string;
   branch_name: string;
+  branch_filter_id: string;
 }
 
 interface BreakdownRow {
@@ -44,6 +45,7 @@ interface BreakdownRow {
   kplt_nok: number;
   kplt_in_progress: number;
   kplt_waiting_for_forum: number;
+  nama_cabang: string;
 }
 
 interface BreakdownData {
@@ -198,6 +200,8 @@ export interface DashboardPageProps {
   setYear: (year: number | null) => void;
   selectedSpecialistId: string | null;
   onSpecialistChange: (id: string | null) => void;
+  selectedBranchId: string | null;
+  onBranchChange: (branchId: string | null) => void;
   activeMapFilter: "ulok" | "kplt";
   onMapFilterChange: (filter: "ulok" | "kplt") => void;
 }
