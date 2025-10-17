@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
     const branchParam = req.nextUrl.searchParams.get("branch_id");
     const lsParam = req.nextUrl.searchParams.get("ls_id");
 
-    // Parse year (optional)
+    // year (opsional)
     let p_year: number | null = null;
     if (yearParam && yearParam.trim() !== "") {
       const parsed = Number(yearParam);
@@ -40,33 +40,26 @@ export async function GET(req: NextRequest) {
       p_year = parsed;
     }
 
-    // Branch: jika tidak diberikan, default ke branch user
-    // Sesuaikan tipe: jika branch_id di DB UUID, kirim string; jika INT, parse number.
-    let p_branch_id: string | number | null =
-      branchParam && branchParam.trim() !== ""
-        ? branchParam.trim()
-        : (user.branch_id as string | number);
-
-    if (typeof p_branch_id === "string") {
-      const onlyDigits = /^\d+$/.test(p_branch_id);
-      if (onlyDigits) {
-        const asNum = Number(p_branch_id);
-        if (!Number.isFinite(asNum)) {
-          return NextResponse.json(
-            {
-              error: "bad_request",
-              message: "Invalid 'branch_id' query param",
-            },
-            { status: 400 }
-          );
-        }
-        p_branch_id = asNum;
-      } else {
-        // UUID ok, no-op
+    // HANYA kirim p_branch_filter jika user mem-pass ?branch_id=
+    // Jangan default ke user.branch_id (inilah penyebab GM/RM hanya lihat 1 cabang).
+    let p_branch_filter: string | null = null;
+    if (branchParam && branchParam.trim() !== "") {
+      const val = branchParam.trim();
+      // Jika kolom branch_id di DB bertipe UUID, validasi format UUID (opsional)
+      const uuidLike =
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+          val
+        );
+      if (!uuidLike) {
+        return NextResponse.json(
+          { error: "bad_request", message: "Invalid 'branch_id' format" },
+          { status: 400 }
+        );
       }
+      p_branch_filter = val;
     }
 
-    // Location specialist filter (UUID expected)
+    // Location specialist filter (UUID expected; untuk GM/RM akan ditolak oleh RPC)
     let p_ls_id: string | null = null;
     if (lsParam && lsParam.trim() !== "") {
       const ls = lsParam.trim();
@@ -83,17 +76,25 @@ export async function GET(req: NextRequest) {
       p_ls_id = ls;
     }
 
-    // Call RPC with filters; sesuaikan signature RPC Anda:
-    // rpc_dashboard(p_user_id uuid, p_year int, p_branch_filter uuid, p_ls_id uuid)
+    // Panggil RPC
+    // Signature: rpc_dashboard(p_user_id uuid, p_year int, p_branch_filter uuid, p_ls_id uuid)
     const { data, error } = await supabase.rpc("rpc_dashboard", {
       p_user_id: user.id,
       p_year,
-      p_branch_filter: typeof p_branch_id === "string" ? p_branch_id : null, // jika UUID
-      // Jika di DB branch_id bertipe INT, ubah signature RPC agar menerima INT, lalu kirim p_branch_filter: p_branch_id
+      p_branch_filter, // null jika tidak ada query param -> GM semua cabang, RM semua cabang di region
       p_ls_id,
     });
 
     if (error) {
+      // Map error validasi dari function (errcode '22023') ke HTTP 400
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const pgErr = error as any;
+      if (pgErr?.code === "22023") {
+        return NextResponse.json(
+          { error: "bad_request", message: error.message },
+          { status: 400 }
+        );
+      }
       console.error("Supabase RPC Error:", error);
       return NextResponse.json(
         { error: "rpc_error", message: error.message },
