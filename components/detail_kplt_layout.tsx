@@ -10,25 +10,16 @@ import {
   Video,
   FileQuestion,
   Loader2,
+  ClipboardList, // <-- Tambahkan import ini untuk ikon analisis
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { MappedKpltDetail, ApprovalsSummary } from "@/hooks/useKpltDetail";
+import { MappedKpltDetail } from "@/hooks/useKpltDetail";
 import { useKpltFiles, MappedKpltFile } from "@/hooks/useKpltfile";
-import PrefillKpltCard from "../ui/prefillkpltcard";
-import { ApprovalStatusbutton } from "../ui/approvalbutton";
-import { useUser } from "@/hooks/useUser";
+import PrefillKpltCard from "./ui/prefillkpltcard";
+import { ApprovalStatusbutton } from "./ui/approvalbutton";
+import DetailKpltSkeleton from "./ui/skleton";
 
-// Props untuk komponen ini, hanya menerima 'data'
-interface DetailKpltLayoutProps {
-  id: string;
-  data: MappedKpltDetail; // Tipe data sesuai respons API fn_kplt_detail
-  showApprovalSection: boolean;
-  isAlreadyApproved: boolean;
-  isApproving: boolean;
-  onApprove: (status: "OK" | "NOK") => void;
-}
-
-// Komponen kecil untuk menampilkan field key-value agar rapi
+// --- Komponen DetailField (Tidak berubah) ---
 const DetailField = ({ label, value }: { label: string; value: any }) => (
   <div>
     <label className="text-gray-600 font-medium text-sm lg:text-base mb-1 block">
@@ -40,30 +31,7 @@ const DetailField = ({ label, value }: { label: string; value: any }) => (
   </div>
 );
 
-// Komponen kecil untuk menampilkan link ke file
-// const FileLink = ({ label, url }: { label: string; url: string | null }) => {
-//   if (!url) return <DetailField label={label} value="Tidak ada file" />;
-
-//   return (
-//     <div>
-//       <label className="text-gray-600 font-medium text-sm mb-1 block">
-//         {label}
-//       </label>
-//       <a
-//         href={url}
-//         target="_blank"
-//         rel="noopener noreferrer"
-//         className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border hover:bg-gray-100 transition-colors"
-//       >
-//         <span className="text-sm text-blue-600 font-semibold">
-//           Lihat Dokumen
-//         </span>
-//         <LinkIcon className="w-4 h-4 text-gray-500" />
-//       </a>
-//     </div>
-//   );
-// };
-
+// --- Helper Fungsi (Tidak berubah) ---
 const generateLabel = (field: string | null): string => {
   if (!field) return "File Lainnya";
   return field
@@ -72,7 +40,6 @@ const generateLabel = (field: string | null): string => {
     .join(" ");
 };
 
-// Helper untuk memilih ikon berdasarkan tipe file
 const getIconForFileType = (fileType: MappedKpltFile["fileType"]) => {
   switch (fileType) {
     case "pdf":
@@ -86,6 +53,7 @@ const getIconForFileType = (fileType: MappedKpltFile["fileType"]) => {
   }
 };
 
+// --- Komponen FileListItem (Tidak berubah) ---
 const FileListItem = ({ file }: { file: MappedKpltFile }) => {
   const label = generateLabel(file.field);
 
@@ -96,10 +64,7 @@ const FileListItem = ({ file }: { file: MappedKpltFile }) => {
       rel="noopener noreferrer"
       className="flex items-start gap-4 p-3 rounded-lg border bg-gray-50 hover:bg-gray-100 hover:shadow-sm transition-all duration-200"
     >
-      {/* Ikon berdasarkan tipe file */}
       {getIconForFileType(file.fileType)}
-
-      {/* Detail File */}
       <div className="flex flex-col flex-grow">
         <p className="font-semibold text-sm text-gray-800 leading-tight break-words">
           {label}
@@ -108,23 +73,62 @@ const FileListItem = ({ file }: { file: MappedKpltFile }) => {
           {file.sizeFormatted} &bull; {file.lastModifiedFormatted}
         </p>
       </div>
-
-      {/* Ikon Link Eksternal */}
       <LinkIcon className="w-4 h-4 text-gray-400 flex-shrink-0 mt-1" />
     </a>
   );
 };
 
+// --- [BARU] Komponen Card Internal Sesuai Gaya yang Diinginkan ---
+const DetailCard = ({
+  title,
+  icon,
+  children,
+  className = "",
+}: {
+  title: string;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+  className?: string;
+}) => (
+  <div
+    className={`bg-white rounded-xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)] ${className}`}
+  >
+    {/* Header Kartu */}
+    <div className="border-b border-gray-200 px-6 py-4">
+      <div className="flex items-center">
+        {icon}
+        <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
+      </div>
+    </div>
+    {/* Konten Kartu */}
+    <div className="p-6">{children}</div>
+  </div>
+);
+
+// --- Interface Utama (Tidak berubah) ---
+interface DetailKpltLayoutProps {
+  id: string;
+  data?: MappedKpltDetail;
+  isLoading: boolean;
+  isError: boolean;
+  showApprovalSection: boolean;
+  isAlreadyApproved: boolean;
+  isApproving: boolean;
+  onApprove: (status: "OK" | "NOK") => void;
+}
+
+// --- Komponen Utama ---
 export default function DetailKpltLayout({
   id,
   data,
-  showApprovalSection, // Ambil prop ini
-  isApproving, // Ambil prop ini
+  showApprovalSection,
+  isApproving,
+  isLoading,
+  isError,
   isAlreadyApproved,
-  onApprove, // Ambil prop ini
+  onApprove,
 }: DetailKpltLayoutProps) {
   const router = useRouter();
-  const { user } = useUser();
 
   const {
     files,
@@ -132,21 +136,35 @@ export default function DetailKpltLayout({
     isError: isFilesError,
   } = useKpltFiles(id);
 
-  // =================================================================
-  // LANGKAH 1: Cek data mentah yang datang dari hook
-  // =================================================================
-  console.log("Data mentah dari hook 'files':", files);
+  if (isLoading || isLoadingFiles) {
+    return <DetailKpltSkeleton />;
+  }
+  if (isError || isFilesError) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[70vh] text-center p-4">
+        <div className="bg-white rounded-lg shadow-sm border p-6 lg:p-8 max-w-md">
+          <div className="text-red-500 text-5xl lg:text-4xl mb-4">⚠️</div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            Gagal Memuat Data
+          </h3>
+          <p className="text-gray-600 text-sm lg:text-base mb-4">
+            Terjadi kesalahan saat mengambil data. Silakan coba lagi.
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors w-full lg:w-auto"
+          >
+            Muat Ulang
+          </button>
+        </div>
+      </div>
+    );
+  }
+  if (!data) {
+    return <DetailKpltSkeleton />;
+  }
 
-  const canApprove =
-    user &&
-    (user.position_id === "branch manager" ||
-      user.position_id === "regional manager" ||
-      (user.position_nama &&
-        ["branch manager", "regional manager"].includes(
-          user.position_nama.toLowerCase()
-        )));
-
-  const { base, analytics, approvalsSummary } = data;
+  const { base, analytics } = data;
 
   return (
     <main className="space-y-4 lg:space-y-6">
@@ -160,15 +178,14 @@ export default function DetailKpltLayout({
           <ArrowLeft size={16} className="mr-2" />
           Kembali
         </Button>
-
         <div className="mb-10 ">{data && <PrefillKpltCard data={base} />}</div>
 
-        {/* --- Bagian Analisis Kelayakan --- */}
-        <div className="relative mt-10">
-          <div className="absolute -top-4 left-6 bg-red-600 text-white px-4 py-1 rounded shadow font-semibold text-base lg:text-lg">
-            Analisis Kelayakan Lokasi
-          </div>
-          <div className="bg-white shadow-[1px_1px_6px_rgba(0,0,0,0.25)] rounded-xl p-6 pt-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <DetailCard
+          title="Analisis Kelayakan Lokasi"
+          icon={<ClipboardList className="text-red-500 mr-3" size={20} />}
+          className="mt-10"
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
             <DetailField
               label="Karakter Lokasi"
               value={analytics.karakterLokasi}
@@ -184,14 +201,14 @@ export default function DetailKpltLayout({
             <DetailField label="PE Status" value={analytics.peStatus} />
             <DetailField label="PE RAB" value={analytics.peRab} />
           </div>
-        </div>
+        </DetailCard>
 
-        {/* --- Bagian Dokumen Terlampir --- */}
-        <div className="relative mt-10">
-          <div className="absolute -top-4 left-6 bg-red-600 text-white px-4 py-1 rounded shadow-md font-semibold">
-            Dokumen Terlampir
-          </div>
-          <div className="bg-white shadow-[1px_1px_6px_rgba(0,0,0,0.25)] rounded-xl p-6 pt-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <DetailCard
+          title="Dokumen Terlampir"
+          icon={<FileText className="text-red-500 mr-3" size={20} />}
+          className="mt-10"
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {isLoadingFiles && (
               <div className="col-span-full flex justify-center items-center py-10">
                 <Loader2 className="w-8 h-8 animate-spin text-gray-500" />
@@ -215,26 +232,18 @@ export default function DetailKpltLayout({
                 </div>
               ))}
           </div>
-        </div>
+        </DetailCard>
 
-        {showApprovalSection && canApprove && !isAlreadyApproved && (
-          // 👇 PERUBAHAN DI SINI
+        {showApprovalSection && !isAlreadyApproved && (
           <div className="mt-6">
             <ApprovalStatusbutton
               show={true}
-              disabled={isApproving} // Tombol disable saat loading
-              onApprove={onApprove} // Langsung panggil prop onApprove
+              disabled={isApproving}
+              onApprove={onApprove}
               fileUploaded={true}
-              loading={isApproving} // Tampilkan spinner saat loading
+              loading={isApproving}
               currentStatus={null}
             />
-
-            {isAlreadyApproved && (
-              <div className="bg-green-100 text-green-800 p-4 rounded-lg font-semibold border border-green-200">
-                Anda sudah memberikan approval untuk KPLT ini.
-                {/* Di sini nanti Anda bisa meletakkan komponen ApprovalSummary yang sebenarnya */}
-              </div>
-            )}
           </div>
         )}
       </div>

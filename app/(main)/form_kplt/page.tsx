@@ -56,15 +56,11 @@ export default function KPLTPage() {
       })
     );
     const combinedData = [...existingTransformed, ...ulokTransformed];
-
-    // 🔥 Ambil role pengguna saat ini dan normalkan (lowercase)
     const userRole = user?.position_nama?.trim().toLowerCase() || "";
 
     return combinedData.filter((item) => {
-      // Gunakan trim() untuk membersihkan spasi yang tidak diinginkan
       const lowerCaseStatus = item.status.trim().toLowerCase();
 
-      // ... (logika matchRole Anda tetap sama)
       let matchRole = true;
       switch (lowerCaseStatus) {
         case "need input":
@@ -75,12 +71,19 @@ export default function KPLTPage() {
           matchRole = allowedForNeedInput.includes(userRole);
           break;
         case "in progress":
-        case "waiting for forum":
-          const allowedForProgress = [
+          const allowedForInProgress = [
             "location specialist",
             "location manager",
             "branch manager",
             "regional manager",
+          ];
+          matchRole = allowedForInProgress.includes(userRole);
+          break;
+        case "waiting for forum":
+          const allowedForProgress = [
+            "branch manager",
+            "regional manager",
+            "general manager",
           ];
           matchRole = allowedForProgress.includes(userRole);
           break;

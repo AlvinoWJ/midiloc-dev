@@ -2,16 +2,10 @@
 
 import React, { useState, useMemo } from "react";
 import { useParams } from "next/navigation";
-import DetailKpltLayout from "@/components/desktop/detail_kplt_layout";
+import DetailKpltLayout from "@/components/detail_kplt_layout";
 import { useKpltDetail } from "@/hooks/useKpltDetail";
 import { useAlert } from "@/components/desktop/alertcontext";
 import { useUser } from "@/hooks/useUser";
-
-const PageStatus = ({ message }: { message: string }) => (
-  <div className="flex items-center justify-center h-screen bg-gray-100">
-    <p className="text-xl text-gray-600">{message}</p>
-  </div>
-);
 
 export default function DetailKpltPage() {
   const params = useParams<{ id: string }>();
@@ -22,7 +16,7 @@ export default function DetailKpltPage() {
   const [isApproving, setIsApproving] = useState(false);
   const { data, isLoading, isError, error, mutate } = useKpltDetail(kpltId);
 
-  // Fungsi untuk mengirim approval BM/RM (POST)
+  // approval BM/RM (POST)
   const fetchApprovalPost = async (id: string, is_approved: boolean) => {
     const res = await fetch(`/api/kplt/${id}/approvals`, {
       method: "POST",
@@ -37,19 +31,45 @@ export default function DetailKpltPage() {
     return result.data;
   };
 
-  // Handler utama yang sudah disederhanakan
-  const handleApprove = async (status: "OK" | "NOK") => {
-    if (!kpltId) return;
+  // approval GM (PATCH)
+  const fetchStatusPatch = async (id: string, newStatus: string) => {
+    const res = await fetch(`/api/kplt/${id}/approvals`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ approval_status: newStatus }),
+    });
+
+    const result = await res.json();
+    if (!res.ok) {
+      throw new Error(result.error || "Gagal memperbarui status");
+    }
+    return result.data;
+  };
+
+  const handleApprovalClick = async (status: "OK" | "NOK") => {
+    if (!kpltId || !user?.position_nama) return;
+
+    const position = user.position_nama.toLowerCase();
     setIsApproving(true);
+
     try {
-      await fetchApprovalPost(kpltId, status === "OK");
-      showToast({
-        type: "success",
-        message: "Status approval berhasil dikirim!",
-      });
+      if (position === "general manager") {
+        await fetchStatusPatch(kpltId, status);
+        showToast({
+          type: "success",
+          message: `Status KPLT berhasil diubah menjadi ${status}!`,
+        });
+      } else {
+        const isApproved = status === "OK";
+        await fetchApprovalPost(kpltId, isApproved);
+        showToast({
+          type: "success",
+          message: "Status approval berhasil dikirim!",
+        });
+      }
       await mutate();
     } catch (err: any) {
-      console.error("Proses approval gagal:", err);
+      console.error("Proses approval/set status gagal:", err);
       showToast({ type: "error", message: err.message });
     } finally {
       setIsApproving(false);
@@ -62,31 +82,45 @@ export default function DetailKpltPage() {
     }
 
     const position = user.position_nama.toLowerCase();
-    let userHasApproved = false;
-    if (position === "branch manager" && data.approvalsSummary?.bm) {
-      userHasApproved = true;
-    } else if (position === "regional manager" && data.approvalsSummary?.rm) {
-      userHasApproved = true;
+    const mainStatus = data.base.kpltapproval;
+    const summary = data.approvalsSummary;
+
+    if (position === "general manager") {
+      const show = mainStatus === "Waiting for Forum";
+      return {
+        isAlreadyApproved: !show,
+        showApprovalSection: show,
+      };
     }
-    const shouldShowSection = data.base.kpltapproval === "In Progress";
 
-    return {
-      isAlreadyApproved: userHasApproved,
-      showApprovalSection: shouldShowSection,
-    };
+    if (position === "branch manager") {
+      const alreadyApproved = !!summary?.bm;
+      const show = mainStatus === "In Progress" && !alreadyApproved;
+      return {
+        isAlreadyApproved: alreadyApproved,
+        showApprovalSection: show,
+      };
+    }
+
+    if (position === "regional manager") {
+      const alreadyApproved = !!summary?.rm;
+      const show = mainStatus === "In Progress" && !alreadyApproved;
+      return {
+        isAlreadyApproved: alreadyApproved,
+        showApprovalSection: show,
+      };
+    }
+    return { isAlreadyApproved: false, showApprovalSection: false };
   }, [data, user]);
-
-  if (isLoading) return <PageStatus message="Memuat detail KPLT..." />;
-  if (isError)
-    return <PageStatus message={`Gagal memuat data: ${error?.message}`} />;
-  if (!data) return <PageStatus message="Data KPLT tidak ditemukan." />;
 
   return (
     <DetailKpltLayout
       id={kpltId}
       data={data}
       isApproving={isApproving}
-      onApprove={handleApprove}
+      isLoading={isLoading} // <-- TAMBAHKAN INI
+      isError={isError} // <-- TAMBAHKAN INI
+      onApprove={handleApprovalClick}
       isAlreadyApproved={isAlreadyApproved}
       showApprovalSection={showApprovalSection}
     />
