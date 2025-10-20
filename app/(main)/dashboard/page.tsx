@@ -3,11 +3,17 @@
 import { useState, useMemo } from "react";
 import useSWR from "swr";
 import { useUser } from "@/hooks/useUser";
-import { useDashboard } from "@/hooks/useDashboard";
-import { useMap } from "@/hooks/useMap";
-import { useUlok } from "@/hooks/useUlok";
-import { DashboardPageProps, Properti } from "@/types/common";
-import DesktopDashboardLayout from "@/components/desktop/dashboard-layout";
+import { DashboardPageProps } from "@/types/common";
+import DashboardLayout from "@/components/desktop/dashboard-layout";
+
+const fetcher = (url: string) =>
+  fetch(url).then(async (r) => {
+    if (!r.ok) {
+      const t = await r.text().catch(() => "");
+      throw new Error(`HTTP ${r.status} ${t}`);
+    }
+    return r.json();
+  });
 
 export default function DashboardPage() {
   const { user } = useUser();
@@ -16,74 +22,53 @@ export default function DashboardPage() {
   const [selectedSpecialistId, setSelectedSpecialistId] = useState<
     string | null
   >(null);
+  const [selectedBranchId, setSelectedBranchId] = useState<string | null>(null);
   const [activeMapFilter, setActiveMapFilter] = useState<"ulok" | "kplt">(
     "ulok"
   );
 
-  const {
-    dashboardData,
-    isLoading: isDashboardLoading,
-    isError: isDashboardError,
-  } = useDashboard({
-    year,
-    specialistId:
-      selectedSpecialistId === "semua" ? null : selectedSpecialistId,
-  });
+  // Susun query untuk endpoint gabungan: /api/dashboard/full -> { summary, points }
+  const qs = useMemo(() => {
+    const q = new URLSearchParams();
+    if (year) q.set("year", String(year));
+    if (selectedSpecialistId) q.set("ls_id", selectedSpecialistId);
+    if (selectedBranchId) q.set("branch_id", selectedBranchId);
+    // Jika perlu viewport untuk peta, bisa ditambahkan param min_lat,dst. di sini dan di BE
+    return q.toString();
+  }, [year, selectedSpecialistId, selectedBranchId]);
 
-  const specialistFilter = selectedSpecialistId || "semua";
-  const { ulokUntukPeta, kpltUntukPeta, isMapLoading, mapError } =
-    useMap(selectedSpecialistId);
-  const { ulokData } = useUlok();
+  const { data, error, isLoading } = useSWR<{ summary: any; points: any }>(
+    `/api/dashboard?${qs}`,
+    fetcher,
+    { keepPreviousData: true, revalidateOnFocus: false }
+  );
 
-  // --- TAMBAHKAN CONSOLE.LOG DI SINI UNTUK MELACAK DATA ---
-  console.log("1. Data KPLT mentah dari useMap:", kpltUntukPeta);
-  console.log("2. Data ULOK (kamus) dari useUlok:", ulokData);
+  const summary = data?.summary ?? null;
+  const points = data?.points ?? null;
 
-  // Membuat kamus nama dari data ULOK agar pencarian lebih efisien
-  const ulokNameMap = useMemo(() => {
-    if (!ulokData) return new Map<string, string>();
-    const map = new Map<string, string>();
-    ulokData.forEach((ulok) => {
-      if (ulok.id && ulok.nama_ulok) {
-        map.set(ulok.id, ulok.nama_ulok);
-      }
-    });
-    return map;
-  }, [ulokData]);
-
-  const kpltDenganNama = useMemo(() => {
-    if (!Array.isArray(kpltUntukPeta)) return [];
-
-    // 1. Simpan hasil .map() ke dalam variabel 'result'
-    const result = kpltUntukPeta.map((kplt) => ({
-      ...kplt,
-      nama: ulokNameMap.get(kplt.ulok_id || "") || "KPLT Tanpa Nama",
-    }));
-
-    console.log("4. Data KPLT setelah digabung dengan nama:", result);
-    return result;
-  }, [kpltUntukPeta, ulokNameMap]);
-
-  // Logika di bawah ini tidak berubah
-  const propertiUntukPeta =
-    activeMapFilter === "ulok" ? ulokUntukPeta : kpltDenganNama;
-
-  const isPageLoading = isDashboardLoading || isMapLoading;
-  const isPageError = isDashboardError || !!mapError;
+  // Pilih data untuk peta: ulok_points atau kplt_points dari response points
+  const propertiUntukPeta = useMemo(() => {
+    if (!points) return [];
+    return activeMapFilter === "ulok"
+      ? points.ulok_points ?? []
+      : points.kplt_points ?? [];
+  }, [points, activeMapFilter]);
 
   const dashboardProps: DashboardPageProps = {
-    propertiData: dashboardData,
-    propertiUntukPeta: propertiUntukPeta,
+    propertiData: summary ?? undefined, // summary sudah mengandung kpis, filters, breakdown, donut, perbulan
+    propertiUntukPeta,
     user,
-    isLoading: isPageLoading,
-    isMapLoading: isMapLoading, // Anda bisa menyederhanakan ini jika tidak perlu state loading peta terpisah
-    isError: isPageError,
+    isLoading,
+    isMapLoading: isLoading,
+    isError: !!error,
     setYear,
     selectedSpecialistId,
     onSpecialistChange: setSelectedSpecialistId,
+    selectedBranchId,
+    onBranchChange: setSelectedBranchId,
     activeMapFilter,
     onMapFilterChange: setActiveMapFilter,
   };
 
-  return <DesktopDashboardLayout {...dashboardProps} />;
+  return <DashboardLayout {...dashboardProps} />;
 }

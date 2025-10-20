@@ -29,12 +29,22 @@ interface FilterData {
   role?: string;
   year: number | null;
   branch_id: string;
-  branch_name: string;
+  branch_name?: string; // optional: response baru bisa tidak mengirim ini
+  branch_filter_id?: string; // optional: response baru bisa null
+  ls_user_id?: string | null;
+  region_code?: number;
 }
 
 interface BreakdownRow {
-  nama: string;
-  user_id: string;
+  // Untuk type='user' (LM/BM)
+  nama?: string;
+  user_id?: string;
+
+  // Untuk type='branch' (RM/GM)
+  nama_cabang?: string;
+  branch_id?: string;
+
+  // MetriK
   ulok_total: number;
   ulok_ok: number;
   ulok_nok: number;
@@ -48,7 +58,7 @@ interface BreakdownRow {
 
 interface BreakdownData {
   rows: BreakdownRow[];
-  type: string;
+  type: string; // 'user' | 'branch'
 }
 
 interface DonutChartItem {
@@ -82,7 +92,7 @@ export interface DashboardData {
   perbulan_ulok: MonthlyDataItem[];
 }
 
-// --- Tipe untuk ULOK ---
+// --- Tipe untuk ULOK (legacy Properti) ---
 export interface Ulok {
   id: string;
   nama_ulok: string;
@@ -168,8 +178,6 @@ export interface KpltPageProps {
 // ==================================
 // ULOK page props
 // ==================================
-
-// Tipe untuk UlokPageProps (bisa dibuat lebih spesifik atau generik sesuai kebutuhan)
 export interface UlokPageProps {
   isLoading: boolean;
   isError: boolean;
@@ -186,11 +194,33 @@ export interface UlokPageProps {
 }
 
 // ==================================
+// Map points tipe (response baru)
+// ==================================
+export interface MapPoint {
+  id: string;
+  lat: number;
+  lng: number;
+  name?: string | null;
+  status?: string | null;
+  created_at?: string | null;
+  ulok_id?: string | null;
+  alamat?: string | null;
+  // optional: jika data lama, field-field ini bisa ada
+  latitude?: string | number | null;
+  longitude?: string | number | null;
+  nama?: string | null;
+  nama_ulok?: string | null;
+  approval_status?: string | null;
+  type?: "ulok" | "kplt";
+}
+
+// ==================================
 // DASHBOARD page props
 // ==================================
 export interface DashboardPageProps {
   propertiData?: DashboardData;
-  propertiUntukPeta?: Properti[];
+  // Izinkan union data peta (legacy Properti atau MapPoint baru)
+  propertiUntukPeta?: (Properti | MapPoint)[];
   isLoading: boolean;
   isMapLoading: boolean;
   isError: any;
@@ -198,26 +228,29 @@ export interface DashboardPageProps {
   setYear: (year: number | null) => void;
   selectedSpecialistId: string | null;
   onSpecialistChange: (id: string | null) => void;
+  selectedBranchId: string | null;
+  onBranchChange: (branchId: string | null) => void;
   activeMapFilter: "ulok" | "kplt";
   onMapFilterChange: (filter: "ulok" | "kplt") => void;
 }
 
+// Legacy Properti (dipakai komponen peta lama)
 export interface Properti {
   id: string;
-  latitude: string;
-  longitude: string;
+  latitude: string | number;
+  longitude: string | number;
   nama?: string;
   nama_ulok?: string; // sudah ada
   alamat?: string; // sudah ada
-  approval_status: string; // sudah ada
-  created_at?: string; // sudah ada
-  type: "ulok" | "kplt";
+  approval_status?: string; // bisa tidak ada di data baru -> optional
+  created_at?: string; // sudah ada
+  type?: "ulok" | "kplt";
   ulok_id?: string;
 }
 
 export interface UlokApiResponse {
   success: boolean;
-  data: Properti[]; // 'data' berisi array dari Properti/Ulok
+  data: Properti[];
   pagination: {
     page: number;
     limit: number;
@@ -234,16 +267,16 @@ export type KpltBaseData = {
   luas: number;
   alamat: string;
   panjang: number;
-  alas_hak: string; // Tipe string, bukan boolean, berdasarkan contoh "false"
+  alas_hak: string;
   latitude: string;
   provinsi: string;
-  form_ulok: string; // Bisa jadi null
+  form_ulok: string;
   is_active: boolean;
   kabupaten: string;
   kecamatan: string;
   longitude: string;
   nama_kplt: string;
-  file_intip: string; // Bisa jadi null
+  file_intip: string;
   harga_sewa: number;
   lebar_depan: number;
   bentuk_objek: string;
@@ -253,7 +286,7 @@ export type KpltBaseData = {
   desa_kelurahan: string;
   kontak_pemilik: string;
   approval_intip_status: string;
-  tanggal_approval_intip: string; // Bisa jadi null
+  tanggal_approval_intip: string;
   kplt_approval: string;
 };
 
@@ -294,31 +327,3 @@ export type PrefillKpltResponse = {
   ulok_id: string;
   exists_kplt: boolean;
 };
-
-// // types/common.ts
-// export interface KpltDetailResponse {
-//   data: {
-//     karakter_lokasi: string;
-//     sosial_ekonomi: string;
-//     skor_fpl: number;
-//     std: number;
-//     apc: number;
-//     spd: number;
-//     pe_status: string;
-//     pe_rab: number;
-//   };
-//   files: {
-//     pdf_foto_url: string | null;
-//     counting_kompetitor_url: string | null;
-//     pdf_pembanding_url: string | null;
-//     pdf_kks_url: string | null;
-//     excel_fpl_url: string | null;
-//     excel_pe_url: string | null;
-//     pdf_form_ukur_url: string | null;
-//     video_traffic_siang_url: string | null;
-//     video_traffic_malam_url: string | null;
-//     video_360_siang_url: string | null;
-//     video_360_malam_url: string | null;
-//     peta_coverage_url: string | null;
-//   };
-// }
