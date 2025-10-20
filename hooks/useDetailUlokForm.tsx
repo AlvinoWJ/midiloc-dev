@@ -1,24 +1,88 @@
-// mengatur form edit detail Ulok: input data, validasi, dan menyimpan ke backend.
-
+// hooks/useDetailUlokForm.tsx
 import { useState, useEffect } from "react";
 import { MappedUlokData } from "@/hooks/useUlokDetail";
 import { UlokUpdateSchema, UlokUpdateInput } from "@/lib/validations/ulok";
 
 type SaveData = UlokUpdateInput | FormData;
 
+const convertkoma = (val: any) => {
+  if (val === null || val === undefined || val === "") return "";
+  const s = String(val);
+  return s.replace(".", ",");
+};
+
+const parseKomaToNumber = (val: any) => {
+  if (val === null || val === undefined || val === "") return 0;
+  const s = String(val).replace(/\./g, "").replace(",", ".");
+  const n = Number(s);
+  return isNaN(n) ? 0 : n;
+};
+
 export function useDetailUlokForm(
-  initialData: MappedUlokData,
+  initialData: MappedUlokData | null | undefined,
   onSave: (data: SaveData) => Promise<boolean>
 ) {
   const [isEditing, setIsEditing] = useState(false);
-  const [editedData, setEditedData] = useState(initialData);
+  const [editedData, setEditedData] = useState<any>(initialData || {});
   const [errors, setErrors] = useState<Record<string, string | undefined>>({});
-
   const [newFormUlokFile, setNewFormUlokFile] = useState<File | null>(null);
 
   useEffect(() => {
-    setEditedData(initialData);
+    if (!initialData) {
+      setEditedData(initialData || {});
+      return;
+    }
+
+    const converted = {
+      ...initialData,
+      lebardepan:
+        initialData.lebardepan !== null && initialData.lebardepan !== undefined
+          ? convertkoma(initialData.lebardepan)
+          : "",
+      panjang:
+        initialData.panjang !== null && initialData.panjang !== undefined
+          ? convertkoma(initialData.panjang)
+          : "",
+      luas:
+        initialData.luas !== null && initialData.luas !== undefined
+          ? convertkoma(initialData.luas)
+          : "",
+      hargasewa:
+        initialData.hargasewa !== null && initialData.hargasewa !== undefined
+          ? String(initialData.hargasewa)
+          : "",
+    };
+
+    setEditedData(converted);
   }, [initialData]);
+
+  useEffect(() => {
+    if (!isEditing) {
+      return;
+    }
+    const panjangNum = parseKomaToNumber(editedData.panjang);
+    const lebarNum = parseKomaToNumber(editedData.lebardepan);
+
+    let luasString = "";
+
+    if (panjangNum > 0 && lebarNum > 0) {
+      const luasCalc = panjangNum * lebarNum;
+      luasString = convertkoma(luasCalc.toFixed(2));
+    } else if (panjangNum === 0 || lebarNum === 0) {
+      if (
+        String(editedData.panjang).length > 0 ||
+        String(editedData.lebardepan).length > 0
+      ) {
+        luasString = "0";
+      }
+    }
+    if (editedData.luas !== luasString) {
+      setEditedData((prev: any) => ({
+        ...prev,
+        luas: luasString,
+      }));
+    }
+  }, [editedData.panjang, editedData.lebardepan, isEditing, editedData.luas]);
 
   const handleFileChange = (file: File | null) => {
     setNewFormUlokFile(file);
@@ -29,12 +93,20 @@ export function useDetailUlokForm(
   ) => {
     const { name, value, type } = e.target;
 
+    if (["lebardepan", "panjang", "luas"].includes(name)) {
+      let filtered = value.replace(/[^0-9.,]/g, "");
+      filtered = filtered.replace(".", ",");
+      const parts = filtered.split(",");
+      if (parts.length > 2) filtered = parts[0] + "," + parts[1];
+      setEditedData((prev: any) => ({ ...prev, [name]: filtered }));
+      if (errors[name]) setErrors((prev) => ({ ...prev, [name]: undefined }));
+      return;
+    }
+
     if (name === "hargasewa") {
       const cleanValue = value.replace(/[^0-9]/g, "");
-      setEditedData((prev) => ({ ...prev, [name]: cleanValue }));
-      if (errors[name]) {
-        setErrors((prev) => ({ ...prev, [name]: undefined }));
-      }
+      setEditedData((prev: any) => ({ ...prev, [name]: cleanValue }));
+      if (errors[name]) setErrors((prev) => ({ ...prev, [name]: undefined }));
       return;
     }
 
@@ -42,11 +114,10 @@ export function useDetailUlokForm(
       const coords = value.split(",").map((coord) => coord.trim());
       const latStr = coords[0] || "";
       const longStr = coords[1] || "";
-
       const latitude = parseFloat(latStr);
       const longitude = parseFloat(longStr);
 
-      setEditedData((prev) => ({
+      setEditedData((prev: any) => ({
         ...prev,
         latitude: !isNaN(latitude) ? latitude : null,
         longitude: !isNaN(longitude) ? longitude : null,
@@ -59,28 +130,27 @@ export function useDetailUlokForm(
           longitude: undefined,
         }));
       }
-    } else {
-      let finalValue: string | number | null = value;
-      if (type === "number") {
-        if (value === "") {
-          finalValue = null;
-        } else {
-          const parsedNumber = parseFloat(value);
-          finalValue = !isNaN(parsedNumber) ? parsedNumber : null;
-        }
-      }
-      setEditedData((prev) => ({ ...prev, [name]: finalValue }));
-      if (errors[name]) {
-        setErrors((prev) => ({ ...prev, [name]: undefined }));
+      return;
+    }
+
+    // --- Default handler (untuk field lain)
+    let finalValue: string | number | null = value;
+    if (type === "number") {
+      if (value === "") {
+        finalValue = null;
+      } else {
+        const parsedNumber = parseFloat(value);
+        finalValue = !isNaN(parsedNumber) ? parsedNumber : null;
       }
     }
+
+    setEditedData((prev: any) => ({ ...prev, [name]: finalValue }));
+    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: undefined }));
   };
 
   const handleSelectChange = (name: string, value: string) => {
-    setEditedData((prev) => ({ ...prev, [name]: value }));
-    if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: undefined }));
-    }
+    setEditedData((prev: any) => ({ ...prev, [name]: value }));
+    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: undefined }));
   };
 
   const handleSaveWrapper = async () => {
@@ -92,11 +162,15 @@ export function useDetailUlokForm(
         setIsEditing(false);
         setNewFormUlokFile(null);
       }
-      return; // Hentikan eksekusi di sini setelah mengirim file
+      return;
     }
 
+    const lebardepan = parseKomaToNumber(editedData.lebardepan);
+    const panjang = parseKomaToNumber(editedData.panjang);
+    const luas = parseKomaToNumber(editedData.luas);
+
     const cleanedHargaSewa = editedData.hargasewa
-      ? parseInt(editedData.hargasewa.toString().replace(/[^0-9]/g, ""), 10)
+      ? parseInt(String(editedData.hargasewa).replace(/[^0-9]/g, ""), 10)
       : 0;
 
     const dataToValidate = {
@@ -112,16 +186,15 @@ export function useDetailUlokForm(
       bentuk_objek: editedData.bentukObjek,
       alas_hak: editedData.alasHak,
       jumlah_lantai: editedData.jumlahlantai,
-      lebar_depan: editedData.lebardepan,
-      panjang: editedData.panjang,
-      luas: editedData.luas,
+      lebar_depan: lebardepan,
+      panjang,
+      luas,
       harga_sewa: cleanedHargaSewa,
       nama_pemilik: editedData.namapemilik,
       kontak_pemilik: editedData.kontakpemilik,
     };
 
     const validationResult = UlokUpdateSchema.safeParse(dataToValidate);
-
     if (!validationResult.success) {
       const formattedErrors: Record<string, string> = {};
       for (const issue of validationResult.error.issues) {
@@ -134,13 +207,36 @@ export function useDetailUlokForm(
     }
 
     const success = await onSave(validationResult.data);
-    if (success) {
-      setIsEditing(false);
-    }
+    if (success) setIsEditing(false);
   };
 
   const handleCancel = () => {
-    setEditedData(initialData);
+    // kembalikan editedData ke initialData (dengan konversi titik->koma jika ada)
+    if (!initialData) {
+      setEditedData({});
+    } else {
+      setEditedData({
+        ...initialData,
+        lebardepan:
+          initialData.lebardepan !== null &&
+          initialData.lebardepan !== undefined
+            ? convertkoma(initialData.lebardepan)
+            : "",
+        panjang:
+          initialData.panjang !== null && initialData.panjang !== undefined
+            ? convertkoma(initialData.panjang)
+            : "",
+        luas:
+          initialData.luas !== null && initialData.luas !== undefined
+            ? convertkoma(initialData.luas)
+            : "",
+        hargasewa:
+          initialData.hargasewa !== null && initialData.hargasewa !== undefined
+            ? String(initialData.hargasewa)
+            : "",
+      });
+    }
+
     setErrors({});
     setIsEditing(false);
     setNewFormUlokFile(null);

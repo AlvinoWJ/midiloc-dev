@@ -38,21 +38,62 @@ export function useAddUlokForm({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isMapOpen, setIsMapOpen] = useState(false);
 
+  const isNumber = (val: string) => {
+    if (!val) return false;
+    const normalized = val.replace(",", "."); // ubah koma ke titik agar bisa dibaca JS
+    return !isNaN(Number(normalized));
+  };
+
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
     >
   ) => {
     const { name, value } = e.target;
+    if (["lebardepan", "panjang", "luas"].includes(name)) {
+      let filtered = value.replace(/[^0-9.,]/g, "");
+      filtered = filtered.replace(".", ",");
 
-    // Tambahkan logika khusus untuk input 'hargasewa'
+      const parts = filtered.split(",");
+      if (parts.length > 2) {
+        filtered = parts[0] + "," + parts[1];
+      }
+
+      setFormData((prev) => {
+        const updated = { ...prev, [name]: filtered };
+        if (name === "panjang" || name === "lebardepan") {
+          const panjang = parseFloat(
+            (name === "panjang" ? filtered : prev.panjang).replace(",", ".")
+          );
+          const lebar = parseFloat(
+            (name === "lebardepan" ? filtered : prev.lebardepan).replace(
+              ",",
+              "."
+            )
+          );
+
+          if (!isNaN(panjang) && !isNaN(lebar)) {
+            const luas = (panjang * lebar).toFixed(2).replace(".", ",");
+            updated.luas = luas;
+          }
+        }
+        return updated;
+      });
+      return;
+    }
+
+    if (name === "jumlahlantai") {
+      const numericOnly = value.replace(/[^0-9]/g, "");
+      setFormData((prev) => ({ ...prev, [name]: numericOnly }));
+      return;
+    }
+
     if (name === "hargasewa") {
       const numericValue = value.replace(/[^0-9]/g, "");
       setFormData((prev) => ({ ...prev, [name]: numericValue }));
-    } else {
-      setFormData((prev) => ({ ...prev, [name]: value }));
+      return;
     }
-
+    setFormData((prev) => ({ ...prev, [name]: value }));
     if (errors[name]) {
       setErrors((prev) => {
         const newErrors = { ...prev };
@@ -62,7 +103,6 @@ export function useAddUlokForm({
     }
   };
 
-  // handler khusus untuk file upload
   const handleFileChange = (file: File | null) => {
     setFormData((prev) => ({ ...prev, formulok: file }));
     if (errors["formulok"]) {
@@ -150,7 +190,6 @@ export function useAddUlokForm({
       fieldErrors.latlong = "Format koordinat harus: latitude,longitude";
     }
 
-    // Cek field numerik
     const numericFields = [
       "jumlahlantai",
       "lebardepan",
@@ -161,9 +200,11 @@ export function useAddUlokForm({
     numericFields.forEach((field) => {
       const value = formData[field as keyof typeof formData];
       if (value) {
-        if (isNaN(Number(value))) {
+        if (!isNumber(value.toString())) {
           fieldErrors[field] = `Input harus berupa angka`;
-        } else if (Number(value) <= 0) {
+        } else if (
+          Number(value.toString().replace(",", ".").replace(/\./g, "")) <= 0
+        ) {
           fieldErrors[field] = `Angka harus lebih dari 0`;
         }
       }
@@ -174,7 +215,13 @@ export function useAddUlokForm({
       return;
     }
 
-    // --- VALIDASI ZOD (ubah file -> string)
+    const parseNumber = (value: string) => {
+      if (!value) return 0;
+      const normalized = value.replace(/\./g, "").replace(",", ".");
+      const parsed = Number(normalized);
+      return isNaN(parsed) ? 0 : parsed;
+    };
+
     const payloadToValidate = {
       nama_ulok: formData.namaUlok,
       provinsi: formData.provinsi,
@@ -188,9 +235,9 @@ export function useAddUlokForm({
       bentuk_objek: formData.bentukObjek,
       alas_hak: formData.alasHak,
       jumlah_lantai: Number(formData.jumlahlantai),
-      lebar_depan: Number(formData.lebardepan),
-      panjang: Number(formData.panjang),
-      luas: Number(formData.luas),
+      lebar_depan: parseNumber(formData.lebardepan),
+      panjang: parseNumber(formData.panjang),
+      luas: parseNumber(formData.luas),
       harga_sewa: Number(formData.hargasewa),
       nama_pemilik: formData.namapemilik,
       kontak_pemilik: formData.kontakpemilik,

@@ -43,21 +43,8 @@ export default function TambahUlokForm({
   const router = useRouter();
 
   const formatNumberDisplay = (value: string) => {
-    if (!value) return "";
-    return new Intl.NumberFormat("id-ID").format(Number(value));
-  };
-  const unformatNumber = (value: string) => {
-    return value.replace(/\./g, "");
-  };
-
-  const handleNumericChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    const cleaned = value.replace(/[^\d]/g, "");
-    const formatted = formatNumberDisplay(cleaned);
-    handleChange({
-      target: { name, value: cleaned },
-    } as React.ChangeEvent<HTMLInputElement>);
-    e.target.value = formatted;
+    if (value === undefined || value === null) return "";
+    return value.replace(/[^0-9.,]/g, ""); // hanya izinkan angka, koma, titik
   };
 
   const formatRupiah = (angka: string) => {
@@ -67,20 +54,6 @@ export default function TambahUlokForm({
       return "";
     }
     return new Intl.NumberFormat("id-ID").format(numberValue);
-  };
-
-  const handleOnlyNumber = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    const allowedKeys = [
-      "Backspace",
-      "Tab",
-      "ArrowLeft",
-      "ArrowRight",
-      "Delete",
-    ];
-
-    if (!/^[0-9]$/.test(e.key) && !allowedKeys.includes(e.key)) {
-      e.preventDefault();
-    }
   };
 
   return (
@@ -196,8 +169,7 @@ export default function TambahUlokForm({
           <div className="absolute -top-3 lg:-top-4 left-4 lg:left-6 bg-red-600 text-white px-3 lg:px-4 py-1 lg:py-1.5 rounded shadow-md font-semibold text-base lg:text-xl">
             Data Store
           </div>
-          <div className="bg-white shadow-[1px_1px_6px_rgba(0,0,0,0.25)] rounded p-4 lg:p-8 pt-8 lg:pt-12 space-y-4 lg:space-y-6">
-            {/* Format Store */}
+          <div className="bg-white shadow-[1px_1px_6px_rgba(0,0,0,0.25)] rounded p-4 lg:p-8 pt-8 lg:pt-12 grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6">
             <CustomSelect
               id="formatStore"
               name="formatStore"
@@ -208,8 +180,6 @@ export default function TambahUlokForm({
               onChange={handleChange}
               error={errors.formatStore}
             />
-
-            {/* Bentuk Objek */}
             <CustomSelect
               id="bentukObjek"
               name="bentukObjek"
@@ -220,129 +190,115 @@ export default function TambahUlokForm({
               onChange={handleChange}
               error={errors.bentukObjek}
             />
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6">
-              {/* Alas Hak */}
-              <div>
-                <label
-                  htmlFor="alasHak"
-                  className="block font-bold mb-1.5 lg:mb-2 text-sm lg:text-lg"
-                >
-                  Alas Hak <span className="text-red-500">*</span>
-                </label>
-                <Input
-                  id="alasHak"
-                  name="alasHak"
-                  placeholder="Masukkan Alas Hak"
-                  value={formData.alasHak}
-                  onChange={handleChange}
-                  className="h-10 lg:h-11 text-sm lg:text-base"
-                />
-                {errors.alasHak && (
-                  <p className="text-red-500 text-xs lg:text-sm mt-1">
-                    {errors.alasHak}
-                  </p>
-                )}
-              </div>
-              {/* Jumlah Lantai */}
-              <div>
-                <label
-                  htmlFor="jumlahlantai"
-                  className="block font-semibold mb-1.5 lg:mb-2 text-sm lg:text-lg"
-                >
-                  Jumlah Lantai <span className="text-red-500">*</span>
-                </label>
-                <Input
-                  id="jumlahlantai"
-                  name="jumlahlantai"
-                  placeholder="Masukkan Jumlah Lantai"
-                  value={formData.jumlahlantai}
-                  onChange={handleChange}
-                  onKeyDown={handleOnlyNumber}
-                  className="h-10 lg:h-11 text-sm lg:text-base"
-                />
-                {errors.jumlahlantai && (
-                  <p className="text-red-500 text-xs lg:text-sm mt-1">
-                    {errors.jumlahlantai}
-                  </p>
-                )}
-              </div>
+            <div>
+              <label
+                htmlFor="alasHak"
+                className="block font-bold mb-1.5 lg:mb-2 text-sm lg:text-lg"
+              >
+                Alas Hak <span className="text-red-500">*</span>
+              </label>
+              <Input
+                id="alasHak"
+                name="alasHak"
+                placeholder="Masukkan Alas Hak"
+                value={formData.alasHak}
+                onChange={handleChange}
+                className="h-10 lg:h-11 text-sm lg:text-base"
+              />
+              {errors.alasHak && (
+                <p className="text-red-500 text-xs lg:text-sm mt-1">
+                  {errors.alasHak}
+                </p>
+              )}
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6">
-              {/* Lebar Depan */}
-              <div>
-                <label
-                  htmlFor="lebardepan"
-                  className="block font-bold mb-1.5 lg:mb-2 text-sm lg:text-lg"
-                >
-                  Lebar Depan(m) <span className="text-red-500">*</span>
-                </label>
-                <Input
-                  id="lebardepan"
-                  name="lebardepan"
-                  placeholder="Masukkan Lebar Depan"
-                  value={formatNumberDisplay(formData.lebardepan)}
-                  onChange={handleChange}
-                  onKeyDown={handleOnlyNumber}
-                  className="h-10 lg:h-11 text-sm lg:text-base"
-                />
-                {errors.lebardepan && (
-                  <p className="text-red-500 text-xs lg:text-sm mt-1">
-                    {errors.lebardepan}
-                  </p>
-                )}
-              </div>
-              {/* Panjang */}
-              <div>
-                <label
-                  htmlFor="Panjang"
-                  className="block font-bold mb-1.5 lg:mb-2 text-sm lg:text-lg"
-                >
-                  Panjang(m) <span className="text-red-500">*</span>
-                </label>
-                <Input
-                  id="Panjang"
-                  name="panjang"
-                  placeholder="Masukkan Panjang"
-                  value={formatNumberDisplay(formData.panjang)}
-                  onChange={handleChange}
-                  onKeyDown={handleOnlyNumber}
-                  className="h-10 lg:h-11 text-sm lg:text-base"
-                />
-                {errors.panjang && (
-                  <p className="text-red-500 text-xs lg:text-sm mt-1">
-                    {errors.panjang}
-                  </p>
-                )}
-              </div>
-              {/* Luas */}
-              <div>
-                <label
-                  htmlFor="luas"
-                  className="block font-bold mb-1.5 lg:mb-2 text-sm lg:text-lg"
-                >
-                  Luas(m) <span className="text-red-500">*</span>
-                </label>
-                <Input
-                  id="luas"
-                  name="luas"
-                  placeholder="Masukkan Luas"
-                  value={formatNumberDisplay(formData.luas)}
-                  onChange={handleChange}
-                  onKeyDown={handleOnlyNumber}
-                  className="h-10 lg:h-11 text-sm lg:text-base"
-                  inputMode="numeric"
-                />
-                {errors.luas && (
-                  <p className="text-red-500 text-xs lg:text-sm mt-1">
-                    {errors.luas}
-                  </p>
-                )}
-              </div>
+            <div>
+              <label
+                htmlFor="jumlahlantai"
+                className="block font-semibold mb-1.5 lg:mb-2 text-sm lg:text-lg"
+              >
+                Jumlah Lantai <span className="text-red-500">*</span>
+              </label>
+              <Input
+                id="jumlahlantai"
+                name="jumlahlantai"
+                placeholder="Masukkan Jumlah Lantai"
+                value={formData.jumlahlantai}
+                onChange={handleChange}
+                className="h-10 lg:h-11 text-sm lg:text-base"
+                inputMode="numeric"
+              />
+              {errors.jumlahlantai && (
+                <p className="text-red-500 text-xs lg:text-sm mt-1">
+                  {errors.jumlahlantai}
+                </p>
+              )}
             </div>
-
-            {/* Harga Sewa */}
+            <div>
+              <label
+                htmlFor="lebardepan"
+                className="block font-bold mb-1.5 lg:mb-2 text-sm lg:text-lg"
+              >
+                Lebar Depan(m) <span className="text-red-500">*</span>
+              </label>
+              <Input
+                id="lebardepan"
+                name="lebardepan"
+                placeholder="Masukkan Lebar Depan"
+                value={formatNumberDisplay(formData.lebardepan)}
+                onChange={handleChange}
+                className="h-10 lg:h-11 text-sm lg:text-base"
+                inputMode="numeric"
+              />
+              {errors.lebardepan && (
+                <p className="text-red-500 text-xs lg:text-sm mt-1">
+                  {errors.lebardepan}
+                </p>
+              )}
+            </div>
+            <div>
+              <label
+                htmlFor="Panjang"
+                className="block font-bold mb-1.5 lg:mb-2 text-sm lg:text-lg"
+              >
+                Panjang(m) <span className="text-red-500">*</span>
+              </label>
+              <Input
+                id="Panjang"
+                name="panjang"
+                placeholder="Masukkan Panjang"
+                value={formatNumberDisplay(formData.panjang)}
+                onChange={handleChange}
+                className="h-10 lg:h-11 text-sm lg:text-base"
+                inputMode="numeric"
+              />
+              {errors.panjang && (
+                <p className="text-red-500 text-xs lg:text-sm mt-1">
+                  {errors.panjang}
+                </p>
+              )}
+            </div>
+            <div>
+              <label
+                htmlFor="luas"
+                className="block font-bold mb-1.5 lg:mb-2 text-sm lg:text-lg"
+              >
+                Luas(m) <span className="text-red-500">*</span>
+              </label>
+              <Input
+                id="luas"
+                name="luas"
+                placeholder="Masukkan Luas"
+                value={formatNumberDisplay(formData.luas)}
+                onChange={handleChange}
+                className="h-10 lg:h-11 text-sm lg:text-base"
+                inputMode="numeric"
+              />
+              {errors.luas && (
+                <p className="text-red-500 text-xs lg:text-sm mt-1">
+                  {errors.luas}
+                </p>
+              )}
+            </div>
             <div>
               <label
                 htmlFor="hargasewa"
@@ -356,7 +312,6 @@ export default function TambahUlokForm({
                 placeholder="Masukkan Harga Sewa"
                 value={formatRupiah(formData.hargasewa)}
                 onChange={handleChange}
-                onKeyDown={handleOnlyNumber}
                 className="h-10 lg:h-11 text-sm lg:text-base"
                 type="text"
                 inputMode="numeric"

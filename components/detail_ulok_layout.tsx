@@ -151,20 +151,12 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
 
   useEffect(() => {
     const handleScroll = () => {
-      // Cek jika jumlah tinggi viewport + posisi scroll sudah mencapai dasar dokumen
-      // Diberi toleransi 5px untuk memastikan ter-trigger
       const atBottom =
         window.innerHeight + window.scrollY >= document.body.offsetHeight - 5;
       setIsAtBottom(atBottom);
     };
-
-    // Tambahkan event listener saat komponen dimuat
     window.addEventListener("scroll", handleScroll);
-
-    // Panggil sekali saat mount untuk cek kondisi awal
     handleScroll();
-
-    // Hapus event listener saat komponen dilepas untuk mencegah memory leak
     return () => {
       window.removeEventListener("scroll", handleScroll);
     };
@@ -430,7 +422,7 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
                       value={editedData.lebardepan}
                       isEditing={true}
                       name="lebardepan"
-                      type="number"
+                      type="text"
                       onChange={handleInputChange}
                     />
                     <DetailField
@@ -438,7 +430,7 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
                       value={editedData.panjang}
                       isEditing={true}
                       name="panjang"
-                      type="number"
+                      type="text"
                       onChange={handleInputChange}
                     />
                     <DetailField
@@ -446,7 +438,7 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
                       value={editedData.luas}
                       isEditing={true}
                       name="luas"
-                      type="number"
+                      type="text"
                       onChange={handleInputChange}
                     />
                     <DetailField

@@ -149,9 +149,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
             <p className="text-base text-gray-600 mb-1">
               Klik untuk mengupload file
             </p>
-            <p className="text-sm text-gray-400">
-              PDF, DOC, JPG, PNG (Maks {maxSizeMB} MB)
-            </p>
+            <p className="text-sm text-gray-400">PDF (Maks {maxSizeMB} MB)</p>
           </div>
         )}
       </div>
