@@ -117,21 +117,6 @@ export default function KPLTPage() {
         ? itemDate.getFullYear().toString() === filterYear
         : true;
 
-      // 🔥🔥 BLOK DEBUGGING: Cek item 'ok' dan 'nok' secara spesifik
-      if (lowerCaseStatus === "ok" || lowerCaseStatus === "nok") {
-        console.log(`
-        Mengecek item: ${item.nama} (Status: ${lowerCaseStatus})
-        ----------------------------------
-        - activeTab:      ${activeTab}
-        - matchTab:       ${matchTab}
-        - matchRole:      ${matchRole}
-        - matchSearch:    ${matchSearch} (Query: "${searchQuery}")
-        - matchMonth:     ${matchMonth} (Filter: ${filterMonth})
-        - matchYear:      ${matchYear} (Filter: ${filterYear})
-        ----------------------------------
-      `);
-      }
-
       // Item akan ditampilkan jika cocok dengan SEMUA filter
       return matchRole && matchTab && matchSearch && matchMonth && matchYear;
     });
