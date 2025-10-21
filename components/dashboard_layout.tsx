@@ -421,7 +421,7 @@ export default function DashboardLayout(props: DashboardPageProps) {
                   <select
                     value={selectedSpecialistId || ""}
                     onChange={(e) => onSpecialistChange(e.target.value || null)}
-                    className="appearance-none w-full sm:w-auto bg-white border border-gray-300 rounded-lg pl-10 pr-10 py-2.5 text-sm font-medium text-gray-700 hover:border-red-400 hover:shadow-md focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500 transition-all cursor-pointer min-w-[200px]"
+                    className="appearance-none w-full sm:w-auto bg-white border border-gray-300 rounded pl-10 pr-10 py-2.5 text-sm font-medium text-gray-700 hover:border-red-400 hover:shadow-md focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500 transition-all cursor-pointer min-w-[200px]"
                   >
                     <option value="">Semua Specialist</option>
                     {lsOptions.map((specialist) => (
@@ -471,7 +471,7 @@ export default function DashboardLayout(props: DashboardPageProps) {
               <select
                 value={propertiData.filters.year || new Date().getFullYear()}
                 onChange={(e) => setYear(Number(e.target.value))}
-                className="appearance-none w-full sm:w-auto bg-white border border-gray-300 rounded-lg pl-10 pr-10 py-2.5 text-sm font-medium text-gray-700 hover:border-red-400 hover:shadow-md focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500 transition-all cursor-pointer min-w-[140px]"
+                className="appearance-none w-full sm:w-auto bg-white border border-gray-300 rounded pl-10 pr-10 py-2.5 text-sm font-medium text-gray-700 hover:border-red-400 hover:shadow-md focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500 transition-all cursor-pointer min-w-[140px]"
               >
                 <option value={2025}>2025</option>
                 <option value={2024}>2024</option>
@@ -535,38 +535,80 @@ export default function DashboardLayout(props: DashboardPageProps) {
           </div>
 
           {/* Map */}
-          <div className="bg-white p-4 rounded-lg shadow-md shadow-[1px_1px_6px_rgba(0,0,0,0.25)]">
+          <div className="bg-white p-4 rounded-lg shadow-[1px_1px_6px_rgba(0,0,0,0.25)]">
             <div className="flex items-center gap-3 mb-2">
               <h3 className="text-lg font-semibold">Peta Sebaran</h3>
 
               {/* Dropdown ULOK/KPLT */}
-              <select
-                value={activeMapFilter}
-                onChange={(e) =>
-                  onMapFilterChange(e.target.value as "ulok" | "kplt")
-                }
-                className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white shadow-sm focus:outline-none focus:ring-1 focus:ring-red-500"
-              >
-                <option value="ulok">ULOK</option>
-                <option value="kplt">KPLT</option>
-              </select>
+              <div className="relative">
+                {" "}
+                {/* DIBUNGKUS DIV RELATIVE */}
+                <select
+                  value={activeMapFilter}
+                  onChange={(e) =>
+                    onMapFilterChange(e.target.value as "ulok" | "kplt")
+                  }
+                  // --- pl-10 diubah menjadi pl-4 ---
+                  className="appearance-none w-full sm:w-auto bg-white border border-gray-300 rounded pl-4 pr-10 py-2.5 text-sm font-medium text-gray-700 hover:border-red-400 hover:shadow-md focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500 transition-all cursor-pointer min-w-[140px]"
+                >
+                  <option value="ulok">ULOK</option>
+                  <option value="kplt">KPLT</option>
+                </select>
+                {/* --- PANAH BAWAH BARU --- */}
+                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                  <svg
+                    className="w-4 h-4 text-gray-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </div>
+              </div>
 
               {/* Dropdown Status (sejajar dengan ULOK/KPLT) */}
-              <select
-                value={statusValue}
-                onChange={(e) => setStatusValue(e.target.value as any)}
-                className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white shadow-sm focus:outline-none focus:ring-1 focus:ring-red-500"
-                title="Filter status peta"
-              >
-                {(activeMapFilter === "ulok"
-                  ? STATUS_OPTIONS.ulok
-                  : STATUS_OPTIONS.kplt
-                ).map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
+              <div className="relative">
+                {" "}
+                {/* DIBUNGKUS DIV RELATIVE */}
+                <select
+                  value={statusValue}
+                  onChange={(e) => setStatusValue(e.target.value as any)}
+                  // --- pl-10 diubah menjadi pl-4 ---
+                  className="appearance-none w-full sm:w-auto bg-white border border-gray-300 rounded pl-4 pr-10 py-2.5 text-sm font-medium text-gray-700 hover:border-red-400 hover:shadow-md focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500 transition-all cursor-pointer min-w-[140px]"
+                  title="Filter status peta"
+                >
+                  {(activeMapFilter === "ulok"
+                    ? STATUS_OPTIONS.ulok
+                    : STATUS_OPTIONS.kplt
+                  ).map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
+                </select>
+                {/* --- PANAH BAWAH BARU --- */}
+                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                  <svg
+                    className="w-4 h-4 text-gray-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </div>
+              </div>
             </div>
 
             <div className="h-[400px] w-full">
