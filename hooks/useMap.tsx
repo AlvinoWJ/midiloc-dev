@@ -3,7 +3,7 @@
 
 import useSWR from "swr";
 import { useUser } from "./useUser";
-import { Properti } from "../types/common";
+import { ApiKpltResponse, KpltExisting, Properti, UlokForKplt } from "../types/common";
 
 interface MapApiResponse {
   success: boolean;
@@ -32,7 +32,7 @@ export function useMap(specialistId: string | null) {
     });
     
   const { data: kpltResponse, error: kpltError, isLoading: isKpltLoading } = 
-    useSWR<MapApiResponse>(() => {
+    useSWR<ApiKpltResponse>(() => {
       if (!user) return null;
       const role = user.position_nama?.toLowerCase().trim();
 
@@ -48,8 +48,64 @@ export function useMap(specialistId: string | null) {
     });
 
   const ulokData = ulokResponse?.data || [];
-  const kpltData = kpltResponse?.data || [];
+  // const kpltData = kpltResponse || [];
   
+  // const combinedKpltData: (KpltExisting | UlokForKplt)[] = [
+  //   ...(kpltResponse?.kplt_existing || []),
+  //   ...(kpltResponse?.kplt_from_ulok_ok || [])
+  // ];
+
+  // // 2. Petakan array gabungan menjadi format 'Properti' yang seragam dan LENGKAP
+  // const kpltData: Properti[] = combinedKpltData.map((item) => {
+  //   const isExisting = 'kplt_approval' in item;
+
+  //   // Pastikan semua properti dari 'Properti' ada di sini
+  //   return {
+  //     id: item.id,
+  //     latitude: item.latitude,
+  //     longitude: item.longitude,
+  //     alamat: item.alamat,
+  //     created_at: item.created_at,
+  //     ulok_id: item.ulok_id,
+      
+  //     // Properti yang berbeda, dipilih berdasarkan tipe
+  //     approval_status: isExisting ? item.kplt_approval : item.ui_status,
+  //     nama: isExisting ? item.nama_kplt : item.nama_ulok,
+      
+  //     // Properti yang hilang dan menjadi penyebab error
+  //     type: 'kplt', // <-- PERBAIKAN: Wajib tambahkan 'type'
+  //   };
+  // });
+
+ // 1. Proses "kplt_existing" (Warga Lama)
+  const mappedKpltExisting: Properti[] = (kpltResponse?.kplt_existing || []).map(item => ({
+    id: item.id, // ID-nya adalah 'id'
+    latitude: item.latitude,
+    longitude: item.longitude,
+    nama: item.nama_kplt,
+    alamat: item.alamat,
+    approval_status: item.kplt_approval,
+    created_at: item.created_at,
+    ulok_id: item.ulok_id,
+    type: 'kplt',
+  }));
+
+  // 2. Proses "kplt_from_ulok_ok" (Warga Baru)
+  const mappedUlokForKplt: Properti[] = (kpltResponse?.kplt_from_ulok_ok || []).map(item => ({
+    // PERBAIKAN: Gunakan 'ulok_id' sebagai 'id' untuk tipe data ini
+    id: item.id, 
+    latitude: item.latitude,
+    longitude: item.longitude,
+    nama: item.nama_ulok,
+    alamat: item.alamat,
+    approval_status: item.ui_status,
+    created_at: item.created_at,
+    ulok_id: item.ulok_id,
+    type: 'kplt',
+  }));
+
+  // 3. Gabungkan kedua array yang sudah memiliki ID yang benar
+  const kpltData: Properti[] = [...mappedKpltExisting, ...mappedUlokForKplt];
   return {
     ulokUntukPeta: ulokData,
     kpltUntukPeta: kpltData,
