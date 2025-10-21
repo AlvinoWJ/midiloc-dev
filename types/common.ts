@@ -118,17 +118,24 @@ export interface KpltExisting {
   nama_kplt: string; // ✅ sesuai kebutuhan UI
   alamat: string; // ✅ sesuai kebutuhan UI
   created_at: string;
-  kplt_approval: string; // ✅ sesuai kebutuhan UI
+  kplt_approval: string; 
+  latitude: string;     // <-- Tambahkan ini
+  longitude: string;
+  ulok_id: string; // ✅ sesuai kebutuhan UI
 }
 
 // Tipe untuk setiap objek di dalam array "kplt_from_ulok_ok"
 export interface UlokForKplt {
+  id: string;
   ulok_id: string;
   nama_ulok: string;
   alamat: string;
   created_at: string;
   ui_status: string;
   approval_status: string;
+  latitude: string;     // <-- Tambahkan ini
+  longitude: string;
+  
 }
 
 // Tipe data terpadu untuk ditampilkan di card UI
