@@ -19,5 +19,5 @@ export const signUpSchema = z.object({
   position_id: z.string().min(1, "Position harus dipilih"),
   role_id: z.string().min(1, "Role harus dipilih"),
 });
-
+  
 export type SignUpFormData = z.infer<typeof signUpSchema>;

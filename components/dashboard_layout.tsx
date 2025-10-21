@@ -20,27 +20,23 @@ const PetaLokasiInteraktif = dynamic(
   }
 );
 
-// 🔹 KONFIGURASI LEGEND STATIS UNTUK DONUT CHART
+// Legends
 const ulokLegendConfig = [
   { status: "In Progress", label: "In Progress" },
   { status: "OK", label: "Approve (OK)" },
   { status: "NOK", label: "Reject (NOK)" },
 ];
-
 const kpltLegendConfig = [
   { status: "In Progress", label: "In Progress" },
   { status: "Waiting for Forum", label: "Waiting for Forum" },
   { status: "OK", label: "Approve (OK)" },
   { status: "NOK", label: "Reject (NOK)" },
 ];
-
-// 🔹 KONFIGURASI LEGEND UNTUK BAR CHART
 const ulokBarLegendConfig = [
   { key: "inProgress", label: "In Progress" },
   { key: "approved", label: "Approved" },
   { key: "nok", label: "Reject (NOK)" },
 ];
-
 const kpltBarLegendConfig = [
   { key: "inProgress", label: "In Progress" },
   { key: "waitingforforum", label: "Waiting for Forum" },
@@ -52,6 +48,17 @@ interface BranchOption {
   branch_id: string;
   nama_cabang: string;
 }
+
+const STATUS_OPTIONS = {
+  ulok: ["Semua Status", "OK", "NOK", "In Progress"] as const,
+  kplt: [
+    "Semua Status",
+    "OK",
+    "NOK",
+    "In Progress",
+    "Waiting for Forum",
+  ] as const,
+};
 
 export default function DashboardLayout(props: DashboardPageProps) {
   const {
@@ -69,24 +76,42 @@ export default function DashboardLayout(props: DashboardPageProps) {
     onMapFilterChange,
   } = props;
 
-  const userRole = propertiData?.filters?.role;
-  const isLocationManager = userRole === "location manager";
-  const isRegionalManager = userRole === "regional manager";
+  const userRole = propertiData?.filters?.role?.toLowerCase?.() || "";
 
+  // Tambahan peran
+  const isLocationManager = userRole === "location manager";
+  const isBranchManager = userRole === "branch manager"; // BARU: BM ikut pola LM
+  const isRegionalManager = userRole === "regional manager";
+  const isGeneralManager = userRole === "general manager"; // BARU: GM bisa filter semua cabang
+
+  // State filter status (dropdown sejajar ULOK/KPLT)
+  const [statusValue, setStatusValue] = useState<
+    (typeof STATUS_OPTIONS.ulok)[number] | (typeof STATUS_OPTIONS.kplt)[number]
+  >("Semua Status");
+
+  // Reset status dropdown jika berganti jenis peta dan value tidak valid
+  useEffect(() => {
+    const options =
+      activeMapFilter === "ulok" ? STATUS_OPTIONS.ulok : STATUS_OPTIONS.kplt;
+    if (!options.includes(statusValue as any)) {
+      setStatusValue("Semua Status");
+    }
+  }, [activeMapFilter, statusValue]);
+
+  // Branch options cache (untuk RM/GM)
   const [branchOptionsCache, setBranchOptionsCache] = useState<BranchOption[]>(
     []
   );
-
   useEffect(() => {
     if (propertiData?.breakdown?.type === "branch") {
       const rows: any[] = propertiData.breakdown.rows ?? [];
-
       if (!selectedBranchId) {
-        const mappedOptions = rows.map((row) => ({
-          branch_id: String(row.branch_id),
-          nama_cabang: String(row.nama_cabang),
-        }));
-        setBranchOptionsCache(mappedOptions);
+        setBranchOptionsCache(
+          rows.map((row) => ({
+            branch_id: String(row.branch_id),
+            nama_cabang: String(row.nama_cabang),
+          }))
+        );
       }
     }
   }, [propertiData?.breakdown, selectedBranchId]);
@@ -100,39 +125,54 @@ export default function DashboardLayout(props: DashboardPageProps) {
       }))
     : [];
 
-  // 🔸 Cache daftar LS ketika belum ada filter LS aktif
+  // LS options cache (untuk LM/BM)
   const [lsOptionsCache, setLsOptionsCache] = useState<
     Array<{ user_id: string; nama: string }>
   >([]);
-
   useEffect(() => {
     const rows =
       (propertiData?.breakdown?.rows as Array<{
         user_id: string;
         nama: string;
       }>) ?? [];
-    // Saat tidak ada filter LS, simpan daftar terbaru ke cache
-    if (!selectedSpecialistId) {
+    if (
+      !selectedSpecialistId &&
+      propertiData?.breakdown?.type === "user" &&
+      (isLocationManager || isBranchManager)
+    ) {
       setLsOptionsCache(rows);
     }
-  }, [propertiData?.breakdown?.rows, selectedSpecialistId]);
+  }, [
+    propertiData?.breakdown?.rows,
+    propertiData?.breakdown?.type,
+    selectedSpecialistId,
+    isLocationManager,
+    isBranchManager,
+  ]);
 
-  // Saat filter LS aktif, gunakan cache; jika tidak, gunakan rows dari response
-  const lsOptions = selectedSpecialistId
-    ? lsOptionsCache
-    : (propertiData?.breakdown?.rows as Array<{
-        user_id: string;
-        nama: string;
-      }>) ?? [];
+  const lsOptions =
+    selectedSpecialistId && propertiData?.breakdown?.type === "user"
+      ? lsOptionsCache
+      : propertiData?.breakdown?.type === "user" &&
+        (isLocationManager || isBranchManager)
+      ? (propertiData?.breakdown?.rows as Array<{
+          user_id: string;
+          nama: string;
+        }>) ?? []
+      : [];
 
-  // 🔹 Proses KPI dinamis (tidak ada perubahan, sudah sesuai)
+  // KPI
   const dynamicStatsData = useMemo(() => {
     if (!propertiData) return [];
     let kpis = propertiData.kpis;
 
-    if (selectedSpecialistId && propertiData.breakdown?.rows) {
+    if (
+      selectedSpecialistId &&
+      propertiData.breakdown?.type === "user" &&
+      propertiData.breakdown?.rows
+    ) {
       const specialistRow = propertiData.breakdown.rows.find(
-        (row) => row.user_id === selectedSpecialistId
+        (row: any) => row.user_id === selectedSpecialistId
       );
       if (specialistRow) {
         kpis = {
@@ -152,74 +192,80 @@ export default function DashboardLayout(props: DashboardPageProps) {
       }
     }
 
-    const formatPercent = (val: number = 0) => `${val.toFixed(1)}%`;
+    const formatPercent = (val: number = 0) =>
+      `${Number(val || 0).toFixed(1)}%`;
 
     return [
       {
         title: "Total ULOK",
-        value: kpis.total_ulok.toLocaleString("id-ID"),
+        value: Number(kpis?.total_ulok ?? 0).toLocaleString("id-ID"),
         icon: "/icons/folder.svg",
         color: "blue" as const,
       },
       {
         title: "Total KPLT",
-        value: kpis.total_kplt.toLocaleString("id-ID"),
+        value: Number(kpis?.total_kplt ?? 0).toLocaleString("id-ID"),
         icon: "/icons/kplt_ungu.svg",
         color: "purple" as const,
       },
       {
         title: "Total KPLT OK",
-        value: kpis.total_kplt_approves.toLocaleString("id-ID"),
+        value: Number(kpis?.total_kplt_approves ?? 0).toLocaleString("id-ID"),
         icon: "/icons/approve.svg",
         color: "green" as const,
       },
       {
         title: "Persentase ULOK OK",
-        value: formatPercent(kpis.presentase_ulok_approves),
+        value: formatPercent(Number(kpis?.presentase_ulok_approves ?? 0)),
         icon: "/icons/persentase.svg",
         color: "blue" as const,
       },
       {
         title: "Persentase KPLT OK",
-        value: formatPercent(kpis.presentase_kplt_approves),
+        value: formatPercent(Number(kpis?.presentase_kplt_approves ?? 0)),
         icon: "/icons/persentase_approve.svg",
         color: "green" as const,
       },
     ];
   }, [propertiData, selectedSpecialistId]);
 
+  // Donut & Bar
   const { ulokDonut, kpltDonut, ulokBar, kpltBar } = useMemo(() => {
-    if (!propertiData) return {};
+    if (!propertiData)
+      return { ulokDonut: [], kpltDonut: [], ulokBar: [], kpltBar: [] };
 
-    let ulokDonut = propertiData.donut_ulok.map((item) => ({
+    let ulokDonut = (propertiData.donut_ulok ?? []).map((item) => ({
       status: item.status,
       label: item.label,
       value: item.count,
     }));
-    let kpltDonut = propertiData.donut_kplt.map((item) => ({
+    let kpltDonut = (propertiData.donut_kplt ?? []).map((item) => ({
       status: item.status,
       label: item.label,
       value: item.count,
     }));
-    const ulokBar = propertiData.perbulan_ulok.map((item) => ({
-      month: item.bulan.substring(0, 3),
+    const ulokBar = (propertiData.perbulan_ulok ?? []).map((item) => ({
+      month: String(item.bulan ?? "").substring(0, 3),
       approved: item.ulok_ok ?? 0,
       nok: item.ulok_nok ?? 0,
       inProgress: item.ulok_in_progress ?? 0,
     }));
-    const kpltBar = propertiData.perbulan_kplt.map((item) => ({
-      month: item.bulan.substring(0, 3),
+    const kpltBar = (propertiData.perbulan_kplt ?? []).map((item) => ({
+      month: String(item.bulan ?? "").substring(0, 3),
       approved: item.kplt_ok ?? 0,
       nok: item.kplt_nok ?? 0,
       inProgress: item.kplt_in_progress ?? 0,
       waitingforforum: item.kplt_waiting_for_forum ?? 0,
     }));
 
-    if (selectedSpecialistId && propertiData.breakdown?.rows) {
+    if (
+      selectedSpecialistId &&
+      propertiData.breakdown?.type === "user" &&
+      propertiData.breakdown?.rows
+    ) {
       const specialistRow = propertiData.breakdown.rows.find(
-        (row) => row.user_id === selectedSpecialistId
+        (row: any) => row.user_id === selectedSpecialistId
       );
-
       if (specialistRow) {
         ulokDonut = [
           { status: "OK", label: "Approve", value: specialistRow.ulok_ok },
@@ -229,8 +275,7 @@ export default function DashboardLayout(props: DashboardPageProps) {
             label: "In Progress",
             value: specialistRow.ulok_in_progress,
           },
-        ].filter((item) => item.value > 0);
-
+        ].filter((i) => i.value > 0);
         kpltDonut = [
           { status: "OK", label: "Approve", value: specialistRow.kplt_ok },
           { status: "NOK", label: "Reject", value: specialistRow.kplt_nok },
@@ -244,31 +289,35 @@ export default function DashboardLayout(props: DashboardPageProps) {
             label: "Waiting for Forum",
             value: specialistRow.kplt_waiting_for_forum,
           },
-        ].filter((item) => item.value > 0);
+        ].filter((i) => i.value > 0);
       }
     }
     return { ulokDonut, kpltDonut, ulokBar, kpltBar };
   }, [propertiData, selectedSpecialistId]);
 
-  // 🔹 Logika filter peta (tidak ada perubahan)
+  // Filter peta berdasar tahun (FE)
   const filteredProperti = useMemo(() => {
     const dataToFilter = Array.isArray(propertiUntukPeta)
       ? propertiUntukPeta
       : [];
     if (dataToFilter.length === 0) return [];
 
-    const selectedYear = propertiData?.filters.year;
+    const selectedYear = propertiData?.filters?.year;
     if (!selectedYear) return dataToFilter;
 
-    return dataToFilter.filter((lokasi) => {
+    return dataToFilter.filter((lokasi: any) => {
       if (!lokasi.created_at) return false;
-      const lokasiYear = new Date(lokasi.created_at).getFullYear();
-      return lokasiYear === selectedYear;
+      const y = new Date(lokasi.created_at).getFullYear();
+      return y === selectedYear;
     });
-  }, [propertiUntukPeta, propertiData?.filters.year]);
+  }, [propertiUntukPeta, propertiData?.filters?.year]);
 
-  console.log("ulokBar:", ulokBar);
-  console.log("kpltBar:", kpltBar);
+  // Bentuk statusFilter untuk komponen peta
+  const currentStatusOptions =
+    activeMapFilter === "ulok" ? STATUS_OPTIONS.ulok : STATUS_OPTIONS.kplt;
+
+  const childStatusFilter =
+    statusValue === "Semua Status" ? undefined : [statusValue];
 
   if (isError) {
     return (
@@ -294,8 +343,6 @@ export default function DashboardLayout(props: DashboardPageProps) {
     );
   }
 
-  // 2. Tampilkan skeleton jika sedang loading ATAU jika data belum siap
-  // Inilah kunci perbaikannya!
   if (isLoading || !propertiData) {
     return (
       <main className="space-y-4 lg:space-y-6">
@@ -304,8 +351,6 @@ export default function DashboardLayout(props: DashboardPageProps) {
     );
   }
 
-  // 3. Jika lolos dari dua kondisi di atas, berarti data sudah pasti siap
-  // dan bisa langsung dirender.
   return (
     <main className="space-y-4 lg:space-y-6">
       <>
@@ -316,44 +361,13 @@ export default function DashboardLayout(props: DashboardPageProps) {
             </h1>
           </div>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-5">
-            {/* --- FILTER BRANCH --- */}
-            {isRegionalManager && branchOptions.length > 0 && (
-              <div className="relative group">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
-                  <svg
-                    className="w-4 h-4 text-gray-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-                    />
-                  </svg>
-                </div>
-                <select
-                  value={selectedBranchId || ""}
-                  onChange={(e) => onBranchChange(e.target.value || null)}
-                  className="appearance-none w-full sm:w-auto bg-white border border-gray-300 rounded-lg pl-10 pr-10 py-2.5 text-sm font-medium text-gray-700 hover:border-red-400 hover:shadow-md focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500 transition-all cursor-pointer min-w-[200px]"
-                >
-                  <option value="">Semua Cabang</option>
-                  {branchOptions.map((branch) => (
-                    <option key={branch.branch_id} value={branch.branch_id}>
-                      {branch.nama_cabang}
-                    </option>
-                  ))}
-                </select>
-                {selectedBranchId && (
-                  <button
-                    onClick={() => onBranchChange(null)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-red-500 transition-colors z-10"
-                    title="Hapus filter cabang"
-                  >
+            {/* --- FILTER BRANCH (untuk RM / GM) --- */}
+            {(isRegionalManager || isGeneralManager) &&
+              branchOptions.length > 0 && (
+                <div className="relative group">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
                     <svg
-                      className="w-4 h-4"
+                      className="w-4 h-4 text-gray-400"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -362,12 +376,63 @@ export default function DashboardLayout(props: DashboardPageProps) {
                         strokeLinecap="round"
                         strokeLinejoin="round"
                         strokeWidth={2}
-                        d="M6 18L18 6M6 6l12 12"
+                        d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
                       />
                     </svg>
-                  </button>
-                )}
-                {!selectedBranchId && (
+                  </div>
+                  <select
+                    value={selectedBranchId || ""}
+                    onChange={(e) => onBranchChange(e.target.value || null)}
+                    className="appearance-none w-full sm:w-auto bg-white border border-gray-300 rounded-lg pl-10 pr-10 py-2.5 text-sm font-medium text-gray-700 hover:border-red-400 hover:shadow-md focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500 transition-all cursor-pointer min-w-[200px]"
+                  >
+                    <option value="">
+                      {isGeneralManager
+                        ? "Semua Cabang (Nasional)"
+                        : "Semua Cabang"}
+                    </option>
+                    {branchOptions.map((branch) => (
+                      <option key={branch.branch_id} value={branch.branch_id}>
+                        {branch.nama_cabang}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+            {/* --- FILTER SPECIALIST (untuk LM & BM) --- */}
+            {(isLocationManager || isBranchManager) &&
+              propertiData.breakdown?.type === "user" && (
+                <div className="relative group">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
+                    <svg
+                      className="w-4 h-4 text-gray-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+                      />
+                    </svg>
+                  </div>
+                  <select
+                    value={selectedSpecialistId || ""}
+                    onChange={(e) => onSpecialistChange(e.target.value || null)}
+                    className="appearance-none w-full sm:w-auto bg-white border border-gray-300 rounded-lg pl-10 pr-10 py-2.5 text-sm font-medium text-gray-700 hover:border-red-400 hover:shadow-md focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500 transition-all cursor-pointer min-w-[200px]"
+                  >
+                    <option value="">Semua Specialist</option>
+                    {lsOptions.map((specialist) => (
+                      <option
+                        key={(specialist as any).user_id}
+                        value={(specialist as any).user_id}
+                      >
+                        {(specialist as any).nama}
+                      </option>
+                    ))}
+                  </select>
                   <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                     <svg
                       className="w-4 h-4 text-gray-400"
@@ -383,79 +448,8 @@ export default function DashboardLayout(props: DashboardPageProps) {
                       />
                     </svg>
                   </div>
-                )}
-              </div>
-            )}
-            {/* --- FILTER SPECIALIST --- */}
-            {isLocationManager && propertiData.breakdown && (
-              <div className="relative group">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
-                  <svg
-                    className="w-4 h-4 text-gray-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
-                    />
-                  </svg>
                 </div>
-                <select
-                  value={selectedSpecialistId || ""}
-                  onChange={(e) => onSpecialistChange(e.target.value || null)}
-                  className="appearance-none w-full sm:w-auto bg-white border border-gray-300 rounded-lg pl-10 pr-10 py-2.5 text-sm font-medium text-gray-700 hover:border-red-400 hover:shadow-md focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500 transition-all cursor-pointer min-w-[200px]"
-                >
-                  <option value="">Semua Specialist</option>
-                  {(lsOptions || []).map((specialist) => (
-                    <option key={specialist.user_id} value={specialist.user_id}>
-                      {specialist.nama}
-                    </option>
-                  ))}
-                </select>
-                {selectedSpecialistId && (
-                  <button
-                    onClick={() => onSpecialistChange(null)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-red-500 transition-colors z-10"
-                    title="Hapus filter specialist"
-                  >
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M6 18L18 6M6 6l12 12"
-                      />
-                    </svg>
-                  </button>
-                )}
-                {!selectedSpecialistId && (
-                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                    <svg
-                      className="w-4 h-4 text-gray-400"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 9l-7 7-7-7"
-                      />
-                    </svg>
-                  </div>
-                )}
-              </div>
-            )}
+              )}
 
             {/* --- FILTER TAHUN --- */}
             <div className="relative group">
@@ -483,52 +477,27 @@ export default function DashboardLayout(props: DashboardPageProps) {
                 <option value={2024}>2024</option>
                 <option value={2023}>2023</option>
               </select>
-              {propertiData.filters.year &&
-                propertiData.filters.year !== new Date().getFullYear() && (
-                  <button
-                    onClick={() => setYear(new Date().getFullYear())}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-red-500 transition-colors z-10"
-                    title="Reset ke tahun sekarang"
-                  >
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M6 18L18 6M6 6l12 12"
-                      />
-                    </svg>
-                  </button>
-                )}
-              {(!propertiData.filters.year ||
-                propertiData.filters.year === new Date().getFullYear()) && (
-                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                  <svg
-                    className="w-4 h-4 text-gray-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
-                </div>
-              )}
+              <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                <svg
+                  className="w-4 h-4 text-gray-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </div>
             </div>
           </div>
         </div>
 
         <div className="space-y-6">
-          {/* Stats Cards Grid */}
+          {/* KPI */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             {dynamicStatsData.map((stat, index) => (
               <StatsCard
@@ -541,7 +510,7 @@ export default function DashboardLayout(props: DashboardPageProps) {
             ))}
           </div>
 
-          {/* Charts Section */}
+          {/* Charts */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <DonutChart
               data={ulokDonut || []}
@@ -565,10 +534,12 @@ export default function DashboardLayout(props: DashboardPageProps) {
             />
           </div>
 
-          {/* Map Section */}
+          {/* Map */}
           <div className="bg-white p-4 rounded-lg shadow-md shadow-[1px_1px_6px_rgba(0,0,0,0.25)]">
-            <div className="flex justify-between items-center mb-2">
+            <div className="flex items-center gap-3 mb-2">
               <h3 className="text-lg font-semibold">Peta Sebaran</h3>
+
+              {/* Dropdown ULOK/KPLT */}
               <select
                 value={activeMapFilter}
                 onChange={(e) =>
@@ -579,11 +550,32 @@ export default function DashboardLayout(props: DashboardPageProps) {
                 <option value="ulok">ULOK</option>
                 <option value="kplt">KPLT</option>
               </select>
+
+              {/* Dropdown Status (sejajar dengan ULOK/KPLT) */}
+              <select
+                value={statusValue}
+                onChange={(e) => setStatusValue(e.target.value as any)}
+                className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white shadow-sm focus:outline-none focus:ring-1 focus:ring-red-500"
+                title="Filter status peta"
+              >
+                {(activeMapFilter === "ulok"
+                  ? STATUS_OPTIONS.ulok
+                  : STATUS_OPTIONS.kplt
+                ).map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
             </div>
+
             <div className="h-[400px] w-full">
               <PetaLokasiInteraktif
                 data={filteredProperti}
                 isLoading={isMapLoading}
+                statusFilter={
+                  statusValue === "Semua Status" ? undefined : [statusValue]
+                }
               />
             </div>
           </div>
