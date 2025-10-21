@@ -22,7 +22,7 @@ import CustomSelect from "@/components/ui/customselect";
 import { ApprovalStatusbutton } from "@/components/ui/approvalbutton";
 import DetailMapCard from "@/components/map/DetailMapCard";
 import WilayahSelector from "@/components/ui/customselectwilayah";
-import { DetailUlokSkeleton } from "./desktop/skleton";
+import { DetailUlokSkeleton } from "./ui/skleton";
 import { useUser } from "@/hooks/useUser";
 import { useDetailUlokForm } from "@/hooks/useDetailUlokForm";
 import { MappedUlokData } from "@/hooks/useUlokDetail";
