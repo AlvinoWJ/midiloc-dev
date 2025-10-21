@@ -64,10 +64,7 @@ export default function KPLTPage() {
       let matchRole = true;
       switch (lowerCaseStatus) {
         case "need input":
-          const allowedForNeedInput = [
-            "location specialist",
-            "location manager",
-          ];
+          const allowedForNeedInput = ["location specialist"];
           matchRole = allowedForNeedInput.includes(userRole);
           break;
         case "in progress":
