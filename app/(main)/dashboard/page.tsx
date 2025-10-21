@@ -56,10 +56,13 @@ export default function DashboardPage() {
     if (!Array.isArray(kpltUntukPeta)) return [];
 
     // 1. Simpan hasil .map() ke dalam variabel 'result'
-    const result = kpltUntukPeta.map((kplt) => ({
-      ...kplt,
-      nama: ulokNameMap.get(kplt.ulok_id || "") || "KPLT Tanpa Nama",
-    }));
+    const result = kpltUntukPeta.map((kplt) => {
+      const ulokId = "ulok_id" in kplt ? kplt.ulok_id : undefined;
+      return {
+        ...kplt,
+        nama: ulokNameMap.get(ulokId || "") || "KPLT Tanpa Nama",
+      };
+    });
 
     console.log("4. Data KPLT setelah digabung dengan nama:", result);
     return result;

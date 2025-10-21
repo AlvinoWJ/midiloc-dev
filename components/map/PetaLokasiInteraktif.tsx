@@ -107,10 +107,20 @@ export default function PetaLokasiInteraktif({
     setIsClient(true);
   }, []);
 
-  const handleDetailClick = (id: string | number, type: "ulok" | "kplt") => {
-    const path =
-      type === "kplt" ? "/form-kplt/detail/" : "/usulan_lokasi/detail/";
-    router.push(`${path}${id}`);
+  // const handleDetailClick = (id: string | number, type: "ulok" | "kplt") => {
+  //   const path =
+  //     type === "kplt" ? "/form-kplt/detail/" : "/usulan_lokasi/detail/";
+  //   router.push(`${path}${id}`);
+  // };
+
+  // --- INI ADALAH BAGIAN DIAGNOSIS UTAMA ---
+  const handleDetailClick = (lokasi: Properti) => {
+    // Tampilkan seluruh isi objek 'lokasi' ke console saat tombol diklik
+    console.log("DIKLIK! ISI OBJEK LOKASI:", lokasi);
+
+    // Setelah melihat console, kita akan tahu mengapa navigasi gagal
+    const path = lokasi.type === 'kplt' ? '/form_kplt/detail/' : '/usulan_lokasi/detail/';
+    router.push(`${path}${lokasi.id}`);
   };
 
   if (isLoading || !isClient) {
@@ -206,7 +216,7 @@ export default function PetaLokasiInteraktif({
                       </div>
                       <button
                         onClick={() =>
-                          handleDetailClick(lokasi.id, lokasi.type)
+                          handleDetailClick(lokasi)
                         }
                         className="w-full mt-2 !ml-0 bg-blue-600 text-white font-bold py-2 rounded-lg hover:bg-blue-700 transition-colors"
                       >
