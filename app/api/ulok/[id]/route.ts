@@ -14,11 +14,6 @@ function isUuid(v: string) {
 }
 
 type AnyObj = Record<string, unknown>;
-// function pick<T extends AnyObj>(obj: T, keys: readonly string[]): Partial<T> {
-//   const out: AnyObj = {};
-//   for (const k of keys) if (k in obj) out[k] = obj[k];
-//   return out as Partial<T>;
-// }
 
 function omit<T extends Record<string, unknown>, K extends keyof T>(
   obj: T,
@@ -70,12 +65,9 @@ export async function GET(
   _request: Request,
   { params }: { params: { id: string } }
 ) {
-  console.log("✅✅✅ SERVER MENJALANKAN KODE TERBARU DI FILE INI! ✅✅✅");
-  //get supabase & user data
   const supabase = await createClient();
   const user = await getCurrentUser();
 
-  //validate user login & authorization
   if (!user)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!canUlok("read", user))
@@ -197,12 +189,16 @@ export async function PATCH(
 
       // Validasi PDF
       // Validasi PDF atau Image
-      const isAllowed =
-        Object.values(MIME).some((arr) => arr.includes(file.type));
+      const isAllowed = Object.values(MIME).some((arr) =>
+        arr.includes(file.type)
+      );
 
       if (!isAllowed) {
         return NextResponse.json(
-          { error: "File harus PDF atau gambar (JPEG/PNG/JPG)", detail: `Tipe: ${file.type}` },
+          {
+            error: "File harus PDF atau gambar (JPEG/PNG/JPG)",
+            detail: `Tipe: ${file.type}`,
+          },
           { status: 422 }
         );
       }
@@ -211,8 +207,8 @@ export async function PATCH(
         const pdfCheck = await isPdfFile(file, true);
         if (!pdfCheck.ok) {
           return NextResponse.json(
-        { error: "File bukan PDF valid", detail: pdfCheck.reason },
-        { status: 422 }
+            { error: "File bukan PDF valid", detail: pdfCheck.reason },
+            { status: 422 }
           );
         }
       }

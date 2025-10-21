@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { ThemeProvider } from "next-themes";
 import { Poppins } from "next/font/google";
 import { SidebarProvider } from "@/hooks/useSidebar";
-import { AlertProvider } from "@/components/desktop/alertcontext";
+import { AlertProvider } from "@/components/shared/alertcontext";
 import "./globals.css";
 
 // Pakai Poppins

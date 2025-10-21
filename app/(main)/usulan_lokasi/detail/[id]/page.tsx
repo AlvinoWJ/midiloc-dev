@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useParams } from "next/navigation";
 import { useUlokDetail } from "@/hooks/useUlokDetail";
-import { useAlert } from "@/components/desktop/alertcontext";
+import { useAlert } from "@/components/shared/alertcontext";
 import { UlokUpdateInput } from "@/lib/validations/ulok";
 import DetailUlokLayout from "@/components/detail_ulok_layout";
 import InputIntipForm from "@/components/ui/inputintip";

@@ -9,16 +9,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
-import { useAlert } from "@/components/desktop/alertcontext";
+import { useAlert } from "@/components/shared/alertcontext";
 import { useRouter } from "next/navigation";
 
 type ForgotPasswordFormProps = Readonly<React.ComponentPropsWithoutRef<"div">>;
 
 // Tipe untuk mengelola alur UI dalam beberapa langkah
-type Step =
-  | "enter_email"
-  | "enter_code"
-  | "enter_new_password";
+type Step = "enter_email" | "enter_code" | "enter_new_password";
 
 // --- Komponen Ikon ---
 const EyeIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -59,7 +56,6 @@ const EyeOffIcon = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
-
 export function ForgotPasswordForm({
   className,
   ...props
@@ -93,22 +89,26 @@ export function ForgotPasswordForm({
     return () => clearInterval(timer);
   }, [step, countdown]);
 
-
   // Langkah 1: Mengirim email pemulihan password
   const handleSendRecoveryEmail = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
-    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email);
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(
+      email
+    );
 
     if (resetError) {
-      showToast({ type: 'error', message: 'Email tidak terdaftar dalam database kami.' });
+      showToast({
+        type: "error",
+        message: "Email tidak terdaftar dalam database kami.",
+      });
       setIsLoading(false);
       return;
     }
-    
+
     setStep("enter_code");
-    setCountdown(60); 
+    setCountdown(60);
     setIsLoading(false);
   };
 
@@ -120,20 +120,29 @@ export function ForgotPasswordForm({
       if (error) throw error;
       setToken("");
       setCountdown(60);
-      showToast({ type: 'success', message: 'Kode verifikasi baru telah dikirim.' });
+      showToast({
+        type: "success",
+        message: "Kode verifikasi baru telah dikirim.",
+      });
     } catch (err) {
-      showToast({ type: 'error', message: err instanceof Error ? err.message : "Gagal mengirim ulang kode." });
+      showToast({
+        type: "error",
+        message:
+          err instanceof Error ? err.message : "Gagal mengirim ulang kode.",
+      });
     } finally {
       setIsResending(false);
     }
   };
 
-
   // Langkah 2: Memverifikasi kode OTP
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (token.length < 6) {
-      showToast({ type: 'error', message: "Silakan masukkan 6 digit kode lengkap." });
+      showToast({
+        type: "error",
+        message: "Silakan masukkan 6 digit kode lengkap.",
+      });
       return;
     }
     setIsLoading(true);
@@ -144,10 +153,15 @@ export function ForgotPasswordForm({
         type: "recovery",
       });
       if (verifyError) throw verifyError;
-      if (!data.session) throw new Error("Could not verify your identity. Please try again.");
+      if (!data.session)
+        throw new Error("Could not verify your identity. Please try again.");
       setStep("enter_new_password");
     } catch {
-      showToast({ type: 'error', message: 'Kode yang Anda masukkan salah. Silakan cek kembali kode pada email Anda.' });
+      showToast({
+        type: "error",
+        message:
+          "Kode yang Anda masukkan salah. Silakan cek kembali kode pada email Anda.",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -157,7 +171,10 @@ export function ForgotPasswordForm({
   const handleUpdatePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
-      showToast({ type: 'error', message: 'Password tidak sama / tidak sesuai.' });
+      showToast({
+        type: "error",
+        message: "Password tidak sama / tidak sesuai.",
+      });
       return;
     }
     setIsLoading(true);
@@ -167,10 +184,20 @@ export function ForgotPasswordForm({
       });
       if (error) throw error;
       await supabase.auth.signOut();
-      showToast({ type: 'success', title: 'Sukses', message: 'Password berhasil di ubah!' });
-      router.push('/auth/login');
+      showToast({
+        type: "success",
+        title: "Sukses",
+        message: "Password berhasil di ubah!",
+      });
+      router.push("/auth/login");
     } catch (err) {
-      showToast({ type: 'error', message: err instanceof Error ? err.message : "Terjadi kesalahan saat mereset password." });
+      showToast({
+        type: "error",
+        message:
+          err instanceof Error
+            ? err.message
+            : "Terjadi kesalahan saat mereset password.",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -179,7 +206,7 @@ export function ForgotPasswordForm({
   // --- Handlers untuk Input OTP ---
   const handleTokenChange = (
     e: React.ChangeEvent<HTMLInputElement>,
-    index: number,
+    index: number
   ) => {
     const value = e.target.value.replace(/[^0-9]/g, "");
     const char = value.slice(-1);
@@ -195,7 +222,7 @@ export function ForgotPasswordForm({
 
   const handleKeyDown = (
     e: React.KeyboardEvent<HTMLInputElement>,
-    index: number,
+    index: number
   ) => {
     if (e.key === "Backspace" && e.currentTarget.value === "" && index > 0) {
       inputRefs.current[index - 1]?.focus();
@@ -211,18 +238,24 @@ export function ForgotPasswordForm({
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
-    return `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
+    return `${String(minutes).padStart(2, "0")}:${String(
+      remainingSeconds
+    ).padStart(2, "0")}`;
   };
 
   // --- UI ---
   const renderContent = () => {
-    const inputClasses = "text-sm placeholder:text-sm bg-white border-gray-300 text-black placeholder-gray-400 selection:bg-gray-200 selection:text-black autofill:shadow-[inset_0_0_0px_1000px_rgb(255,255,255)] autofill:[-webkit-text-fill-color:theme(colors.black)]";
+    const inputClasses =
+      "text-sm placeholder:text-sm bg-white border-gray-300 text-black placeholder-gray-400 selection:bg-gray-200 selection:text-black autofill:shadow-[inset_0_0_0px_1000px_rgb(255,255,255)] autofill:[-webkit-text-fill-color:theme(colors.black)]";
     const passwordInputClasses = cn(inputClasses, "pr-10");
 
     switch (step) {
       case "enter_email":
         return (
-          <form onSubmit={handleSendRecoveryEmail} className="flex flex-col gap-6">
+          <form
+            onSubmit={handleSendRecoveryEmail}
+            className="flex flex-col gap-6"
+          >
             <div className="text-center">
               <h2 className="text-xl font-semibold">Lupa Password</h2>
               <p className="text-sm text-gray-500 mt-1">
@@ -316,10 +349,7 @@ export function ForgotPasswordForm({
 
       case "enter_new_password":
         return (
-          <form
-            onSubmit={handleUpdatePassword}
-            className="flex flex-col gap-6"
-          >
+          <form onSubmit={handleUpdatePassword} className="flex flex-col gap-6">
             <div className="text-center">
               <h2 className="text-xl font-semibold">Atur Password Baru</h2>
               <p className="text-sm text-gray-500 mt-1">
@@ -344,13 +374,17 @@ export function ForgotPasswordForm({
                   className="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700"
                   aria-label="Toggle new password visibility"
                 >
-                  {showNewPassword ? <EyeOffIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
+                  {showNewPassword ? (
+                    <EyeOffIcon className="h-5 w-5" />
+                  ) : (
+                    <EyeIcon className="h-5 w-5" />
+                  )}
                 </button>
               </div>
             </div>
             <div className="grid gap-2">
               <Label htmlFor="confirmPassword">Konfirmasi Password Baru</Label>
-               <div className="relative">
+              <div className="relative">
                 <Input
                   id="confirmPassword"
                   type={showConfirmPassword ? "text" : "password"}
@@ -360,13 +394,17 @@ export function ForgotPasswordForm({
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                 />
-                 <button
+                <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   className="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700"
                   aria-label="Toggle confirm password visibility"
                 >
-                  {showConfirmPassword ? <EyeOffIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
+                  {showConfirmPassword ? (
+                    <EyeOffIcon className="h-5 w-5" />
+                  ) : (
+                    <EyeIcon className="h-5 w-5" />
+                  )}
                 </button>
               </div>
             </div>
@@ -421,4 +459,3 @@ export function ForgotPasswordForm({
     </div>
   );
 }
-

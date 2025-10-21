@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useTambahKplt, KpltFormData } from "@/hooks/useTambahkplt"; // Hook form kita
 import TambahKpltLayout from "@/components/tambah_kplt_layout"; // Komponen UI
-import { useAlert } from "@/components/desktop/alertcontext"; // Untuk notifikasi
+import { useAlert } from "@/components/shared/alertcontext"; // Untuk notifikasi
 import { useKpltPrefill } from "@/hooks/useKpltPrefill";
 import { KpltCreatePayload } from "@/lib/validations/kplt";
 

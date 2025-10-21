@@ -4,7 +4,7 @@ import React, { useState, useMemo } from "react";
 import { useParams } from "next/navigation";
 import DetailKpltLayout from "@/components/detail_kplt_layout";
 import { useKpltDetail } from "@/hooks/useKpltDetail";
-import { useAlert } from "@/components/desktop/alertcontext";
+import { useAlert } from "@/components/shared/alertcontext";
 import { useUser } from "@/hooks/useUser";
 
 export default function DetailKpltPage() {

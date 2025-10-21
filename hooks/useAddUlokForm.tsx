@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useAlert } from "@/components/desktop/alertcontext";
+import { useAlert } from "@/components/shared/alertcontext";
 import { UlokCreateSchema, UlokCreateInput } from "@/lib/validations/ulok";
 
 interface UseAddUlokFormProps {
