@@ -118,8 +118,8 @@ export interface KpltExisting {
   nama_kplt: string; // ✅ sesuai kebutuhan UI
   alamat: string; // ✅ sesuai kebutuhan UI
   created_at: string;
-  kplt_approval: string; 
-  latitude: string;     // <-- Tambahkan ini
+  kplt_approval: string;
+  latitude: string; // <-- Tambahkan ini
   longitude: string;
   ulok_id: string; // ✅ sesuai kebutuhan UI
 }
@@ -133,9 +133,8 @@ export interface UlokForKplt {
   created_at: string;
   ui_status: string;
   approval_status: string;
-  latitude: string;     // <-- Tambahkan ini
+  latitude: string; // <-- Tambahkan ini
   longitude: string;
-  
 }
 
 // Tipe data terpadu untuk ditampilkan di card UI
@@ -283,7 +282,6 @@ export type KpltBaseData = {
   kecamatan: string;
   longitude: string;
   nama_kplt: string;
-  file_intip: string;
   harga_sewa: number;
   lebar_depan: number;
   bentuk_objek: string;
@@ -292,7 +290,6 @@ export type KpltBaseData = {
   jumlah_lantai: number;
   desa_kelurahan: string;
   kontak_pemilik: string;
-  approval_intip_status: string;
   tanggal_approval_intip: string;
   kplt_approval: string;
 };
@@ -319,9 +316,6 @@ export type KpltBaseUIMapped = {
   jumlahLantai: number;
   isActive: boolean;
   formUlok: string | null;
-  fileIntip: string | null;
-  approvalIntipStatus: string;
-  tanggalApprovalIntip: string | null;
   kpltapproval?: string;
 };
 

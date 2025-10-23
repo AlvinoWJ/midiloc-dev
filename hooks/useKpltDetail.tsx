@@ -42,7 +42,6 @@ export type KpltDetailData = KpltBaseData & {
   excel_pe: string | null;
   pdf_foto: string | null;
   excel_fpl: string | null;
-  pdf_form_ukur: string | null;
   peta_coverage: string | null;
   pdf_pembanding: string | null;
   counting_kompetitor: string | null;
@@ -50,6 +49,12 @@ export type KpltDetailData = KpltBaseData & {
   video_360_siang: string | null;
   video_traffic_malam: string | null;
   video_traffic_siang: string | null;
+  // --- Data INTIP & Form Ukur dari KPLT ---
+  approval_intip: string | null;
+  tanggal_approval_intip: string | null;
+  file_intip: string | null;
+  tanggal_ukur: string | null;
+  form_ukur: string | null;
 };
 
 /**
@@ -68,7 +73,14 @@ export type KpltDetailApiResponse = {
 export type ApprovalsSummary = KpltDetailApiResponse["approvals_summary"];
 
 export type MappedKpltDetail = {
-  base: KpltBaseUIMapped;
+  base: KpltBaseUIMapped & {
+    approvalIntipStatus: string | null;
+    tanggalApprovalIntip: string | null;
+    fileIntipUrl: string | null;
+    tanggalUkur: string | null;
+    formUkurUrl: string | null;
+    kpltapproval?: string;
+  };
   analytics: {
     apc: number;
     spd: number;
@@ -123,7 +135,26 @@ function mapKpltDetailResponse(
   if (!data || !data.kplt) return undefined;
 
   const { kplt, approvals, approvals_summary } = data;
+  const kpltId = kplt.id;
+  const ulokId = kplt.ulok_id;
 
+  const formatDisplayDate = (isoDate: string | null) => {
+    if (!isoDate) return null;
+    try {
+      return new Date(isoDate).toLocaleDateString("id-ID", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      });
+    } catch {
+      return null; // Return null jika tanggal tidak valid
+    }
+  };
+
+  const createIntipFileUrl = (fileName: string | null) =>
+    fileName ? `/api/kplt/${kpltId}/file_intip` : null;
+  const createFormUkurFileUrl = (fileName: string | null) =>
+    fileName ? `/api/kplt/${kpltId}/form_ukur` : null;
   const createFileUrl = (fileName: string | null) =>
     fileName ? `/api/files/kplt/${kplt.id}/${fileName}` : null;
 
@@ -149,11 +180,11 @@ function mapKpltDetailResponse(
       jumlahLantai: kplt.jumlah_lantai,
       isActive: kplt.is_active,
       formUlok: kplt.form_ulok ? `/api/ulok/${kplt.ulok_id}/form-ulok` : null,
-      fileIntip: kplt.file_intip
-        ? `/api/ulok/${kplt.ulok_id}/file-intip`
-        : null,
-      approvalIntipStatus: kplt.approval_intip_status,
-      tanggalApprovalIntip: kplt.tanggal_approval_intip,
+      approvalIntipStatus: kplt.approval_intip ?? null,
+      tanggalApprovalIntip: formatDisplayDate(kplt.tanggal_approval_intip),
+      fileIntipUrl: createIntipFileUrl(kplt.file_intip),
+      tanggalUkur: formatDisplayDate(kplt.tanggal_ukur),
+      formUkurUrl: createFormUkurFileUrl(kplt.form_ukur),
       kpltapproval: kplt.kplt_approval || "",
     },
     analytics: {
@@ -171,7 +202,6 @@ function mapKpltDetailResponse(
       excelPe: createFileUrl(kplt.excel_pe),
       pdfFoto: createFileUrl(kplt.pdf_foto),
       excelFpl: createFileUrl(kplt.excel_fpl),
-      pdfFormUkur: createFileUrl(kplt.pdf_form_ukur),
       petaCoverage: createFileUrl(kplt.peta_coverage),
       pdfPembanding: createFileUrl(kplt.pdf_pembanding),
       countingKompetitor: createFileUrl(kplt.counting_kompetitor),

@@ -1,10 +1,7 @@
-// file: hooks/useKpltPrefill.ts
-
 import { useMemo } from "react";
 import useSWR from "swr";
 import { PrefillKpltResponse, KpltBaseUIMapped } from "@/types/common";
 
-// Fetcher tidak perlu diubah
 const fetcher = async (url: string) => {
   const res = await fetch(url);
   if (!res.ok) {
@@ -20,7 +17,6 @@ const fetcher = async (url: string) => {
   return res.json();
 };
 
-// Fungsi mapping tidak perlu diubah
 function mapKpltPrefillData(
   response: PrefillKpltResponse | undefined,
   ulokId: string | undefined
@@ -39,8 +35,7 @@ function mapKpltPrefillData(
     hargaSewa: response.base.harga_sewa,
     namaPemilik: response.base.nama_pemilik,
     kontakPemilik: response.base.kontak_pemilik,
-    approvalIntipStatus: response.base.approval_intip_status,
-    tanggalApprovalIntip: response.base.tanggal_approval_intip,
+
     isActive: response.base.is_active,
     panjang: response.base.panjang,
     alasHak: response.base.alas_hak,
@@ -50,9 +45,6 @@ function mapKpltPrefillData(
     bentukObjek: response.base.bentuk_objek,
     jumlahLantai: response.base.jumlah_lantai,
     formUlok: response.base.form_ulok ? `/api/ulok/${ulokId}/form-ulok` : null,
-    fileIntip: response.base.file_intip
-      ? `/api/ulok/${ulokId}/file-intip`
-      : null,
   };
 }
 

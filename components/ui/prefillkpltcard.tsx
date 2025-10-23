@@ -247,7 +247,6 @@ export default function PrefillKpltCard({ data }: { data: KpltBaseUIMapped }) {
                 Form Kelengkapan
               </h4>
               <div className="space-y-4">
-                <FileLink label="File Intip" url={data.fileIntip} />
                 <FileLink label="Form ULOK" url={data.formUlok} />
               </div>
             </div>
