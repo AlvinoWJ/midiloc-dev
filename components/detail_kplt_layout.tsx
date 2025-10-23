@@ -1,11 +1,11 @@
 // components/detail_kplt_layout.tsx
 "use client";
 
-import React from "react"; // Removed useState as modal state is handled in page.tsx
+import React from "react";
 import { Button } from "@/components/ui/button";
 import {
   ArrowLeft,
-  Link as LinkIcon,
+  Link as LinkIcon, // Pastikan alias ini ada jika menggunakan 'Link' dari lucide-react
   FileText,
   Sheet,
   Video,
@@ -21,8 +21,8 @@ import { useKpltFiles, MappedKpltFile } from "@/hooks/useKpltfile";
 import PrefillKpltCard from "./ui/prefillkpltcard";
 import { ApprovalStatusbutton } from "./ui/approvalbutton";
 import DetailKpltSkeleton from "./ui/skleton";
-import InputIntipForm from "./ui/inputintip"; // <-- Import your existing component
-import InputFormUkur from "./ui/inputformukur"; // <-- Import your existing component
+import InputIntipForm from "./ui/inputintip";
+import InputFormUkur from "./ui/inputformukur";
 
 // --- Komponen DetailField (Tidak berubah) ---
 const DetailField = ({ label, value }: { label: string; value: any }) => (
@@ -35,6 +35,25 @@ const DetailField = ({ label, value }: { label: string; value: any }) => (
     </div>
   </div>
 );
+
+// --- Komponen FileLink (Tambahkan jika belum ada atau gunakan struktur serupa) ---
+const FileLink = ({ label, url }: { label: string; url: string | null }) => {
+  if (!url) return null;
+  return (
+    <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border">
+      <span className="text-sm text-gray-700 font-medium">{label}</span>
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-1.5 px-3 rounded-lg"
+      >
+        <LinkIcon className="w-3 h-3 mr-1.5" />
+        Lihat
+      </a>
+    </div>
+  );
+};
 
 // --- Helper Fungsi (Tidak berubah) ---
 const generateLabel = (field: string | null): string => {
@@ -133,9 +152,6 @@ interface DetailKpltLayoutProps {
   isSubmittingLmInput: boolean;
 }
 
-// --- Komponen Modal Sederhana untuk Form Ukur DIHAPUS ---
-// const FormUkurModal = (...) => { ... } // Hapus komponen ini
-
 // --- Komponen Utama DIPERBARUI ---
 export default function DetailKpltLayout({
   id,
@@ -233,128 +249,6 @@ export default function DetailKpltLayout({
         {/* Kartu Prefill */}
         <div className="mb-10">{data && <PrefillKpltCard data={base} />}</div>
 
-        {/* --- SEKSI BARU: Form Ukur (LM Input) --- */}
-        {isLocationManager && (
-          <DetailCard
-            title="Form Ukur Lokasi"
-            icon={<FileText className="text-red-500 mr-3" size={20} />}
-            className="mt-10"
-          >
-            <div className="space-y-4">
-              {base.formUkurUrl ? (
-                <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border">
-                  <span className="text-sm text-gray-800 font-medium">
-                    Formulir Ukur Lokasi Tersimpan
-                  </span>
-                  <a
-                    href={base.formUkurUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-1.5 px-3 rounded-lg"
-                  >
-                    <LinkIcon className="w-3 h-3 mr-1.5" />
-                    Lihat Form Ukur
-                  </a>
-                </div>
-              ) : (
-                <p className="text-sm text-gray-500 italic">
-                  Belum ada Form Ukur yang diupload.
-                </p>
-              )}
-              {/* Tampilkan tanggal ukur jika ada */}
-              {data.rawData?.kplt?.tanggal_ukur && (
-                <DetailField
-                  label="Tanggal Ukur"
-                  value={new Date(
-                    data.rawData.kplt.tanggal_ukur
-                  ).toLocaleDateString("id-ID", {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  })}
-                />
-              )}
-
-              {canLmEdit && (
-                <Button
-                  onClick={onOpenFormUkurModal}
-                  variant="default"
-                  size="default"
-                  className="w-full md:w-auto"
-                  disabled={isSubmittingLmInput}
-                >
-                  <UploadCloud size={16} className="mr-2" />
-                  {base.formUkurUrl ? "Ganti Form Ukur" : "Upload Form Ukur"}
-                </Button>
-              )}
-            </div>
-          </DetailCard>
-        )}
-
-        {/* --- SEKSI BARU: Approval Intip (LM Input) --- */}
-        {isLocationManager && (
-          <DetailCard
-            title="Approval Intip"
-            icon={<CheckCircle className="text-red-500 mr-3" size={20} />}
-            className="mt-10"
-          >
-            <div className="space-y-4">
-              {/* Tampilkan status dan tanggal approval jika ada */}
-              {base.approvalIntipStatus && (
-                <DetailField
-                  label="Status Approval Intip"
-                  value={base.approvalIntipStatus}
-                />
-              )}
-              {base.tanggalApprovalIntip && (
-                <DetailField
-                  label="Tanggal Approval Intip"
-                  value={new Date(base.tanggalApprovalIntip).toLocaleDateString(
-                    "id-ID",
-                    { year: "numeric", month: "long", day: "numeric" }
-                  )}
-                />
-              )}
-
-              {/* Tampilkan link file intip jika ada */}
-              {base.fileIntipUrl ? (
-                <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border">
-                  <span className="text-sm text-gray-800 font-medium">
-                    File Bukti Intip Tersimpan
-                  </span>
-                  <a
-                    href={base.fileIntipUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-1.5 px-3 rounded-lg"
-                  >
-                    <LinkIcon className="w-3 h-3 mr-1.5" />
-                    Lihat File Intip
-                  </a>
-                </div>
-              ) : (
-                <p className="text-sm text-gray-500 italic">
-                  Belum ada File Intip yang diupload.
-                </p>
-              )}
-
-              {/* Tombol untuk membuka modal Input Intip */}
-              {canLmEdit && (
-                <Button
-                  onClick={onOpenIntipModal}
-                  variant="default"
-                  size="default"
-                  className="w-full md:w-auto"
-                  disabled={isSubmittingLmInput}
-                >
-                  <UploadCloud size={16} className="mr-2" />
-                  {base.fileIntipUrl ? "Edit Data Intip" : "Input Data Intip"}
-                </Button>
-              )}
-            </div>
-          </DetailCard>
-        )}
-
         {/* Kartu Analisis Kelayakan */}
         <DetailCard
           title="Analisis Kelayakan Lokasi"
@@ -382,6 +276,65 @@ export default function DetailKpltLayout({
           </div>
         </DetailCard>
 
+        {isLocationManager && (
+          <DetailCard
+            title="Form Ukur Lokasi"
+            icon={<FileText className="text-red-500 mr-3" size={20} />}
+            className="mt-10"
+          >
+            <div className="space-y-4">
+              {base.formUkurUrl ? (
+                <FileLink
+                  label="Formulir Ukur Tersimpan"
+                  url={base.formUkurUrl}
+                />
+              ) : (
+                <p className="text-sm text-gray-500 italic">
+                  Belum ada Form Ukur yang diupload.
+                </p>
+              )}
+
+              {/* Tampilkan tanggal ukur jika ada */}
+              {base.tanggalUkur && (
+                <DetailField
+                  label="Tanggal Ukur"
+                  value={base.tanggalUkur} // Data sudah diformat di hook
+                />
+              )}
+            </div>
+          </DetailCard>
+        )}
+
+        {isLocationManager && (
+          <DetailCard
+            title="Data Intip"
+            icon={<CheckCircle className="text-red-500 mr-3" size={20} />}
+            className="mt-10"
+          >
+            <div className="space-y-4">
+              {base.approvalIntipStatus && (
+                <DetailField
+                  label="Status Approval Intip"
+                  value={base.approvalIntipStatus}
+                />
+              )}
+              {base.tanggalApprovalIntip && (
+                <DetailField
+                  label="Tanggal Approval Intip"
+                  value={base.tanggalApprovalIntip}
+                />
+              )}
+              {base.fileIntipUrl ? (
+                <FileLink label="File Intip" url={base.fileIntipUrl} />
+              ) : (
+                <p className="text-sm text-gray-500 italic">
+                  Belum ada File Intip yang diupload.
+                </p>
+              )}
+            </div>
+          </DetailCard>
+        )}
+
         {/* Kartu Dokumen Terlampir Lainnya */}
         <DetailCard
           title="Dokumen Terlampir Lainnya"
@@ -401,7 +354,7 @@ export default function DetailKpltLayout({
                 </div>
               ) : files && files.length > 0 ? (
                 files
-                  // Filter file intip dan form ukur (opsional, tergantung data `files`)
+                  // Optional: Filter file intip dan form ukur jika tidak ingin duplikasi
                   // .filter(file => file.field !== 'file_intip' && file.field !== 'form_ukur')
                   .map((file) => <FileListItem key={file.name} file={file} />)
               ) : (
@@ -420,7 +373,7 @@ export default function DetailKpltLayout({
               show={true}
               disabled={isApproving}
               onApprove={onApprove}
-              fileUploaded={true}
+              fileUploaded={true} // Asumsikan file lain sudah ada jika sampai tahap ini
               loading={isApproving}
               currentStatus={data.base.kpltapproval ?? null}
             />

@@ -57,14 +57,11 @@ export type KpltDetailData = KpltBaseData & {
   form_ukur: string | null;
 };
 
-/**
- * Merepresentasikan struktur JSON lengkap dari endpoint GET /api/kplt/:id
- */
 export type KpltDetailApiResponse = {
   kplt: KpltDetailData;
-  approvals: ApprovalDetail[]; // Menggunakan tipe yang lebih spesifik
+  approvals: ApprovalDetail[];
   approvals_summary: {
-    bm: ApprovalSummaryDetail | null; // Tipe yang benar adalah objek, bukan string
+    bm: ApprovalSummaryDetail | null;
     gm: ApprovalSummaryDetail | null;
     rm: ApprovalSummaryDetail | null;
   };
@@ -136,7 +133,6 @@ function mapKpltDetailResponse(
 
   const { kplt, approvals, approvals_summary } = data;
   const kpltId = kplt.id;
-  const ulokId = kplt.ulok_id;
 
   const formatDisplayDate = (isoDate: string | null) => {
     if (!isoDate) return null;
@@ -150,13 +146,11 @@ function mapKpltDetailResponse(
       return null; // Return null jika tanggal tidak valid
     }
   };
-
-  const createIntipFileUrl = (fileName: string | null) =>
-    fileName ? `/api/kplt/${kpltId}/file_intip` : null;
-  const createFormUkurFileUrl = (fileName: string | null) =>
-    fileName ? `/api/kplt/${kpltId}/form_ukur` : null;
-  const createFileUrl = (fileName: string | null) =>
-    fileName ? `/api/files/kplt/${kplt.id}/${fileName}` : null;
+  const createFileDisplayUrl = (filePath: string | null): string | null => {
+    if (!filePath) return null;
+    const cleanPath = filePath.replace(/^file_storage\//, "");
+    return `/api/kplt/${kpltId}/files?path=${encodeURIComponent(cleanPath)}`;
+  };
 
   return {
     base: {
@@ -179,12 +173,12 @@ function mapKpltDetailResponse(
       bentukObjek: kplt.bentuk_objek,
       jumlahLantai: kplt.jumlah_lantai,
       isActive: kplt.is_active,
-      formUlok: kplt.form_ulok ? `/api/ulok/${kplt.ulok_id}/form-ulok` : null,
+      formUlok: kplt.form_ulok ? `/api/ulok/${kplt.ulok_id}/form-ulok` : null, // Asumsi ini benar
       approvalIntipStatus: kplt.approval_intip ?? null,
       tanggalApprovalIntip: formatDisplayDate(kplt.tanggal_approval_intip),
-      fileIntipUrl: createIntipFileUrl(kplt.file_intip),
+      fileIntipUrl: createFileDisplayUrl(kplt.file_intip),
       tanggalUkur: formatDisplayDate(kplt.tanggal_ukur),
-      formUkurUrl: createFormUkurFileUrl(kplt.form_ukur),
+      formUkurUrl: createFileDisplayUrl(kplt.form_ukur),
       kpltapproval: kplt.kplt_approval || "",
     },
     analytics: {
@@ -198,17 +192,17 @@ function mapKpltDetailResponse(
       karakterLokasi: kplt.karakter_lokasi,
     },
     files: {
-      pdfKks: createFileUrl(kplt.pdf_kks),
-      excelPe: createFileUrl(kplt.excel_pe),
-      pdfFoto: createFileUrl(kplt.pdf_foto),
-      excelFpl: createFileUrl(kplt.excel_fpl),
-      petaCoverage: createFileUrl(kplt.peta_coverage),
-      pdfPembanding: createFileUrl(kplt.pdf_pembanding),
-      countingKompetitor: createFileUrl(kplt.counting_kompetitor),
-      video360Malam: createFileUrl(kplt.video_360_malam),
-      video360Siang: createFileUrl(kplt.video_360_siang),
-      videoTrafficMalam: createFileUrl(kplt.video_traffic_malam),
-      videoTrafficSiang: createFileUrl(kplt.video_traffic_siang),
+      pdfKks: createFileDisplayUrl(kplt.pdf_kks),
+      excelPe: createFileDisplayUrl(kplt.excel_pe),
+      pdfFoto: createFileDisplayUrl(kplt.pdf_foto),
+      excelFpl: createFileDisplayUrl(kplt.excel_fpl),
+      petaCoverage: createFileDisplayUrl(kplt.peta_coverage),
+      pdfPembanding: createFileDisplayUrl(kplt.pdf_pembanding),
+      countingKompetitor: createFileDisplayUrl(kplt.counting_kompetitor),
+      video360Malam: createFileDisplayUrl(kplt.video_360_malam),
+      video360Siang: createFileDisplayUrl(kplt.video_360_siang),
+      videoTrafficMalam: createFileDisplayUrl(kplt.video_traffic_malam),
+      videoTrafficSiang: createFileDisplayUrl(kplt.video_traffic_siang),
     },
     approvals: approvals,
     approvalsSummary: approvals_summary,
