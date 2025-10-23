@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { MappedUlokData } from "@/hooks/useUlokDetail";
 import { UlokUpdateSchema, UlokUpdateInput } from "@/lib/validations/ulok";
+import { useAlert } from "@/components/shared/alertcontext";
 
 type SaveData = UlokUpdateInput | FormData;
 
@@ -154,21 +155,10 @@ export function useDetailUlokForm(
   };
 
   const handleSaveWrapper = async () => {
-    if (newFormUlokFile) {
-      const formData = new FormData();
-      formData.append("form_ulok", newFormUlokFile);
-      const success = await onSave(formData);
-      if (success) {
-        setIsEditing(false);
-        setNewFormUlokFile(null);
-      }
-      return;
-    }
-
+    // 1. Persiapkan dan bersihkan data (sama seperti sebelumnya)
     const lebardepan = parseKomaToNumber(editedData.lebardepan);
     const panjang = parseKomaToNumber(editedData.panjang);
     const luas = parseKomaToNumber(editedData.luas);
-
     const cleanedHargaSewa = editedData.hargasewa
       ? parseInt(String(editedData.hargasewa).replace(/[^0-9]/g, ""), 10)
       : 0;
@@ -192,7 +182,7 @@ export function useDetailUlokForm(
       harga_sewa: cleanedHargaSewa,
       nama_pemilik: editedData.namapemilik,
       kontak_pemilik: editedData.kontakpemilik,
-    };
+    }; // 2. Lakukan validasi di client (sama seperti sebelumnya)
 
     const validationResult = UlokUpdateSchema.safeParse(dataToValidate);
     if (!validationResult.success) {
@@ -204,10 +194,25 @@ export function useDetailUlokForm(
       setErrors(formattedErrors);
       console.error("Validation Failed:", formattedErrors);
       return;
-    }
+    } // 3. Buat FormData //    Ini adalah perubahan utama: kita selalu membuat FormData
 
-    const success = await onSave(validationResult.data);
-    if (success) setIsEditing(false);
+    const formData = new FormData(); // 4. Tambahkan file jika ada
+
+    if (newFormUlokFile) {
+      formData.append("form_ulok", newFormUlokFile);
+    } // 5. Tambahkan SEMUA data yang sudah divalidasi ke FormData //    Kita gunakan 'validationResult.data' yang berisi data bersih //    formData.append akan mengubah tipe 'number' menjadi 'string' (misal: 10.5 -> "10.5") //    Ini sesuai dengan apa yang diharapkan oleh backend (multipart/form-data)
+
+    for (const [key, value] of Object.entries(validationResult.data)) {
+      if (value !== null && value !== undefined) {
+        formData.append(key, String(value));
+      }
+    } // 6. Kirim FormData
+
+    const success = await onSave(formData);
+    if (success) {
+      setIsEditing(false);
+      setNewFormUlokFile(null); // Reset file setelah sukses
+    }
   };
 
   const handleCancel = () => {
