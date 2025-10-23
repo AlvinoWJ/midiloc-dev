@@ -23,6 +23,7 @@ import { ApprovalStatusbutton } from "./ui/approvalbutton";
 import DetailKpltSkeleton from "./ui/skleton";
 import InputIntipForm from "./ui/inputintip";
 import InputFormUkur from "./ui/inputformukur";
+import { useMemo } from "react";
 
 // --- Komponen DetailField (Tidak berubah) ---
 const DetailField = ({ label, value }: { label: string; value: any }) => (
@@ -180,6 +181,14 @@ export default function DetailKpltLayout({
     isLoading: isLoadingFiles,
     isError: isFilesError,
   } = useKpltFiles(id);
+
+  const filteredOtherFiles = useMemo(() => {
+    if (!files) return [];
+    // Kecualikan file jika fieldnya adalah 'file_intip' atau 'form_ukur'
+    return files.filter(
+      (file) => file.field !== "file_intip" && file.field !== "form_ukur"
+    );
+  }, [files]);
 
   // --- Handling Loading & Error (Tidak berubah) ---
   if (isLoading || (isLoadingFiles && !isError && !isFilesError)) {
@@ -352,11 +361,10 @@ export default function DetailKpltLayout({
                   <Loader2 className="w-8 h-8 animate-spin text-gray-500" />
                   <p className="ml-3 text-gray-600">Memuat daftar dokumen...</p>
                 </div>
-              ) : files && files.length > 0 ? (
-                files
-                  // Optional: Filter file intip dan form ukur jika tidak ingin duplikasi
-                  // .filter(file => file.field !== 'file_intip' && file.field !== 'form_ukur')
-                  .map((file) => <FileListItem key={file.name} file={file} />)
+              ) : filteredOtherFiles && filteredOtherFiles.length > 0 ? (
+                filteredOtherFiles.map((file) => (
+                  <FileListItem key={file.name} file={file} />
+                ))
               ) : (
                 <div className="col-span-full text-center py-10 text-gray-500">
                   Tidak ada dokumen tambahan yang dilampirkan.
