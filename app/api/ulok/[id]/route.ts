@@ -3,7 +3,6 @@ import { createClient } from "@/lib/supabase/client";
 import { getCurrentUser, canUlok } from "@/lib/auth/acl";
 import { UlokUpdateSchema } from "@/lib/validations/ulok";
 import { buildPathByField } from "@/lib/storage/path";
-import { MIME } from "@/lib/storage/path";
 
 const BUCKET = "file_storage";
 const MAX_PDF_SIZE = 15 * 1024 * 1024; // 15MB
@@ -28,17 +27,21 @@ function omit<T extends Record<string, unknown>, K extends keyof T>(
   return out as Omit<T, K>;
 }
 
-// Kolom yang boleh diubah oleh Location Manager
-const LM_FIELDS = [
-  "approval_intip",
-  "tanggal_approval_intip",
-  "file_intip",
-  "approval_status",
+// Field yang TIDAK boleh diubah LS
+const LS_FORBIDDEN_KEYS = [
+  "id",
+  "users_id",
+  "created_at",
+  "created_by",
+  "updated_at",
+  "updated_by",
+  "is_active",
+  "branch_id",
+  // approval milik LM
   "approved_at",
   "approved_by",
+  "approval_status",
 ] as const;
-
-const LM_FIELDS_SET = new Set<string>(LM_FIELDS as unknown as string[]);
 
 async function isPdfFile(
   file: File,
@@ -59,6 +62,9 @@ async function isPdfFile(
     return { ok: false, reason: "Header file bukan signature PDF (%PDF-)" };
   return { ok: true };
 }
+
+// Final states yang tidak boleh diubah lagi
+const FINAL_STATUSES = new Set(["OK", "NOK"]);
 
 // GET /api/ulok/:id
 export async function GET(
@@ -82,12 +88,9 @@ export async function GET(
     )
     .eq("id", id);
 
-  //validate query by position
   if (user.position_nama === "location specialist") {
     query = query.eq("users_id", user.id).eq("branch_id", user.branch_id);
-  }
-  //validate query by branch
-  else if (user.position_nama === "location manager") {
+  } else if (user.position_nama === "location manager") {
     if (!user.branch_id) {
       return NextResponse.json(
         { error: "Forbidden: user has no branch" },
@@ -127,16 +130,15 @@ export async function PATCH(
 
   const contentType = req.headers.get("content-type") || "";
 
-  // ========= BRANCH: LOCATION MANAGER (Mode B multipart) =========
+  // ========= LOCATION MANAGER: hanya approval ULOK (JSON) =========
   if (user.position_nama === "location manager") {
-    if (!contentType.startsWith("multipart/form-data")) {
+    if (!contentType.startsWith("application/json")) {
       return NextResponse.json(
-        { error: "Use multipart/form-data for uploading file_intip" },
+        { error: "Use application/json for ULOK approval update" },
         { status: 400 }
       );
     }
 
-    // Pastikan row ada, cocok branch
     if (!user.branch_id) {
       return NextResponse.json(
         { error: "Forbidden: user has no branch" },
@@ -144,10 +146,115 @@ export async function PATCH(
       );
     }
 
+    // Ambil approval_status saat ini
     const { data: existing, error: existErr } = await supabase
       .from("ulok")
-      .select("id, branch_id, file_intip")
+      .select("id, branch_id, approval_status")
       .eq("id", id)
+      .eq("branch_id", user.branch_id)
+      .single();
+
+    if (existErr || !existing) {
+      return NextResponse.json({ error: "Not Found" }, { status: 404 });
+    }
+
+    // Jika sudah final (OK/NOK), tolak perubahan lebih lanjut
+    const currentStatus = String(existing.approval_status ?? "").toUpperCase();
+    if (FINAL_STATUSES.has(currentStatus)) {
+      return NextResponse.json(
+        {
+          error: "Conflict",
+          message: `ULOK already finalized (${currentStatus}), status cannot be changed`,
+        },
+        { status: 409 }
+      );
+    }
+
+    const bodyUnknown = await req.json().catch(() => null);
+    if (!bodyUnknown || typeof bodyUnknown !== "object") {
+      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    }
+    const body = bodyUnknown as AnyObj;
+
+    // Hanya izinkan approval_status dari client; abaikan approved_at/by input
+    const allowedPayload: Record<string, unknown> = {};
+    if (Object.prototype.hasOwnProperty.call(body, "approval_status")) {
+      allowedPayload.approval_status = body.approval_status;
+    }
+
+    if (!("approval_status" in allowedPayload)) {
+      return NextResponse.json(
+        { error: "No approval_status provided" },
+        { status: 400 }
+      );
+    }
+
+    // Validasi hanya approval_status
+    const validationResult = UlokUpdateSchema.pick({
+      approval_status: true,
+    })
+      .strict()
+      .safeParse(allowedPayload);
+
+    if (!validationResult.success) {
+      const fieldErrors = validationResult.error.flatten().fieldErrors;
+      const errorMessage = Object.entries(fieldErrors)
+        .map(([field, errors]) => `${field}: ${errors?.join(", ")}`)
+        .join("; ");
+      return NextResponse.json(
+        {
+          error: "Validation failed",
+          details: errorMessage,
+          fieldErrors,
+        },
+        { status: 422 }
+      );
+    }
+
+    // Server-only stamping: approved_by dan approved_at SELALU di-set di server
+    const serverStamps = {
+      approved_by: user.id,
+      approved_at: new Date().toISOString(),
+    };
+
+    const { data: updated, error: updateError } = await supabase
+      .from("ulok")
+      .update({
+        approval_status: validationResult.data.approval_status,
+        ...serverStamps,
+        updated_by: user.id,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", id)
+      .eq("branch_id", user.branch_id)
+      .select("*")
+      .single();
+
+    if (updateError) {
+      return NextResponse.json({ error: updateError.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ data: updated });
+  }
+
+  // ========= LOCATION SPECIALIST: SATU METODE multipart/form-data =========
+  if (user.position_nama === "location specialist") {
+    if (!contentType.startsWith("multipart/form-data")) {
+      return NextResponse.json(
+        {
+          error:
+            "Use multipart/form-data. You can send form_ulok (File) and non-file fields together. (you're using LS right now)",
+        },
+        { status: 400 }
+      );
+    }
+
+    // Pastikan row milik LS di branch yang sama
+    const { data: existing, error: existErr } = await supabase
+      .from("ulok")
+      .select("id, users_id, branch_id, form_ulok")
+      .eq("id", id)
+      .eq("users_id", user.id)
       .eq("branch_id", user.branch_id)
       .single();
 
@@ -160,222 +267,13 @@ export async function PATCH(
       return NextResponse.json({ error: "Invalid form-data" }, { status: 400 });
     }
 
-    // Kumpulkan field LM (string) selain file
-    const rawManagerFields: Record<string, unknown> = {};
-    form.forEach((val, key) => {
-      if (key === "file_intip") return;
-      if (typeof val === "string" && LM_FIELDS_SET.has(key)) {
-        rawManagerFields[key] = val;
-      }
-    });
-
-    // Ambil file (optional)
-    const file = form.get("file_intip");
-    let newFilePath: string | undefined;
+    // 1) Proses file (opsional)
+    const file = form.get("form_ulok");
+    let newPath: string | undefined;
+    let removedOld = false;
+    const oldPath = existing.form_ulok as string | null;
 
     if (file instanceof File) {
-      if (file.size === 0) {
-        return NextResponse.json(
-          { error: "Empty file_intip uploaded" },
-          { status: 400 }
-        );
-      }
-      if (file.size > MAX_PDF_SIZE) {
-        return NextResponse.json(
-          { error: "File too large (max 15MB)" },
-          { status: 400 }
-        );
-      }
-
-      // Validasi PDF
-      // Validasi PDF atau Image
-      const isAllowed = Object.values(MIME).some((arr) =>
-        arr.includes(file.type)
-      );
-
-      if (!isAllowed) {
-        return NextResponse.json(
-          {
-            error: "File harus PDF atau gambar (JPEG/PNG/JPG)",
-            detail: `Tipe: ${file.type}`,
-          },
-          { status: 422 }
-        );
-      }
-
-      if (file.type === "application/pdf") {
-        const pdfCheck = await isPdfFile(file, true);
-        if (!pdfCheck.ok) {
-          return NextResponse.json(
-            { error: "File bukan PDF valid", detail: pdfCheck.reason },
-            { status: 422 }
-          );
-        }
-      }
-
-      // Path seragam: <ulokId>/ulok/<ts>_file_intip.pdf
-      const path = buildPathByField(
-        id,
-        "ulok",
-        "file_intip",
-        file.name,
-        file.type
-      );
-
-      // Upload file baru
-      const { error: uploadErr } = await supabase.storage
-        .from(BUCKET)
-        .upload(path, file, {
-          upsert: false,
-          contentType: "application/pdf",
-        });
-
-      if (uploadErr) {
-        return NextResponse.json(
-          { error: "Upload failed", detail: uploadErr.message },
-          { status: 500 }
-        );
-      }
-
-      newFilePath = path;
-    }
-
-    // Susun payload yang akan divalidasi
-    const allowedPayload: Record<string, unknown> = {
-      ...rawManagerFields,
-    };
-    if (newFilePath) {
-      allowedPayload.file_intip = newFilePath;
-    }
-
-    if (Object.keys(allowedPayload).length === 0) {
-      return NextResponse.json(
-        { error: "No manager fields provided" },
-        { status: 400 }
-      );
-    }
-
-    // Validasi payload
-    const validationResult = UlokUpdateSchema.safeParse(allowedPayload);
-    if (!validationResult.success) {
-      const fieldErrors = validationResult.error.flatten().fieldErrors;
-      const errorMessage = Object.entries(fieldErrors)
-        .map(([field, errors]) => `${field}: ${errors?.join(", ")}`)
-        .join("; ");
-      // Rollback file baru bila validasi gagal
-      if (newFilePath) {
-        await supabase.storage
-          .from(BUCKET)
-          .remove([newFilePath])
-          .catch(() => {});
-      }
-      return NextResponse.json(
-        {
-          error: "Validation failed",
-          details: errorMessage,
-          fieldErrors,
-        },
-        { status: 422 }
-      );
-    }
-
-    const validatedPayload = validationResult.data as AnyObj;
-
-    // Approval stamping jika menyentuh field approval
-    const touchingApproval =
-      "approval_status" in validatedPayload ||
-      "approval_intip" in validatedPayload ||
-      "approved_by" in validatedPayload ||
-      "approved_at" in validatedPayload;
-
-    if (touchingApproval) {
-      if (!validatedPayload.approved_by) {
-        validatedPayload.approved_by = user.id;
-      }
-      if (!validatedPayload.approved_at) {
-        validatedPayload.approved_at = new Date().toISOString();
-      }
-    }
-
-    // Update DB
-    const oldPath = (existing.file_intip as string | null) || null;
-    const { data: updated, error: updateError } = await supabase
-      .from("ulok")
-      .update({
-        ...validatedPayload,
-        updated_by: user.id,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", id)
-      .eq("branch_id", user.branch_id)
-      .select("*")
-      .single();
-
-    if (updateError) {
-      // Rollback file baru jika ada
-      if (newFilePath) {
-        await supabase.storage
-          .from(BUCKET)
-          .remove([newFilePath])
-          .catch(() => {});
-      }
-      return NextResponse.json({ error: updateError.message }, { status: 500 });
-    }
-
-    // Hapus file lama hanya setelah DB update sukses dan ada file baru
-    let removedOld = false;
-    if (newFilePath && oldPath && oldPath !== newFilePath) {
-      await supabase.storage
-        .from(BUCKET)
-        .remove([oldPath])
-        .then(() => {
-          removedOld = true;
-        })
-        .catch(() => {
-          // best-effort: abaikan error hapus
-        });
-    }
-
-    return NextResponse.json({
-      data: updated,
-      new_file_intip: newFilePath,
-      removedOld,
-      old_file_intip: oldPath,
-    });
-  }
-
-  // ========= LOCATION SPECIALIST =========
-  if (user.position_nama === "location specialist") {
-    // ----- LS MULTIPART (form_ulok replace) -----
-    if (contentType.startsWith("multipart/form-data")) {
-      const form = await req.formData().catch(() => null);
-      if (!form) {
-        return NextResponse.json(
-          { error: "Invalid form-data" },
-          { status: 400 }
-        );
-      }
-
-      // Pastikan row milik LS
-      const { data: existing, error: existErr } = await supabase
-        .from("ulok")
-        .select("id, users_id, branch_id, form_ulok")
-        .eq("id", id)
-        .eq("users_id", user.id)
-        .eq("branch_id", user.branch_id)
-        .single();
-
-      if (existErr || !existing) {
-        return NextResponse.json({ error: "Not Found" }, { status: 404 });
-      }
-
-      const file = form.get("form_ulok");
-      if (!(file instanceof File)) {
-        return NextResponse.json(
-          { error: "form_ulok file is required in multipart" },
-          { status: 422 }
-        );
-      }
       if (file.size === 0) {
         return NextResponse.json(
           { error: "Empty form_ulok file" },
@@ -391,21 +289,13 @@ export async function PATCH(
       const pdfCheck = await isPdfFile(file, true);
       if (!pdfCheck.ok) {
         return NextResponse.json(
-          {
-            error: "File bukan PDF valid",
-            detail: pdfCheck.reason,
-          },
+          { error: "File bukan PDF valid", detail: pdfCheck.reason },
           { status: 422 }
         );
       }
 
-      const newPath = buildPathByField(
-        id,
-        "ulok",
-        "form_ulok",
-        file.name,
-        file.type
-      );
+      newPath = buildPathByField(id, "ulok", "form_ulok", file.name, file.type);
+
       const { error: uploadErr } = await supabase.storage
         .from(BUCKET)
         .upload(newPath, file, {
@@ -419,144 +309,97 @@ export async function PATCH(
           { status: 500 }
         );
       }
-
-      let removedOld = false;
-      const oldPath = existing.form_ulok as string | null;
-      if (oldPath && oldPath !== newPath) {
-        await supabase.storage
-          .from(BUCKET)
-          .remove([oldPath])
-          .then(() => {
-            removedOld = true;
-          })
-          .catch(() => {});
-      }
-
-      const { data: updated, error: updErr } = await supabase
-        .from("ulok")
-        .update({
-          form_ulok: newPath,
-          updated_by: user.id,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", id)
-        .eq("users_id", user.id)
-        .eq("branch_id", user.branch_id)
-        .select("*")
-        .single();
-
-      if (updErr) {
-        // rollback file baru jika DB update gagal
-        await supabase.storage
-          .from(BUCKET)
-          .remove([newPath])
-          .catch(() => {});
-        return NextResponse.json(
-          { error: "Update DB failed", detail: updErr.message },
-          { status: 500 }
-        );
-      }
-
-      return NextResponse.json({
-        data: updated,
-        new_form_ulok: newPath,
-        removed_old: removedOld,
-        old_form_ulok: oldPath,
-      });
     }
 
-    // ----- LS JSON (field non-file) -----
-    if (!contentType.startsWith("application/json")) {
-      return NextResponse.json(
-        { error: "Use application/json or multipart/form-data" },
-        { status: 400 }
-      );
+    // 2) Proses field non-file dari form-data (semua value string)
+    //    - Filter field terlarang LS
+    //    - Hapus key form_ulok (karena ditangani via upload)
+    const bodyText: AnyObj = {};
+    for (const [k, v] of form.entries()) {
+      if (k === "form_ulok") continue;
+      if (v instanceof File) continue; // jaga-jaga bila ada file lain
+      if (typeof v === "string") bodyText[k] = v;
     }
-
-    const body = (await req.json().catch(() => null)) as AnyObj | null;
-    if (!body) {
-      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
-    }
-
-    // LS dilarang ubah LM fields & file/form kolom langsung
-    const forbiddenLM = (LM_FIELDS as unknown as string[]).filter((k) =>
-      Object.prototype.hasOwnProperty.call(body, k)
-    );
-    if (forbiddenLM.length > 0) {
-      return NextResponse.json(
-        { error: "LS is not allowed to modify manager fields" },
-        { status: 400 }
-      );
-    }
-    if ("form_ulok" in body) delete body.form_ulok;
-    if ("file_intip" in body) delete body.file_intip;
-
-    const forbiddenKeys = [
-      "id",
-      "users_id",
-      "created_at",
-      "created_by",
-      "updated_at",
-      "updated_by",
-      "is_active",
-      "branch_id",
-      "file_intip",
-      "form_ulok",
-      "approved_at",
-      "approved_by",
-      "approval_status",
-      "approval_intip",
-      "tanggal_approval_intip",
-    ] as const;
 
     const allowedPayload = omit(
-      body,
-      forbiddenKeys as unknown as readonly (keyof typeof body)[]
+      bodyText,
+      LS_FORBIDDEN_KEYS as unknown as readonly (keyof typeof bodyText)[]
     );
 
-    if (Object.keys(allowedPayload).length === 0) {
-      return NextResponse.json(
-        { error: "No permitted fields to update for your role" },
-        { status: 400 }
-      );
+    // 3) Validasi payload non-file (boleh kosong jika hanya upload file)
+    if (Object.keys(allowedPayload).length > 0) {
+      const validationResult = UlokUpdateSchema.safeParse(allowedPayload);
+      if (!validationResult.success) {
+        // rollback file jika upload sudah terjadi
+        if (newPath) {
+          await supabase.storage
+            .from(BUCKET)
+            .remove([newPath])
+            .catch(() => {});
+        }
+        const fieldErrors = validationResult.error.flatten().fieldErrors;
+        const errorMessage = Object.entries(fieldErrors)
+          .map(([field, errors]) => `${field}: ${errors?.join(", ")}`)
+          .join("; ");
+        return NextResponse.json(
+          {
+            error: "Validation failed",
+            details: errorMessage,
+            fieldErrors,
+          },
+          { status: 422 }
+        );
+      }
     }
 
-    const validationResult = UlokUpdateSchema.safeParse(allowedPayload);
-    if (!validationResult.success) {
-      const fieldErrors = validationResult.error.flatten().fieldErrors;
-      const errorMessage = Object.entries(fieldErrors)
-        .map(([field, errors]) => `${field}: ${errors?.join(", ")}`)
-        .join("; ");
-      return NextResponse.json(
-        {
-          error: "Validation failed",
-          details: errorMessage,
-          fieldErrors,
-        },
-        { status: 422 }
-      );
-    }
+    // 4) Update DB (gabungkan path bila ada)
+    const updatePayload: AnyObj = {
+      ...allowedPayload,
+      updated_by: user.id,
+      updated_at: new Date().toISOString(),
+    };
+    if (newPath) updatePayload.form_ulok = newPath;
 
-    const validatedPayload = validationResult.data;
-
-    const { data: updated, error: updateError } = await supabase
+    const { data: updated, error: updErr } = await supabase
       .from("ulok")
-      .update({
-        ...validatedPayload,
-        updated_by: user.id,
-        updated_at: new Date().toISOString(),
-      })
+      .update(updatePayload)
       .eq("id", id)
       .eq("users_id", user.id)
       .eq("branch_id", user.branch_id)
       .select("*")
       .single();
 
-    if (updateError) {
-      return NextResponse.json({ error: updateError.message }, { status: 404 });
+    if (updErr) {
+      // rollback file baru jika DB update gagal
+      if (newPath) {
+        await supabase.storage
+          .from(BUCKET)
+          .remove([newPath])
+          .catch(() => {});
+      }
+      return NextResponse.json(
+        { error: "Update DB failed", detail: updErr.message },
+        { status: 500 }
+      );
     }
 
-    return NextResponse.json({ data: updated });
+    // 5) Hapus file lama hanya setelah DB update sukses dan ada file baru
+    if (newPath && oldPath && oldPath !== newPath) {
+      await supabase.storage
+        .from(BUCKET)
+        .remove([oldPath])
+        .then(() => {
+          removedOld = true;
+        })
+        .catch(() => {});
+    }
+
+    return NextResponse.json({
+      data: updated,
+      new_form_ulok: newPath || null,
+      removed_old: removedOld,
+      old_form_ulok: oldPath,
+    });
   }
 
   return NextResponse.json(

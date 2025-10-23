@@ -71,7 +71,7 @@ export function canKplt(
         action === "delete"
       );
     case "location manager":
-      return action === "read"; // data baru
+      return action === "read" || action === "update";// data baru
     case "branch manager":
       return action === "read" || action === "update" || action === "create";
     case "regional manager":

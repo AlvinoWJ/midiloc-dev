@@ -226,7 +226,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     const parsed = KpltCreateMultipartSchema.safeParse(payload);
     if (!parsed.success) {
-      console.error("❌ [DEBUG] Validation failed:", parsed.error.issues);
       return NextResponse.json(
         { error: "Validation failed", detail: parsed.error.issues },
         { status: 422 }
