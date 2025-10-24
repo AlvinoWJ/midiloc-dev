@@ -6,7 +6,6 @@ import { getCurrentUser, canUlok } from "@/lib/auth/acl";
 const UlokIdSchema = z.string().trim().uuid();
 
 export async function GET(_request: NextRequest) {
-  // 1. Ambil raw param & trim
   const rawParam = _request.nextUrl.searchParams.get("ulok_id") ?? "";
   const trimmed = rawParam.trim();
 

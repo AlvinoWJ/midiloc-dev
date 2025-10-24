@@ -130,7 +130,6 @@ export async function PATCH(
 
   const contentType = req.headers.get("content-type") || "";
 
-  // ========= LOCATION MANAGER: hanya approval ULOK (JSON) =========
   if (user.position_nama === "location manager") {
     if (!contentType.startsWith("application/json")) {
       return NextResponse.json(

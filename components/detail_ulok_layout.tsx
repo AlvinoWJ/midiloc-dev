@@ -22,14 +22,13 @@ import CustomSelect from "@/components/ui/customselect";
 import { ApprovalStatusbutton } from "@/components/ui/approvalbutton";
 import DetailMapCard from "@/components/map/DetailMapCard";
 import WilayahSelector from "@/components/ui/customselectwilayah";
-import { DetailUlokSkeleton } from "./desktop/skleton";
+import { DetailUlokSkeleton } from "./ui/skleton";
 import { useUser } from "@/hooks/useUser";
 import { useDetailUlokForm } from "@/hooks/useDetailUlokForm";
 import { MappedUlokData } from "@/hooks/useUlokDetail";
 import { UlokUpdateInput } from "@/lib/validations/ulok";
 import { FileUpload } from "./ui/uploadfile";
 
-// Dynamic import untuk komponen peta
 const LocationPickerModal = dynamic(
   () => import("@/components/map/LocationPickerMap"),
   { ssr: false }
@@ -40,13 +39,10 @@ interface DetailUlokLayoutProps {
   initialData: MappedUlokData;
   onSave: (data: UlokUpdateInput | FormData) => Promise<boolean>;
   isSubmitting: boolean;
-  onOpenIntipForm: () => void;
   onApprove: (status: "OK" | "NOK") => void;
-  fileIntipUrl: string | null;
   formulokUrl: string | null;
 }
 
-// Komponen helper untuk field, tidak ada perubahan
 const DetailField = ({
   label,
   value,
@@ -93,9 +89,7 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
     initialData,
     onSave,
     isSubmitting,
-    onOpenIntipForm,
     onApprove,
-    fileIntipUrl,
     formulokUrl,
   } = props;
 
@@ -125,9 +119,7 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
     user?.position_nama?.toLowerCase().trim() === "location manager";
   const isLocationSpecialist =
     user?.position_nama?.toLowerCase().trim() === "location specialist";
-  const isIntipDone = !!initialData.file_intip;
   const isPendingApproval = initialData.approval_status === "In Progress";
-
   const formatStoreOptions = ["Reguler", "Super", "Spesifik", "Franchise"];
   const bentukObjekOptions = ["Tanah", "Bangunan"];
 
@@ -151,20 +143,12 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
 
   useEffect(() => {
     const handleScroll = () => {
-      // Cek jika jumlah tinggi viewport + posisi scroll sudah mencapai dasar dokumen
-      // Diberi toleransi 5px untuk memastikan ter-trigger
       const atBottom =
         window.innerHeight + window.scrollY >= document.body.offsetHeight - 5;
       setIsAtBottom(atBottom);
     };
-
-    // Tambahkan event listener saat komponen dimuat
     window.addEventListener("scroll", handleScroll);
-
-    // Panggil sekali saat mount untuk cek kondisi awal
     handleScroll();
-
-    // Hapus event listener saat komponen dilepas untuk mencegah memory leak
     return () => {
       window.removeEventListener("scroll", handleScroll);
     };
@@ -177,8 +161,9 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
           <Button
             variant="back"
             size="default"
-            className="rounded-full flex-1" // Dibuat flex-1 agar memenuhi ruang
+            className="rounded-full flex-1"
             onClick={handleCancel}
+            disabled={isSubmitting}
           >
             Batal
           </Button>
@@ -193,24 +178,27 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
           </Button>
         </>
       ) : (
-        <Button
-          variant="default"
-          size="default"
-          className="rounded-full w-full" // Dibuat full width untuk mode view
-          onClick={() => setIsEditing(true)}
-        >
-          <Edit3 size={16} className="mr-2" />
-          Edit
-        </Button>
+        isLocationSpecialist &&
+        isPendingApproval && (
+          <Button
+            variant="default"
+            size="default"
+            className="rounded-full w-full"
+            onClick={() => setIsEditing(true)}
+            // Nonaktifkan tombol Edit jika LM sedang dalam proses approval
+            disabled={isApproving}
+          >
+            <Edit3 size={16} className="mr-2" />
+            Edit
+          </Button>
+        )
       )}
     </>
   );
 
   return (
     <>
-      {/* PERUBAHAN 2: Menambahkan padding yang lebih adaptif */}
       <main className="space-y-4 lg:space-y-6 pb-2 lg:pb-6">
-        {/* --- HEADER TOMBOL --- */}
         <div className="flex justify-between items-center mb-6">
           <Button onClick={() => router.back()} variant="back">
             <ArrowLeft size={20} className="mr-1" />
@@ -430,7 +418,7 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
                       value={editedData.lebardepan}
                       isEditing={true}
                       name="lebardepan"
-                      type="number"
+                      type="text"
                       onChange={handleInputChange}
                     />
                     <DetailField
@@ -438,7 +426,7 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
                       value={editedData.panjang}
                       isEditing={true}
                       name="panjang"
-                      type="number"
+                      type="text"
                       onChange={handleInputChange}
                     />
                     <DetailField
@@ -446,7 +434,7 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
                       value={editedData.luas}
                       isEditing={true}
                       name="luas"
-                      type="number"
+                      type="text"
                       onChange={handleInputChange}
                     />
                     <DetailField
@@ -595,79 +583,18 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
                 )}
               </div>
             </div>
-            {/* --- KARTU INTIP (Hanya di mode read) --- */}
-            {!isEditing && isIntipDone && (
-              <div className="bg-white rounded-xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)]">
-                <div className="border-b border-gray-200 px-6 py-4">
-                  <div className="flex items-center">
-                    <CheckCircle2 className="text-green-600 mr-3" size={20} />
-                    <h2 className="text-lg font-semibold text-gray-900">
-                      Data Approval INTIP
-                    </h2>
-                  </div>
-                </div>
-                <div className="p-6">
-                  <div className="grid grid-cols-1 gap-y-4">
-                    <DetailField
-                      label="Status INTIP"
-                      value={initialData.approval_intip || "-"}
-                    />
-                    <DetailField
-                      label="Tanggal Approval"
-                      value={
-                        initialData.tanggal_approval_intip
-                          ? new Date(
-                              initialData.tanggal_approval_intip
-                            ).toLocaleDateString("id-ID", {
-                              day: "numeric",
-                              month: "long",
-                              year: "numeric",
-                            })
-                          : "-"
-                      }
-                    />
-                    {fileIntipUrl && (
-                      <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border mt-2">
-                        <span className="text-sm text-gray-800 font-medium">
-                          File Intip
-                        </span>
-                        <a
-                          href={fileIntipUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-1.5 px-3 rounded-lg"
-                        >
-                          <LinkIcon className="w-3 h-3 mr-1.5" />
-                          Lihat
-                        </a>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
 
             {/* --- TOMBOL AKSI MANAGER --- */}
-            {isLocationManager && isPendingApproval && !isEditing && (
+            {isLocationManager && isPendingApproval && (
               <div className="mt-6">
-                {!isIntipDone ? (
-                  <Button
-                    onClick={onOpenIntipForm}
-                    size="lg"
-                    className="bg-blue-600 hover:bg-blue-700 text-white rounded-full w-full"
-                  >
-                    Input Data Intip
-                  </Button>
-                ) : (
-                  <ApprovalStatusbutton
-                    currentStatus={initialData.approval_status}
-                    show={true}
-                    fileUploaded={true}
-                    onApprove={handleApproveAction}
-                    loading={isApproving}
-                    disabled={isApproving}
-                  />
-                )}
+                <ApprovalStatusbutton
+                  currentStatus={initialData.approval_status}
+                  show={true}
+                  fileUploaded={true}
+                  onApprove={handleApproveAction}
+                  loading={isApproving}
+                  disabled={isApproving}
+                />
               </div>
             )}
           </div>

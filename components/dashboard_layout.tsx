@@ -2,11 +2,11 @@
 
 import React, { useMemo, useEffect, useState } from "react";
 import { DashboardPageProps } from "@/types/common";
-import { StatsCard } from "../ui/statscard";
-import { DonutChart } from "../ui/donutchart";
-import { BarChart } from "../ui/barchart";
+import { StatsCard } from "./ui/statscard";
+import { DonutChart } from "./ui/donutchart";
+import { BarChart } from "./ui/barchart";
 import dynamic from "next/dynamic";
-import { DashboardSkeleton } from "../ui/skleton";
+import { DashboardSkeleton } from "./ui/skleton";
 
 const PetaLokasiInteraktif = dynamic(
   () => import("@/components/map/PetaLokasiInteraktif"),
@@ -246,7 +246,7 @@ export default function DashboardLayout(props: DashboardPageProps) {
     }));
     const ulokBar = (propertiData.perbulan_ulok ?? []).map((item) => ({
       month: String(item.bulan ?? "").substring(0, 3),
-      approved: item.ulok_ok ?? item.ulok_approves ?? 0,
+      approved: item.ulok_ok ?? 0,
       nok: item.ulok_nok ?? 0,
       inProgress: item.ulok_in_progress ?? 0,
     }));
@@ -312,13 +312,6 @@ export default function DashboardLayout(props: DashboardPageProps) {
     });
   }, [propertiUntukPeta, propertiData?.filters?.year]);
 
-  // Bentuk statusFilter untuk komponen peta
-  const currentStatusOptions =
-    activeMapFilter === "ulok" ? STATUS_OPTIONS.ulok : STATUS_OPTIONS.kplt;
-
-  const childStatusFilter =
-    statusValue === "Semua Status" ? undefined : [statusValue];
-
   if (isError) {
     return (
       <main className="space-y-4 lg:space-y-6">
@@ -354,13 +347,13 @@ export default function DashboardLayout(props: DashboardPageProps) {
   return (
     <main className="space-y-4 lg:space-y-6">
       <>
-        <div className="flex flex-wrap items-center justify-between mb-8">
-          <div>
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+          <div className="flex-shrink-0">
             <h1 className="text-3xl font-bold text-gray-800">
               Dashboard Performa
             </h1>
           </div>
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-5">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
             {/* --- FILTER BRANCH (untuk RM / GM) --- */}
             {(isRegionalManager || isGeneralManager) &&
               branchOptions.length > 0 && (
@@ -421,7 +414,7 @@ export default function DashboardLayout(props: DashboardPageProps) {
                   <select
                     value={selectedSpecialistId || ""}
                     onChange={(e) => onSpecialistChange(e.target.value || null)}
-                    className="appearance-none w-full sm:w-auto bg-white border border-gray-300 rounded-lg pl-10 pr-10 py-2.5 text-sm font-medium text-gray-700 hover:border-red-400 hover:shadow-md focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500 transition-all cursor-pointer min-w-[200px]"
+                    className="appearance-none w-full sm:w-auto bg-white border border-gray-300 rounded pl-10 pr-10 py-2.5 text-sm font-medium text-gray-700 hover:border-red-400 hover:shadow-md focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500 transition-all cursor-pointer min-w-[200px]"
                   >
                     <option value="">Semua Specialist</option>
                     {lsOptions.map((specialist) => (
@@ -433,6 +426,21 @@ export default function DashboardLayout(props: DashboardPageProps) {
                       </option>
                     ))}
                   </select>
+                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                    <svg
+                      className="w-4 h-4 text-gray-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
+                  </div>
                 </div>
               )}
 
@@ -449,26 +457,41 @@ export default function DashboardLayout(props: DashboardPageProps) {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2 2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
                   />
                 </svg>
               </div>
               <select
                 value={propertiData.filters.year || new Date().getFullYear()}
                 onChange={(e) => setYear(Number(e.target.value))}
-                className="appearance-none w-full sm:w-auto bg-white border border-gray-300 rounded-lg pl-10 pr-10 py-2.5 text-sm font-medium text-gray-700 hover:border-red-400 hover:shadow-md focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500 transition-all cursor-pointer min-w-[140px]"
+                className="appearance-none w-full sm:w-auto bg-white border border-gray-300 rounded pl-10 pr-10 py-2.5 text-sm font-medium text-gray-700 hover:border-red-400 hover:shadow-md focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500 transition-all cursor-pointer min-w-[140px]"
               >
                 <option value={2025}>2025</option>
                 <option value={2024}>2024</option>
                 <option value={2023}>2023</option>
               </select>
+              <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                <svg
+                  className="w-4 h-4 text-gray-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </div>
             </div>
           </div>
         </div>
 
         <div className="space-y-6">
           {/* KPI */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
             {dynamicStatsData.map((stat, index) => (
               <StatsCard
                 key={index}
@@ -505,38 +528,86 @@ export default function DashboardLayout(props: DashboardPageProps) {
           </div>
 
           {/* Map */}
-          <div className="bg-white p-4 rounded-lg shadow-md shadow-[1px_1px_6px_rgba(0,0,0,0.25)]">
-            <div className="flex items-center gap-3 mb-2">
-              <h3 className="text-lg font-semibold">Peta Sebaran</h3>
+          <div className="bg-white p-4 rounded-lg shadow-[1px_1px_6px_rgba(0,0,0,0.25)]">
+            {/* */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-2">
+              <h3 className="text-lg font-semibold flex-shrink-0">
+                Peta Sebaran
+              </h3>
 
-              {/* Dropdown ULOK/KPLT */}
-              <select
-                value={activeMapFilter}
-                onChange={(e) =>
-                  onMapFilterChange(e.target.value as "ulok" | "kplt")
-                }
-                className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white shadow-sm focus:outline-none focus:ring-1 focus:ring-red-500"
-              >
-                <option value="ulok">ULOK</option>
-                <option value="kplt">KPLT</option>
-              </select>
+              {/* */}
+              <div className="flex flex-col sm:flex-row items-stretch gap-3 w-full sm:w-auto">
+                {/* Dropdown ULOK/KPLT */}
+                <div className="relative">
+                  {" "}
+                  {/* DIBUNGKUS DIV RELATIVE */}
+                  <select
+                    value={activeMapFilter}
+                    onChange={(e) =>
+                      onMapFilterChange(e.target.value as "ulok" | "kplt")
+                    }
+                    // --- pl-10 diubah menjadi pl-4 ---
+                    className="appearance-none w-full sm:w-auto bg-white border border-gray-300 rounded pl-4 pr-10 py-2.5 text-sm font-medium text-gray-700 hover:border-red-400 hover:shadow-md focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500 transition-all cursor-pointer min-w-[140px]"
+                  >
+                    <option value="ulok">ULOK</option>
+                    <option value="kplt">KPLT</option>
+                  </select>
+                  {/* --- PANAH BAWAH BARU --- */}
+                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                    <svg
+                      className="w-4 h-4 text-gray-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
+                  </div>
+                </div>
 
-              {/* Dropdown Status (sejajar dengan ULOK/KPLT) */}
-              <select
-                value={statusValue}
-                onChange={(e) => setStatusValue(e.target.value as any)}
-                className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white shadow-sm focus:outline-none focus:ring-1 focus:ring-red-500"
-                title="Filter status peta"
-              >
-                {(activeMapFilter === "ulok"
-                  ? STATUS_OPTIONS.ulok
-                  : STATUS_OPTIONS.kplt
-                ).map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
+                {/* Dropdown Status (sejajar dengan ULOK/KPLT) */}
+                <div className="relative">
+                  {" "}
+                  {/* DIBUNGKUS DIV RELATIVE */}
+                  <select
+                    value={statusValue}
+                    onChange={(e) => setStatusValue(e.target.value as any)}
+                    // --- pl-10 diubah menjadi pl-4 ---
+                    className="appearance-none w-full sm:w-auto bg-white border border-gray-300 rounded pl-4 pr-10 py-2.5 text-sm font-medium text-gray-700 hover:border-red-400 hover:shadow-md focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500 transition-all cursor-pointer min-w-[140px]"
+                    title="Filter status peta"
+                  >
+                    {(activeMapFilter === "ulok"
+                      ? STATUS_OPTIONS.ulok
+                      : STATUS_OPTIONS.kplt
+                    ).map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </select>
+                  {/* --- PANAH BAWAH BARU --- */}
+                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                    <svg
+                      className="w-4 h-4 text-gray-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div className="h-[400px] w-full">

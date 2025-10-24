@@ -10,7 +10,6 @@ const TimestampISO = z.preprocess((val) => {
   return val;
 }, z.string().datetime());
 
-// (Opsional) Enum sesuai alur
 export const UlokApprovalStatus = z.enum(["In Progress", "OK", "NOK"]);
 
 export const UlokBaseSchema = z

@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import useSWR from "swr";
 import { useUser } from "@/hooks/useUser";
 import { DashboardPageProps } from "@/types/common";
-import DashboardLayout from "@/components/desktop/dashboard-layout";
+import DashboardLayout from "@/components/dashboard_layout";
+import useSWR from "swr";
 
 const fetcher = (url: string) =>
   fetch(url).then(async (r) => {
@@ -14,6 +14,7 @@ const fetcher = (url: string) =>
     }
     return r.json();
   });
+// >>>>>>> origin/debug
 
 export default function DashboardPage() {
   const { user } = useUser();
@@ -27,7 +28,6 @@ export default function DashboardPage() {
     "ulok"
   );
 
-  // Susun query untuk endpoint gabungan: /api/dashboard/full -> { summary, points }
   const qs = useMemo(() => {
     const q = new URLSearchParams();
     if (year) q.set("year", String(year));

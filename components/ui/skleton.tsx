@@ -421,3 +421,81 @@ export const KpltSkeleton = ({
     </main>
   );
 };
+
+// ============================================================================
+// Detail KPLT PAGE SKELETON
+// ============================================================================
+export default function DetailKpltSkeleton() {
+  return (
+    <main className="space-y-4 lg:space-y-6">
+      <div className="max-w-7xl mx-auto">
+        {/* Back Button Skeleton */}
+        <div className="mb-6">
+          <Skeleton className="h-10 w-32 rounded-xl" />
+        </div>
+
+        {/* Prefill Card Skeleton - Sesuai dengan gambar */}
+        <div className="mb-10">
+          <div className="bg-white shadow-[1px_1px_6px_rgba(0,0,0,0.25)] rounded-xl p-6">
+            {/* Header */}
+            <div className="space-y-2">
+              <Skeleton className="h-6 w-48" />
+              <Skeleton className="h-4 w-32" />
+            </div>
+          </div>
+        </div>
+
+        {/* Analisis Kelayakan Lokasi Skeleton - Updated dengan DetailCard style */}
+        <div className="bg-white rounded-xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)] mt-10">
+          {/* Header Card */}
+          <div className="border-b border-gray-200 px-6 py-4">
+            <div className="flex items-center">
+              <Skeleton className="h-5 w-5 rounded mr-3" />
+              <Skeleton className="h-6 w-56" />
+            </div>
+          </div>
+          {/* Content Card */}
+          <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+              {[...Array(8)].map((_, i) => (
+                <div key={i}>
+                  <Skeleton className="h-4 w-32 mb-2" />
+                  <Skeleton className="h-10 w-full" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Dokumen Terlampir Skeleton - Updated dengan DetailCard style */}
+        <div className="bg-white rounded-xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)] mt-10">
+          {/* Header Card */}
+          <div className="border-b border-gray-200 px-6 py-4">
+            <div className="flex items-center">
+              <Skeleton className="h-5 w-5 rounded mr-3" />
+              <Skeleton className="h-6 w-48" />
+            </div>
+          </div>
+          {/* Content Card */}
+          <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[...Array(12)].map((_, i) => (
+                <div
+                  key={i}
+                  className="flex items-start gap-4 p-3 rounded-lg border border-gray-200 bg-gray-50"
+                >
+                  <Skeleton className="w-6 h-6 flex-shrink-0" />
+                  <div className="flex flex-col flex-grow space-y-2">
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-3 w-32" />
+                  </div>
+                  <Skeleton className="w-4 h-4 flex-shrink-0" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  );
+}

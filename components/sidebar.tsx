@@ -17,7 +17,6 @@ const menu = [
 ];
 
 export default function Sidebar() {
-  // Semua hook dan state yang dibutuhkan ada di sini
   const { isCollapsed, setIsCollapsed } = useSidebar();
   const pathname = usePathname();
   const { user, loadingUser, userError } = useUser();
@@ -58,7 +57,7 @@ export default function Sidebar() {
       */}
       <aside
         className={`
-          hidden lg:flex flex-col fixed left-0 top-0 h-screen bg-white shadow-[1px_1px_6px_rgba(0,0,0,0.25)]
+          hidden lg:flex flex-col fixed left-0 top-0 h-screen bg-primary-foreground shadow-[1px_1px_6px_rgba(0,0,0,0.25)]
           transition-all duration-300 ease-in-out
           ${isCollapsed ? "w-20" : "w-[270px]"}
         `}

@@ -1,4 +1,4 @@
-import { SuperAdminSignUpForm } from "@/components/desktop/superadmin-signup-form";
+import { SuperAdminSignUpForm } from "@/components/auth/sign_up/superadmin-signup-form";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 

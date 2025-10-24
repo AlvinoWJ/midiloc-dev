@@ -49,20 +49,18 @@ export default function KpltLayout(props: KpltPageProps) {
   });
 
   const groupedData = useMemo(() => {
-    const groups: { [key: string]: typeof displayData } = {
-      "need input": [],
-      "in progress": [],
-      "waiting for forum": [],
-    };
-    displayData.forEach((kplt) => {
-      const status = kplt.status.toLowerCase();
-      if (groups[status] !== undefined) {
-        groups[status].push(kplt);
+    if (activeTab !== "Recent") return {};
+    return displayData.reduce((acc, item) => {
+      const status = item.status.toLowerCase();
+      if (!acc[status]) {
+        acc[status] = [];
       }
-    });
-    return groups;
-  }, [displayData]);
+      acc[status].push(item);
+      return acc;
+    }, {} as { [key: string]: typeof displayData });
+  }, [displayData, activeTab]);
 
+  const statusOrder = ["need input", "in progress", "waiting for forum"];
   const toggleStatus = (status: string) => {
     setExpandedStatuses((prev) => ({ ...prev, [status]: !prev[status] }));
   };
@@ -155,56 +153,70 @@ export default function KpltLayout(props: KpltPageProps) {
             </div>
           ) : (
             <div className="space-y-6">
-              {Object.entries(groupedData).map(([status, items]) => {
-                if (items.length === 0) return null;
-
-                return (
-                  <div key={status}>
-                    {/* Status Header (Accordion Toggle) */}
-                    <button
-                      onClick={() => toggleStatus(status)}
-                      className="flex items-center gap-3 text-left w-full p-2 rounded-lg hover:bg-gray-50 transition-colors"
-                    >
-                      <ChevronIcon isExpanded={expandedStatuses[status]} />
-                      <h2 className="text-lg md:text-xl font-semibold text-gray-800">
-                        {getStatusLabel(status)}
-                      </h2>
-                      <span
-                        className={`px-3 py-1 text-sm font-medium rounded-full ${getStatusBadgeClass(
-                          status
-                        )}`}
-                      >
-                        {items.length}
-                      </span>
-                    </button>
-
-                    {/* Cards Grid yang bisa di-collapse */}
-                    {expandedStatuses[status] && (
-                      <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-6">
-                        {items.map((kplt) => {
-                          const statusLower = kplt.status.toLowerCase();
-                          const destinationUrl =
-                            statusLower === "need input"
-                              ? `/form_kplt/tambah/`
-                              : `/form_kplt/detail/`;
-
-                          return (
-                            <InfoCard
-                              key={kplt.id}
-                              id={kplt.id}
-                              nama={kplt.nama}
-                              alamat={kplt.alamat}
-                              created_at={kplt.created_at}
-                              status={kplt.status}
-                              detailPath={destinationUrl}
-                            />
-                          );
-                        })}
+              {activeTab === "Recent" && (
+                <div className="space-y-6">
+                  {statusOrder.map((status) => {
+                    const items = groupedData[status];
+                    if (!items || items.length === 0) return null;
+                    return (
+                      <div key={status}>
+                        <button
+                          onClick={() => toggleStatus(status)}
+                          className="flex items-center gap-3 text-left w-full p-2 rounded-lg hover:bg-gray-50 transition-colors"
+                        >
+                          <ChevronIcon isExpanded={expandedStatuses[status]} />
+                          <h2 className="text-lg md:text-xl font-semibold text-gray-800">
+                            {getStatusLabel(status)}
+                          </h2>
+                          <span
+                            className={`px-3 py-1 text-sm font-medium rounded-full ${getStatusBadgeClass(
+                              status
+                            )}`}
+                          >
+                            {items.length}
+                          </span>
+                        </button>
+                        {expandedStatuses[status] && (
+                          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-6">
+                            {items.map((kplt) => (
+                              <InfoCard
+                                key={kplt.id}
+                                id={kplt.id}
+                                nama={kplt.nama}
+                                alamat={kplt.alamat}
+                                created_at={kplt.created_at}
+                                status={kplt.status}
+                                detailPath={
+                                  kplt.status.toLowerCase() === "need input"
+                                    ? `/form_kplt/tambah/`
+                                    : `/form_kplt/detail/`
+                                }
+                              />
+                            ))}
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                );
-              })}
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* 🔥 PERBAIKAN 3: Tampilkan Grid Sederhana HANYA untuk tab History */}
+              {activeTab === "History" && (
+                <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-6">
+                  {displayData.map((kplt) => (
+                    <InfoCard
+                      key={kplt.id}
+                      id={kplt.id}
+                      nama={kplt.nama}
+                      alamat={kplt.alamat}
+                      created_at={kplt.created_at}
+                      status={kplt.status}
+                      detailPath={`/form_kplt/detail/`}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </>

@@ -38,17 +38,43 @@ export function DonutChart({ data, title, legendConfig }: DonutChartProps) {
 
   const createPath = (percentage: number, cumulativePercentage: number) => {
     const animatedPercentage = percentage * animationProgress;
-    const angle = (animatedPercentage / 100) * 360;
+    const cappedPercentage = Math.min(animatedPercentage, 99.99);
+    const angle = (cappedPercentage / 100) * 360;
     const startAngle = (cumulativePercentage / 100) * 360 - 90;
+
+    // Untuk persentase > 50%, pecah menjadi 2 arc untuk menghindari glitch
+    if (cappedPercentage > 50) {
+      // Arc pertama: dari start sampai 180°
+      const midAngle = startAngle + 180;
+      const midAngleRad = (midAngle * Math.PI) / 180;
+      const startAngleRad = (startAngle * Math.PI) / 180;
+
+      const x1 = 50 + 40 * Math.cos(startAngleRad);
+      const y1 = 50 + 40 * Math.sin(startAngleRad);
+      const xMid = 50 + 40 * Math.cos(midAngleRad);
+      const yMid = 50 + 40 * Math.sin(midAngleRad);
+
+      // Arc kedua: dari 180° sampai end
+      const endAngle = startAngle + angle;
+      const endAngleRad = (endAngle * Math.PI) / 180;
+      const x2 = 50 + 40 * Math.cos(endAngleRad);
+      const y2 = 50 + 40 * Math.sin(endAngleRad);
+
+      // Gabungkan 2 arc dengan largeArcFlag = 0 untuk keduanya
+      return `M 50,50 L ${x1},${y1} A 40,40 0 0,1 ${xMid},${yMid} A 40,40 0 0,1 ${x2},${y2} Z`;
+    }
+
+    // Untuk persentase <= 50%, gunakan single arc seperti biasa
     const endAngle = startAngle + angle;
     const startAngleRad = (startAngle * Math.PI) / 180;
     const endAngleRad = (endAngle * Math.PI) / 180;
-    const largeArcFlag = angle > 180 ? 1 : 0;
+
     const x1 = 50 + 40 * Math.cos(startAngleRad);
     const y1 = 50 + 40 * Math.sin(startAngleRad);
     const x2 = 50 + 40 * Math.cos(endAngleRad);
     const y2 = 50 + 40 * Math.sin(endAngleRad);
-    return `M 50,50 L ${x1},${y1} A 40,40 0 ${largeArcFlag},1 ${x2},${y2} Z`;
+
+    return `M 50,50 L ${x1},${y1} A 40,40 0 0,1 ${x2},${y2} Z`;
   };
 
   const handleMouseMove = (event: React.MouseEvent) => {
@@ -77,7 +103,9 @@ export function DonutChart({ data, title, legendConfig }: DonutChartProps) {
             {data.map((item, index) => {
               const color = statusColorMap[item.status];
               const percentage = (item.value / total) * 100;
-              const path = createPath(percentage, cumulativePercentage);
+              const drawablePercentage =
+                percentage >= 100 ? 99.999 : percentage;
+              const path = createPath(drawablePercentage, cumulativePercentage);
               cumulativePercentage += percentage;
               const isHovered = hoveredIndex === index;
               return (

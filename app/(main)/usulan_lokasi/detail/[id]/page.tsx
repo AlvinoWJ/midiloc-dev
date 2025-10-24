@@ -3,23 +3,17 @@
 import { useState } from "react";
 import { useParams } from "next/navigation";
 import { useUlokDetail } from "@/hooks/useUlokDetail";
-import { useAlert } from "@/components/desktop/alertcontext";
+import { useAlert } from "@/components/shared/alertcontext";
 import { UlokUpdateInput } from "@/lib/validations/ulok";
 import DetailUlokLayout from "@/components/detail_ulok_layout";
-import InputIntipForm from "@/components/ui/inputintip";
 import { invalidate } from "@/lib/swr-invalidate";
 
 export default function DetailPage() {
-  // --- SETUP & HOOKS ---
   const { id } = useParams<{ id: string }>();
   const { ulokData, isLoading, errorMessage, refresh } = useUlokDetail(id);
   const { showToast, showConfirmation } = useAlert();
-  const [showIntipForm, setShowIntipForm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSubmittingIntip, setIsSubmittingIntip] = useState(false);
   const isPageLoading = isLoading;
-
-  // --- API HANDLERS (Fungsi-fungsi ini tetap di sini karena ini adalah "otak" dari halaman) ---
 
   const handleSaveData = async (
     data: UlokUpdateInput | FormData
@@ -27,11 +21,7 @@ export default function DetailPage() {
     setIsSubmitting(true);
     try {
       let response;
-
-      // Cek tipe data yang dikirim dari hook
       if (data instanceof FormData) {
-        // Jika data adalah FormData, kirim sebagai multipart/form-data
-        // Ini untuk use case upload file form_ulok
         response = await fetch(`/api/ulok/${id}`, {
           method: "PATCH",
           body: data,
@@ -48,7 +38,6 @@ export default function DetailPage() {
         invalidate.ulokDetail(id);
       }
 
-      // Penanganan error yang konsisten untuk kedua jenis request
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || "Gagal menyimpan perubahan.");
@@ -73,42 +62,6 @@ export default function DetailPage() {
     }
   };
 
-  const handleIntipSubmit = async (formData: FormData) => {
-    setIsSubmittingIntip(true);
-    try {
-      const response = await fetch(`/api/ulok/${id}`, {
-        method: "PATCH",
-        body: formData,
-      });
-      invalidate.ulok();
-      invalidate.ulokDetail(id);
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || "Gagal menyimpan data intip.");
-      }
-      showToast({
-        type: "success",
-        title: "Berhasil",
-        message: "Data intip berhasil disimpan!",
-        duration: 4000,
-      });
-      setShowIntipForm(false);
-      await refresh();
-    } catch (error: unknown) {
-      let message = "Terjadi kesalahan saat menyimpan data intip.";
-      if (error instanceof Error) {
-        message = error.message;
-      }
-      showToast({
-        type: "error",
-        title: "Gagal Menyimpan Data Intip",
-        message,
-      });
-    } finally {
-      setIsSubmittingIntip(false);
-    }
-  };
-
   const handleSetApproval = async (status: "OK" | "NOK") => {
     if (!id) return;
     const confirmed = await showConfirmation({
@@ -124,14 +77,12 @@ export default function DetailPage() {
 
     if (!confirmed) return;
 
-    // State isApproving dikelola di dalam komponen layout masing-masing,
-    // jadi tidak perlu state di sini. Fungsi ini hanya berisi logika API.
     try {
-      const fd = new FormData();
-      fd.append("approval_status", status);
+      const payload = { approval_status: status };
       const res = await fetch(`/api/ulok/${id}`, {
         method: "PATCH",
-        body: fd,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
       });
       invalidate.ulok();
       invalidate.ulokDetail(id);
@@ -154,7 +105,6 @@ export default function DetailPage() {
     }
   };
 
-  // Menampilkan pesan error jika gagal mengambil data
   if (errorMessage) {
     return (
       <div className="flex items-center justify-center min-h-screen text-center text-red-500">
@@ -163,11 +113,10 @@ export default function DetailPage() {
     );
   }
 
-  // 1. Tangani state saat deteksi perangkat sedang berjalan
   if (isLoading) {
     const loadingProps = {
       isLoading: true,
-      initialData: null as any, // Diberi `null` karena skeleton tidak butuh data
+      initialData: null as any,
       onSave: async () => false,
       isSubmitting: false,
       onOpenIntipForm: () => {},
@@ -178,7 +127,6 @@ export default function DetailPage() {
 
     return (
       <>
-        {/* Versi Desktop: Tersembunyi di layar kecil, tampil di layar 'md' ke atas */}
         <div className="hidden md:block">
           <DetailUlokLayout {...loadingProps} />
         </div>
@@ -186,10 +134,7 @@ export default function DetailPage() {
     );
   }
 
-  // 2. Setelah deteksi perangkat selesai, lanjutkan dengan logika seperti biasa
-  const pageIsDataLoading = isLoading;
-
-  if (!pageIsDataLoading && !ulokData) {
+  if (!ulokData) {
     return (
       <div className="flex items-center justify-center min-h-screen text-center">
         Data tidak ditemukan.
@@ -202,11 +147,7 @@ export default function DetailPage() {
     initialData: ulokData!,
     onSave: handleSaveData,
     isSubmitting,
-    onOpenIntipForm: () => setShowIntipForm(true),
     onApprove: handleSetApproval,
-    fileIntipUrl: ulokData?.file_intip
-      ? `/api/ulok/${ulokData.id}/file-intip`
-      : null,
     formulokUrl: ulokData?.formulok
       ? `/api/ulok/${ulokData.id}/form-ulok`
       : null,
@@ -215,14 +156,6 @@ export default function DetailPage() {
   return (
     <>
       <DetailUlokLayout {...pageProps} />
-
-      {showIntipForm && (
-        <InputIntipForm
-          onClose={() => setShowIntipForm(false)}
-          onSubmit={handleIntipSubmit}
-          isSubmitting={isSubmittingIntip}
-        />
-      )}
     </>
   );
 }
