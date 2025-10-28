@@ -24,6 +24,7 @@ import DetailKpltSkeleton from "./ui/skleton";
 import InputIntipForm from "./ui/inputintip";
 import InputFormUkur from "./ui/inputformukur";
 import { useMemo } from "react";
+import { createPortal } from "react-dom";
 
 // --- Komponen DetailField (Tidak berubah) ---
 const DetailField = ({ label, value }: { label: string; value: any }) => (
@@ -130,6 +131,103 @@ const DetailCard = ({
   </div>
 );
 
+interface DataInputCardProps {
+  title: string;
+  icon: React.ReactNode;
+  statusValue?: string | null;
+  statusLabel?: string;
+  dateValue?: string | null;
+  dateLabel?: string;
+  fileUrl?: string | null;
+  fileLabel?: string;
+  hasData: boolean;
+  emptyMessage: string;
+  caninput: boolean;
+  onInputClick: () => void;
+  buttonLabel: string;
+  showUpdateButton?: boolean;
+  disabledMessage?: string;
+}
+
+const DataInputCard = ({
+  title,
+  icon,
+  statusValue,
+  statusLabel = "Status",
+  dateValue,
+  dateLabel = "Tanggal",
+  fileUrl,
+  fileLabel = "File",
+  hasData,
+  emptyMessage,
+  caninput,
+  onInputClick,
+  buttonLabel,
+  disabledMessage,
+}: DataInputCardProps) => {
+  // Hitung jumlah field yang ada
+  const fieldCount = [statusValue, dateValue].filter(Boolean).length;
+  const gridClass =
+    fieldCount === 1 ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2";
+
+  return (
+    <DetailCard title={title} icon={icon} className="mt-10">
+      <div className="space-y-4">
+        {!hasData ? (
+          <div className="flex flex-col items-center justify-center py-10 px-4 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+            <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mb-4 shadow-sm">
+              <FileQuestion className="w-10 h-10 text-gray-400" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-700 mb-2">
+              Data Tidak Ditemukan
+            </h3>
+            <p className="text-sm text-gray-500 text-center mb-6 max-w-md">
+              {emptyMessage}
+            </p>
+
+            {caninput && (
+              <Button onClick={onInputClick} variant="default">
+                <UploadCloud className="w-5 h-5" />
+                {buttonLabel}
+              </Button>
+            )}
+
+            {/* Pesan jika tidak bisa edit */}
+            {!caninput && disabledMessage && (
+              <div className="mt-4 px-4 py-2 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p className="text-xs text-yellow-700 text-center">
+                  {disabledMessage}
+                </p>
+              </div>
+            )}
+          </div>
+        ) : (
+          <>
+            <div className={`grid ${gridClass} gap-4`}>
+              {statusValue && (
+                <DetailField label={statusLabel} value={statusValue} />
+              )}
+              {dateValue && <DetailField label={dateLabel} value={dateValue} />}
+            </div>
+
+            <div className="mt-4">
+              {fileUrl ? (
+                <FileLink label={fileLabel} url={fileUrl} />
+              ) : (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                  <p className="text-sm text-yellow-700 italic">
+                    ⚠️ {fileLabel} belum diupload
+                  </p>
+                </div>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+    </DetailCard>
+  );
+};
+
 // --- Interface Utama DIPERBARUI ---
 interface DetailKpltLayoutProps {
   id: string;
@@ -140,7 +238,6 @@ interface DetailKpltLayoutProps {
   isAlreadyApproved: boolean;
   isApproving: boolean;
   onApprove: (status: "OK" | "NOK") => void;
-  // Props BARU untuk LM
   isLocationManager: boolean;
   onOpenIntipModal: () => void;
   onOpenFormUkurModal: () => void;
@@ -285,64 +382,45 @@ export default function DetailKpltLayout({
           </div>
         </DetailCard>
 
-        {isLocationManager && (
-          <DetailCard
-            title="Form Ukur Lokasi"
-            icon={<FileText className="text-red-500 mr-3" size={20} />}
-            className="mt-10"
-          >
-            <div className="space-y-4">
-              {base.formUkurUrl ? (
-                <FileLink
-                  label="Formulir Ukur Tersimpan"
-                  url={base.formUkurUrl}
-                />
-              ) : (
-                <p className="text-sm text-gray-500 italic">
-                  Belum ada Form Ukur yang diupload.
-                </p>
-              )}
+        {/* Card INTIP - hanya untuk Location Manager */}
+        <DataInputCard
+          title="Data Intip"
+          icon={<CheckCircle className="text-red-500 mr-3" size={20} />}
+          statusValue={base.approvalIntipStatus}
+          statusLabel="Status Approval Intip"
+          dateValue={base.tanggalApprovalIntip}
+          dateLabel="Tanggal Approval Intip"
+          fileUrl={base.fileIntipUrl}
+          fileLabel="Bukti Approval INTIP"
+          hasData={
+            !!(
+              base.approvalIntipStatus ||
+              base.fileIntipUrl ||
+              base.tanggalApprovalIntip
+            )
+          }
+          emptyMessage="Belum ada data INTIP yang tersimpan untuk lokasi ini."
+          caninput={isLocationManager && canLmEdit}
+          onInputClick={onOpenIntipModal}
+          buttonLabel="Input Data INTIP"
+          showUpdateButton={true}
+        />
 
-              {/* Tampilkan tanggal ukur jika ada */}
-              {base.tanggalUkur && (
-                <DetailField
-                  label="Tanggal Ukur"
-                  value={base.tanggalUkur} // Data sudah diformat di hook
-                />
-              )}
-            </div>
-          </DetailCard>
-        )}
-
-        {isLocationManager && (
-          <DetailCard
-            title="Data Intip"
-            icon={<CheckCircle className="text-red-500 mr-3" size={20} />}
-            className="mt-10"
-          >
-            <div className="space-y-4">
-              {base.approvalIntipStatus && (
-                <DetailField
-                  label="Status Approval Intip"
-                  value={base.approvalIntipStatus}
-                />
-              )}
-              {base.tanggalApprovalIntip && (
-                <DetailField
-                  label="Tanggal Approval Intip"
-                  value={base.tanggalApprovalIntip}
-                />
-              )}
-              {base.fileIntipUrl ? (
-                <FileLink label="File Intip" url={base.fileIntipUrl} />
-              ) : (
-                <p className="text-sm text-gray-500 italic">
-                  Belum ada File Intip yang diupload.
-                </p>
-              )}
-            </div>
-          </DetailCard>
-        )}
+        {/* Card Form Ukur - hanya untuk Location Manager */}
+        <DataInputCard
+          title="Form Ukur Lokasi"
+          icon={<FileText className="text-red-500 mr-3" size={20} />}
+          dateValue={base.tanggalUkur}
+          dateLabel="Tanggal Ukur"
+          fileUrl={base.formUkurUrl}
+          fileLabel="Formulir Ukur"
+          hasData={!!(base.formUkurUrl || base.tanggalUkur)}
+          emptyMessage="Belum ada Form Ukur yang diupload untuk lokasi ini."
+          caninput={canLmEdit}
+          onInputClick={onOpenFormUkurModal}
+          buttonLabel="Input Form Ukur"
+          showUpdateButton={true}
+        />
 
         {/* Kartu Dokumen Terlampir Lainnya */}
         <DetailCard
@@ -390,22 +468,27 @@ export default function DetailKpltLayout({
       </div>
 
       {/* Modal Input Intip */}
-      {showIntipModal && (
-        <InputIntipForm
-          onSubmit={onIntipSubmit}
-          onClose={onCloseIntipModal}
-          isSubmitting={isSubmittingLmInput}
-        />
-      )}
+      {showIntipModal &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <InputIntipForm
+            onSubmit={onIntipSubmit}
+            onClose={onCloseIntipModal}
+            isSubmitting={isSubmittingLmInput}
+          />,
+          document.body
+        )}
 
       {/* Modal Input Form Ukur */}
-      {showFormUkurModal && (
-        <InputFormUkur
-          onSubmit={onFormUkurSubmit}
-          onClose={onCloseFormUkurModal}
-          isSubmitting={isSubmittingLmInput}
-        />
-      )}
+      {showFormUkurModal &&
+        createPortal(
+          <InputFormUkur
+            onSubmit={onFormUkurSubmit}
+            onClose={onCloseFormUkurModal}
+            isSubmitting={isSubmittingLmInput}
+          />,
+          document.body
+        )}
     </main>
   );
 }

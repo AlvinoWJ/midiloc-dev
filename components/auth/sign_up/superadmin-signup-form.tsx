@@ -50,7 +50,7 @@ export function SuperAdminSignUpForm({
           setPositions(data.data.positions);
           setRoles(data.data.roles);
         }
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
       } catch (error) {
         setError("Gagal memuat data options");
       }
