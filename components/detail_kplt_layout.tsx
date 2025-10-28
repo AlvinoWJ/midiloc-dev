@@ -338,6 +338,10 @@ export default function DetailKpltLayout({
   const canLmEdit =
     isLocationManager && data.base.kpltapproval === "In Progress";
 
+  const isFormUkurFilled = !!base.formUkurUrl;
+  const isFileIntipFilled = !!base.fileIntipUrl;
+  const canShowApprovalButton = isFormUkurFilled && isFileIntipFilled;
+
   return (
     <main className="space-y-4 lg:space-y-6">
       <div className="max-w-7xl mx-auto">
@@ -453,13 +457,13 @@ export default function DetailKpltLayout({
         </DetailCard>
 
         {/* Tombol Approval (BM/RM/GM) */}
-        {showApprovalSection && !isAlreadyApproved && (
+        {showApprovalSection && !isAlreadyApproved && canShowApprovalButton && (
           <div className="mt-6">
             <ApprovalStatusbutton
               show={true}
               disabled={isApproving}
               onApprove={onApprove}
-              fileUploaded={true} // Asumsikan file lain sudah ada jika sampai tahap ini
+              fileUploaded={true}
               loading={isApproving}
               currentStatus={data.base.kpltapproval ?? null}
             />
