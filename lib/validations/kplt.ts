@@ -1,6 +1,5 @@
 import { z } from "zod";
 
-
 function toYMD(d: Date) {
   const yyyy = d.getUTCFullYear();
   const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
@@ -53,7 +52,6 @@ export const KpltCreatePayloadSchema = z
     pdf_kks: z.string().min(1),
     excel_fpl: z.string().min(1),
     excel_pe: z.string().min(1),
-    pdf_form_ukur: z.string().min(1),
     video_traffic_siang: z.string().min(1),
     video_traffic_malam: z.string().min(1),
     video_360_siang: z.string().min(1),
@@ -72,7 +70,6 @@ export const KpltCreateMultipartSchema = KpltCreatePayloadSchema.extend({
   pdf_kks: z.string().optional(),
   excel_fpl: z.string().optional(),
   excel_pe: z.string().optional(),
-  pdf_form_ukur: z.string().optional(),
   video_traffic_siang: z.string().optional(),
   video_traffic_malam: z.string().optional(),
   video_360_siang: z.string().optional(),
