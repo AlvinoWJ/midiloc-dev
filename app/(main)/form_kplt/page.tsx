@@ -44,6 +44,8 @@ export default function KPLTPage() {
         alamat: item.alamat,
         created_at: item.created_at,
         status: item.kplt_approval,
+        has_file_intip: item.has_file_intip || false,
+        has_form_ukur: item.has_form_ukur || false,
       })
     );
     const ulokTransformed: UnifiedKpltItem[] = (ulokForKplt || []).map(
@@ -53,6 +55,8 @@ export default function KPLTPage() {
         alamat: item.alamat,
         created_at: item.created_at,
         status: item.ui_status,
+        has_file_intip: item.has_file_intip || false,
+        has_form_ukur: item.has_form_ukur || false,
       })
     );
     const combinedData = [...existingTransformed, ...ulokTransformed];

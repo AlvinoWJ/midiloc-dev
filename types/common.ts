@@ -122,6 +122,8 @@ export interface KpltExisting {
   latitude: string; // <-- Tambahkan ini
   longitude: string;
   ulok_id: string; // ✅ sesuai kebutuhan UI
+  has_file_intip?: boolean;
+  has_form_ukur?: boolean;
 }
 
 // Tipe untuk setiap objek di dalam array "kplt_from_ulok_ok"
@@ -135,6 +137,8 @@ export interface UlokForKplt {
   approval_status: string;
   latitude: string; // <-- Tambahkan ini
   longitude: string;
+  has_file_intip?: boolean;
+  has_form_ukur?: boolean;
 }
 
 // Tipe data terpadu untuk ditampilkan di card UI
@@ -144,6 +148,8 @@ export interface UnifiedKpltItem {
   alamat: string;
   created_at: string;
   status: string;
+  has_file_intip: boolean;
+  has_form_ukur: boolean;
 }
 
 // Tipe untuk objek "meta" pada respons KPLT
