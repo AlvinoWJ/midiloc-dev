@@ -5,7 +5,7 @@ import { useState, useCallback, useMemo } from "react";
 import { useUser } from "@/hooks/useUser";
 import { useKplt } from "@/hooks/useKplt";
 import { KpltPageProps, UnifiedKpltItem } from "@/types/common";
-import KpltLayout from "@/components/kplt_layout";
+import KpltLayout from "@/components/layout/kplt_layout";
 
 export default function KPLTPage() {
   const [searchQuery, setSearchQuery] = useState("");

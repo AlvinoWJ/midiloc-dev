@@ -2,11 +2,13 @@
 
 import React, { useMemo, useEffect, useState } from "react";
 import { DashboardPageProps } from "@/types/common";
-import { StatsCard } from "./ui/statscard";
-import { DonutChart } from "./ui/donutchart";
-import { BarChart } from "./ui/barchart";
+import { StatsCard } from "../ui/statscard";
+import { DonutChart } from "../ui/donutchart";
+import { BarChart } from "../ui/barchart";
 import dynamic from "next/dynamic";
-import { DashboardSkeleton } from "./ui/skleton";
+import { DashboardSkeleton } from "../ui/skleton";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 const PetaLokasiInteraktif = dynamic(
   () => import("@/components/map/PetaLokasiInteraktif"),
@@ -312,6 +314,11 @@ export default function DashboardLayout(props: DashboardPageProps) {
     });
   }, [propertiUntukPeta, propertiData?.filters?.year]);
 
+  const getYearDate = (year: number | undefined | null) => {
+    const yearToUse = year || new Date().getFullYear();
+    return new Date(yearToUse, 0, 1);
+  };
+
   if (isError) {
     return (
       <main className="space-y-4 lg:space-y-6">
@@ -461,15 +468,20 @@ export default function DashboardLayout(props: DashboardPageProps) {
                   />
                 </svg>
               </div>
-              <select
-                value={propertiData.filters.year || new Date().getFullYear()}
-                onChange={(e) => setYear(Number(e.target.value))}
+
+              <DatePicker
+                showYearPicker
+                dateFormat="yyyy"
+                selected={getYearDate(propertiData.filters.year)}
+                onChange={(date: Date | null) => {
+                  if (date) {
+                    setYear(date.getFullYear());
+                  }
+                }}
+                // Salin semua class styling dari <select>
                 className="appearance-none w-full sm:w-auto bg-white border border-gray-300 rounded pl-10 pr-10 py-2.5 text-sm font-medium text-gray-700 hover:border-red-400 hover:shadow-md focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500 transition-all cursor-pointer min-w-[140px]"
-              >
-                <option value={2025}>2025</option>
-                <option value={2024}>2024</option>
-                <option value={2023}>2023</option>
-              </select>
+              />
+
               <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                 <svg
                   className="w-4 h-4 text-gray-400"

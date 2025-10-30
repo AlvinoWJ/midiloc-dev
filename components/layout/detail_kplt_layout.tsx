@@ -18,11 +18,11 @@ import {
 import { useRouter } from "next/navigation";
 import { MappedKpltDetail } from "@/hooks/useKpltDetail";
 import { useKpltFiles, MappedKpltFile } from "@/hooks/useKpltfile";
-import PrefillKpltCard from "./ui/prefillkpltcard";
-import { ApprovalStatusbutton } from "./ui/approvalbutton";
-import DetailKpltSkeleton from "./ui/skleton";
-import InputIntipForm from "./ui/inputintip";
-import InputFormUkur from "./ui/inputformukur";
+import PrefillKpltCard from "../ui/prefillkpltcard";
+import { ApprovalStatusbutton } from "../ui/approvalbutton";
+import DetailKpltSkeleton from "../ui/skleton";
+import InputIntipForm from "../ui/inputintip";
+import InputFormUkur from "../ui/inputformukur";
 import { useMemo } from "react";
 import { createPortal } from "react-dom";
 

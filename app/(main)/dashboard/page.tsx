@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { useUser } from "@/hooks/useUser";
 import { DashboardPageProps } from "@/types/common";
-import DashboardLayout from "@/components/dashboard_layout";
+import DashboardLayout from "@/components/layout/dashboard_layout";
 import useSWR from "swr";
 
 const fetcher = (url: string) =>

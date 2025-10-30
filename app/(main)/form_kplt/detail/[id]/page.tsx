@@ -3,7 +3,7 @@
 
 import React, { useState, useMemo, useCallback } from "react"; // Tambahkan useCallback
 import { useParams } from "next/navigation";
-import DetailKpltLayout from "@/components/detail_kplt_layout";
+import DetailKpltLayout from "@/components/layout/detail_kplt_layout";
 import { useKpltDetail } from "@/hooks/useKpltDetail";
 import { useAlert } from "@/components/shared/alertcontext";
 import { useUser } from "@/hooks/useUser";

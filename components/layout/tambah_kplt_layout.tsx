@@ -6,9 +6,9 @@ import { Input } from "@/components/ui/input"; // Asumsi path ini benar
 import { Label } from "@/components/ui/label"; // Asumsi path ini benar
 import { ArrowLeft, LinkIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import CustomSelect from "./ui/customselect";
+import CustomSelect from "../ui/customselect";
 import { KpltCreatePayload } from "@/lib/validations/kplt";
-import PrefillKpltCard from "./ui/prefillkpltcard";
+import PrefillKpltCard from "../ui/prefillkpltcard";
 import { KpltBaseUIMapped } from "@/types/common";
 
 // --- 1. PROPS DISESUAIKAN UNTUK MENERIMA LOGIKA DARI PARENT ---

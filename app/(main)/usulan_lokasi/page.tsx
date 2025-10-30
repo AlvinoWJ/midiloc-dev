@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react";
 import { useUser } from "@/hooks/useUser";
 import { useUlok } from "@/hooks/useUlok";
-import UlokLayout from "@/components/ulok_layout";
+import UlokLayout from "@/components/layout/ulok_layout";
 
 export default function UlokPage() {
   // 1. State Management

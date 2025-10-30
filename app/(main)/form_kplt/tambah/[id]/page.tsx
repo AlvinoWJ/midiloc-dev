@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useTambahKplt, KpltFormData } from "@/hooks/useTambahkplt";
-import TambahKpltLayout from "@/components/tambah_kplt_layout";
+import TambahKpltLayout from "@/components/layout/tambah_kplt_layout";
 import { useAlert } from "@/components/shared/alertcontext";
 import { useKpltPrefill } from "@/hooks/useKpltPrefill";
 import { KpltCreatePayload } from "@/lib/validations/kplt";

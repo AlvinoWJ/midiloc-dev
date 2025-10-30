@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { Home, MapPin, FileText, User, X } from "lucide-react"; // Tambahkan ikon X
 import Image from "next/image";
-import { LogoutButton } from "./ui/logout-button"; // Sesuaikan path jika perlu
+import { LogoutButton } from "../ui/logout-button"; // Sesuaikan path jika perlu
 import { useSidebar } from "@/hooks/useSidebar";
 import { useUser } from "@/hooks/useUser";
 

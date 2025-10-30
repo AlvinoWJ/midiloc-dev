@@ -5,7 +5,7 @@ import Tabs from "@/components/ui/tabs";
 import SearchWithFilter from "@/components/ui/searchwithfilter";
 import { InfoCard } from "@/components/ui/infocard";
 import { useState, useMemo } from "react";
-import { KpltSkeleton } from "./ui/skleton";
+import { KpltSkeleton } from "../ui/skleton";
 
 // Helper component for the chevron icon to keep JSX cleaner
 const ChevronIcon = ({ isExpanded }: { isExpanded: boolean }) => (
