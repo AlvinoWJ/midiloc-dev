@@ -7,8 +7,7 @@ import { DonutChart } from "../ui/donutchart";
 import { BarChart } from "../ui/barchart";
 import dynamic from "next/dynamic";
 import { DashboardSkeleton } from "../ui/skleton";
-import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
+import YearPicker from "../ui/yearpicker";
 
 const PetaLokasiInteraktif = dynamic(
   () => import("@/components/map/PetaLokasiInteraktif"),
@@ -468,35 +467,14 @@ export default function DashboardLayout(props: DashboardPageProps) {
                   />
                 </svg>
               </div>
-
-              <DatePicker
-                showYearPicker
-                dateFormat="yyyy"
-                selected={getYearDate(propertiData.filters.year)}
-                onChange={(date: Date | null) => {
-                  if (date) {
-                    setYear(date.getFullYear());
-                  }
-                }}
-                // Salin semua class styling dari <select>
-                className="appearance-none w-full sm:w-auto bg-white border border-gray-300 rounded pl-10 pr-10 py-2.5 text-sm font-medium text-gray-700 hover:border-red-400 hover:shadow-md focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500 transition-all cursor-pointer min-w-[140px]"
+              <YearPicker
+                selectedYear={
+                  propertiData.filters.year || new Date().getFullYear()
+                }
+                onYearChange={setYear}
+                minYear={2017}
+                maxYear={new Date().getFullYear()}
               />
-
-              <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                <svg
-                  className="w-4 h-4 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 9l-7 7-7-7"
-                  />
-                </svg>
-              </div>
             </div>
           </div>
         </div>
