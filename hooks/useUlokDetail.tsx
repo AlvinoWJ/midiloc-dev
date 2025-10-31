@@ -46,6 +46,14 @@ export type MappedUlokData = {
   longitude: number | null;
   namaUser: string | null;
   formulok: string | null;
+
+  updated_at: string | null;
+  updated_by: {
+    nama: string;
+  } | null;
+
+  approved_at: string | null;
+  approved_by: { nama: string } | null;
 };
 
 // 👇 3. Tambahkan tipe pada nilai kembalian hook
@@ -100,6 +108,12 @@ export function useUlokDetail(id: string | undefined): UseUlokDetailReturn {
         longitude: raw.longitude,
         namaUser: raw.users?.nama ?? null,
         formulok: raw.form_ulok,
+
+        updated_at: raw.updated_at ?? null,
+        updated_by: raw.updated_by ?? null,
+
+        approved_at: raw.approved_at ?? null,
+        approved_by: raw.approved_by ?? null,
       }
     : null;
 

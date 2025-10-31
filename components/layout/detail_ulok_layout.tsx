@@ -6,7 +6,10 @@ import dynamic from "next/dynamic";
 import { Dialog } from "@headlessui/react";
 import {
   MapPin,
+  Calendar,
+  User,
   CheckCircle2,
+  XCircle,
   ArrowLeft,
   Edit3,
   Store,
@@ -216,7 +219,7 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
         <div className="bg-white rounded-xl p-6 mb-8 shadow-[1px_1px_6px_rgba(0,0,0,0.25)]">
           <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
             <div className="flex-1 pr-4 min-w-0">
-              <h1 className="text-2xl font-bold text-gray-900 mb-2 truncate">
+              <h1 className="text-2xl font-bold text-gray-900 mb-3">
                 {isEditing ? (
                   <Input
                     name="namaUlok"
@@ -229,23 +232,100 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
                   editedData?.namaUlok || "-"
                 )}
               </h1>
-              <div className="flex items-center text-sm text-gray-500 mb-1">
-                <div className="w-2 h-2 bg-gray-400 rounded-full mr-2"></div>
-                <span>Dibuat Pada </span>
-                <span className="ml-1">
-                  {new Date(editedData?.tanggalUlok || "").toLocaleDateString(
-                    "id-ID",
-                    {
-                      day: "numeric",
-                      month: "long",
-                      year: "numeric",
-                    }
-                  )}
-                </span>
-              </div>
-              <div className="flex items-center text-sm text-gray-500">
-                <div className="w-2 h-2 bg-gray-400 rounded-full mr-2"></div>
-                <span>Dibuat oleh {initialData.namaUser}</span>
+
+              {/* Info Dibuat */}
+              <div className="space-y-2">
+                <div className="flex items-center text-sm text-gray-600">
+                  <Calendar size={14} className="mr-2 flex-shrink-0" />
+                  <span>Dibuat Pada </span>
+                  <span className="ml-1 font-medium">
+                    {new Date(editedData?.tanggalUlok || "").toLocaleDateString(
+                      "id-ID",
+                      {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                      }
+                    )}
+                  </span>
+                </div>
+
+                <div className="flex items-center text-sm text-gray-600">
+                  <User size={14} className="mr-2 flex-shrink-0" />
+                  <span>Dibuat oleh </span>
+                  <span className="ml-1 font-medium">
+                    {initialData.namaUser}
+                  </span>
+                </div>
+
+                {/* 🆕 Info Edit - Highlighted */}
+                {initialData.updated_at && initialData.updated_by && (
+                  <div className="flex items-center text-sm text-amber-700 bg-amber-50 -mx-2 px-2 py-2 rounded-lg mt-3 max-w-fit">
+                    <Edit3 size={14} className="mr-2 flex-shrink-0" />
+                    <div className="flex flex-wrap items-center gap-x-1">
+                      <span>Terakhir diedit pada</span>
+                      <span className="font-semibold">
+                        {new Date(initialData.updated_at).toLocaleDateString(
+                          "id-ID",
+                          {
+                            day: "numeric",
+                            month: "long",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          }
+                        )}
+                      </span>
+                      <span>oleh</span>
+                      <span className="font-semibold">
+                        {initialData.updated_by.nama}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {initialData.approved_at &&
+                  initialData.approved_by &&
+                  (() => {
+                    const isApproved = initialData.approval_status === "OK";
+
+                    const statusText = isApproved
+                      ? "Disetujui pada"
+                      : "Ditolak pada";
+                    const styleClasses = isApproved
+                      ? "text-green-700 bg-green-50"
+                      : "text-red-700 bg-red-50";
+                    const IconComponent = isApproved ? CheckCircle2 : XCircle;
+
+                    return (
+                      <div
+                        className={`flex items-start text-sm ${styleClasses} -mx-2 px-2 py-2 rounded-lg mt-2 max-w-fit`}
+                      >
+                        <IconComponent
+                          size={14}
+                          className="mr-2 mt-0.5 flex-shrink-0"
+                        />
+                        <div className="flex flex-wrap items-center gap-x-1">
+                          <span>{statusText}</span>
+                          <span className="font-semibold">
+                            {new Date(
+                              initialData.approved_at
+                            ).toLocaleDateString("id-ID", {
+                              day: "numeric",
+                              month: "long",
+                              year: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </span>
+                          <span>oleh</span>
+                          <span className="font-semibold">
+                            {initialData.approved_by.nama}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })()}
               </div>
             </div>
             <div className="flex-shrink-0">
