@@ -147,6 +147,7 @@ export async function POST(
     updated_at: new Date().toISOString(),
   };
 
+  //insert mou
   const { data, error } = await supabase
     .from("mou")
     .insert(payload)
@@ -166,6 +167,27 @@ export async function POST(
     }
     return NextResponse.json(
       { error: "Failed to create MOU", detail: msg || error },
+      { status: 500 }
+    );
+  }
+
+  // 2) Update progress_kplt.status = 'Mou'
+  const { error: updErr } = await supabase
+    .from("progress_kplt")
+    .update({
+      status: "Mou",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", progressId);
+
+  if (updErr) {
+    // Kompensasi: hapus MOU yang baru dibuat agar konsisten
+    await supabase.from("mou").delete().eq("id", data.id);
+    return NextResponse.json(
+      {
+        error: "Failed to advance progress to 'Mou'",
+        detail: updErr.message ?? updErr,
+      },
       { status: 500 }
     );
   }
@@ -359,9 +381,9 @@ export async function DELETE(
 
   return NextResponse.json(
     {
-      data: { 
-        deleted: (data ?? []).length, 
-        ids: data?.map((r: { id: number | string }) => r.id) 
+      data: {
+        deleted: (data ?? []).length,
+        ids: data?.map((r: { id: number | string }) => r.id),
       },
     },
     { status: 200 }
