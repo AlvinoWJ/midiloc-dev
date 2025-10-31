@@ -103,7 +103,7 @@ export default function ProgressKpltLayout({
                 alamat={item.status || "Status tidak diketahui"}
                 created_at={item.created_at || new Date().toISOString()}
                 status={item.status || "N/A"}
-                detailPath="/form_kplt/detail"
+                detailPath="/progress_kplt/detail/"
               />
             );
           })}

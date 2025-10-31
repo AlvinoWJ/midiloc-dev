@@ -36,7 +36,6 @@ export default function KPLTPage() {
   console.log("Data Mentah dari Hook:", { kpltExisting, ulokForKplt });
 
   const displayData = useMemo(() => {
-    // 1. Transformasi dan gabungkan data seperti sebelumnya
     const existingTransformed: UnifiedKpltItem[] = (kpltExisting || []).map(
       (item) => ({
         id: item.id,
