@@ -86,7 +86,7 @@ export default function DetailKpltPage() {
           message: "Status approval berhasil dikirim!",
         });
       }
-      await mutate(); // Refresh data setelah sukses
+      await mutate();
     } catch (err: any) {
       console.error("Proses approval/set status gagal:", err);
       showToast({ type: "error", message: err.message || "Terjadi kesalahan" });
@@ -112,8 +112,8 @@ export default function DetailKpltPage() {
           type: "success",
           message: "Data Intip berhasil diperbarui.",
         });
-        setShowIntipModal(false); // Tutup modal
-        await mutate(); // Refresh data
+        setShowIntipModal(false);
+        await mutate();
       } catch (err: any) {
         console.error("Gagal submit Intip:", err);
         showToast({
@@ -144,8 +144,8 @@ export default function DetailKpltPage() {
           type: "success",
           message: "Data Form Ukur berhasil diperbarui.",
         });
-        setShowFormUkurModal(false); // Tutup modal
-        await mutate(); // Refresh data
+        setShowFormUkurModal(false);
+        await mutate();
       } catch (err: any) {
         console.error("Gagal submit Form Ukur:", err);
         showToast({
@@ -186,20 +186,16 @@ export default function DetailKpltPage() {
       };
     }
 
-    // RM bisa approve jika status "In Progress", BM sudah approve, dan RM belum approve
+    // RM bisa approve jika status "In Progress" dan RM belum approve
     if (position === "regional manager") {
-      const bmApproved = !!summary?.bm?.is_approved; // Cek apakah BM sudah setuju
-      const rmAlreadyApproved = !!summary?.rm;
-      // Tampilkan jika status In Progress, BM sudah OK, dan RM belum approve
-      const show =
-        mainStatus === "In Progress" && bmApproved && !rmAlreadyApproved;
+      const AlreadyApproved = !!summary?.rm;
+      const show = mainStatus === "In Progress" && !AlreadyApproved;
       return {
-        isAlreadyApproved: rmAlreadyApproved,
+        isAlreadyApproved: AlreadyApproved,
         showApprovalSection: show,
       };
     }
 
-    // Role lain tidak bisa approve KPLT
     return { isAlreadyApproved: false, showApprovalSection: false };
   }, [data, user]);
 
