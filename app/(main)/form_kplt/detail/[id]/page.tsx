@@ -1,7 +1,7 @@
 // app/(main)/form_kplt/detail/[id]/page.tsx
 "use client";
 
-import React, { useState, useMemo, useCallback } from "react"; // Tambahkan useCallback
+import React, { useState, useMemo, useCallback } from "react";
 import { useParams } from "next/navigation";
 import DetailKpltLayout from "@/components/layout/detail_kplt_layout";
 import { useKpltDetail } from "@/hooks/useKpltDetail";
@@ -15,7 +15,10 @@ export default function DetailKpltPage() {
   const { showToast, showConfirmation } = useAlert(); // Tambahkan showConfirmation
   const { user } = useUser();
   const [isApproving, setIsApproving] = useState(false);
-  const { data, isLoading, isError, error, mutate } = useKpltDetail(kpltId);
+  const { data, isLoading, isError, error, mutate, rawData } =
+    useKpltDetail(kpltId);
+
+  console.log("CEK RAW DATA DARI useKpltDetail:", rawData);
 
   // State baru untuk modal LM
   const [showIntipModal, setShowIntipModal] = useState(false);

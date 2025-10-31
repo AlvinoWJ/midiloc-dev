@@ -14,9 +14,11 @@ import {
   ClipboardList,
   UploadCloud,
   CheckCircle,
+  XCircle,
+  History,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { MappedKpltDetail } from "@/hooks/useKpltDetail";
+import { MappedKpltDetail, ApprovalDetail } from "@/hooks/useKpltDetail";
 import { useKpltFiles, MappedKpltFile } from "@/hooks/useKpltfile";
 import PrefillKpltCard from "../ui/prefillkpltcard";
 import { ApprovalStatusbutton } from "../ui/approvalbutton";
@@ -130,6 +132,49 @@ const DetailCard = ({
     <div className="p-6">{children}</div>
   </div>
 );
+
+const formatLogDate = (isoDate: string | null): string => {
+  if (!isoDate) return "-";
+  try {
+    return new Date(isoDate).toLocaleString("id-ID", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
+  } catch {
+    return "-";
+  }
+};
+
+/**
+ * Komponen untuk menampilkan satu item dalam riwayat persetujuan
+ */
+const ApprovalLogItem = ({ approval }: { approval: ApprovalDetail }) => {
+  const isApproved = approval.is_approved;
+  const statusText = isApproved ? "Disetujui" : "Ditolak";
+  const statusColor = isApproved ? "text-green-600" : "text-red-600";
+  const Icon = isApproved ? CheckCircle : XCircle;
+  const bgColor = isApproved ? "bg-green-50" : "bg-red-50";
+  const borderColor = isApproved ? "border-green-200" : "border-red-200";
+
+  return (
+    <div
+      className={`flex items-start p-4 rounded-lg border ${bgColor} ${borderColor}`}
+    >
+      <Icon className={`w-6 h-6 ${statusColor} mr-4 mt-1 flex-shrink-0`} />
+      <div className="flex-grow">
+        <p className="font-semibold text-gray-800">{approval.position_nama}</p>
+        <p className={`text-sm font-medium ${statusColor}`}>{statusText}</p>
+        <p className="text-xs text-gray-500 mt-1">
+          {formatLogDate(approval.approved_at)}
+        </p>
+      </div>
+    </div>
+  );
+};
 
 interface DataInputCardProps {
   title: string;
@@ -357,7 +402,11 @@ export default function DetailKpltLayout({
         </Button>
 
         {/* Kartu Prefill */}
-        <div className="mb-10">{data && <PrefillKpltCard data={base} />}</div>
+        <div className="mb-10">
+          {data && (
+            <PrefillKpltCard baseData={base} approvalsData={data.approvals} />
+          )}
+        </div>
 
         {/* Kartu Analisis Kelayakan */}
         <DetailCard
@@ -452,6 +501,30 @@ export default function DetailKpltLayout({
                   Tidak ada dokumen tambahan yang dilampirkan.
                 </div>
               )}
+            </div>
+          )}
+        </DetailCard>
+
+        <DetailCard
+          title="Riwayat Persetujuan"
+          icon={<History className="text-red-500 mr-3" size={20} />}
+          className="mt-10"
+        >
+          {data.approvals && data.approvals.length > 0 ? (
+            <div className="space-y-4">
+              {data.approvals
+                .sort(
+                  (a, b) =>
+                    new Date(b.approved_at).getTime() -
+                    new Date(a.approved_at).getTime()
+                ) // Urutkan: terbaru di atas
+                .map((approval) => (
+                  <ApprovalLogItem key={approval.id} approval={approval} />
+                ))}
+            </div>
+          ) : (
+            <div className="col-span-full text-center py-10 text-gray-500">
+              Belum ada riwayat persetujuan untuk lokasi ini.
             </div>
           )}
         </DetailCard>

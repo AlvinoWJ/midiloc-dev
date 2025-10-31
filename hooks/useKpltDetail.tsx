@@ -77,6 +77,7 @@ export type MappedKpltDetail = {
     tanggalUkur: string | null;
     formUkurUrl: string | null;
     kpltapproval?: string;
+    created_at?: string;
   };
   analytics: {
     apc: number;
@@ -146,6 +147,16 @@ function mapKpltDetailResponse(
       return null; // Return null jika tanggal tidak valid
     }
   };
+
+  const formatTanggal = (tanggalISO: string | null): string => {
+    if (!tanggalISO) return "-";
+    return new Date(tanggalISO).toLocaleDateString("id-ID", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  };
+
   const createFileDisplayUrl = (filePath: string | null): string | null => {
     if (!filePath) return null;
     const cleanPath = filePath.replace(/^file_storage\//, "");
@@ -180,6 +191,7 @@ function mapKpltDetailResponse(
       tanggalUkur: formatDisplayDate(kplt.tanggal_ukur),
       formUkurUrl: createFileDisplayUrl(kplt.form_ukur),
       kpltapproval: kplt.kplt_approval || "",
+      created_at: formatTanggal(kplt.created_at),
     },
     analytics: {
       apc: kplt.apc,
