@@ -298,6 +298,7 @@ export type KpltBaseData = {
   kontak_pemilik: string;
   tanggal_approval_intip: string;
   kplt_approval: string;
+  created_at: string | null;
 };
 
 export type KpltBaseUIMapped = {
@@ -323,6 +324,7 @@ export type KpltBaseUIMapped = {
   isActive: boolean;
   formUlok: string | null;
   kpltapproval?: string;
+  created_at?: string;
 };
 
 /**

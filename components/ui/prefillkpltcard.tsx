@@ -1,11 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import {
-  KpltBaseUIMapped,
-  Properti,
-  PrefillKpltResponse,
-} from "@/types/common";
+import { KpltBaseUIMapped, Properti } from "@/types/common";
 import { LinkIcon } from "lucide-react";
 import PetaLoader from "../map/PetaLoader";
 import {
@@ -14,7 +10,9 @@ import {
   BuildingStorefrontIcon,
   UserIcon,
   DocumentTextIcon,
+  CalendarIcon,
 } from "@heroicons/react/24/solid";
+import { KpltDetailData } from "@/hooks/useKpltDetail";
 
 // Komponen-komponen kecil ini kita pindahkan ke sini juga
 const DetailField = ({ label, value }: { label: string; value: any }) => (
@@ -46,7 +44,6 @@ const FileLink = ({ label, url }: { label: string; url: string | null }) => {
   );
 };
 
-// Komponen Utama Kartu Prefill
 export default function PrefillKpltCard({ data }: { data: KpltBaseUIMapped }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
@@ -84,7 +81,6 @@ export default function PrefillKpltCard({ data }: { data: KpltBaseUIMapped }) {
     );
   };
 
-  // Menyiapkan data minimal yang dibutuhkan oleh PetaLoader
   const markerData: Properti[] = [
     {
       id: data.id ?? "",
@@ -108,6 +104,10 @@ export default function PrefillKpltCard({ data }: { data: KpltBaseUIMapped }) {
             </h1>
             <p className="text-base lg:text-lg text-gray-500 mt-1">
               {data.alamat}
+            </p>
+            <p className="flex items-center text-sm lg:text-base text-gray-500 mt-2">
+              <CalendarIcon className="w-4 h-4 mr-1.5" />
+              Dibuat pada: {data.created_at}
             </p>
           </div>
         </div>

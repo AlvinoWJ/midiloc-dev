@@ -48,16 +48,8 @@ function mapKpltPrefillData(
   };
 }
 
-/**
- * Hook untuk mengambil data prefill KPLT berdasarkan ID ULOK.
- * @param ulokId ID dari ULOK.
- */
 export function useKpltPrefill(ulokId: string | undefined) {
-  // ===================== PERUBAHAN DI SINI =====================
-  // URL disesuaikan dengan struktur route baru Anda, dimana ID ada di akhir.
   const key = ulokId ? `/api/kplt/prefill?ulok_id=${ulokId}` : null;
-  // =============================================================
-
   const {
     data: rawData,
     error,
