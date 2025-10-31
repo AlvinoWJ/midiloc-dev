@@ -12,9 +12,9 @@ import {
   DocumentTextIcon,
   CalendarIcon,
 } from "@heroicons/react/24/solid";
-import { KpltDetailData } from "@/hooks/useKpltDetail";
+import { CheckCircle, XCircle, History } from "lucide-react";
+import { ApprovalDetail } from "@/hooks/useKpltDetail";
 
-// Komponen-komponen kecil ini kita pindahkan ke sini juga
 const DetailField = ({ label, value }: { label: string; value: any }) => (
   <div>
     <label className="text-gray-600 font-medium text-sm lg:text-base mb-1 block">
@@ -44,9 +44,57 @@ const FileLink = ({ label, url }: { label: string; url: string | null }) => {
   );
 };
 
-export default function PrefillKpltCard({ data }: { data: KpltBaseUIMapped }) {
+const formatLogDate = (isoDate: string | null): string => {
+  if (!isoDate) return "-";
+  try {
+    return new Date(isoDate).toLocaleString("id-ID", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
+  } catch {
+    return "-";
+  }
+};
+
+const ApprovalLogItem = ({ approval }: { approval: ApprovalDetail }) => {
+  const isApproved = approval.is_approved;
+  const statusText = isApproved ? "Disetujui" : "Ditolak";
+  const statusColor = isApproved ? "text-green-600" : "text-red-600";
+  const Icon = isApproved ? CheckCircle : XCircle;
+  const bgColor = isApproved ? "bg-green-50" : "bg-red-50";
+  const borderColor = isApproved ? "border-green-200" : "border-red-200";
+
+  return (
+    <div
+      className={`flex items-start p-4 rounded-lg border rounded-xl ${bgColor} ${borderColor}`}
+    >
+      <Icon className={`w-6 h-6 ${statusColor} mr-4 mt-1 flex-shrink-0`} />
+      <div className="flex-grow">
+        <p className="font-semibold text-gray-800">{approval.position_nama}</p>
+        <p className={`text-sm font-medium ${statusColor}`}>{statusText}</p>
+        <p className="text-xs text-gray-500 mt-1">
+          {formatLogDate(approval.approved_at)}
+        </p>
+      </div>
+    </div>
+  );
+};
+
+export default function PrefillKpltCard({
+  baseData,
+  approvalsData,
+}: {
+  baseData: KpltBaseUIMapped;
+  approvalsData: ApprovalDetail[] | undefined; // Tambahkan prop baru
+}) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
+
+  const data = baseData;
 
   const handleRouteClick = () => {
     if (!data.latitude || !data.longitude) {
@@ -97,18 +145,39 @@ export default function PrefillKpltCard({ data }: { data: KpltBaseUIMapped }) {
   return (
     <div className="bg-white rounded-xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)] transition-all duration-500">
       <div className="p-6">
-        <div className="flex flex-col md:flex-row justify-between md:items-center">
-          <div className="flex-1 min-w-0 pr-4">
+        <div className="flex flex-col md:flex-row justify-between md:items-start">
+          {/* --- Kolom Kiri (Judul, Alamat, Tanggal) --- */}
+          <div className="flex-1 min-w-0 pr-4 mb-4 md:mb-0">
             <h1 className="text-lg lg:text-xl font-bold text-gray-800">
               {data.namaKplt}
             </h1>
             <p className="text-base lg:text-lg text-gray-500 mt-1">
               {data.alamat}
             </p>
+            {/* --- "Dibuat pada" DIKEMBALIKAN KE SINI --- */}
             <p className="flex items-center text-sm lg:text-base text-gray-500 mt-2">
               <CalendarIcon className="w-4 h-4 mr-1.5" />
               Dibuat pada: {data.created_at}
             </p>
+          </div>
+          <div className="space-y-4">
+            <div className="flex flex-col md:flex-row justify-between md:items-start gap-8">
+              {approvalsData && approvalsData.length > 0 ? (
+                approvalsData
+                  .sort(
+                    (a, b) =>
+                      new Date(b.approved_at).getTime() -
+                      new Date(a.approved_at).getTime()
+                  ) // Sort: terbaru di atas
+                  .map((approval) => (
+                    <ApprovalLogItem key={approval.id} approval={approval} />
+                  ))
+              ) : (
+                <div className=" text-center py-5 text-gray-500">
+                  Belum ada riwayat persetujuan.
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
