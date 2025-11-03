@@ -202,6 +202,9 @@ export interface UlokPageProps {
   onSearch: (query: string) => void;
   onFilterChange: (month: string, year: string) => void;
   onTabChange: (tab: string) => void;
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
   isLocationSpecialist: () => boolean;
 }
 
