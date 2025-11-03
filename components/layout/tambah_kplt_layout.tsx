@@ -124,7 +124,7 @@ export default function TambahKpltLayout({
         </Button>
 
         {/* Bagian ini sekarang menampilkan prefillData */}
-        {prefillData && <PrefillKpltCard data={prefillData} />}
+        {prefillData && <PrefillKpltCard baseData={prefillData} />}
 
         {/* --- MULAI AREA FORM INPUT KPLT --- */}
         <div className="relative mt-10 mx-auto max-w-7xl">
