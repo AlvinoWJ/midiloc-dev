@@ -614,6 +614,9 @@ export default function DashboardLayout(props: DashboardPageProps) {
   isLoading={isMapLoading}
 statusFilter={childStatusFilter}
   activeMapFilter={activeMapFilter} 
+
+
+  
 />
             </div>
           </div>
