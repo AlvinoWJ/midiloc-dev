@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import {
   MapContainer,
   TileLayer,
   Marker,
   Popup,
   LayersControl,
+  useMapEvents
 } from "react-leaflet";
 import { Properti, MapPoint } from "@/types/common";
 import "leaflet/dist/leaflet.css";
@@ -93,7 +94,8 @@ export interface PetaProps {
     north: number;
     east: number;
   }) => void;
-  statusFilter?: string[]; // e.g. ["OK"] atau undefined (semua)
+  statusFilter?: string[];
+  activeMapFilter?: "ulok" | "kplt"; // e.g. ["OK"] atau undefined (semua)
 }
 
 export default function PetaLokasiInteraktif({
@@ -103,42 +105,54 @@ export default function PetaLokasiInteraktif({
   showPopup = true,
   onBoundsChange,
   statusFilter,
+  activeMapFilter
 }: PetaProps) {
   const router = useRouter();
   const [isClient, setIsClient] = useState(false);
 
+  const mapRef = useRef<L.Map>(null);
+
   useEffect(() => setIsClient(true), []);
 
-  // Normalisasi + filter status
   const points = useMemo(() => {
-    const rows = Array.isArray(data) ? data : [];
-    const allowed =
-      statusFilter && statusFilter.length > 0 ? new Set(statusFilter) : null;
+  const rows = Array.isArray(data) ? data : [];
+  const allowed =
+    statusFilter && statusFilter.length > 0 ? new Set(statusFilter) : null;
 
-    return rows
-      .map((row: any) => {
-        const rawLat = row.lat ?? row.latitude ?? null;
-        const rawLng = row.lng ?? row.longitude ?? null;
-        const lat =
-          rawLat != null ? parseFloat(String(rawLat).replace(",", ".")) : NaN;
-        const lng =
-          rawLng != null ? parseFloat(String(rawLng).replace(",", ".")) : NaN;
-        if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  const parsed = rows
+    .map((row: any) => {
+      const rawLat = row.lat ?? row.latitude ?? null;
+      const rawLng = row.lng ?? row.longitude ?? null;
+      const lat =
+        rawLat != null ? parseFloat(String(rawLat).replace(",", ".")) : NaN;
+      const lng =
+        rawLng != null ? parseFloat(String(rawLng).replace(",", ".")) : NaN;
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
 
-        let status: string = row.status ?? row.approval_status ?? "In Progress";
-        if (status === "Approve") status = "OK";
-        if (status === "Reject") status = "NOK";
-        if (allowed && !allowed.has(status)) return null;
+      let status: string = row.status ?? row.approval_status ?? "In Progress";
+      if (status === "Approve") status = "OK";
+      if (status === "Reject") status = "NOK";
+      if (allowed && !allowed.has(status)) return null;
 
-        const name: string = row.name ?? row.nama ?? row.nama_ulok ?? "Lokasi";
-        const created_at: string | undefined = row.created_at ?? undefined;
-        const alamat: string | undefined = row.alamat ?? undefined;
-        const type: "ulok" | "kplt" = row.type ?? "ulok";
-        const id = String(row.id);
+      const name: string =
+        row.name ?? row.nama ?? row.nama_ulok ?? row.nama_kplt ?? "Lokasi";
+      const created_at: string | undefined = row.created_at ?? undefined;
+      const alamat: string | undefined = row.alamat ?? undefined;
 
-        return { id, lat, lng, status, name, created_at, alamat, type };
-      })
-      .filter(Boolean) as Array<{
+        const type: "ulok" | "kplt" =
+  (row.type === "kplt" ||
+    row.nama_kplt ||
+    row.kode_kplt ||
+    activeMapFilter === "kplt")
+    ? "kplt"
+    : "ulok";
+
+
+      const id = String(row.id);
+
+      return { id, lat, lng, status, name, created_at, alamat, type };
+    })
+    .filter(Boolean) as Array<{
       id: string;
       lat: number;
       lng: number;
@@ -148,10 +162,50 @@ export default function PetaLokasiInteraktif({
       alamat?: string;
       type: "ulok" | "kplt";
     }>;
-  }, [data, statusFilter]);
+  // 💡 Pastikan KPLT selalu digambar terakhir agar tidak tertimpa marker ULOK
+  return [
+    ...parsed.filter((p) => p.type === "ulok"),
+    ...parsed.filter((p) => p.type === "kplt"),
+  ];
+}, [data, statusFilter]);
+
+
+
+  // --- PERBAIKAN 1: Buat Komponen Event Handler ---
+  // Komponen ini harus berada di dalam MapContainer untuk mengakses peta
+  function MapEventsHandler() {
+    const map = useMapEvents({
+      // Event saat peta selesai bergerak
+      moveend: () => {
+        const b = map.getBounds();
+        onBoundsChange?.({
+          south: b.getSouth(),
+          west: b.getWest(),
+          north: b.getNorth(),
+          east: b.getEast(),
+        });
+      },
+      // Event saat zoom selesai
+      zoomend: () => {
+        const b = map.getBounds();
+        onBoundsChange?.({
+          south: b.getSouth(),
+          west: b.getWest(),
+          north: b.getNorth(),
+          east: b.getEast(),
+        });
+      },
+    });
+    
+    // Set ref peta secara manual (opsional, jika whenReady tidak cukup)
+    // @ts-ignore // Abaikan error type casting jika muncul
+    mapRef.current = map;
+
+    return null; // Komponen ini tidak merender UI
+  }
 
   if (isLoading || !isClient) {
-    return (
+     return (
       <div className="h-full w-full bg-gray-200 animate-pulse rounded-lg flex items-center justify-center">
         <p className="text-gray-500">Memuat Peta...</p>
       </div>
@@ -168,32 +222,22 @@ export default function PetaLokasiInteraktif({
       center={mapCenter}
       zoom={zoomLevel}
       style={{ height: "100%", width: "100%", zIndex: 0 }}
-      whenReady={(ev) => {
-        const b = ev.target.getBounds();
-        onBoundsChange?.({
-          south: b.getSouth(),
-          west: b.getWest(),
-          north: b.getNorth(),
-          east: b.getEast(),
-        });
-      }}
-      onMoveend={(e) => {
-        const b = e.target.getBounds();
-        onBoundsChange?.({
-          south: b.getSouth(),
-          west: b.getWest(),
-          north: b.getNorth(),
-          east: b.getEast(),
-        });
-      }}
-      onZoomend={(e) => {
-        const b = e.target.getBounds();
-        onBoundsChange?.({
-          south: b.getSouth(),
-          west: b.getWest(),
-          north: b.getNorth(),
-          east: b.getEast(),
-        });
+       ref={mapRef}
+
+      // whenReady masih bisa digunakan untuk mendapatkan bounds awal
+      whenReady={() => {
+        // Beri jeda sedikit agar ref ter-set oleh MapEventsHandler
+        setTimeout(() => {
+          if (mapRef.current) {
+            const b = mapRef.current.getBounds();
+            onBoundsChange?.({
+              south: b.getSouth(),
+              west: b.getWest(),
+              north: b.getNorth(),
+              east: b.getEast(),
+            });
+          }
+        }, 100); 
       }}
     >
       <LayersControl position="topright">
@@ -210,6 +254,7 @@ export default function PetaLokasiInteraktif({
           />
         </LayersControl.BaseLayer>
       </LayersControl>
+      <MapEventsHandler />
 
       <MarkerClusterGroup showCoverageOnHover={false} maxClusterRadius={60}>
         {points.map((p, index) => {
@@ -254,11 +299,11 @@ export default function PetaLokasiInteraktif({
                     <button
                       onClick={() => {
                         const path =
-                          p.type === "kplt"
-                            ? "/form-kplt/detail/"
-                            : "/usulan_lokasi/detail/";
-                        router.push(`${path}${p.id}`);
-                      }}
+                    p.type === "kplt"
+                      ? `/form_kplt/detail/${p.id}`
+                      : `/usulan_lokasi/detail/${p.id}`;
+                  router.push(path);
+                }}
                       className="w-full mt-2 !ml-0 bg-blue-600 text-white font-bold py-2 rounded-lg hover:bg-blue-700 transition-colors"
                     >
                       Lihat Detail

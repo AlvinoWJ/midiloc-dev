@@ -318,6 +318,14 @@ export default function DashboardLayout(props: DashboardPageProps) {
     return new Date(yearToUse, 0, 1);
   };
 
+  // Bentuk statusFilter untuk komponen peta
+  const currentStatusOptions =
+    activeMapFilter === "ulok" ? STATUS_OPTIONS.ulok : STATUS_OPTIONS.kplt;    activeMapFilter === "ulok" ? STATUS_OPTIONS.ulok : STATUS_OPTIONS.kplt;
+
+  const childStatusFilter =
+    statusValue === "Semua Status" ? undefined : [statusValue];
+
+
   if (isError) {
     return (
       <main className="space-y-4 lg:space-y-6">
@@ -602,12 +610,11 @@ export default function DashboardLayout(props: DashboardPageProps) {
 
             <div className="h-[400px] w-full">
               <PetaLokasiInteraktif
-                data={filteredProperti}
-                isLoading={isMapLoading}
-                statusFilter={
-                  statusValue === "Semua Status" ? undefined : [statusValue]
-                }
-              />
+  data={propertiUntukPeta}
+  isLoading={isMapLoading}
+statusFilter={childStatusFilter}
+  activeMapFilter={activeMapFilter} 
+/>
             </div>
           </div>
         </div>
