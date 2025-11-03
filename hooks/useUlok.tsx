@@ -2,7 +2,6 @@
 
 import useSWR from "swr";
 import type { AppUser } from "./useUser";
-import { UlokApiResponse } from "@/types/common";
 
 export type Ulok = {
   id: string;
@@ -20,8 +19,9 @@ interface ApiUlokResponse {
 }
 
 export function useUlok() {
-  const { data, error, isLoading, mutate } =
-    useSWR<ApiUlokResponse>("/api/ulok");
+  const { data, error, isLoading, mutate } = useSWR<ApiUlokResponse>(
+    "/api/ulok?limit=100"
+  );
 
   return {
     ulokData: data?.data ?? [],

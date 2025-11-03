@@ -89,7 +89,7 @@ export default function PrefillKpltCard({
   approvalsData,
 }: {
   baseData: KpltBaseUIMapped;
-  approvalsData: ApprovalDetail[] | undefined; // Tambahkan prop baru
+  approvalsData?: ApprovalDetail[] | undefined; // Tambahkan prop baru
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
@@ -131,7 +131,7 @@ export default function PrefillKpltCard({
 
   const markerData: Properti[] = [
     {
-      id: data.id ?? "",
+      id: data?.id ?? "",
       latitude: data.latitude,
       longitude: data.longitude,
       nama_ulok: data.namaKplt,
@@ -154,27 +154,31 @@ export default function PrefillKpltCard({
             <p className="text-base lg:text-lg text-gray-500 mt-1">
               {data.alamat}
             </p>
-            {/* --- "Dibuat pada" DIKEMBALIKAN KE SINI --- */}
-            <p className="flex items-center text-sm lg:text-base text-gray-500 mt-2">
-              <CalendarIcon className="w-4 h-4 mr-1.5" />
-              Dibuat pada: {data.created_at}
-            </p>
+            {data.created_at && (
+              <p className="flex items-center text-sm lg:text-base text-gray-500 mt-2">
+                <CalendarIcon className="w-4 h-4 mr-1.5" />
+                Dibuat pada: {data.created_at}
+              </p>
+            )}
           </div>
           <div className="space-y-4">
             <div className="flex flex-col md:flex-row justify-between md:items-start gap-8">
-              {approvalsData && approvalsData.length > 0 ? (
-                approvalsData
-                  .sort(
-                    (a, b) =>
-                      new Date(b.approved_at).getTime() -
-                      new Date(a.approved_at).getTime()
-                  ) // Sort: terbaru di atas
-                  .map((approval) => (
-                    <ApprovalLogItem key={approval.id} approval={approval} />
-                  ))
-              ) : (
-                <div className=" text-center py-5 text-gray-500">
-                  Belum ada riwayat persetujuan.
+              {approvalsData && approvalsData.length > 0 && (
+                <div className="space-y-4">
+                  <div className="flex flex-col md:flex-row justify-between md:items-start gap-8">
+                    {approvalsData
+                      .sort(
+                        (a, b) =>
+                          new Date(b.approved_at).getTime() -
+                          new Date(a.approved_at).getTime()
+                      )
+                      .map((approval) => (
+                        <ApprovalLogItem
+                          key={approval.id}
+                          approval={approval}
+                        />
+                      ))}
+                  </div>
                 </div>
               )}
             </div>
