@@ -56,24 +56,23 @@ async function fetchUlokIdWithinScope(
   return ulokId;
 }
 
-// Helper: pembentukan storage key dengan awalan ulok_id
-function makePerizinanFileKey(ulokId: string, field: string, filename: string) {
-  const ts = Date.now();
+// Helper: pembentukan storage key (ulok_id/perizinan/<timestamp>_<safeName>)
+function makePerizinanFileKey(ulokId: string, filename: string) {
+  const ts = Date.now(); // contoh: 1761021305744
   const safe = (filename || "file.bin")
     .toLowerCase()
     .replace(/\s+/g, "_")
     .replace(/[^a-z0-9._-]/g, "");
-  return `${ulokId}/perizinan/${field}/${ts}_${safe}`;
+  return `${ulokId}/perizinan/${ts}_${safe}`;
 }
 
 // Upload satu file ke Storage dan kembalikan key
 async function uploadOneFile(
   supabase: any,
   ulokId: string,
-  field: FileField,
   file: File
 ): Promise<string> {
-  const key = makePerizinanFileKey(ulokId, field, file.name || "file.bin");
+  const key = makePerizinanFileKey(ulokId, file.name || "file.bin");
   const contentType = file.type || "application/octet-stream";
 
   const { error } = await supabase.storage.from(BUCKET).upload(key, file, {
@@ -82,7 +81,9 @@ async function uploadOneFile(
     cacheControl: "3600",
   });
   if (error) {
-    throw new Error(`Failed to upload ${field}: ${error.message}`);
+    throw new Error(
+      `Failed to upload ${file.name || "file"}: ${error.message}`
+    );
   }
   return key;
 }
@@ -112,7 +113,7 @@ async function parseMultipartAndUpload(
   for (const field of FILE_FIELDS) {
     const value = form.get(field);
     if (value instanceof File && value.size > 0) {
-      const key = await uploadOneFile(supabase, ulokId, field, value);
+      const key = await uploadOneFile(supabase, ulokId, value);
       payload[field] = key;
       newUploadedKeys.push(key);
       replacedFileFields.push(field);
