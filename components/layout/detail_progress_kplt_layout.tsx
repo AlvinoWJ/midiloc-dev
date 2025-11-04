@@ -1,15 +1,25 @@
-// File: components/layout/detail_progress_kplt_layout.tsx
 "use client";
 
 import React from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
-import TimelineProgressKplt, {
-  type ProgressStep,
-} from "@/components/ui/timeline";
+import TimelineProgressKplt from "@/components/ui/progress_kplt/timeline";
 
-// Tipe props untuk layout ini
+export interface ProgressKpltInfo {
+  id: string;
+  nama_kplt: string;
+  alamat: string;
+  provinsi: string;
+  kabupaten: string;
+  kecamatan: string;
+  desa_kelurahan: string;
+  latitude: string;
+  longitude: string;
+  created_at: string;
+}
+
+// Props layout disederhanakan
 interface LayoutProps {
   progressData: {
     id: string;
@@ -18,29 +28,17 @@ interface LayoutProps {
     status: string;
     kplt: ProgressKpltInfo;
   };
-  stepsData: ProgressStep[];
 }
-
-// Helper untuk format tanggal
-const formatDate = (dateString: string | null) => {
-  if (!dateString) return "-";
-  return new Date(dateString).toLocaleDateString("id-ID", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-  });
-};
 
 export default function DetailProgressKpltLayout({
   progressData,
-  stepsData,
 }: LayoutProps) {
   const router = useRouter();
-  const { kplt, updated_at, status } = progressData;
+  const { kplt } = progressData;
 
   return (
     <main className="space-y-4 lg:space-y-6">
-      {/* Header: Tombol Kembali, Judul, dan Status */}
+      {/* Header: Tombol Kembali */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <Button
           type="button"
@@ -53,7 +51,7 @@ export default function DetailProgressKpltLayout({
         </Button>
       </div>
 
-      {/* Kartu Info KPLT */}
+      {/* Info KPLT */}
       <div className="bg-white shadow-[1px_1px_6px_rgba(0,0,0,0.25)] rounded-xl p-6">
         <h2 className="text-lg font-bold mb-4 border-b border-gray-300 pb-5">
           {kplt.nama_kplt}
@@ -88,23 +86,10 @@ export default function DetailProgressKpltLayout({
         </div>
       </div>
 
+      {/* Timeline Progress (hanya kirim progressId) */}
       <div className="overflow-hidden">
-        <TimelineProgressKplt steps={stepsData} />
+        <TimelineProgressKplt progressId={progressData.id} />
       </div>
     </main>
   );
-}
-
-// Definisikan tipe datanya di sini agar file bisa berdiri sendiri
-export interface ProgressKpltInfo {
-  id: string;
-  nama_kplt: string;
-  alamat: string;
-  provinsi: string;
-  kabupaten: string;
-  kecamatan: string;
-  desa_kelurahan: string;
-  latitude: string;
-  longitude: string;
-  created_at: string;
 }

@@ -3,5 +3,5 @@ export const swrKeys = {
   ulok: "/api/ulok",
   ulokDetail: (id: string) => `/api/ulok/${id}`,
   kplt: "/api/kplt",
-  kpltDetail: (id:string) => `/api/ulok/${id}`
+  kpltDetail: (id: string) => `/api/ulok/${id}`,
 };
