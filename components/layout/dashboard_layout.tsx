@@ -50,6 +50,9 @@ interface BranchOption {
   nama_cabang: string;
 }
 
+// --- PERUBAHAN 1: Tambahkan Tipe dan Status untuk Progress KPLT ---
+type ActiveMapFilter = "ulok" | "kplt" | "progress_kplt"; 
+
 const STATUS_OPTIONS = {
   ulok: ["Semua Status", "OK", "NOK", "In Progress"] as const,
   kplt: [
@@ -59,7 +62,23 @@ const STATUS_OPTIONS = {
     "In Progress",
     "Waiting for Forum",
   ] as const,
+  progress_kplt: [
+  "Semua Status",
+  "Not Started",
+  "Mou",
+  "Izin Tetangga",
+  "Perizinan",
+  "Notaris",
+  "Renovasi",
+  "Grand Opening"
+] as const,
 };
+
+// Tipe gabungan untuk state status
+type AnyStatus = 
+  | (typeof STATUS_OPTIONS.ulok)[number]
+  | (typeof STATUS_OPTIONS.kplt)[number]
+  | (typeof STATUS_OPTIONS.progress_kplt)[number];
 
 export default function DashboardLayout(props: DashboardPageProps) {
   const {
@@ -85,19 +104,19 @@ export default function DashboardLayout(props: DashboardPageProps) {
   const isRegionalManager = userRole === "regional manager";
   const isGeneralManager = userRole === "general manager"; // BARU: GM bisa filter semua cabang
 
-  // State filter status (dropdown sejajar ULOK/KPLT)
-  const [statusValue, setStatusValue] = useState<
-    (typeof STATUS_OPTIONS.ulok)[number] | (typeof STATUS_OPTIONS.kplt)[number]
-  >("Semua Status");
+// --- PERUBAHAN 2: Tipe state statusValue diperbarui ---
+const [statusValue, setStatusValue] = useState<AnyStatus>("Semua Status");
 
-  // Reset status dropdown jika berganti jenis peta dan value tidak valid
-  useEffect(() => {
-    const options =
-      activeMapFilter === "ulok" ? STATUS_OPTIONS.ulok : STATUS_OPTIONS.kplt;
-    if (!options.includes(statusValue as any)) {
-      setStatusValue("Semua Status");
-    }
-  }, [activeMapFilter, statusValue]);
+ // --- PERUBAHAN 3: useEffect diperbarui untuk 3 tipe ---
+useEffect(() => {
+    // Tentukan opsi yang valid berdasarkan filter Tipe
+ const options = STATUS_OPTIONS[activeMapFilter as ActiveMapFilter];
+    
+    // @ts-ignore - Biarkan untuk pengecekan dinamis
+ if (!options.includes(statusValue)) {
+   setStatusValue("Semua Status");
+  }
+ }, [activeMapFilter, statusValue]);
 
   // Branch options cache (untuk RM/GM)
   const [branchOptionsCache, setBranchOptionsCache] = useState<BranchOption[]>(
@@ -542,13 +561,14 @@ export default function DashboardLayout(props: DashboardPageProps) {
                   <select
                     value={activeMapFilter}
                     onChange={(e) =>
-                      onMapFilterChange(e.target.value as "ulok" | "kplt")
+                      onMapFilterChange(e.target.value as ActiveMapFilter)
                     }
                     // --- pl-10 diubah menjadi pl-4 ---
                     className="appearance-none w-full sm:w-auto bg-white border border-gray-300 rounded pl-4 pr-10 py-2.5 text-sm font-medium text-gray-700 hover:border-red-400 hover:shadow-md focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500 transition-all cursor-pointer min-w-[140px]"
                   >
                     <option value="ulok">ULOK</option>
                     <option value="kplt">KPLT</option>
+                    <option value="progress_kplt">Progress KPLT</option>
                   </select>
                   {/* --- PANAH BAWAH BARU --- */}
                   <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
@@ -572,22 +592,23 @@ export default function DashboardLayout(props: DashboardPageProps) {
                 <div className="relative">
                   {" "}
                   {/* DIBUNGKUS DIV RELATIVE */}
-                  <select
-                    value={statusValue}
-                    onChange={(e) => setStatusValue(e.target.value as any)}
-                    // --- pl-10 diubah menjadi pl-4 ---
-                    className="appearance-none w-full sm:w-auto bg-white border border-gray-300 rounded pl-4 pr-10 py-2.5 text-sm font-medium text-gray-700 hover:border-red-400 hover:shadow-md focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500 transition-all cursor-pointer min-w-[140px]"
-                    title="Filter status peta"
-                  >
-                    {(activeMapFilter === "ulok"
-                      ? STATUS_OPTIONS.ulok
-                      : STATUS_OPTIONS.kplt
-                    ).map((s) => (
-                      <option key={s} value={s}>
-                        {s}
-                      </option>
-                    ))}
-                  </select>
+                 <select
+  value={statusValue}
+  onChange={(e) => setStatusValue(e.target.value as any)}
+  className="appearance-none w-full sm:w-auto bg-white border border-gray-300 rounded pl-4 pr-10 py-2.5 text-sm font-medium text-gray-700 hover:border-red-400 hover:shadow-md focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500 transition-all cursor-pointer min-w-[140px]"
+  title="Filter status peta"
+>
+  {(STATUS_OPTIONS[activeMapFilter as ActiveMapFilter]).map((s) => (
+    <option
+      key={s}
+      value={s}
+      className="py-[2px] leading-tight text-sm"
+    >
+      {s}
+    </option>
+  ))}
+</select>
+
                   {/* --- PANAH BAWAH BARU --- */}
                   <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                     <svg
@@ -613,7 +634,7 @@ export default function DashboardLayout(props: DashboardPageProps) {
   data={propertiUntukPeta}
   isLoading={isMapLoading}
 statusFilter={childStatusFilter}
-  activeMapFilter={activeMapFilter} 
+  activeMapFilter={activeMapFilter as ActiveMapFilter} 
 
 
   
