@@ -7,6 +7,35 @@ import { MouApprovalSchema } from "@/lib/validations/mou";
 // - id = progress_kplt_id
 // - Body hanya boleh berisi { final_status_mou: string }
 // - Server akan mengisi tgl_selesai = now() ISO dan updated_at = now() ISO
+
+const REQUIRED_FIELDS_FOR_APPROVAL = [
+  "tanggal_mou",
+  "nama_pemilik_final",
+  "periode_sewa",
+  "nilai_sewa",
+  "status_pajak",
+  "pembayaran_pph",
+  "cara_pembayaran",
+  "grace_period",
+  "harga_final",
+] as const;
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function findMissingRequiredFields(mou: Record<string, any>) {
+  const missing: string[] = [];
+  for (const key of REQUIRED_FIELDS_FOR_APPROVAL) {
+    const val = mou?.[key];
+    if (
+      val === null ||
+      val === undefined ||
+      (typeof val === "string" && val.trim() === "")
+    ) {
+      missing.push(key);
+    }
+  }
+  return missing;
+}
+
 export async function PATCH(
   req: Request,
   { params }: { params: { id: string } }
@@ -39,12 +68,23 @@ export async function PATCH(
     );
   }
 
-  // Cari target MOU yang berada dalam branch user (join bertingkat)
+  // Ambil MOU dalam scope cabang user + field yang dibutuhkan untuk verifikasi completeness
   const { data: target, error: findErr } = await supabase
     .from("mou")
     .select(
       `
       id,
+      final_status_mou,
+      tanggal_mou,
+      nama_pemilik_final,
+      periode_sewa,
+      nilai_sewa,
+      status_pajak,
+      pembayaran_pph,
+      cara_pembayaran,
+      grace_period,
+      harga_final,
+      keterangan,
       progress_kplt:progress_kplt!mou_progress_kplt_id_fkey!inner (
         id,
         kplt:kplt!progress_kplt_kplt_id_fkey!inner ( id, branch_id )
@@ -65,6 +105,23 @@ export async function PATCH(
     return NextResponse.json(
       { error: "MOU not found for this progress or out of scope" },
       { status: 404 }
+    );
+  }
+  if (target.final_status_mou && target.final_status_mou !== "Belum") {
+    return NextResponse.json(
+      { error: "MOU already finalized", status: target.final_status_mou },
+      { status: 409 }
+    );
+  }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const missing = findMissingRequiredFields(target as any);
+  if (missing.length > 0) {
+    return NextResponse.json(
+      {
+        error: "Cannot approve: required fields are missing",
+        missing_fields: missing,
+      },
+      { status: 422 }
     );
   }
 
