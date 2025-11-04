@@ -45,7 +45,7 @@ export async function GET(req: Request) {
       created_at,
       updated_at,
       status,
-      kplt_id (id,nama_kplt)
+      kplt_id (id,nama_kplt,latitude,longitude)
       `,
       { count: "exact" }
     )

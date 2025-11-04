@@ -1,64 +1,29 @@
-// (Ini versi ringkas tanpa ETag, tinggal pakai langsung)
-import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-import { getCurrentUser, canUlok } from "@/lib/auth/acl";
+import { NextRequest, NextResponse } from "next/server";
 
+// Redirect helper: /api/ulok/:id/form_ulok
+// - Jika query punya ?name=..., pakai name (file spesifik).
+// - Jika tidak ada name, pakai ?field=form_ulok (ambil file terbaru yang mengandung _form_ulok di namanya).
 export async function GET(
-  req: Request,
+  req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const supabase = await createClient();
-  const user = await getCurrentUser();
-  if (!user)
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!canUlok("read", user))
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const url = new URL(req.url);
+  const name = url.searchParams.get("name");
+  const mode = url.searchParams.get("mode"); // opsional: proxy/redirect
+  const download = url.searchParams.get("download"); // opsional: 1
+  const expiresIn = url.searchParams.get("expiresIn"); // opsional: detik
 
-  const { data: ulok, error } = await supabase
-    .from("ulok")
-    .select("id, users_id, branch_id, form_ulok")
-    .eq("id", params.id)
-    .single();
+  const target = new URL(`/api/files/ulok/${params.id}`, req.url);
 
-  if (error || !ulok)
-    return NextResponse.json({ error: "Not Found" }, { status: 404 });
-  if (!ulok.form_ulok)
-    return NextResponse.json({ error: "No form_ulok" }, { status: 404 });
-
-  const mode = new URL(req.url).searchParams.get("mode") || "redirect";
-  const path = ulok.form_ulok.replace(/^form_ulok\//, "");
-
-  if (mode === "proxy") {
-    // PROXY MODE
-    const { data: fileData, error: dlErr } = await supabase.storage
-      .from("file_storage")
-      .download(path);
-    if (dlErr || !fileData)
-      return NextResponse.json({ error: "Download failed" }, { status: 500 });
-
-    // Sederhana saja (bisa tambahkan detect mime)
-    return new Response(fileData, {
-      status: 200,
-      headers: {
-        "Content-Type": "application/octet-stream",
-        "Cache-Control": "private, max-age=60",
-        "Content-Disposition": `inline; filename="${encodeURIComponent(
-          path.split("/").pop() || "file"
-        )}"`,
-      },
-    });
+  if (name && name.trim() !== "") {
+    target.searchParams.set("name", name);
+  } else {
+    target.searchParams.set("field", "form_ulok");
   }
 
-  // REDIRECT MODE (default)
-  const { data: signed, error: signErr } = await supabase.storage
-    .from("file_storage")
-    .createSignedUrl(path, 60 * 5);
+  if (mode) target.searchParams.set("mode", mode);
+  if (download) target.searchParams.set("download", download);
+  if (expiresIn) target.searchParams.set("expiresIn", expiresIn);
 
-  if (signErr || !signed?.signedUrl)
-    return NextResponse.json(
-      { error: "Sign failed", message: signErr?.message },
-      { status: 500 }
-    );
-
-  return NextResponse.redirect(signed.signedUrl, 302);
+  return NextResponse.redirect(target, 307);
 }
