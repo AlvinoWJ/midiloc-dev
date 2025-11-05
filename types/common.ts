@@ -245,8 +245,8 @@ export interface DashboardPageProps {
   onSpecialistChange: (id: string | null) => void;
   selectedBranchId: string | null;
   onBranchChange: (branchId: string | null) => void;
-  activeMapFilter: "ulok" | "kplt";
-  onMapFilterChange: (filter: "ulok" | "kplt") => void;
+  activeMapFilter: "ulok" | "kplt" | "progress_kplt";
+  onMapFilterChange: (filter: "ulok" | "kplt" | "progress_kplt") => void;
 }
 
 // Legacy Properti (dipakai komponen peta lama)
