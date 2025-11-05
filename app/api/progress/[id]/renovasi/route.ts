@@ -7,16 +7,10 @@ import {
   RenovasiUpdateSchema,
   stripServerControlledFieldsRenovasi,
 } from "@/lib/validations/renovasi";
+import { makeFieldKey, isValidPrefixKey } from "@/lib/storage/naming";
 
 const BUCKET = "file_storage";
 const FILE_FIELD = "file_rekom_renovasi" as const;
-
-function safeName(original: string) {
-  return (original || "file.bin")
-    .toLowerCase()
-    .replace(/\s+/g, "_")
-    .replace(/[^a-z0-9._-]/g, "");
-}
 
 async function resolveUlokIdWithinScope(
   supabase: any,
@@ -38,12 +32,8 @@ async function resolveUlokIdWithinScope(
   return ulokId;
 }
 
-function makeFileKey(ulokId: string, filename: string) {
-  return `${ulokId}/renovasi/${Date.now()}_${safeName(filename)}`;
-}
-
 async function uploadOne(supabase: any, ulokId: string, f: File) {
-  const key = makeFileKey(ulokId, f.name || "file.bin");
+  const key = makeFieldKey(ulokId, "renovasi", FILE_FIELD, f);
   const { error } = await supabase.storage.from(BUCKET).upload(key, f, {
     upsert: false,
     contentType: f.type || "application/octet-stream",
@@ -62,11 +52,7 @@ async function parseMultipartAndUpload(
   supabase: any,
   ulokId: string,
   req: Request
-): Promise<{
-  payload: Record<string, unknown>;
-  newUploadedKey?: string;
-  replacedFile?: boolean;
-}> {
+): Promise<{ payload: Record<string, unknown>; newUploadedKey?: string; replacedFile?: boolean }> {
   const form = await req.formData();
   const payload: Record<string, unknown> = {};
   let newUploadedKey: string | undefined;
@@ -79,7 +65,11 @@ async function parseMultipartAndUpload(
     newUploadedKey = key;
     replacedFile = true;
   } else if (typeof v === "string" && v.trim() !== "") {
-    payload[FILE_FIELD] = v.trim();
+    const key = v.trim();
+    if (!isValidPrefixKey(ulokId, "renovasi", key)) {
+      throw new Error("Invalid file_rekom_renovasi key prefix");
+    }
+    payload[FILE_FIELD] = key;
     replacedFile = true;
   }
 
