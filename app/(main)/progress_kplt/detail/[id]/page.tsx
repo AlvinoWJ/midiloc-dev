@@ -14,7 +14,7 @@ export default function DetailProgressKpltPage({
 
   const kpltData: ProgressKpltInfo = {
     id: params.id,
-    nama_kplt: "KPLT " + params.id,
+    nama_kplt: params.id,
     alamat: "Alamat belum diatur",
     provinsi: "-",
     kabupaten: "-",
