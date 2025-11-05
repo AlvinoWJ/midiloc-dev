@@ -260,14 +260,24 @@ const PerizinanForm: React.FC<FormProps> = ({
 
         <div className="md:col-span-2 flex justify-end gap-3 mt-6">
           {onCancelEdit && (
-            <Button variant="default" onClick={onCancelEdit} type="button">
+            <Button
+              variant="default"
+              onClick={onCancelEdit}
+              type="button"
+              className="min-w-30"
+            >
               <XCircle className="mr-2" size={16} />
               Batal
             </Button>
           )}
-          <Button type="submit" variant="submit" disabled={isSubmitting}>
+          <Button
+            type="submit"
+            variant="submit"
+            disabled={isSubmitting}
+            className="min-w-30"
+          >
             {isSubmitting ? (
-              <Loader2 className="animate-spin" size={16} />
+              <Loader2 className="animate-spin mr-2" size={16} />
             ) : (
               <CheckCircle className="mr-2" size={16} />
             )}
@@ -456,7 +466,8 @@ const PerizinanProgressCard: React.FC<{ progressId: string }> = ({
               <Pencil className="mr-2" size={16} /> Edit
             </Button>
             <Button
-              className="bg-green-600 hover:bg-green-700"
+              type="submit"
+              variant="submit"
               onClick={handleSubmitApproval}
               disabled={isSubmittingApproval}
             >

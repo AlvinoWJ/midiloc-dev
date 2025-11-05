@@ -19,7 +19,7 @@ const buttonVariants = cva(
         ghost: "bg-gray-200 hover:bg-gray-300",
         link: "text-primary underline-offset-4 hover:underline",
         submit:
-          "bg-submit text-submit-foreground shadow rounded-xl hover:bg-green-600",
+          "bg-green-600 text-submit-foreground shadow rounded-xl hover:bg-green-500",
       },
       size: {
         default: "h-10 px-4 py-4 text-md",

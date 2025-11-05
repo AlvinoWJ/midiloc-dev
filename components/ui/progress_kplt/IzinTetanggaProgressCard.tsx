@@ -191,7 +191,9 @@ const IzinTetanggaForm: React.FC<FormProps> = ({
         <div className="md:col-span-2">
           <label className="block font-semibold mb-2">File Izin Tetangga</label>
           {currentFileIzin && !fileIzin && (
-            <FileLink label={currentFileIzin.name} file={currentFileIzin} />
+            <div className="mb-3">
+              <FileLink label={currentFileIzin.name} file={currentFileIzin} />
+            </div>
           )}
           <Input
             type="file"
@@ -205,7 +207,9 @@ const IzinTetanggaForm: React.FC<FormProps> = ({
             File Bukti Pembayaran
           </label>
           {currentFileBukti && !fileBukti && (
-            <FileLink label={currentFileBukti.name} file={currentFileBukti} />
+            <div className="mb-3">
+              <FileLink label={currentFileBukti.name} file={currentFileBukti} />
+            </div>
           )}
           <Input
             type="file"
@@ -215,20 +219,28 @@ const IzinTetanggaForm: React.FC<FormProps> = ({
 
         <div className="md:col-span-2 flex justify-end gap-3 mt-6">
           {onCancelEdit && (
-            <Button onClick={onCancelEdit} type="button">
+            <Button
+              onClick={onCancelEdit}
+              variant="default"
+              type="button"
+              className="min-w-30"
+            >
               <XCircle className="mr-2" size={16} />
               Batal
             </Button>
           )}
-          <Button type="submit" variant="submit" disabled={isSubmitting}>
+          <Button
+            type="submit"
+            variant="submit"
+            disabled={isSubmitting}
+            className="min-w-30"
+          >
             {isSubmitting ? (
-              <Loader2 className="animate-spin" size={16} />
+              <Loader2 className="animate-spin mr-2" size={16} />
             ) : (
-              <>
-                <CheckCircle className="mr-2" size={16} />
-                Simpan
-              </>
+              <CheckCircle className="mr-2" size={16} />
             )}
+            Simpan
           </Button>
         </div>
       </form>
@@ -397,7 +409,8 @@ const IzinTetanggaProgressCard: React.FC<{ progressId: string }> = ({
               <Pencil className="mr-2" size={16} /> Edit
             </Button>
             <Button
-              className="bg-green-600 hover:bg-green-700"
+              type="submit"
+              variant="submit"
               onClick={handleSubmitApproval}
               disabled={isSubmittingApproval}
             >
