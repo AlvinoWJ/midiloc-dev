@@ -6,11 +6,11 @@ import { stripServerControlledFieldsPerizinan } from "@/lib/validations/perizina
 
 interface PerizinanData {
   tgl_sph?: string | null;
-  tgl_st?: string | null;
-  tgl_denah?: string | null;
+  tgl_st_berkas?: string | null;
+  tgl_gambar_denah?: string | null;
   tgl_spk?: string | null;
   tgl_rekom_notaris?: string | null;
-  biaya_perizinan?: number | null;
+  nominal_sph?: number | null;
   created_at?: string | null;
   updated_at?: string | null;
   final_status_perizinan?: string | null;

@@ -436,6 +436,9 @@ const MouProgressCard: React.FC<MouProgressCardProps> = ({ progressId }) => {
     );
   }
 
+  const isFinalized =
+    data.final_status_mou === "Selesai" || data.final_status_mou === "Batal";
+
   // Mode Read - Tampilkan data
   return (
     <div className="w-full max-w-5xl mx-auto">
@@ -552,26 +555,25 @@ const MouProgressCard: React.FC<MouProgressCardProps> = ({ progressId }) => {
           </div>
         </div>
 
-        <div className="flex justify-end gap-3 mt-8">
-          <Button variant="default" onClick={() => setIsEditing(true)}>
-            <Pencil className="mr-2" size={16} />
-            Edit
-          </Button>
-          <Button
-            className="bg-green-600 hover:bg-green-700"
-            onClick={handleSubmitApproval}
-            disabled={isSubmittingApproval}
-          >
-            {isSubmittingApproval ? (
-              <Loader2 className="animate-spin" size={16} />
-            ) : (
-              <>
+        {!isFinalized && (
+          <div className="flex justify-end gap-3 mt-8">
+            <Button variant="default" onClick={() => setIsEditing(true)}>
+              <Pencil className="mr-2" size={16} /> Edit
+            </Button>
+            <Button
+              className="bg-green-600 hover:bg-green-700"
+              onClick={handleSubmitApproval}
+              disabled={isSubmittingApproval}
+            >
+              {isSubmittingApproval ? (
+                <Loader2 className="animate-spin" size={16} />
+              ) : (
                 <CheckCircle className="mr-2" size={16} />
-                Submit
-              </>
-            )}
-          </Button>
-        </div>
+              )}{" "}
+              Submit
+            </Button>
+          </div>
+        )}
       </DetailCard>
     </div>
   );

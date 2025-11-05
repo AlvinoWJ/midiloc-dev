@@ -341,6 +341,9 @@ const IzinTetanggaProgressCard: React.FC<{ progressId: string }> = ({
     );
   }
 
+  const isFinalized =
+    data.final_status_it === "Selesai" || data.final_status_it === "Batal";
+
   // Mode Read
   return (
     <div className="w-full max-w-5xl mx-auto">
@@ -388,26 +391,25 @@ const IzinTetanggaProgressCard: React.FC<{ progressId: string }> = ({
           </div>
         </div>
 
-        <div className="flex justify-end gap-3 mt-8">
-          <Button variant="default" onClick={() => setIsEditing(true)}>
-            <Pencil className="mr-2" size={16} />
-            Edit
-          </Button>
-          <Button
-            className="bg-green-600 hover:bg-green-700"
-            onClick={handleSubmitApproval}
-            disabled={isSubmittingApproval}
-          >
-            {isSubmittingApproval ? (
-              <Loader2 className="animate-spin" size={16} />
-            ) : (
-              <>
+        {!isFinalized && (
+          <div className="flex justify-end gap-3 mt-8">
+            <Button variant="default" onClick={() => setIsEditing(true)}>
+              <Pencil className="mr-2" size={16} /> Edit
+            </Button>
+            <Button
+              className="bg-green-600 hover:bg-green-700"
+              onClick={handleSubmitApproval}
+              disabled={isSubmittingApproval}
+            >
+              {isSubmittingApproval ? (
+                <Loader2 className="animate-spin" size={16} />
+              ) : (
                 <CheckCircle className="mr-2" size={16} />
-                Submit
-              </>
-            )}
-          </Button>
-        </div>
+              )}{" "}
+              Submit
+            </Button>
+          </div>
+        )}
       </DetailCard>
     </div>
   );
