@@ -10,6 +10,7 @@ import { ClipboardList } from "lucide-react";
 import CustomSelect from "@/components/ui/customselect";
 import { MouEditableSchema } from "@/lib/validations/mou";
 import { useAlert } from "@/components/shared/alertcontext";
+import { ProgressStatusCard } from "./ProgressStatusCard";
 
 interface MouFormProps {
   progressId: string;
@@ -65,27 +66,15 @@ const MouForm: React.FC<MouFormProps> = ({
     initialData?.cara_pembayaran || ""
   );
 
-  const statusPajakOptions = [
-    "PKP (Pengusaha Kena Pajak)",
-    "Non-PKP",
-    "Bebas Pajak",
-    "Lainnya",
-  ];
+  const statusPajakOptions = ["PKP", "NPKP"];
 
   const pembayaranPphOptions = [
-    "Ditanggung Penyewa",
-    "Ditanggung Pemilik",
-    "Dibagi Dua",
-    "Sudah Termasuk dalam Harga Sewa",
+    "Pemilik",
+    "Perusahan",
+    "Pemilik dan Perusahaan",
   ];
 
-  const caraPembayaranOptions = [
-    "Transfer Bank",
-    "Tunai",
-    "Cek/Giro",
-    "Auto Debit",
-    "Cicilan",
-  ];
+  const caraPembayaranOptions = ["Sekaligus", "Bertahap"];
 
   const handleStatusPajakChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setStatusPajak(e.target.value);
@@ -347,25 +336,6 @@ const MouProgressCard: React.FC<MouProgressCardProps> = ({ progressId }) => {
 
   const { showToast, showConfirmation } = useAlert();
 
-  const formatDate = (dateString: string | null | undefined) => {
-    if (!dateString) return "-";
-    try {
-      return new Date(dateString).toLocaleDateString("id-ID", {
-        day: "2-digit",
-        month: "long",
-        year: "numeric",
-      });
-    } catch (e) {
-      return "-"; // Menangani format tanggal yang tidak valid
-    }
-  };
-
-  const getMouStatus = (status: string | null | undefined) => {
-    if (status === "selesai" || status === "sudah") return "Done";
-    if (status === "Belum") return "In Progress";
-    else return "Pending";
-  };
-
   const handleSubmitApproval = async () => {
     const isConfirmed = await showConfirmation({
       title: "Konfirmasi Approval MOU",
@@ -443,23 +413,15 @@ const MouProgressCard: React.FC<MouProgressCardProps> = ({ progressId }) => {
   console.log("Status:", data?.final_status_mou);
   console.log("Tanggal Selesai:", data?.tgl_selesai_mou);
 
-  const statusCard = (
-    <div className="mt-8 max-w-2xl w-full bg-white shadow-md rounded-2xl border border-gray-100 p-6 text-center animate-in fade-in duration-300 mx-auto">
-      <h3 className="text-lg font-semibold text-gray-800 mb-2">MOU</h3>{" "}
-      <p className="text-sm text-gray-600 mb-3">
-        <strong>Status:</strong> {getMouStatus(data?.final_status_mou)}{" "}
-      </p>{" "}
-      <p className="text-sm text-gray-500">
-        <strong>Mulai:</strong> {formatDate(data?.created_at)} |{" "}
-        <strong>Selesai:</strong> {formatDate(data?.tgl_selesai_mou)}{" "}
-      </p>{" "}
-    </div>
-  );
-
   if (!data || isEditing) {
     return (
       <div className="w-full max-w-5xl mx-auto">
-        {statusCard}
+        <ProgressStatusCard
+          title="MOU"
+          status={data?.final_status_mou}
+          startDate={data?.created_at}
+          endDate={data?.tgl_selesai_mou}
+        />
         <MouForm
           progressId={progressId}
           onSuccess={() => {
@@ -477,7 +439,12 @@ const MouProgressCard: React.FC<MouProgressCardProps> = ({ progressId }) => {
   // Mode Read - Tampilkan data
   return (
     <div className="w-full max-w-5xl mx-auto">
-      {statusCard}
+      <ProgressStatusCard
+        title="MOU"
+        status={data.final_status_mou}
+        startDate={data.created_at}
+        endDate={data.tgl_selesai_mou}
+      />
       <DetailCard
         title="MOU"
         icon={<ClipboardList className="text-red-500 mr-3" size={20} />}

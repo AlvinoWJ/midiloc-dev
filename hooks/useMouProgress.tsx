@@ -70,23 +70,7 @@ export function useMouProgress(
       const clean = stripServerControlledFields(json.data);
 
       // Ambil hanya field penting yang kamu mau tampilkan
-      const importantFields: MouData = {
-        tanggal_mou: clean.tanggal_mou ?? null,
-        nama_pemilik_final: clean.nama_pemilik_final ?? null,
-        periode_sewa: clean.periode_sewa ?? null,
-        nilai_sewa: clean.nilai_sewa ?? null,
-        status_pajak: clean.status_pajak ?? null,
-        pembayaran_pph: clean.pembayaran_pph ?? null,
-        cara_pembayaran: clean.cara_pembayaran ?? null,
-        grace_period: clean.grace_period ?? null,
-        harga_final: clean.harga_final ?? null,
-        keterangan: clean.keterangan ?? null,
-        final_status_mou: json.final_status_mou ?? null,
-        created_at: clean.created_at ?? null,
-        tgl_selesai_mou: clean.tgl_selesai_mou ?? null,
-      };
-
-      setData(importantFields);
+      setData(json.data);
     } catch (err: any) {
       setError(err.message || "Terjadi kesalahan");
     } finally {

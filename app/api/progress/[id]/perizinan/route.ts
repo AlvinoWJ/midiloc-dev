@@ -7,6 +7,7 @@ import {
   PerizinanUpdateSchema,
   stripServerControlledFieldsPerizinan,
 } from "@/lib/validations/perizinan";
+import { makeFieldKey, isValidPrefixKey } from "@/lib/storage/naming";
 
 // Konstanta bucket
 const BUCKET = "file_storage";
@@ -56,35 +57,22 @@ async function fetchUlokIdWithinScope(
   return ulokId;
 }
 
-// Helper: pembentukan storage key (ulok_id/perizinan/<timestamp>_<safeName>)
-function makePerizinanFileKey(ulokId: string, filename: string) {
-  const ts = Date.now(); // contoh: 1761021305744
-  const safe = (filename || "file.bin")
-    .toLowerCase()
-    .replace(/\s+/g, "_")
-    .replace(/[^a-z0-9._-]/g, "");
-  return `${ulokId}/perizinan/${ts}_${safe}`;
-}
-
 // Upload satu file ke Storage dan kembalikan key
 async function uploadOneFile(
   supabase: any,
   ulokId: string,
+  moduleName: string,
+  field: FileField,
   file: File
 ): Promise<string> {
-  const key = makePerizinanFileKey(ulokId, file.name || "file.bin");
+  const key = makeFieldKey(ulokId, moduleName, field, file);
   const contentType = file.type || "application/octet-stream";
-
   const { error } = await supabase.storage.from(BUCKET).upload(key, file, {
     upsert: false,
     contentType,
     cacheControl: "3600",
   });
-  if (error) {
-    throw new Error(
-      `Failed to upload ${file.name || "file"}: ${error.message}`
-    );
-  }
+  if (error) throw new Error(`Failed to upload ${field}: ${error.message}`);
   return key;
 }
 
@@ -108,32 +96,28 @@ async function parseMultipartAndUpload(
   const payload: Record<string, unknown> = {};
   const newUploadedKeys: string[] = [];
   const replacedFileFields: FileField[] = [];
+  const moduleName = "perizinan";
 
-  // 1) Proses semua file_* di form: jika ada File valid, upload dan set payload[field]=key.
   for (const field of FILE_FIELDS) {
     const value = form.get(field);
     if (value instanceof File && value.size > 0) {
-      const key = await uploadOneFile(supabase, ulokId, value);
+      const key = await uploadOneFile(supabase, ulokId, moduleName, field, value);
       payload[field] = key;
       newUploadedKeys.push(key);
       replacedFileFields.push(field);
     } else if (typeof value === "string" && value.trim() !== "") {
-      // Jika client mengirim string (key existing) tetap terima (tanpa upload)
-      payload[field] = value.trim();
+      const key = value.trim();
+      if (!isValidPrefixKey(ulokId, moduleName, key)) {
+        throw new Error(`Invalid key prefix for ${field}`);
+      }
+      payload[field] = key;
       replacedFileFields.push(field);
     }
   }
 
-  // 2) Field non-file: ambil sebagai string ("" dianggap undefined -> tidak dikirim)
   for (const [k, v] of form.entries()) {
-    if ((FILE_FIELDS as readonly string[]).includes(k)) continue; // sudah ditangani
-    if (typeof v === "string") {
-      const trimmed = v.trim();
-      if (trimmed !== "") {
-        payload[k] = trimmed;
-      }
-    }
-    // Abaikan File tak dikenal di luar FILE_FIELDS
+    if ((FILE_FIELDS as readonly string[]).includes(k)) continue;
+    if (typeof v === "string" && v.trim() !== "") payload[k] = v.trim();
   }
 
   return { payload, newUploadedKeys, replacedFileFields };

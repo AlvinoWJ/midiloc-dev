@@ -7,17 +7,11 @@ import {
   ITUpdateSchema,
   stripServerControlledFieldsIT,
 } from "@/lib/validations/izin_tetangga";
+import { makeFieldKey, isValidPrefixKey } from "@/lib/storage/naming";
 
 const BUCKET = "file_storage";
 const FILE_FIELDS = ["file_izin_tetangga", "file_bukti_pembayaran"] as const;
 type FileField = (typeof FILE_FIELDS)[number];
-
-function safeName(original: string) {
-  return (original || "file.bin")
-    .toLowerCase()
-    .replace(/\s+/g, "_")
-    .replace(/[^a-z0-9._-]/g, "");
-}
 
 async function resolveUlokIdWithinScope(
   supabase: any,
@@ -39,18 +33,19 @@ async function resolveUlokIdWithinScope(
   return ulokId;
 }
 
-function makeFileKey(ulokId: string, filename: string) {
-  return `${ulokId}/izin_tetangga/${Date.now()}_${safeName(filename)}`;
-}
-
-async function uploadOne(supabase: any, ulokId: string, f: File) {
-  const key = makeFileKey(ulokId, f.name || "file.bin");
+async function uploadOne(
+  supabase: any,
+  ulokId: string,
+  field: FileField,
+  f: File
+) {
+  const key = makeFieldKey(ulokId, "izin_tetangga", field, f);
   const { error } = await supabase.storage.from(BUCKET).upload(key, f, {
     upsert: false,
     contentType: f.type || "application/octet-stream",
     cacheControl: "3600",
   });
-  if (error) throw new Error(`Upload failed: ${error.message}`);
+  if (error) throw new Error(`Upload failed ${field}: ${error.message}`);
   return key;
 }
 
@@ -68,26 +63,28 @@ async function parseMultipartAndUpload(
   const payload: Record<string, unknown> = {};
   const newUploadedKeys: string[] = [];
   const replacedFields: FileField[] = [];
+  const moduleName = "izin_tetangga";
 
   for (const field of FILE_FIELDS) {
     const v = form.get(field);
     if (v instanceof File && v.size > 0) {
-      const key = await uploadOne(supabase, ulokId, v);
+      const key = await uploadOne(supabase, ulokId, field, v);
       payload[field] = key;
       newUploadedKeys.push(key);
       replacedFields.push(field);
     } else if (typeof v === "string" && v.trim() !== "") {
-      payload[field] = v.trim();
+      const key = v.trim();
+      if (!isValidPrefixKey(ulokId, moduleName, key)) {
+        throw new Error(`Invalid key prefix for ${field}`);
+      }
+      payload[field] = key;
       replacedFields.push(field);
     }
   }
 
   for (const [k, v] of form.entries()) {
     if ((FILE_FIELDS as readonly string[]).includes(k)) continue;
-    if (typeof v === "string") {
-      const t = v.trim();
-      if (t !== "") payload[k] = t;
-    }
+    if (typeof v === "string" && v.trim() !== "") payload[k] = v.trim();
   }
 
   return { payload, newUploadedKeys, replacedFields } as {
@@ -96,7 +93,6 @@ async function parseMultipartAndUpload(
     replacedFields: FileField[];
   };
 }
-
 // GET /api/progress/[id]/izin-tetangga
 export async function GET(
   _req: Request,
