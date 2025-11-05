@@ -1,26 +1,21 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
+/* lib/validations/mou */
 import { z } from "zod";
 
-// Helper: ubah "" atau null menjadi undefined (agar field opsional tidak gagal)
 const emptyToUndefined = (v: unknown) =>
   v === "" || v === null ? undefined : v;
 
-// Tanggal 'YYYY-MM-DD' (opsional) dengan preprocessor
 const dateString = z.preprocess(
   emptyToUndefined,
   z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Expected date string in YYYY-MM-DD")
 );
 
-// Angka opsional (double), terima number atau string angka
 const optionalNumber = z.preprocess(
   emptyToUndefined,
   z.coerce.number().finite()
 );
 
-// Integer opsional
 const optionalInt = z.preprocess(emptyToUndefined, z.coerce.number().int());
 
-// String opsional non-kosong (auto-trim)
 const optionalNonEmptyString = z.preprocess(
   emptyToUndefined,
   z.string().trim().min(1)

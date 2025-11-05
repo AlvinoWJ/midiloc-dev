@@ -88,7 +88,7 @@ export default function ProgressKpltLayout({
         // Tampilan Kartu Data
         <div className="space-y-6 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-6">
           {progressData.map((item) => {
-            const kpltId = item.kplt_id?.id;
+            const kpltId = item.id;
             const kpltName = item.kplt_id?.nama_kplt;
 
             if (!kpltId) {
