@@ -50,7 +50,6 @@ const MouForm: React.FC<MouFormProps> = ({
   progressId,
   onSuccess,
   initialData,
-  isEditMode = false,
   onCancelEdit,
 }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -183,6 +182,7 @@ const MouForm: React.FC<MouFormProps> = ({
             name="tanggal_mou"
             type="date"
             defaultValue={initialData?.tanggal_mou || ""}
+            className="[&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-3 [&::-webkit-calendar-picker-indicator]:cursor-pointer pr-10"
           />
         </div>
         <div>
@@ -304,20 +304,28 @@ const MouForm: React.FC<MouFormProps> = ({
 
         <div className="md:col-span-2 flex justify-end gap-3 mt-6">
           {onCancelEdit && (
-            <Button variant="default" onClick={onCancelEdit} type="button">
+            <Button
+              variant="default"
+              onClick={onCancelEdit}
+              type="button"
+              className="min-w-30"
+            >
               <XCircle className="mr-2" size={16} />
               Batal
             </Button>
           )}
-          <Button type="submit" variant="submit" disabled={isSubmitting}>
+          <Button
+            type="submit"
+            variant="submit"
+            disabled={isSubmitting}
+            className="min-w-30"
+          >
             {isSubmitting ? (
-              <Loader2 className="animate-spin" size={16} />
+              <Loader2 className="animate-spin mr-2" size={16} />
             ) : (
-              <>
-                <CheckCircle className="mr-2" size={16} />
-                Simpan
-              </>
+              <CheckCircle className="mr-2" size={16} />
             )}
+            Simpan
           </Button>
         </div>
       </form>
@@ -436,6 +444,9 @@ const MouProgressCard: React.FC<MouProgressCardProps> = ({ progressId }) => {
     );
   }
 
+  const isFinalized =
+    data.final_status_mou === "Selesai" || data.final_status_mou === "Batal";
+
   // Mode Read - Tampilkan data
   return (
     <div className="w-full max-w-5xl mx-auto">
@@ -552,26 +563,26 @@ const MouProgressCard: React.FC<MouProgressCardProps> = ({ progressId }) => {
           </div>
         </div>
 
-        <div className="flex justify-end gap-3 mt-8">
-          <Button variant="default" onClick={() => setIsEditing(true)}>
-            <Pencil className="mr-2" size={16} />
-            Edit
-          </Button>
-          <Button
-            className="bg-green-600 hover:bg-green-700"
-            onClick={handleSubmitApproval}
-            disabled={isSubmittingApproval}
-          >
-            {isSubmittingApproval ? (
-              <Loader2 className="animate-spin" size={16} />
-            ) : (
-              <>
+        {!isFinalized && (
+          <div className="flex justify-end gap-3 mt-8">
+            <Button variant="default" onClick={() => setIsEditing(true)}>
+              <Pencil className="mr-2" size={16} /> Edit
+            </Button>
+            <Button
+              type="submit"
+              variant="submit"
+              onClick={handleSubmitApproval}
+              disabled={isSubmittingApproval}
+            >
+              {isSubmittingApproval ? (
+                <Loader2 className="animate-spin" size={16} />
+              ) : (
                 <CheckCircle className="mr-2" size={16} />
-                Submit
-              </>
-            )}
-          </Button>
-        </div>
+              )}{" "}
+              Submit
+            </Button>
+          </div>
+        )}
       </DetailCard>
     </div>
   );

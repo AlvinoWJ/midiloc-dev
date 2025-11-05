@@ -1,7 +1,7 @@
 // components/ui/progress_kplt/PerizinanProgressCard.tsx
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { usePerizinanProgress } from "@/hooks/progress_kplt/usePerizinanProgreess";
 import { useFile, ApiFile } from "@/hooks/progress_kplt/useFilesProgress";
 import {
@@ -18,7 +18,6 @@ import { PerizinanEditableSchema } from "@/lib/validations/perizinan";
 import { useAlert } from "@/components/shared/alertcontext";
 import { ProgressStatusCard } from "./ProgressStatusCard";
 
-// Komponen DetailCard (Helper)
 const DetailCard = ({
   title,
   icon,
@@ -33,17 +32,14 @@ const DetailCard = ({
   <div
     className={`bg-white rounded-xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)] ${className}`}
   >
-    <div className="border-b border-gray-200 px-6 py-4">
-      <div className="flex items-center">
-        {icon}
-        <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
-      </div>
+    <div className="border-b border-gray-200 px-6 py-4 flex items-center">
+      {icon}
+      <h2 className="text-lg font-semibold text-gray-900 ml-2">{title}</h2>
     </div>
     <div className="p-6">{children}</div>
   </div>
 );
 
-// Komponen FileLink (Helper)
 const FileLink = ({
   label,
   file,
@@ -79,7 +75,6 @@ const FileLink = ({
   );
 };
 
-// Input File Helper untuk Form
 const FormFileInput: React.FC<{
   label: string;
   name: string;
@@ -107,7 +102,6 @@ const FormFileInput: React.FC<{
   </div>
 );
 
-// Form Komponen
 interface FormProps {
   progressId: string;
   onSuccess: () => void;
@@ -125,7 +119,7 @@ const PerizinanForm: React.FC<FormProps> = ({
 }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { showToast } = useAlert();
-  // State untuk 5 file
+
   const [fileSph, setFileSph] = useState<File | null>(null);
   const [fileSt, setFileSt] = useState<File | null>(null);
   const [fileDenah, setFileDenah] = useState<File | null>(null);
@@ -137,26 +131,23 @@ const PerizinanForm: React.FC<FormProps> = ({
     setIsSubmitting(true);
 
     const formData = new FormData(e.currentTarget);
-    // Tambahkan file ke FormData jika ada
     if (fileSph) formData.append("file_sph", fileSph);
     if (fileSt) formData.append("file_bukti_st", fileSt);
     if (fileDenah) formData.append("file_denah", fileDenah);
     if (fileSpk) formData.append("file_spk", fileSpk);
     if (fileNotaris) formData.append("file_rekom_notaris", fileNotaris);
 
-    // Ambil data non-file untuk validasi
     const payload = {
       tgl_sph: formData.get("tgl_sph") || undefined,
-      tgl_st: formData.get("tgl_st") || undefined,
-      tgl_denah: formData.get("tgl_denah") || undefined,
+      tgl_st_berkas: formData.get("tgl_st_berkas") || undefined,
+      tgl_gambar_denah: formData.get("tgl_gambar_denah") || undefined,
       tgl_spk: formData.get("tgl_spk") || undefined,
       tgl_rekom_notaris: formData.get("tgl_rekom_notaris") || undefined,
-      biaya_perizinan: Number(formData.get("biaya_perizinan")) || undefined,
+      nominal_sph: Number(formData.get("nominal_sph")) || undefined,
     };
     const parsed = PerizinanEditableSchema.partial().safeParse(payload);
 
     if (!parsed.success) {
-      console.error(parsed.error.format());
       showToast({
         type: "error",
         message: "Data tidak valid. Periksa kembali input Anda.",
@@ -169,15 +160,11 @@ const PerizinanForm: React.FC<FormProps> = ({
       const method = initialData ? "PATCH" : "POST";
       const res = await fetch(`/api/progress/${progressId}/perizinan`, {
         method,
-        body: formData, // Kirim sebagai FormData
+        body: formData,
       });
 
       const json = await res.json();
-      if (!res.ok) {
-        const errMsg =
-          json.detail?.[0]?.message || json.error || "Gagal menyimpan data";
-        throw new Error(errMsg);
-      }
+      if (!res.ok) throw new Error(json.error || "Gagal menyimpan data");
       showToast({
         type: "success",
         message: `Data Perizinan berhasil di${
@@ -186,7 +173,6 @@ const PerizinanForm: React.FC<FormProps> = ({
       });
       onSuccess();
     } catch (err: any) {
-      console.error(err);
       showToast({ type: "error", message: err.message });
     } finally {
       setIsSubmitting(false);
@@ -203,78 +189,39 @@ const PerizinanForm: React.FC<FormProps> = ({
         onSubmit={handleSubmit}
         className="grid grid-cols-1 md:grid-cols-2 gap-4"
       >
-        {/* Tanggal Fields */}
+        {[
+          ["tgl_sph", "Tanggal SPH"],
+          ["tgl_st_berkas", "Tanggal ST"],
+          ["tgl_gambar_denah", "Tanggal Denah"],
+          ["tgl_spk", "Tanggal SPK"],
+          ["tgl_rekom_notaris", "Tanggal Rekom Notaris"],
+        ].map(([name, label]) => (
+          <div key={name}>
+            <label htmlFor={name} className="block font-semibold mb-2">
+              {label}
+            </label>
+            <Input
+              id={name}
+              name={name}
+              type="date"
+              defaultValue={initialData?.[name] || ""}
+            />
+          </div>
+        ))}
+
         <div>
-          <label htmlFor="tgl_sph" className="block font-semibold mb-2">
-            Tanggal SPH
-          </label>
-          <Input
-            id="tgl_sph"
-            name="tgl_sph"
-            type="date"
-            defaultValue={initialData?.tgl_sph || ""}
-          />
-        </div>
-        <div>
-          <label htmlFor="tgl_st" className="block font-semibold mb-2">
-            Tanggal ST
-          </label>
-          <Input
-            id="tgl_st"
-            name="tgl_st"
-            type="date"
-            defaultValue={initialData?.tgl_st || ""}
-          />
-        </div>
-        <div>
-          <label htmlFor="tgl_denah" className="block font-semibold mb-2">
-            Tanggal Denah
-          </label>
-          <Input
-            id="tgl_denah"
-            name="tgl_denah"
-            type="date"
-            defaultValue={initialData?.tgl_denah || ""}
-          />
-        </div>
-        <div>
-          <label htmlFor="tgl_spk" className="block font-semibold mb-2">
-            Tanggal SPK
-          </label>
-          <Input
-            id="tgl_spk"
-            name="tgl_spk"
-            type="date"
-            defaultValue={initialData?.tgl_spk || ""}
-          />
-        </div>
-        <div>
-          <label
-            htmlFor="tgl_rekom_notaris"
-            className="block font-semibold mb-2"
-          >
-            Tanggal Rekom Notaris
-          </label>
-          <Input
-            id="tgl_rekom_notaris"
-            name="tgl_rekom_notaris"
-            type="date"
-            defaultValue={initialData?.tgl_rekom_notaris || ""}
-          />
-        </div>
-        <div>
-          <label htmlFor="biaya_perizinan" className="block font-semibold mb-2">
+          <label htmlFor="nominal_sph" className="block font-semibold mb-2">
             Biaya Perizinan (Rp)
           </label>
           <Input
-            id="biaya_perizinan"
-            name="biaya_perizinan"
+            id="nominal_sph"
+            name="nominal_sph"
             type="number"
-            defaultValue={initialData?.biaya_perizinan || ""}
+            defaultValue={initialData?.nominal_sph || ""}
           />
         </div>
 
-        {/* File Fields */}
+        {/* Input File */}
         <FormFileInput
           label="File SPH"
           name="file_sph"
@@ -313,14 +260,24 @@ const PerizinanForm: React.FC<FormProps> = ({
 
         <div className="md:col-span-2 flex justify-end gap-3 mt-6">
           {onCancelEdit && (
-            <Button variant="default" onClick={onCancelEdit} type="button">
+            <Button
+              variant="default"
+              onClick={onCancelEdit}
+              type="button"
+              className="min-w-30"
+            >
               <XCircle className="mr-2" size={16} />
               Batal
             </Button>
           )}
-          <Button type="submit" variant="submit" disabled={isSubmitting}>
+          <Button
+            type="submit"
+            variant="submit"
+            disabled={isSubmitting}
+            className="min-w-30"
+          >
             {isSubmitting ? (
-              <Loader2 className="animate-spin" size={16} />
+              <Loader2 className="animate-spin mr-2" size={16} />
             ) : (
               <CheckCircle className="mr-2" size={16} />
             )}
@@ -332,16 +289,10 @@ const PerizinanForm: React.FC<FormProps> = ({
   );
 };
 
-// Komponen Utama
 const PerizinanProgressCard: React.FC<{ progressId: string }> = ({
   progressId,
 }) => {
-  const {
-    data,
-    loading: loadingData,
-    error: errorData,
-    refetch,
-  } = usePerizinanProgress(progressId);
+  const { data, loading, error, refetch } = usePerizinanProgress(progressId);
   const {
     filesMap,
     loading: loadingFiles,
@@ -353,91 +304,69 @@ const PerizinanProgressCard: React.FC<{ progressId: string }> = ({
   const [isSubmittingApproval, setIsSubmittingApproval] = useState(false);
   const { showToast, showConfirmation } = useAlert();
 
-  const formatDate = (dateString: string | null | undefined) => {
-    if (!dateString) return "-";
-    try {
-      return new Date(dateString).toLocaleDateString("id-ID", {
-        day: "2-digit",
-        month: "long",
-        year: "numeric",
-      });
-    } catch (e) {
-      return "-";
-    }
-  };
+  const formatDate = (dateString?: string | null) =>
+    dateString
+      ? new Date(dateString).toLocaleDateString("id-ID", {
+          day: "2-digit",
+          month: "long",
+          year: "numeric",
+        })
+      : "-";
+
+  useEffect(() => {
+    // Refetch ulang setiap kali halaman dibuka ulang
+    refetch();
+    refreshFiles();
+  }, [progressId]);
 
   const handleSubmitApproval = async () => {
-    const isConfirmed = await showConfirmation({
+    const confirmed = await showConfirmation({
       title: "Konfirmasi Approval Perizinan",
-      message:
-        "Apakah Anda yakin ingin submit data ini? Data yang sudah di-submit tidak dapat diubah kembali.",
+      message: "Apakah Anda yakin ingin submit data ini?",
       confirmText: "Ya, Submit",
       type: "warning",
     });
-
-    if (!isConfirmed) return;
+    if (!confirmed) return;
     setIsSubmittingApproval(true);
-
     try {
-      const payload = { final_status_perizinan: "selesai" };
       const res = await fetch(
         `/api/progress/${progressId}/perizinan/approval`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
+          body: JSON.stringify({ final_status_perizinan: "selesai" }),
         }
       );
-
       const json = await res.json();
-      if (!res.ok) {
-        let errorTitle = "Submit Gagal";
-        let errorMessage = json.error || "Gagal melakukan submit.";
-        if (json.missing_fields) {
-          errorTitle = "Data Belum Lengkap";
-          errorMessage = `Mohon isi field berikut: ${json.missing_fields.join(
-            ", "
-          )}`;
-        }
-        showToast({
-          type: "error",
-          title: errorTitle,
-          message: errorMessage,
-        });
-        setIsSubmittingApproval(false);
-        return;
-      }
+      if (!res.ok) throw new Error(json.error || "Gagal submit");
       showToast({
         type: "success",
-        message: "Perizinan berhasil diajukan untuk approval.",
+        message: "Perizinan berhasil disubmit.",
       });
       await refetch();
       await refreshFiles();
     } catch (err: any) {
-      console.error(err);
+      showToast({ type: "error", message: err.message });
     } finally {
       setIsSubmittingApproval(false);
     }
   };
 
-  const isLoading = loadingData || loadingFiles;
-  const error = errorData || errorFiles;
-
-  if (isLoading)
+  if (loading || loadingFiles)
     return (
       <div className="flex justify-center py-10 mt-8 w-full max-w-5xl mx-auto">
         <Loader2 className="animate-spin text-gray-500" size={28} />
       </div>
     );
 
-  if (error)
+  if (error || errorFiles)
     return (
       <div className="text-red-500 text-center py-5 mt-8 w-full max-w-5xl mx-auto">
-        Terjadi kesalahan: {error}
+        Terjadi kesalahan: {error || errorFiles}
       </div>
     );
 
-  if (!data || isEditing) {
+  if (!data || isEditing)
     return (
       <div className="w-full max-w-5xl mx-auto">
         <ProgressStatusCard
@@ -459,9 +388,11 @@ const PerizinanProgressCard: React.FC<{ progressId: string }> = ({
         />
       </div>
     );
-  }
 
-  // Mode Read
+  const isFinalized =
+    data.final_status_perizinan === "Selesai" ||
+    data.final_status_perizinan === "Batal";
+
   return (
     <div className="w-full max-w-5xl mx-auto">
       <ProgressStatusCard
@@ -476,45 +407,42 @@ const PerizinanProgressCard: React.FC<{ progressId: string }> = ({
         className="mt-10"
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Data Fields */}
           <div>
             <h3 className="font-semibold mb-2">Tanggal SPH</h3>
-            <div className="bg-gray-100 rounded-md px-4 py-2">
-              {formatDate(data.tgl_sph) || "-"}
+            <div className="bg-gray-100 px-4 py-2 rounded-md">
+              {formatDate(data.tgl_sph)}
             </div>
           </div>
           <div>
             <h3 className="font-semibold mb-2">Tanggal ST</h3>
-            <div className="bg-gray-100 rounded-md px-4 py-2">
-              {formatDate(data.tgl_st) || "-"}
+            <div className="bg-gray-100 px-4 py-2 rounded-md">
+              {formatDate(data.tgl_st_berkas)}
             </div>
           </div>
           <div>
             <h3 className="font-semibold mb-2">Tanggal Denah</h3>
-            <div className="bg-gray-100 rounded-md px-4 py-2">
-              {formatDate(data.tgl_denah) || "-"}
+            <div className="bg-gray-100 px-4 py-2 rounded-md">
+              {formatDate(data.tgl_gambar_denah)}
             </div>
           </div>
           <div>
             <h3 className="font-semibold mb-2">Tanggal SPK</h3>
-            <div className="bg-gray-100 rounded-md px-4 py-2">
-              {formatDate(data.tgl_spk) || "-"}
+            <div className="bg-gray-100 px-4 py-2 rounded-md">
+              {formatDate(data.tgl_spk)}
             </div>
           </div>
           <div>
             <h3 className="font-semibold mb-2">Tanggal Rekom Notaris</h3>
-            <div className="bg-gray-100 rounded-md px-4 py-2">
-              {formatDate(data.tgl_rekom_notaris) || "-"}
+            <div className="bg-gray-100 px-4 py-2 rounded-md">
+              {formatDate(data.tgl_rekom_notaris)}
             </div>
           </div>
           <div>
-            <h3 className="font-semibold mb-2">Biaya Perizinan (Rp)</h3>
-            <div className="bg-gray-100 rounded-md px-4 py-2">
-              Rp {data.biaya_perizinan?.toLocaleString("id-ID") || "-"}
+            <h3 className="font-semibold mb-2">Nominal SPH (Rp)</h3>
+            <div className="bg-gray-100 px-4 py-2 rounded-md">
+              Rp {data.nominal_sph?.toLocaleString("id-ID") || "-"}
             </div>
           </div>
-
-          {/* File Fields */}
           <div className="md:col-span-2">
             <h3 className="font-semibold mb-2">Dokumen</h3>
             <div className="space-y-3">
@@ -532,25 +460,26 @@ const PerizinanProgressCard: React.FC<{ progressId: string }> = ({
             </div>
           </div>
         </div>
-
-        <div className="flex justify-end gap-3 mt-8">
-          <Button variant="default" onClick={() => setIsEditing(true)}>
-            <Pencil className="mr-2" size={16} />
-            Edit
-          </Button>
-          <Button
-            className="bg-green-600 hover:bg-green-700"
-            onClick={handleSubmitApproval}
-            disabled={isSubmittingApproval}
-          >
-            {isSubmittingApproval ? (
-              <Loader2 className="animate-spin" size={16} />
-            ) : (
-              <CheckCircle className="mr-2" size={16} />
-            )}
-            Submit
-          </Button>
-        </div>
+        {!isFinalized && (
+          <div className="flex justify-end gap-3 mt-8">
+            <Button variant="default" onClick={() => setIsEditing(true)}>
+              <Pencil className="mr-2" size={16} /> Edit
+            </Button>
+            <Button
+              type="submit"
+              variant="submit"
+              onClick={handleSubmitApproval}
+              disabled={isSubmittingApproval}
+            >
+              {isSubmittingApproval ? (
+                <Loader2 className="animate-spin" size={16} />
+              ) : (
+                <CheckCircle className="mr-2" size={16} />
+              )}{" "}
+              Submit
+            </Button>
+          </div>
+        )}
       </DetailCard>
     </div>
   );
