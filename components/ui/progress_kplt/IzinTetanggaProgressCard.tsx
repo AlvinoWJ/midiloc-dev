@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { useIzinTetanggaProgress } from "@/hooks/useIzinTetanggaProgress";
+import { useIzinTetanggaProgress } from "@/hooks/progress_kplt/useIzinTetanggaProgress";
 import {
   Loader2,
   Pencil,
@@ -16,9 +16,9 @@ import { Input } from "@/components/ui/input";
 import { ITEditableSchema } from "@/lib/validations/izin_tetangga";
 import { useAlert } from "@/components/shared/alertcontext";
 import { ProgressStatusCard } from "./ProgressStatusCard";
-import { useFile, ApiFile } from "@/hooks/useFilesprogress";
+import { useFile, ApiFile } from "@/hooks/progress_kplt/useFilesProgress";
 
-// Komponen DetailCard (Helper)
+// 🔸 Komponen DetailCard
 const DetailCard = ({
   title,
   icon,
@@ -43,13 +43,13 @@ const DetailCard = ({
   </div>
 );
 
-// Komponen FileLink (Helper)
+// 🔸 Komponen FileLink
 const FileLink = ({
   label,
   file,
 }: {
   label: string;
-  file: ApiFile | undefined; // Terima objek ApiFile
+  file: ApiFile | undefined;
 }) => {
   if (!file) {
     return (
@@ -89,7 +89,7 @@ interface FormProps {
   currentFileBukti: ApiFile | undefined;
 }
 
-// Komponen Form
+// 🔸 Komponen Form
 const IzinTetanggaForm: React.FC<FormProps> = ({
   progressId,
   onSuccess,
@@ -103,28 +103,14 @@ const IzinTetanggaForm: React.FC<FormProps> = ({
   const [fileIzin, setFileIzin] = useState<File | null>(null);
   const [fileBukti, setFileBukti] = useState<File | null>(null);
 
-  function buildFileApiUrl(
-    progressId: string,
-    filePath: string | null | undefined
-  ) {
-    if (!filePath) return null;
-    return `/api/files/izin_tetangga/${progressId}?path=${encodeURIComponent(
-      filePath
-    )}`;
-  }
-
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
 
     const formData = new FormData(e.currentTarget);
-    // Tambahkan file ke FormData jika ada
-    if (fileIzin) {
-      formData.append("file_izin_tetangga", fileIzin);
-    }
-    if (fileBukti) {
-      formData.append("file_bukti_pembayaran", fileBukti);
-    }
+
+    if (fileIzin) formData.append("file_izin_tetangga", fileIzin);
+    if (fileBukti) formData.append("file_bukti_pembayaran", fileBukti);
 
     const payload = {
       tanggal_terbit: formData.get("tanggal_terbit") || undefined,
@@ -133,7 +119,6 @@ const IzinTetanggaForm: React.FC<FormProps> = ({
     const parsed = ITEditableSchema.partial().safeParse(payload);
 
     if (!parsed.success) {
-      console.error(parsed.error.format());
       showToast({
         type: "error",
         message: "Data tidak valid. Mohon periksa kembali input Anda.",
@@ -146,24 +131,26 @@ const IzinTetanggaForm: React.FC<FormProps> = ({
       const method = initialData ? "PATCH" : "POST";
       const res = await fetch(`/api/progress/${progressId}/izin_tetangga`, {
         method,
-        body: formData, // Kirim sebagai FormData
+        body: formData,
       });
 
       const json = await res.json();
       if (!res.ok) {
-        const errMsg =
-          json.detail?.[0]?.message || json.error || "Gagal menyimpan data";
-        throw new Error(errMsg);
+        throw new Error(
+          json.detail?.[0]?.message || json.error || "Gagal menyimpan data"
+        );
       }
+
       showToast({
         type: "success",
         message: `Data Izin Tetangga berhasil di${
           initialData ? "update" : "simpan"
         }.`,
       });
+
+      // ✅ Langsung panggil onSuccess agar refresh data tanpa reload
       onSuccess();
     } catch (err: any) {
-      console.error(err);
       showToast({ type: "error", message: err.message });
     } finally {
       setIsSubmitting(false);
@@ -180,13 +167,9 @@ const IzinTetanggaForm: React.FC<FormProps> = ({
         onSubmit={handleSubmit}
         className="grid grid-cols-1 md:grid-cols-2 gap-4"
       >
+        {/* Input tanggal & nominal */}
         <div>
-          <label
-            htmlFor="tanggal_terbit"
-            className="block font-semibold text-base lg:text-lg mb-2"
-          >
-            Tanggal Terbit
-          </label>
+          <label className="block font-semibold mb-2">Tanggal Terbit</label>
           <Input
             id="tanggal_terbit"
             name="tanggal_terbit"
@@ -195,12 +178,7 @@ const IzinTetanggaForm: React.FC<FormProps> = ({
           />
         </div>
         <div>
-          <label
-            htmlFor="nominal"
-            className="block font-semibold text-base lg:text-lg mb-2"
-          >
-            Nominal (Rp)
-          </label>
+          <label className="block font-semibold mb-2">Nominal (Rp)</label>
           <Input
             id="nominal"
             name="nominal"
@@ -209,51 +187,35 @@ const IzinTetanggaForm: React.FC<FormProps> = ({
           />
         </div>
 
-        {/* File 1 */}
+        {/* File Izin Tetangga */}
         <div className="md:col-span-2">
-          <label
-            htmlFor="file_izin_tetangga"
-            className="block font-semibold text-base lg:text-lg mb-2"
-          >
-            File Izin Tetangga
-          </label>
-          {/* 5. Tampilkan link jika file ada DAN file baru belum dipilih */}
+          <label className="block font-semibold mb-2">File Izin Tetangga</label>
           {currentFileIzin && !fileIzin && (
             <FileLink label={currentFileIzin.name} file={currentFileIzin} />
           )}
           <Input
-            id="file_izin_tetangga"
-            name="File Izin Tetangga"
             type="file"
             onChange={(e) => setFileIzin(e.target.files?.[0] || null)}
-            className="mt-2"
           />
         </div>
 
-        {/* File 2 */}
+        {/* File Bukti Pembayaran */}
         <div className="md:col-span-2">
-          <label
-            htmlFor="file_bukti_pembayaran"
-            className="block font-semibold text-base lg:text-lg mb-2"
-          >
+          <label className="block font-semibold mb-2">
             File Bukti Pembayaran
           </label>
-          {/* 6. Tampilkan link jika file ada DAN file baru belum dipilih */}
           {currentFileBukti && !fileBukti && (
             <FileLink label={currentFileBukti.name} file={currentFileBukti} />
           )}
           <Input
-            id="file_bukti_pembayaran"
-            name="File Bukti Pembayaran"
             type="file"
             onChange={(e) => setFileBukti(e.target.files?.[0] || null)}
-            className="mt-2"
           />
         </div>
 
         <div className="md:col-span-2 flex justify-end gap-3 mt-6">
           {onCancelEdit && (
-            <Button variant="default" onClick={onCancelEdit} type="button">
+            <Button onClick={onCancelEdit} type="button">
               <XCircle className="mr-2" size={16} />
               Batal
             </Button>
@@ -274,7 +236,7 @@ const IzinTetanggaForm: React.FC<FormProps> = ({
   );
 };
 
-// Komponen Utama
+// 🔸 Komponen Utama
 const IzinTetanggaProgressCard: React.FC<{ progressId: string }> = ({
   progressId,
 }) => {
@@ -288,6 +250,9 @@ const IzinTetanggaProgressCard: React.FC<{ progressId: string }> = ({
   const [isEditing, setIsEditing] = useState(false);
   const [isSubmittingApproval, setIsSubmittingApproval] = useState(false);
   const { showToast, showConfirmation } = useAlert();
+
+  const fileIzinTetangga = filesMap.get("file_izin_tetangga");
+  const fileBuktiPembayaran = filesMap.get("file_bukti_pembayaran");
 
   const formatDate = (dateString: string | null | undefined) => {
     if (!dateString) return "-";
@@ -315,41 +280,29 @@ const IzinTetanggaProgressCard: React.FC<{ progressId: string }> = ({
     setIsSubmittingApproval(true);
 
     try {
-      const payload = { final_status_it: "selesai" };
       const res = await fetch(
         `/api/progress/${progressId}/izin_tetangga/approval`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
+          body: JSON.stringify({ final_status_it: "selesai" }),
         }
       );
 
-      const json = await res.json();
-      if (!res.ok) {
-        let errorTitle = "Submit Gagal";
-        let errorMessage = "Periksa kelengkapan data.";
-        showToast({
-          type: "error",
-          title: errorTitle,
-          message: errorMessage,
-        });
-        setIsSubmittingApproval(false);
-        return;
-      }
+      if (!res.ok) throw new Error("Gagal melakukan submit.");
       showToast({
         type: "success",
         message: "Izin Tetangga berhasil disubmit.",
       });
       await refetch();
-    } catch (err: any) {
-      console.error(err);
+    } catch (err) {
+      showToast({ type: "error", message: "Gagal melakukan submit." });
     } finally {
       setIsSubmittingApproval(false);
     }
   };
 
-  if (loading)
+  if (loading || fileLoading)
     return (
       <div className="flex justify-center py-10 mt-8 w-full max-w-5xl mx-auto">
         <Loader2 className="animate-spin text-gray-500" size={28} />
@@ -362,9 +315,6 @@ const IzinTetanggaProgressCard: React.FC<{ progressId: string }> = ({
         Terjadi kesalahan: {error}
       </div>
     );
-
-  const fileIzinTetangga = filesMap.get("file_izin_tetangga");
-  const fileBuktiPembayaran = filesMap.get("file_bukti_pembayaran");
 
   if (!data || isEditing) {
     return (
@@ -379,7 +329,7 @@ const IzinTetanggaProgressCard: React.FC<{ progressId: string }> = ({
           progressId={progressId}
           onSuccess={() => {
             refetch();
-            refreshFiles();
+            refreshFiles(); // ✅ Refresh file otomatis setelah upload/update
             setIsEditing(false);
           }}
           initialData={data}

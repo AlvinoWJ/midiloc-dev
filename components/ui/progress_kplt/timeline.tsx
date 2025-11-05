@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { CheckCircle, Clock, MoreHorizontal } from "lucide-react";
 import MouProgressCard from "@/components/ui/progress_kplt/MouProgressCard";
 import IzinTetanggaProgressCard from "@/components/ui/progress_kplt/IzinTetanggaProgressCard";
+import PerizinanProgressCard from "./PerizinanProgressCard";
 
 export interface ProgressStep {
   id: string;
@@ -191,6 +192,9 @@ export default function TimelineProgressKplt({
           }
           if (step.nama_tahap === "Ijin Tetangga") {
             return <IzinTetanggaProgressCard progressId={step.progress_id} />;
+          }
+          if (step.nama_tahap === "Perizinan") {
+            return <PerizinanProgressCard progressId={step.progress_id} />;
           }
           return (
             <div className="mt-8 max-w-2xl w-full bg-white shadow-md rounded-2xl border border-gray-100 p-6 text-center animate-in fade-in duration-300">
