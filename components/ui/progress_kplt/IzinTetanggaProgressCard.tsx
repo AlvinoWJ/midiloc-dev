@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input";
 import { ITEditableSchema } from "@/lib/validations/izin_tetangga";
 import { useAlert } from "@/components/shared/alertcontext";
 import { ProgressStatusCard } from "./ProgressStatusCard";
-import { useFile } from "@/hooks/useFilesprogress";
+import { useFile, ApiFile } from "@/hooks/useFilesprogress";
 
 // Komponen DetailCard (Helper)
 const DetailCard = ({
@@ -44,26 +44,49 @@ const DetailCard = ({
 );
 
 // Komponen FileLink (Helper)
-const FileLink = ({ label, href }: { label: string; href: string }) => (
-  <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border">
-    <span className="text-sm text-gray-700 font-medium">{label}</span>
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="inline-flex items-center bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-1.5 px-3 rounded-lg"
-    >
-      <LinkIcon className="w-3 h-3 mr-1.5" />
-      Lihat
-    </a>
-  </div>
-);
+const FileLink = ({
+  label,
+  file,
+}: {
+  label: string;
+  file: ApiFile | undefined; // Terima objek ApiFile
+}) => {
+  if (!file) {
+    return (
+      <div className="flex items-center justify-between bg-gray-100 p-3 rounded-lg border">
+        <span className="text-sm text-gray-400 italic">{label} (Kosong)</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border">
+      <span
+        className="text-sm text-gray-700 font-medium truncate pr-4"
+        title={file.name}
+      >
+        {label}
+      </span>
+      <a
+        href={file.href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-1.5 px-3 rounded-lg flex-shrink-0"
+      >
+        <LinkIcon className="w-3 h-3 mr-1.5" />
+        Lihat
+      </a>
+    </div>
+  );
+};
 
 interface FormProps {
   progressId: string;
   onSuccess: () => void;
   initialData?: any;
   onCancelEdit?: () => void;
+  currentFileIzin: ApiFile | undefined;
+  currentFileBukti: ApiFile | undefined;
 }
 
 // Komponen Form
@@ -72,6 +95,8 @@ const IzinTetanggaForm: React.FC<FormProps> = ({
   onSuccess,
   initialData,
   onCancelEdit,
+  currentFileIzin,
+  currentFileBukti,
 }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { showToast } = useAlert();
@@ -192,22 +217,13 @@ const IzinTetanggaForm: React.FC<FormProps> = ({
           >
             File Izin Tetangga
           </label>
-
-          {initialData?.file_izin_tetangga && !fileIzin && (
-            <FileLink
-              label="Lihat file saat ini"
-              href={
-                buildFileApiUrl(
-                  progressId,
-                  String(initialData.file_izin_tetangga)
-                ) || "#"
-              }
-            />
+          {/* 5. Tampilkan link jika file ada DAN file baru belum dipilih */}
+          {currentFileIzin && !fileIzin && (
+            <FileLink label={currentFileIzin.name} file={currentFileIzin} />
           )}
-
           <Input
             id="file_izin_tetangga"
-            name="file_izin_tetangga"
+            name="File Izin Tetangga"
             type="file"
             onChange={(e) => setFileIzin(e.target.files?.[0] || null)}
             className="mt-2"
@@ -222,22 +238,13 @@ const IzinTetanggaForm: React.FC<FormProps> = ({
           >
             File Bukti Pembayaran
           </label>
-
-          {initialData?.file_bukti_pembayaran && !fileBukti && (
-            <FileLink
-              label="Lihat file saat ini"
-              href={
-                buildFileApiUrl(
-                  progressId,
-                  String(initialData.file_bukti_pembayaran)
-                ) || "#"
-              }
-            />
+          {/* 6. Tampilkan link jika file ada DAN file baru belum dipilih */}
+          {currentFileBukti && !fileBukti && (
+            <FileLink label={currentFileBukti.name} file={currentFileBukti} />
           )}
-
           <Input
             id="file_bukti_pembayaran"
-            name="file_bukti_pembayaran"
+            name="File Bukti Pembayaran"
             type="file"
             onChange={(e) => setFileBukti(e.target.files?.[0] || null)}
             className="mt-2"
@@ -272,7 +279,12 @@ const IzinTetanggaProgressCard: React.FC<{ progressId: string }> = ({
   progressId,
 }) => {
   const { data, loading, error, refetch } = useIzinTetanggaProgress(progressId);
-  const { files, loading: fileLoading } = useFile("izin_tetangga", progressId);
+  const {
+    filesMap,
+    loading: fileLoading,
+    refresh: refreshFiles,
+  } = useFile("izin_tetangga", progressId);
+
   const [isEditing, setIsEditing] = useState(false);
   const [isSubmittingApproval, setIsSubmittingApproval] = useState(false);
   const { showToast, showConfirmation } = useAlert();
@@ -316,13 +328,7 @@ const IzinTetanggaProgressCard: React.FC<{ progressId: string }> = ({
       const json = await res.json();
       if (!res.ok) {
         let errorTitle = "Submit Gagal";
-        let errorMessage = json.error || "Gagal melakukan submit.";
-        if (json.missing_fields) {
-          errorTitle = "Data Belum Lengkap";
-          errorMessage = `Mohon isi field berikut: ${json.missing_fields.join(
-            ", "
-          )}`;
-        }
+        let errorMessage = "Periksa kelengkapan data.";
         showToast({
           type: "error",
           title: errorTitle,
@@ -333,7 +339,7 @@ const IzinTetanggaProgressCard: React.FC<{ progressId: string }> = ({
       }
       showToast({
         type: "success",
-        message: "Izin Tetangga berhasil diajukan untuk approval.",
+        message: "Izin Tetangga berhasil disubmit.",
       });
       await refetch();
     } catch (err: any) {
@@ -357,6 +363,9 @@ const IzinTetanggaProgressCard: React.FC<{ progressId: string }> = ({
       </div>
     );
 
+  const fileIzinTetangga = filesMap.get("file_izin_tetangga");
+  const fileBuktiPembayaran = filesMap.get("file_bukti_pembayaran");
+
   if (!data || isEditing) {
     return (
       <div className="w-full max-w-5xl mx-auto">
@@ -370,10 +379,13 @@ const IzinTetanggaProgressCard: React.FC<{ progressId: string }> = ({
           progressId={progressId}
           onSuccess={() => {
             refetch();
+            refreshFiles();
             setIsEditing(false);
           }}
           initialData={data}
           onCancelEdit={isEditing ? () => setIsEditing(false) : undefined}
+          currentFileIzin={fileIzinTetangga}
+          currentFileBukti={fileBuktiPembayaran}
         />
       </div>
     );
@@ -416,24 +428,12 @@ const IzinTetanggaProgressCard: React.FC<{ progressId: string }> = ({
             <h3 className="block font-semibold text-base lg:text-lg mb-2">
               Dokumen
             </h3>
-            <div className="md:col-span-2">
-              {fileLoading ? (
-                <p className="text-gray-500 text-sm">Memuat file...</p>
-              ) : files.length === 0 ? (
-                <p className="text-gray-500 text-sm">
-                  Belum ada file yang diunggah.
-                </p>
-              ) : (
-                <div className="space-y-3">
-                  {files.map((file) => (
-                    <FileLink
-                      key={file.name}
-                      label={file.name}
-                      href={file.href}
-                    />
-                  ))}
-                </div>
-              )}
+            <div className="space-y-3">
+              <FileLink label="File Izin Tetangga" file={fileIzinTetangga} />
+              <FileLink
+                label="File Bukti Pembayaran"
+                file={fileBuktiPembayaran}
+              />
             </div>
           </div>
         </div>
