@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/client";
 import { getCurrentUser, canKplt } from "@/lib/auth/acl";
 
 const BUCKET = "file_storage";
+
 const ALLOWED_MODULES = [
   "kplt",
   "ulok",
@@ -12,8 +13,9 @@ const ALLOWED_MODULES = [
   "notaris",
   "renovasi",
   "izin_tetangga",
-  "grang_opening",
+  "grand_opening",
 ] as const;
+
 type AllowedModule = (typeof ALLOWED_MODULES)[number];
 
 function slugify(name: string) {

@@ -130,7 +130,7 @@ export async function PATCH(
   // Set hanya field approval + timestamps dari server
   const payload = {
     final_status_mou: parsed.data.final_status_mou, // "Selesai" | "Batal"
-    tgl_selesai: nowIso, // jika ingin set hanya saat status final, kondisikan di sini
+    tgl_selesai_mou: nowIso, // jika ingin set hanya saat status final, kondisikan di sini
     updated_at: nowIso,
   };
 
