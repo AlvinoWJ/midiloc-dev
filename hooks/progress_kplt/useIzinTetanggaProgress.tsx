@@ -66,18 +66,7 @@ export function useIzinTetanggaProgress(
       // 3. Gunakan strip function yang sesuai
       const clean = stripServerControlledFieldsIT(json.data);
 
-      // 4. Ambil field yang relevan
-      const importantFields: IzinTetanggaData = {
-        nominal: clean.nominal ?? null,
-        tanggal_terbit: clean.tanggal_terbit ?? null,
-        file_izin_tetangga: json.data.file_izin_tetangga ?? null, // Ambil path file dari data mentah
-        file_bukti_pembayaran: json.data.file_bukti_pembayaran ?? null, // Ambil path file dari data mentah
-        final_status_it: json.data.final_status_it ?? null,
-        created_at: clean.created_at ?? null,
-        tgl_selesai_izintetangga: json.data.tgl_selesai_izintetangga ?? null,
-      };
-
-      setData(importantFields);
+      setData(json.data);
     } catch (err: any) {
       setError(err.message || "Terjadi kesalahan");
     } finally {

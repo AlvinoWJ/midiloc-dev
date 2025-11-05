@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { useMouProgress } from "@/hooks/useMouProgress";
+import { useMouProgress } from "@/hooks/progress_kplt/useMouProgress";
 import { Loader2, Pencil, CheckCircle, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
