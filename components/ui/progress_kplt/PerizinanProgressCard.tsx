@@ -11,23 +11,27 @@ import {
   XCircle,
   FileText,
   Link as LinkIcon,
+  History,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PerizinanEditableSchema } from "@/lib/validations/perizinan";
 import { useAlert } from "@/components/shared/alertcontext";
 import { ProgressStatusCard } from "./ProgressStatusCard";
+import { PerizinanHistoryModal } from "./PerizinanHistoryModal";
 
 const DetailCard = ({
   title,
   icon,
   children,
   className = "",
+  actions,
 }: {
   title: string;
   icon: React.ReactNode;
   children: React.ReactNode;
   className?: string;
+  actions?: React.ReactNode;
 }) => (
   <div
     className={`bg-white rounded-xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)] ${className}`}
@@ -36,6 +40,7 @@ const DetailCard = ({
       {icon}
       <h2 className="text-lg font-semibold text-gray-900 ml-2">{title}</h2>
     </div>
+    <div>{actions}</div>
     <div className="p-6">{children}</div>
   </div>
 );
@@ -302,6 +307,8 @@ const PerizinanProgressCard: React.FC<{ progressId: string }> = ({
 
   const [isEditing, setIsEditing] = useState(false);
   const [isSubmittingApproval, setIsSubmittingApproval] = useState(false);
+
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
   const { showToast, showConfirmation } = useAlert();
 
   const formatDate = (dateString?: string | null) =>
@@ -405,6 +412,17 @@ const PerizinanProgressCard: React.FC<{ progressId: string }> = ({
         title="Perizinan"
         icon={<FileText className="text-blue-500 mr-3" size={20} />}
         className="mt-10"
+        actions={
+          <Button
+            variant="default"
+            size="sm"
+            onClick={() => setShowHistoryModal(true)}
+            className=""
+          >
+            <History className="w-4 h-4 mr-2" />
+            Riwayat
+          </Button>
+        }
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
@@ -481,6 +499,12 @@ const PerizinanProgressCard: React.FC<{ progressId: string }> = ({
           </div>
         )}
       </DetailCard>
+      {showHistoryModal && (
+        <PerizinanHistoryModal
+          progressId={progressId}
+          onClose={() => setShowHistoryModal(false)}
+        />
+      )}
     </div>
   );
 };
