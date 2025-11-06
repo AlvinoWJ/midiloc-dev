@@ -1,13 +1,24 @@
+// components/ui/progress_kplt/timeline.tsx
 "use client";
 
-import React, { useState } from "react";
-import { CheckCircle, Clock, MoreHorizontal } from "lucide-react";
+import React, { useState, useMemo } from "react";
+import { CheckCircle, Clock, MoreHorizontal, Loader2 } from "lucide-react";
+
+// Impor semua komponen Card
 import MouProgressCard from "@/components/ui/progress_kplt/MouProgressCard";
 import IzinTetanggaProgressCard from "@/components/ui/progress_kplt/IzinTetanggaProgressCard";
 import NotarisProgressCard from "./NotarisProgressCard";
-import RenovasiProgressCard from "./RenovasiProgressCard";
 import PerizinanProgressCard from "./PerizinanProgressCard";
+import RenovasiProgressCard from "./RenovasiProgressCard";
 import GrandOpeningProgressCard from "./GrandOpeningProgressCard";
+
+// Impor semua hook SWR untuk status
+import { useMouProgress } from "@/hooks/progress_kplt/useMouProgress";
+import { useIzinTetanggaProgress } from "@/hooks/progress_kplt/useIzinTetanggaProgress";
+import { usePerizinanProgress } from "@/hooks/progress_kplt/usePerizinanProgreess"; // Sesuai nama file hook
+import { useNotarisProgress } from "@/hooks/progress_kplt/useNotarisProgress";
+import { useRenovasiProgress } from "@/hooks/progress_kplt/useRenovasiProgress";
+import { useGrandOpeningProgress } from "@/hooks/progress_kplt/useGrandOpeningProgress";
 
 export interface ProgressStep {
   id: string;
@@ -23,72 +34,7 @@ interface TimelineProgressProps {
   progressId: string;
 }
 
-// Fungsi generate urutan tetap (statis)
-const generateStaticSteps = (progressId: string): ProgressStep[] => [
-  {
-    id: "1",
-    progress_id: progressId,
-    nama_tahap: "MOU",
-    status: "Done",
-    start_date: null,
-    end_date: null,
-    urutan: 1,
-  },
-  {
-    id: "2",
-    progress_id: progressId,
-    nama_tahap: "Ijin Tetangga",
-    status: "Done",
-    start_date: null,
-    end_date: null,
-    urutan: 2,
-  },
-  {
-    id: "3",
-    progress_id: progressId,
-    nama_tahap: "Perizinan",
-    status: "In Progress",
-    start_date: null,
-    end_date: null,
-    urutan: 3,
-  },
-  {
-    id: "4",
-    progress_id: progressId,
-    nama_tahap: "Notaris",
-    status: "Pending",
-    start_date: null,
-    end_date: null,
-    urutan: 4,
-  },
-  {
-    id: "5",
-    progress_id: progressId,
-    nama_tahap: "Renovasi",
-    status: "Pending",
-    start_date: null,
-    end_date: null,
-    urutan: 5,
-  },
-  {
-    id: "6",
-    progress_id: progressId,
-    nama_tahap: "Building",
-    status: "Pending",
-    start_date: null,
-    end_date: null,
-    urutan: 6,
-  },
-  {
-    id: "7",
-    progress_id: progressId,
-    nama_tahap: "Grand Opening",
-    status: "Pending",
-    start_date: null,
-    end_date: null,
-    urutan: 7,
-  },
-];
+// --- FUNGSI generateStaticSteps DIHAPUS ---
 
 const formatDate = (dateString: string | null) => {
   if (!dateString) return "-";
@@ -102,13 +48,170 @@ const formatDate = (dateString: string | null) => {
 export default function TimelineProgressKplt({
   progressId,
 }: TimelineProgressProps) {
-  const steps = generateStaticSteps(progressId);
   const [activeStep, setActiveStep] = useState<number | null>(null);
+
+  // 1. Ambil data dari semua hook
+  const {
+    data: mouData,
+    loading: mouLoading,
+    error: mouError,
+  } = useMouProgress(progressId);
+  const {
+    data: itData,
+    loading: itLoading,
+    error: itError,
+  } = useIzinTetanggaProgress(progressId);
+  const {
+    data: perizinanData,
+    loading: perizinanLoading,
+    error: perizinanError,
+  } = usePerizinanProgress(progressId);
+  const {
+    data: notarisData,
+    loading: notarisLoading,
+    error: notarisError,
+  } = useNotarisProgress(progressId);
+  const {
+    data: renovasiData,
+    loading: renovasiLoading,
+    error: renovasiError,
+  } = useRenovasiProgress(progressId);
+  const {
+    data: goData,
+    loading: goLoading,
+    error: goError,
+  } = useGrandOpeningProgress(progressId);
+
+  const isLoading =
+    mouLoading ||
+    itLoading ||
+    perizinanLoading ||
+    notarisLoading ||
+    renovasiLoading ||
+    goLoading;
+  const error =
+    mouError ||
+    itError ||
+    perizinanError ||
+    notarisError ||
+    renovasiError ||
+    goError;
+
+  // 2. Helper untuk menentukan status dasar
+  type BaseStatus = "Done" | "Pending";
+  const getBaseStatus = (
+    finalStatus: string | null | undefined
+  ): BaseStatus => {
+    if (finalStatus === "Selesai" || finalStatus === "Batal") {
+      return "Done";
+    }
+    return "Pending";
+  };
+
+  // 3. Bangun array steps secara dinamis menggunakan useMemo
+  const steps: ProgressStep[] = useMemo(() => {
+    if (isLoading || error) return []; // Kembalikan array kosong jika loading atau error
+
+    const rawSteps = [
+      {
+        name: "MOU",
+        status: getBaseStatus(mouData?.final_status_mou),
+        start: mouData?.created_at,
+        end: mouData?.tgl_selesai_mou,
+      },
+      {
+        name: "Ijin Tetangga",
+        status: getBaseStatus(itData?.final_status_it),
+        start: itData?.created_at,
+        end: itData?.tgl_selesai_izintetangga,
+      },
+      {
+        name: "Perizinan",
+        status: getBaseStatus(perizinanData?.final_status_perizinan),
+        start: perizinanData?.created_at,
+        end: perizinanData?.tgl_selesai_perizinan,
+      },
+      {
+        name: "Notaris",
+        status: getBaseStatus(notarisData?.final_status_notaris),
+        start: notarisData?.created_at,
+        end: notarisData?.tgl_selesai_notaris,
+      },
+      {
+        name: "Renovasi",
+        status: getBaseStatus(renovasiData?.final_status_renov),
+        start: renovasiData?.created_at,
+        end: renovasiData?.tgl_selesai_renov,
+      },
+      {
+        name: "Grand Opening",
+        status: getBaseStatus(goData?.final_status_go),
+        start: goData?.created_at,
+        end: goData?.tgl_selesai_go,
+      },
+    ];
+
+    let inProgressFound = false;
+
+    return rawSteps.map((step, index): ProgressStep => {
+      let finalStatus: ProgressStep["status"] = "Pending";
+
+      if (step.status === "Done") {
+        finalStatus = "Done";
+      } else if (!inProgressFound) {
+        finalStatus = "In Progress";
+        inProgressFound = true;
+      } else {
+        finalStatus = "Pending";
+      }
+
+      return {
+        id: (index + 1).toString(),
+        progress_id: progressId,
+        nama_tahap: step.name,
+        status: finalStatus,
+        start_date: step.start || null,
+        end_date: step.end || null,
+        urutan: index + 1,
+      };
+    });
+  }, [
+    progressId,
+    isLoading,
+    error,
+    mouData,
+    itData,
+    perizinanData,
+    notarisData,
+    renovasiData,
+    goData,
+  ]);
+
+  // 4. Handle Loading dan Error
+  if (isLoading) {
+    return (
+      <div className="w-full py-8 flex flex-col items-center justify-center min-h-[300px]">
+        <Loader2 className="animate-spin text-gray-500" size={32} />
+        <p className="mt-4 text-gray-600">Memuat status timeline...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="w-full py-8 flex flex-col items-center justify-center min-h-[300px]">
+        <p className="mt-4 text-red-600">
+          Gagal memuat timeline: {error.toString()}
+        </p>
+      </div>
+    );
+  }
 
   const handleCloseCard = () => {
     setActiveStep(null);
   };
 
+  // 5. Kalkulasi progressWidth menjadi dinamis
   const progressWidth =
     steps.findIndex((s) => s.status === "In Progress") >= 0
       ? (steps.findIndex((s) => s.status === "In Progress") /
@@ -208,6 +311,7 @@ export default function TimelineProgressKplt({
           if (step.nama_tahap === "Grand Opening") {
             return <GrandOpeningProgressCard progressId={step.progress_id} />;
           }
+          // Fallback (seharusnya tidak terpakai)
           return (
             <div className="mt-8 max-w-2xl w-full bg-white shadow-md rounded-2xl border border-gray-100 p-6 text-center animate-in fade-in duration-300">
               <h3 className="text-lg font-semibold text-gray-800 mb-2">
