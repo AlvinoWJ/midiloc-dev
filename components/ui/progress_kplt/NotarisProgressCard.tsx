@@ -1,8 +1,8 @@
-// components/ui/progress_kplt/PerizinanProgressCard.tsx
+// components/ui/progress_kplt/NotarisProgressCard.tsx
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { usePerizinanProgress } from "@/hooks/progress_kplt/usePerizinanProgreess";
+import { useNotarisProgress } from "@/hooks/progress_kplt/useNotarisProgress";
 import { useFile, ApiFile } from "@/hooks/progress_kplt/useFilesProgress";
 import {
   Loader2,
@@ -12,14 +12,17 @@ import {
   FileText,
   Link as LinkIcon,
   History,
+  Briefcase, // Icon baru untuk Notaris
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { PerizinanEditableSchema } from "@/lib/validations/perizinan";
+import CustomSelect from "@/components/ui/customselect";
+import { NotarisEditableSchema } from "@/lib/validations/notaris";
 import { useAlert } from "@/components/shared/alertcontext";
 import { ProgressStatusCard } from "./ProgressStatusCard";
-import { PerizinanHistoryModal } from "./PerizinanHistoryModal";
+import { NotarisHistoryModal } from "./NotarisHistoryModal";
 
+// DetailCard (Helper)
 const DetailCard = ({
   title,
   icon,
@@ -47,6 +50,7 @@ const DetailCard = ({
   </div>
 );
 
+// FileLink (Helper)
 const FileLink = ({
   label,
   file,
@@ -82,6 +86,7 @@ const FileLink = ({
   );
 };
 
+// FormFileInput (Helper)
 const FormFileInput: React.FC<{
   label: string;
   name: string;
@@ -109,6 +114,7 @@ const FormFileInput: React.FC<{
   </div>
 );
 
+// Form Component
 interface FormProps {
   progressId: string;
   onSuccess: () => void;
@@ -117,7 +123,7 @@ interface FormProps {
   filesMap: Map<string, ApiFile>;
 }
 
-const PerizinanForm: React.FC<FormProps> = ({
+const NotarisForm: React.FC<FormProps> = ({
   progressId,
   onSuccess,
   initialData,
@@ -126,33 +132,45 @@ const PerizinanForm: React.FC<FormProps> = ({
 }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { showToast } = useAlert();
+  const [fileParOnline, setFileParOnline] = useState<File | null>(null);
 
-  const [fileSph, setFileSph] = useState<File | null>(null);
-  const [fileSt, setFileSt] = useState<File | null>(null);
-  const [fileDenah, setFileDenah] = useState<File | null>(null);
-  const [fileSpk, setFileSpk] = useState<File | null>(null);
-  const [fileNotaris, setFileNotaris] = useState<File | null>(null);
+  // Opsi untuk dropdown
+  const statusOptions = ["Belum", "Selesai", "Batal"];
+
+  const [validasiLegal, setValidasiLegal] = useState<string>(
+    initialData?.validasi_legal || ""
+  );
+  const [statusNotaris, setStatusNotaris] = useState<string>(
+    initialData?.status_notaris || ""
+  );
+  const [statusPembayaran, setStatusPembayaran] = useState<string>(
+    initialData?.status_pembayaran || ""
+  );
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
 
     const formData = new FormData(e.currentTarget);
-    if (fileSph) formData.append("file_sph", fileSph);
-    if (fileSt) formData.append("file_bukti_st", fileSt);
-    if (fileDenah) formData.append("file_denah", fileDenah);
-    if (fileSpk) formData.append("file_spk", fileSpk);
-    if (fileNotaris) formData.append("file_rekom_notaris", fileNotaris);
+    if (fileParOnline) formData.append("par_online", fileParOnline);
+
+    // Tambahkan nilai dari state select
+    formData.append("validasi_legal", validasiLegal);
+    formData.append("status_notaris", statusNotaris);
+    formData.append("status_pembayaran", statusPembayaran);
 
     const payload = {
-      tgl_sph: formData.get("tgl_sph") || undefined,
-      tgl_st_berkas: formData.get("tgl_st_berkas") || undefined,
-      tgl_gambar_denah: formData.get("tgl_gambar_denah") || undefined,
-      tgl_spk: formData.get("tgl_spk") || undefined,
-      tgl_rekom_notaris: formData.get("tgl_rekom_notaris") || undefined,
-      nominal_sph: Number(formData.get("nominal_sph")) || undefined,
+      tanggal_par: formData.get("tanggal_par") || undefined,
+      validasi_legal: validasiLegal || undefined,
+      tanggal_validasi_legal:
+        formData.get("tanggal_validasi_legal") || undefined,
+      tanggal_plan_notaris: formData.get("tanggal_plan_notaris") || undefined,
+      tanggal_notaris: formData.get("tanggal_notaris") || undefined,
+      status_notaris: statusNotaris || undefined,
+      status_pembayaran: statusPembayaran || undefined,
+      tanggal_pembayaran: formData.get("tanggal_pembayaran") || undefined,
     };
-    const parsed = PerizinanEditableSchema.partial().safeParse(payload);
+    const parsed = NotarisEditableSchema.partial().safeParse(payload);
 
     if (!parsed.success) {
       showToast({
@@ -165,7 +183,7 @@ const PerizinanForm: React.FC<FormProps> = ({
 
     try {
       const method = initialData ? "PATCH" : "POST";
-      const res = await fetch(`/api/progress/${progressId}/perizinan`, {
+      const res = await fetch(`/api/progress/${progressId}/notaris`, {
         method,
         body: formData,
       });
@@ -174,7 +192,7 @@ const PerizinanForm: React.FC<FormProps> = ({
       if (!res.ok) throw new Error(json.error || "Gagal menyimpan data");
       showToast({
         type: "success",
-        message: `Data Perizinan berhasil di${
+        message: `Data Notaris berhasil di${
           initialData ? "update" : "simpan"
         }.`,
       });
@@ -188,82 +206,126 @@ const PerizinanForm: React.FC<FormProps> = ({
 
   return (
     <DetailCard
-      title="Perizinan"
-      icon={<FileText className="text-blue-500 mr-3" size={20} />}
+      title="Notaris"
+      icon={<Briefcase className="text-purple-500 mr-3" size={20} />}
       className="mt-10"
     >
       <form
         onSubmit={handleSubmit}
         className="grid grid-cols-1 md:grid-cols-2 gap-4"
       >
-        {[
-          ["tgl_sph", "Tanggal SPH"],
-          ["tgl_st_berkas", "Tanggal ST"],
-          ["tgl_gambar_denah", "Tanggal Denah"],
-          ["tgl_spk", "Tanggal SPK"],
-          ["tgl_rekom_notaris", "Tanggal Rekom Notaris"],
-        ].map(([name, label]) => (
-          <div key={name}>
-            <label htmlFor={name} className="block font-semibold mb-2">
-              {label}
-            </label>
-            <Input
-              id={name}
-              name={name}
-              type="date"
-              defaultValue={initialData?.[name] || ""}
-            />
-          </div>
-        ))}
+        <FormFileInput
+          label="PAR Online"
+          name="par_online"
+          currentFile={filesMap.get("par_online")}
+          isFileSelected={!!fileParOnline}
+          onChange={(e) => setFileParOnline(e.target.files?.[0] || null)}
+        />
 
         <div>
-          <label htmlFor="nominal_sph" className="block font-semibold mb-2">
-            Biaya Perizinan (Rp)
+          <label
+            htmlFor="tanggal_par"
+            className="block font-semibold text-base lg:text-lg mb-2"
+          >
+            Tanggal PAR
           </label>
           <Input
-            id="nominal_sph"
-            name="nominal_sph"
-            type="number"
-            defaultValue={initialData?.nominal_sph || ""}
+            id="tanggal_par"
+            name="tanggal_par"
+            type="date"
+            defaultValue={initialData?.tanggal_par || ""}
           />
         </div>
 
-        {/* Input File */}
-        <FormFileInput
-          label="File SPH"
-          name="file_sph"
-          currentFile={filesMap.get("file_sph")}
-          isFileSelected={!!fileSph}
-          onChange={(e) => setFileSph(e.target.files?.[0] || null)}
+        <CustomSelect
+          id="validasi_legal"
+          name="validasi_legal"
+          label="Validasi Legal"
+          placeholder="Pilih Status"
+          value={validasiLegal}
+          options={statusOptions}
+          onChange={(e) => setValidasiLegal(e.target.value)}
         />
-        <FormFileInput
-          label="File Bukti ST"
-          name="file_bukti_st"
-          currentFile={filesMap.get("file_bukti_st")}
-          isFileSelected={!!fileSt}
-          onChange={(e) => setFileSt(e.target.files?.[0] || null)}
+
+        <div>
+          <label
+            htmlFor="tanggal_validasi_legal"
+            className="block font-semibold text-base lg:text-lg mb-2"
+          >
+            Tanggal Validasi Legal
+          </label>
+          <Input
+            id="tanggal_validasi_legal"
+            name="tanggal_validasi_legal"
+            type="date"
+            defaultValue={initialData?.tanggal_validasi_legal || ""}
+          />
+        </div>
+
+        <div>
+          <label
+            htmlFor="tanggal_plan_notaris"
+            className="block font-semibold text-base lg:text-lg mb-2"
+          >
+            Tanggal Plan Notaris
+          </label>
+          <Input
+            id="tanggal_plan_notaris"
+            name="tanggal_plan_notaris"
+            type="date"
+            defaultValue={initialData?.tanggal_plan_notaris || ""}
+          />
+        </div>
+
+        <div>
+          <label
+            htmlFor="tanggal_notaris"
+            className="block font-semibold text-base lg:text-lg mb-2"
+          >
+            Tanggal Notaris
+          </label>
+          <Input
+            id="tanggal_notaris"
+            name="tanggal_notaris"
+            type="date"
+            defaultValue={initialData?.tanggal_notaris || ""}
+          />
+        </div>
+
+        <CustomSelect
+          id="status_notaris"
+          name="status_notaris"
+          label="Status Notaris"
+          placeholder="Pilih Status"
+          value={statusNotaris}
+          options={statusOptions}
+          onChange={(e) => setStatusNotaris(e.target.value)}
         />
-        <FormFileInput
-          label="File Denah"
-          name="file_denah"
-          currentFile={filesMap.get("file_denah")}
-          isFileSelected={!!fileDenah}
-          onChange={(e) => setFileDenah(e.target.files?.[0] || null)}
+
+        <CustomSelect
+          id="status_pembayaran"
+          name="status_pembayaran"
+          label="Status Pembayaran"
+          placeholder="Pilih Status"
+          value={statusPembayaran}
+          options={statusOptions}
+          onChange={(e) => setStatusPembayaran(e.target.value)}
         />
-        <FormFileInput
-          label="File SPK"
-          name="file_spk"
-          currentFile={filesMap.get("file_spk")}
-          isFileSelected={!!fileSpk}
-          onChange={(e) => setFileSpk(e.target.files?.[0] || null)}
-        />
-        <FormFileInput
-          label="File Rekom Notaris"
-          name="file_rekom_notaris"
-          currentFile={filesMap.get("file_rekom_notaris")}
-          isFileSelected={!!fileNotaris}
-          onChange={(e) => setFileNotaris(e.target.files?.[0] || null)}
-        />
+
+        <div>
+          <label
+            htmlFor="tanggal_pembayaran"
+            className="block font-semibold text-base lg:text-lg mb-2"
+          >
+            Tanggal Pembayaran
+          </label>
+          <Input
+            id="tanggal_pembayaran"
+            name="tanggal_pembayaran"
+            type="date"
+            defaultValue={initialData?.tanggal_pembayaran || ""}
+          />
+        </div>
 
         <div className="md:col-span-2 flex justify-end gap-3 mt-6">
           {onCancelEdit && (
@@ -296,20 +358,33 @@ const PerizinanForm: React.FC<FormProps> = ({
   );
 };
 
-const PerizinanProgressCard: React.FC<{ progressId: string }> = ({
+// Komponen Read-Only
+const DetailField: React.FC<{ label: string; value: React.ReactNode }> = ({
+  label,
+  value,
+}) => (
+  <div>
+    <h3 className="block font-semibold text-base lg:text-lg mb-2">{label}</h3>
+    <div className="bg-gray-100 px-4 py-2 rounded-md min-h-[40px]">
+      {value || "-"}
+    </div>
+  </div>
+);
+
+// Komponen Utama
+const NotarisProgressCard: React.FC<{ progressId: string }> = ({
   progressId,
 }) => {
-  const { data, loading, error, refetch } = usePerizinanProgress(progressId);
+  const { data, loading, error, refetch } = useNotarisProgress(progressId);
   const {
     filesMap,
     loading: loadingFiles,
     error: errorFiles,
     refresh: refreshFiles,
-  } = useFile("perizinan", progressId);
+  } = useFile("notaris", progressId);
 
   const [isEditing, setIsEditing] = useState(false);
   const [isSubmittingApproval, setIsSubmittingApproval] = useState(false);
-
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const { showToast, showConfirmation } = useAlert();
 
@@ -323,14 +398,13 @@ const PerizinanProgressCard: React.FC<{ progressId: string }> = ({
       : "-";
 
   useEffect(() => {
-    // Refetch ulang setiap kali halaman dibuka ulang
     refetch();
     refreshFiles();
   }, [progressId]);
 
   const handleSubmitApproval = async () => {
     const confirmed = await showConfirmation({
-      title: "Konfirmasi Approval Perizinan",
+      title: "Konfirmasi Approval Notaris",
       message: "Apakah Anda yakin ingin submit data ini?",
       confirmText: "Ya, Submit",
       type: "warning",
@@ -338,19 +412,16 @@ const PerizinanProgressCard: React.FC<{ progressId: string }> = ({
     if (!confirmed) return;
     setIsSubmittingApproval(true);
     try {
-      const res = await fetch(
-        `/api/progress/${progressId}/perizinan/approval`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ final_status_perizinan: "selesai" }),
-        }
-      );
+      const res = await fetch(`/api/progress/${progressId}/notaris/approval`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ final_status_notaris: "selesai" }),
+      });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Gagal submit");
       showToast({
         type: "success",
-        message: "Perizinan berhasil disubmit.",
+        message: "Notaris berhasil disubmit.",
       });
       await refetch();
       await refreshFiles();
@@ -379,12 +450,12 @@ const PerizinanProgressCard: React.FC<{ progressId: string }> = ({
     return (
       <div className="w-full max-w-5xl mx-auto">
         <ProgressStatusCard
-          title="Perizinan"
-          status={data?.final_status_perizinan}
+          title="Notaris"
+          status={data?.final_status_notaris}
           startDate={data?.created_at}
-          endDate={data?.tgl_selesai_perizinan}
+          endDate={data?.tgl_selesai_notaris}
         />
-        <PerizinanForm
+        <NotarisForm
           progressId={progressId}
           onSuccess={async () => {
             await refetch();
@@ -399,20 +470,20 @@ const PerizinanProgressCard: React.FC<{ progressId: string }> = ({
     );
 
   const isFinalized =
-    data.final_status_perizinan === "Selesai" ||
-    data.final_status_perizinan === "Batal";
+    data.final_status_notaris === "Selesai" ||
+    data.final_status_notaris === "Batal";
 
   return (
     <div className="w-full max-w-5xl mx-auto">
       <ProgressStatusCard
-        title="Perizinan"
-        status={data.final_status_perizinan}
+        title="Notaris"
+        status={data.final_status_notaris}
         startDate={data.created_at}
-        endDate={data.tgl_selesai_perizinan}
+        endDate={data.tgl_selesai_notaris}
       />
       <DetailCard
-        title="Perizinan"
-        icon={<FileText className="text-blue-500 mr-3" size={20} />}
+        title="Notaris"
+        icon={<Briefcase className="text-purple-500" size={20} />}
         className="mt-10"
         actions={
           <Button
@@ -427,56 +498,36 @@ const PerizinanProgressCard: React.FC<{ progressId: string }> = ({
         }
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <h3 className="font-semibold mb-2">Tanggal SPH</h3>
-            <div className="bg-gray-100 px-4 py-2 rounded-md">
-              {formatDate(data.tgl_sph)}
-            </div>
-          </div>
-          <div>
-            <h3 className="font-semibold mb-2">Tanggal ST</h3>
-            <div className="bg-gray-100 px-4 py-2 rounded-md">
-              {formatDate(data.tgl_st_berkas)}
-            </div>
-          </div>
-          <div>
-            <h3 className="font-semibold mb-2">Tanggal Denah</h3>
-            <div className="bg-gray-100 px-4 py-2 rounded-md">
-              {formatDate(data.tgl_gambar_denah)}
-            </div>
-          </div>
-          <div>
-            <h3 className="font-semibold mb-2">Tanggal SPK</h3>
-            <div className="bg-gray-100 px-4 py-2 rounded-md">
-              {formatDate(data.tgl_spk)}
-            </div>
-          </div>
-          <div>
-            <h3 className="font-semibold mb-2">Tanggal Rekom Notaris</h3>
-            <div className="bg-gray-100 px-4 py-2 rounded-md">
-              {formatDate(data.tgl_rekom_notaris)}
-            </div>
-          </div>
-          <div>
-            <h3 className="font-semibold mb-2">Nominal SPH (Rp)</h3>
-            <div className="bg-gray-100 px-4 py-2 rounded-md">
-              Rp {data.nominal_sph?.toLocaleString("id-ID") || "-"}
-            </div>
-          </div>
+          <DetailField
+            label="Tanggal PAR"
+            value={formatDate(data.tanggal_par)}
+          />
+          <DetailField label="Validasi Legal" value={data.validasi_legal} />
+          <DetailField
+            label="Tanggal Validasi Legal"
+            value={formatDate(data.tanggal_validasi_legal)}
+          />
+          <DetailField
+            label="Tanggal Plan Notaris"
+            value={formatDate(data.tanggal_plan_notaris)}
+          />
+          <DetailField
+            label="Tanggal Notaris"
+            value={formatDate(data.tanggal_notaris)}
+          />
+          <DetailField label="Status Notaris" value={data.status_notaris} />
+          <DetailField
+            label="Status Pembayaran"
+            value={data.status_pembayaran}
+          />
+          <DetailField
+            label="Tanggal Pembayaran"
+            value={formatDate(data.tanggal_pembayaran)}
+          />
           <div className="md:col-span-2">
             <h3 className="font-semibold mb-2">Dokumen</h3>
             <div className="space-y-3">
-              <FileLink label="File SPH" file={filesMap.get("file_sph")} />
-              <FileLink
-                label="File Bukti ST"
-                file={filesMap.get("file_bukti_st")}
-              />
-              <FileLink label="File Denah" file={filesMap.get("file_denah")} />
-              <FileLink label="File SPK" file={filesMap.get("file_spk")} />
-              <FileLink
-                label="File Rekom Notaris"
-                file={filesMap.get("file_rekom_notaris")}
-              />
+              <FileLink label="PAR Online" file={filesMap.get("par_online")} />
             </div>
           </div>
         </div>
@@ -502,7 +553,7 @@ const PerizinanProgressCard: React.FC<{ progressId: string }> = ({
         )}
       </DetailCard>
       {showHistoryModal && (
-        <PerizinanHistoryModal
+        <NotarisHistoryModal
           progressId={progressId}
           onClose={() => setShowHistoryModal(false)}
         />
@@ -511,4 +562,4 @@ const PerizinanProgressCard: React.FC<{ progressId: string }> = ({
   );
 };
 
-export default PerizinanProgressCard;
+export default NotarisProgressCard;

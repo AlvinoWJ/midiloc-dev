@@ -1,51 +1,52 @@
-// hooks/useMouProgress.ts
+// hooks/progress_kplt/useNotarisProgress.tsx
 "use client";
 
 import { useEffect, useState } from "react";
 
-interface MouData {
-  tanggal_mou?: string | null;
-  nama_pemilik_final?: string | null;
-  periode_sewa?: number | null;
-  nilai_sewa?: number | null;
-  status_pajak?: string | null;
-  pembayaran_pph?: string | null;
-  cara_pembayaran?: string | null;
-  grace_period?: number | null;
-  harga_final?: number | null;
-  keterangan?: string | null;
+interface NotarisData {
+  par_online?: string | null;
+  tanggal_par?: string | null;
+  validasi_legal?: string | null;
+  tanggal_validasi_legal?: string | null;
+  tanggal_plan_notaris?: string | null;
+  tanggal_notaris?: string | null;
+  status_notaris?: string | null;
+  status_pembayaran?: string | null;
+  tanggal_pembayaran?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
-  final_status_mou?: string | null;
-  tgl_selesai_mou?: string | null;
+  final_status_notaris?: string | null;
+  tgl_selesai_notaris?: string | null;
 }
 
-interface UseMouProgressResult {
-  data: MouData | null;
+interface UseNotarisProgressResult {
+  data: NotarisData | null;
   loading: boolean;
   error: string | null;
   refetch: () => Promise<void>;
 }
 
-export function useMouProgress(
+export function useNotarisProgress(
   progressId: string | undefined
-): UseMouProgressResult {
-  const [data, setData] = useState<MouData | null>(null);
+): UseNotarisProgressResult {
+  const [data, setData] = useState<NotarisData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  async function fetchMou() {
+  async function fetchNotaris() {
     if (!progressId) {
       setError("progressId tidak valid");
+      setData(null);
       setLoading(false);
       return;
     }
 
+    setData(null);
     setLoading(true);
     setError(null);
 
     try {
-      const res = await fetch(`/api/progress/${progressId}/mou`);
+      const res = await fetch(`/api/progress/${progressId}/notaris`);
       const json = await res.json();
 
       if (
@@ -57,7 +58,8 @@ export function useMouProgress(
         return;
       }
 
-      if (!res.ok) throw new Error(json.error || "Gagal mengambil data MOU");
+      if (!res.ok)
+        throw new Error(json.error || "Gagal mengambil data Notaris");
 
       if (!json?.data) {
         setData(null);
@@ -73,8 +75,8 @@ export function useMouProgress(
   }
 
   useEffect(() => {
-    fetchMou();
+    fetchNotaris();
   }, [progressId]);
 
-  return { data, loading, error, refetch: fetchMou };
+  return { data, loading, error, refetch: fetchNotaris };
 }

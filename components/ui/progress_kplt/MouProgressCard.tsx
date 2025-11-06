@@ -393,7 +393,7 @@ const MouProgressCard: React.FC<MouProgressCardProps> = ({ progressId }) => {
       }
       showToast({
         type: "success",
-        message: "MOU berhasil diajukan untuk approval.",
+        message: "MOU berhasil disubmit.",
       });
       await refetch();
     } catch (err: any) {

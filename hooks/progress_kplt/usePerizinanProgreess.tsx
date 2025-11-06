@@ -2,7 +2,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { stripServerControlledFieldsPerizinan } from "@/lib/validations/perizinan";
 
 interface PerizinanData {
   tgl_sph?: string | null;
@@ -34,15 +33,16 @@ export function usePerizinanProgress(
   async function fetchPerizinan() {
     if (!progressId) {
       setError("progressId tidak valid");
+      setData(null);
       setLoading(false);
       return;
     }
 
+    setData(null);
     setLoading(true);
     setError(null);
 
     try {
-      // 2. Ubah endpoint API
       const res = await fetch(`/api/progress/${progressId}/perizinan`);
       const json = await res.json();
 
@@ -63,10 +63,6 @@ export function usePerizinanProgress(
         setLoading(false);
         return;
       }
-
-      // 3. Gunakan strip function yang sesuai
-      const clean = stripServerControlledFieldsPerizinan(json.data);
-
       setData(json.data);
     } catch (err: any) {
       setError(err.message || "Terjadi kesalahan");

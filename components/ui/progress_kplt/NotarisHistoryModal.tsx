@@ -1,4 +1,4 @@
-// components/ui/progress_kplt/PerizinanHistoryModal.tsx
+// components/ui/progress_kplt/NotarisHistoryModal.tsx
 "use client";
 
 import React, { useState, useMemo } from "react";
@@ -10,12 +10,13 @@ import {
   FileText,
   LinkIcon,
   ArrowLeft,
+  Gavel, // Ganti ikon
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
-  usePerizinanHistory,
-  PerizinanHistoryItem,
-} from "@/hooks/progress_kplt/usePerizinanHistory";
+  useNotarisHistory,
+  NotarisHistoryItem,
+} from "@/hooks/progress_kplt/useNotarisHistory";
 
 // Helper untuk format tanggal
 const formatDate = (dateString: string) => {
@@ -43,8 +44,8 @@ const formatDateOnly = (dateString?: string | null) =>
     : "-";
 
 function getChanges(
-  current: PerizinanHistoryItem["data"],
-  previous: PerizinanHistoryItem["data"] | null
+  current: NotarisHistoryItem["data"],
+  previous: NotarisHistoryItem["data"] | null
 ): string[] {
   if (!previous) {
     return ["Mencatat data awal."];
@@ -53,18 +54,17 @@ function getChanges(
   const changes: string[] = [];
   const allKeys = new Set([...Object.keys(current), ...Object.keys(previous)]);
 
+  // Sesuaikan field labels dengan skema Notaris
   const fieldLabels: Record<string, string> = {
-    tgl_sph: "Tgl SPH",
-    tgl_st_berkas: "Tgl ST Berkas",
-    tgl_gambar_denah: "Tgl Denah",
-    tgl_spk: "Tgl SPK",
-    tgl_rekom_notaris: "Tgl Rekom Notaris",
-    nominal_sph: "Nominal SPH",
-    file_sph: "File SPH",
-    file_bukti_st: "File Bukti ST",
-    file_denah: "File Denah",
-    file_spk: "File SPK",
-    file_rekom_notaris: "File Rekom Notaris",
+    tanggal_par: "Tgl PAR",
+    validasi_legal: "Validasi Legal",
+    tanggal_validasi_legal: "Tgl Validasi Legal",
+    tanggal_plan_notaris: "Tgl Plan Notaris",
+    tanggal_notaris: "Tgl Notaris",
+    status_notaris: "Status Notaris",
+    status_pembayaran: "Status Pembayaran",
+    tanggal_pembayaran: "Tgl Pembayaran",
+    par_online: "File PAR Online",
   };
 
   allKeys.forEach((key) => {
@@ -94,8 +94,8 @@ function getChanges(
 }
 
 interface HistoryItemProps {
-  item: PerizinanHistoryItem;
-  previousItem: PerizinanHistoryItem | null;
+  item: NotarisHistoryItem;
+  previousItem: NotarisHistoryItem | null;
   onSelect: () => void;
 }
 
@@ -105,15 +105,15 @@ const HistoryItem: React.FC<HistoryItemProps> = ({
   previousItem,
   onSelect,
 }) => {
-  const currentStatus = item.data?.final_status_perizinan;
-  const prevStatus = previousItem?.data?.final_status_perizinan;
+  const currentStatus = item.data?.final_status_notaris;
+  const prevStatus = previousItem?.data?.final_status_notaris;
   const dataChanges = getChanges(item.data, previousItem?.data || null);
 
   let statusChangeElement: React.ReactNode = null;
   if (currentStatus !== prevStatus) {
     statusChangeElement = (
       <p className="text-sm text-gray-700">
-        Status Perizinan{" "}
+        Status Notaris{" "}
         <span className="font-medium text-green-600">{currentStatus}</span>
       </p>
     );
@@ -160,8 +160,9 @@ const FileLink: React.FC<{
   fileKey: string | null | undefined;
   progressId: string;
 }> = ({ label, fileKey, progressId }) => {
+  // Ganti modul ke 'notaris'
   const href = fileKey
-    ? `/api/files/perizinan/${progressId}?path=${encodeURIComponent(
+    ? `/api/files/notaris/${progressId}?path=${encodeURIComponent(
         fileKey
       )}&download=0`
     : null;
@@ -196,7 +197,7 @@ const FileLink: React.FC<{
 };
 
 const HistoryDetailView: React.FC<{
-  item: PerizinanHistoryItem;
+  item: NotarisHistoryItem;
   progressId: string;
   onBack: () => void;
 }> = ({ item, progressId, onBack }) => {
@@ -208,7 +209,7 @@ const HistoryDetailView: React.FC<{
       <div className="relative border-b border-gray-300 bg-gradient-to-r from-red-50 via-white to-red-50 px-6 py-5 flex justify-between items-center">
         <h2 className="text-xl font-bold text-gray-800 z-10 flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center shadow-lg shadow-red-500/30">
-            <FileText className="w-5 h-5 text-white" />
+            <Gavel className="w-5 h-5 text-white" />
           </div>
           <span>Detail Riwayat</span>
         </h2>
@@ -216,7 +217,7 @@ const HistoryDetailView: React.FC<{
           type="button"
           variant="ghost"
           size="icon"
-          onClick={onBack} // Tombol kembali
+          onClick={onBack}
           className="rounded-full z-10"
         >
           <ArrowLeft className="w-5 h-5" />
@@ -235,36 +236,35 @@ const HistoryDetailView: React.FC<{
         {/* Data Fields */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <DetailField
-            label="Tanggal SPH"
-            value={formatDateOnly(data.tgl_sph)}
+            label="Tanggal PAR"
+            value={formatDateOnly(data.tanggal_par)}
+          />
+          <DetailField label="Validasi Legal" value={data.validasi_legal} />
+          <DetailField
+            label="Tanggal Validasi Legal"
+            value={formatDateOnly(data.tanggal_validasi_legal)}
           />
           <DetailField
-            label="Tanggal ST"
-            value={formatDateOnly(data.tgl_st_berkas)}
+            label="Tanggal Plan Notaris"
+            value={formatDateOnly(data.tanggal_plan_notaris)}
           />
           <DetailField
-            label="Tanggal Denah"
-            value={formatDateOnly(data.tgl_gambar_denah)}
+            label="Tanggal Notaris"
+            value={formatDateOnly(data.tanggal_notaris)}
+          />
+          <DetailField label="Status Notaris" value={data.status_notaris} />
+          <DetailField
+            label="Status Pembayaran"
+            value={data.status_pembayaran}
           />
           <DetailField
-            label="Tanggal SPK"
-            value={formatDateOnly(data.tgl_spk)}
+            label="Tanggal Pembayaran"
+            value={formatDateOnly(data.tanggal_pembayaran)}
           />
-          <DetailField
-            label="Tanggal Rekom Notaris"
-            value={formatDateOnly(data.tgl_rekom_notaris)}
-          />
-          <DetailField
-            label="Nominal SPH (Rp)"
-            value={data.nominal_sph?.toLocaleString("id-ID") || "-"}
-          />
-          <DetailField
-            label="Status Final"
-            value={data.final_status_perizinan}
-          />
+          <DetailField label="Status Final" value={data.final_status_notaris} />
           <DetailField
             label="Tanggal Selesai"
-            value={formatDateOnly(data.tgl_selesai_perizinan)}
+            value={formatDateOnly(data.tgl_selesai_notaris)}
           />
         </div>
 
@@ -272,28 +272,8 @@ const HistoryDetailView: React.FC<{
         <div className="space-y-3">
           <h3 className="font-semibold text-gray-600 text-sm mb-2">Dokumen</h3>
           <FileLink
-            label="File SPH"
-            fileKey={data.file_sph}
-            progressId={progressId}
-          />
-          <FileLink
-            label="File Bukti ST"
-            fileKey={data.file_bukti_st}
-            progressId={progressId}
-          />
-          <FileLink
-            label="File Denah"
-            fileKey={data.file_denah}
-            progressId={progressId}
-          />
-          <FileLink
-            label="File SPK"
-            fileKey={data.file_spk}
-            progressId={progressId}
-          />
-          <FileLink
-            label="File Rekom Notaris"
-            fileKey={data.file_rekom_notaris}
+            label="File PAR Online"
+            fileKey={data.par_online}
             progressId={progressId}
           />
         </div>
@@ -307,12 +287,12 @@ interface HistoryModalProps {
   onClose: () => void;
 }
 
-export function PerizinanHistoryModal({
+export function NotarisHistoryModal({
   progressId,
   onClose,
 }: HistoryModalProps) {
-  const { history, isLoading, isError } = usePerizinanHistory(progressId);
-  const [selectedItem, setSelectedItem] = useState<PerizinanHistoryItem | null>(
+  const { history, isLoading, isError } = useNotarisHistory(progressId);
+  const [selectedItem, setSelectedItem] = useState<NotarisHistoryItem | null>(
     null
   );
 
@@ -345,7 +325,7 @@ export function PerizinanHistoryModal({
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center shadow-lg shadow-red-500/30">
               <History className="w-5 h-5 text-white" />
             </div>
-            Riwayat Perizinan
+            Riwayat Notaris
           </h2>
           <Button
             type="button"
@@ -377,7 +357,6 @@ export function PerizinanHistoryModal({
               <div className="-mb-4">
                 {[...sortedHistory].reverse().map((item, index, arr) => {
                   const previousItem = arr[index + 1] || null;
-
                   return (
                     <HistoryItem
                       key={item.id}
