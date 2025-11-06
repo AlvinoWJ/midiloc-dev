@@ -1,15 +1,7 @@
 "use client";
 
-import React, { useState, ChangeEvent } from "react";
-import {
-  Upload,
-  FileText,
-  Calendar,
-  CheckCircle2,
-  X,
-  Eye,
-  Trash2,
-} from "lucide-react";
+import React, { useState } from "react";
+import { Upload, FileText, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAlert } from "@/components/shared/alertcontext";
 
