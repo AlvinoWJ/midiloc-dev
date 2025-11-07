@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/client";
-import { getCurrentUser, canKplt } from "@/lib/auth/acl";
+import { getCurrentUser, canProgressKplt } from "@/lib/auth/acl";
 
 // GET /api/progress/[id]/perizinan/history
 export async function GET(
@@ -12,7 +12,7 @@ export async function GET(
   const user = await getCurrentUser();
   if (!user)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!canKplt("read", user))
+  if (!canProgressKplt("read", user))
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   if (!user.branch_id) {
     return NextResponse.json(

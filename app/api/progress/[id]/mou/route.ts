@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/client";
-import { getCurrentUser, canKplt } from "@/lib/auth/acl";
+import { getCurrentUser, canProgressKplt } from "@/lib/auth/acl";
 import {
   MouCreateSchema,
   MouUpdateSchema,
@@ -20,7 +20,7 @@ export async function GET(
 
   if (!user)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!canKplt("read", user))
+  if (!canProgressKplt("read", user))
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   if (!user.branch_id)
     return NextResponse.json(
@@ -75,7 +75,7 @@ export async function POST(
 
   if (!user)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!canKplt("create", user) && !canKplt("update", user))
+  if (!canProgressKplt("create", user) && !canProgressKplt("update", user))
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   if (!user.branch_id)
     return NextResponse.json(
@@ -207,7 +207,7 @@ export async function PATCH(
 
   if (!user)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!canKplt("update", user))
+  if (!canProgressKplt("update", user))
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   if (!user.branch_id)
     return NextResponse.json(
@@ -315,7 +315,7 @@ export async function DELETE(
 
   if (!user)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!canKplt("delete", user) && !canKplt("update", user))
+  if (!canProgressKplt("delete", user) && !canProgressKplt("update", user))
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   if (!user.branch_id)
     return NextResponse.json(

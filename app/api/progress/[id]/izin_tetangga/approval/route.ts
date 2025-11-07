@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/client";
-import { getCurrentUser, canKplt } from "@/lib/auth/acl";
+import { getCurrentUser, canProgressKplt } from "@/lib/auth/acl";
 import { ITApprovalSchema } from "@/lib/validations/izin_tetangga";
 
 export async function PATCH(
@@ -11,7 +11,7 @@ export async function PATCH(
   const user = await getCurrentUser();
   if (!user)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!canKplt("update", user))
+  if (!canProgressKplt("update", user))
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   if (!user.branch_id)
     return NextResponse.json(
