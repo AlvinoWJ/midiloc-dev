@@ -1,5 +1,18 @@
 import { createClient } from "@/lib/supabase/server";
 
+export type InternalPositionName =
+  | "regional manager"
+  | "location manager"
+  | "branch manager"
+  | "location specialist";
+
+export const POSITION = {
+  REGIONAL_MANAGER: "regional manager" as InternalPositionName,
+  LOCATION_MANAGER: "location manager" as InternalPositionName,
+  BRANCH_MANAGER: "branch manager" as InternalPositionName,
+  LOCATION_SPECIALIST: "location specialist" as InternalPositionName,
+};
+
 export type CurrentUser = {
   // Tambahan profil untuk kebutuhan response API
   id: string;
@@ -71,7 +84,7 @@ export function canKplt(
         action === "delete"
       );
     case "location manager":
-      return action === "read" || action === "update";// data baru
+      return action === "read" || action === "update"; // data baru
     case "branch manager":
       return action === "read" || action === "update" || action === "create";
     case "regional manager":
@@ -85,7 +98,10 @@ export function canKplt(
   }
 }
 
-export function canProgressKplt(action: "read" | "write", user: CurrentUser) {
+export function canProgressKplt(
+  action: "read" | "create" | "update" |"delete",
+  user: CurrentUser
+) {
   if (user.position_nama === "admin branch") return true; // write
   if (
     user.position_nama &&

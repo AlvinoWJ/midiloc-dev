@@ -45,3 +45,28 @@ export function isValidPrefixKey(
 ) {
   return typeof key === "string" && key.startsWith(`${ulokId}/${moduleName}/`);
 }
+
+// Helper untuk memformat nama default "ulok dari eksternal", disamakan dengan pola di DB
+// Pola: ULOK-EXT-RENAME-{KODE_BRANCH|NO-BRANCH}-{KECAMATAN}-{SHORT_ALAMAT}-{YYYYMMDD}
+export function formatExternalUlokName(args: {
+  kode_branch?: string | null;
+  kecamatan?: string | null;
+  alamat?: string | null;
+  date?: Date; // default: now
+}): string {
+  const kodeBranch = (args.kode_branch ?? "NO-BRANCH").toString();
+  const kec = (args.kecamatan ?? "").toString();
+  const alamat = (args.alamat ?? "").toString();
+  const date = args.date ?? new Date();
+  const shortAlamat = alamat.replace(/[^a-zA-Z0-9 ]/g, "").slice(0, 20);
+  const yyyymmdd = [
+    date.getFullYear().toString().padStart(4, "0"),
+    (date.getMonth() + 1).toString().padStart(2, "0"),
+    date.getDate().toString().padStart(2, "0"),
+  ].join("");
+
+  const raw =
+    `ULOK-EXT-RENAME-${kodeBranch}-${kec}-${shortAlamat}-${yyyymmdd}`.toUpperCase();
+  // Ganti non A-Z0-9- menjadi '-'
+  return raw.replace(/[^A-Z0-9\-]+/g, "-").slice(0, 255);
+}
