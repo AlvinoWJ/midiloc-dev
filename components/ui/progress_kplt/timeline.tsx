@@ -204,7 +204,7 @@ export default function TimelineProgressKplt({
 
   return (
     <div className="w-full py-8 flex flex-col items-center">
-      <div className="mt-8 w-full bg-white shadow-md rounded-2xl border border-gray-100 p-6 text-center animate-in fade-in duration-300">
+      <div className=" w-full bg-white shadow-[1px_1px_6px_rgba(0,0,0,0.25)] rounded-2xl border border-gray-100 p-6 text-center animate-in fade-in duration-300">
         <h2 className="text-xl font-semibold text-gray-800 mb-8">
           Timeline Progress KPLT
         </h2>
