@@ -1,7 +1,8 @@
 // File: app/api/wilayah/route.js
 
-import { NextRequest, NextResponse } from "next/server";
+import {NextResponse } from "next/server";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function GET(request: any) {
   // Ambil query parameter 'type' dan 'code' dari URL
   const type = request.nextUrl.searchParams.get("type");
