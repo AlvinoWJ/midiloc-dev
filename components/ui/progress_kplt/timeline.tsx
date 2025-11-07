@@ -202,10 +202,6 @@ export default function TimelineProgressKplt({
     );
   }
 
-  const handleCloseCard = () => {
-    setActiveStep(null);
-  };
-
   return (
     <div className="w-full py-8 flex flex-col items-center">
       <div className="mt-8 w-full bg-white shadow-md rounded-2xl border border-gray-100 p-6 text-center animate-in fade-in duration-300">
@@ -225,6 +221,7 @@ export default function TimelineProgressKplt({
             {steps.map((step, index) => {
               const isDone = step.status === "Done";
               const isInProgress = step.status === "In Progress";
+              const isPending = step.status === "Pending";
               const iconColor = isDone
                 ? "bg-green-500"
                 : isInProgress
@@ -250,13 +247,17 @@ export default function TimelineProgressKplt({
                     } ${
                       isDone
                         ? isActive
-                          ? "ring-4 ring-purple-400 ring-offset-4" // Warna 'Done' + 'Active'
-                          : "ring-4 ring-green-500 ring-offset-4" // Warna 'Done' + 'Inactive'
+                          ? "ring-4 ring-purple-400 ring-offset-4"
+                          : "ring-4 ring-green-500 ring-offset-4"
                         : isInProgress
                         ? isActive
-                          ? "ring-4 ring-purple-400 ring-offset-4" // Warna 'Done' + 'Active'
-                          : "ring-4 ring-yellow-500 ring-offset-4" // Warna 'Done' + 'Inactive'
-                        : "" // Tidak 'Done', tidak ada ring
+                          ? "ring-4 ring-purple-400 ring-offset-4"
+                          : "ring-4 ring-yellow-500 ring-offset-4"
+                        : isPending
+                        ? isActive
+                          ? "ring-4 ring-purple-400 ring-offset-4"
+                          : "ring-4 ring-gray-300 ring-offset-4"
+                        : ""
                     }`}
                   >
                     {isDone ? (
