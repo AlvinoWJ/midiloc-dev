@@ -11,6 +11,7 @@ import {
   XCircle,
   Link as LinkIcon,
   Wrench,
+  History,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +19,7 @@ import CustomSelect from "@/components/ui/customselect";
 import { RenovasiEditableSchema } from "@/lib/validations/renovasi";
 import { useAlert } from "@/components/shared/alertcontext";
 import { ProgressStatusCard } from "./ProgressStatusCard";
+import { RenovasiHistoryModal } from "./RenovasiHistoryModal";
 
 // DetailCard (Helper)
 const DetailCard = ({
@@ -432,6 +434,7 @@ const RenovasiProgressCard: React.FC<{ progressId: string }> = ({
 
   const [isEditing, setIsEditing] = useState(false);
   const [isSubmittingApproval, setIsSubmittingApproval] = useState(false);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
   const { showToast, showConfirmation } = useAlert();
 
   const formatDate = (dateString?: string | null) =>
@@ -531,7 +534,17 @@ const RenovasiProgressCard: React.FC<{ progressId: string }> = ({
         title="Renovasi"
         icon={<Wrench className="text-orange-500" size={20} />}
         className="mt-10"
-        // Tidak ada `actions` prop untuk tombol Riwayat
+        actions={
+          <Button
+            variant="default"
+            size="sm"
+            onClick={() => setShowHistoryModal(true)}
+            className="rounded"
+          >
+            <History className="w-4 h-4" />
+            Riwayat
+          </Button>
+        }
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <DetailField label="Kode Store" value={data.kode_store} />
@@ -589,7 +602,12 @@ const RenovasiProgressCard: React.FC<{ progressId: string }> = ({
           </div>
         )}
       </DetailCard>
-      {/* Tidak ada HistoryModal di sini */}
+      {showHistoryModal && (
+        <RenovasiHistoryModal
+          progressId={progressId}
+          onClose={() => setShowHistoryModal(false)}
+        />
+      )}
     </div>
   );
 };

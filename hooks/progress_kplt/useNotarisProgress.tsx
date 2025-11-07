@@ -13,10 +13,10 @@ interface NotarisData {
   status_notaris?: string | null;
   status_pembayaran?: string | null;
   tanggal_pembayaran?: string | null;
-  created_at?: string | null;
-  updated_at?: string | null;
   final_status_notaris?: string | null;
   tgl_selesai_notaris?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
 }
 
 interface UseNotarisProgressResult {
