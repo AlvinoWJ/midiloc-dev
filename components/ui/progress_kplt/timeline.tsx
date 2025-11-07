@@ -3,19 +3,15 @@
 
 import React, { useState, useMemo } from "react";
 import { CheckCircle, Clock, MoreHorizontal, Loader2 } from "lucide-react";
-
-// Impor semua komponen Card
 import MouProgressCard from "@/components/ui/progress_kplt/MouProgressCard";
 import IzinTetanggaProgressCard from "@/components/ui/progress_kplt/IzinTetanggaProgressCard";
 import NotarisProgressCard from "./NotarisProgressCard";
 import PerizinanProgressCard from "./PerizinanProgressCard";
 import RenovasiProgressCard from "./RenovasiProgressCard";
 import GrandOpeningProgressCard from "./GrandOpeningProgressCard";
-
-// Impor semua hook SWR untuk status
 import { useMouProgress } from "@/hooks/progress_kplt/useMouProgress";
 import { useIzinTetanggaProgress } from "@/hooks/progress_kplt/useIzinTetanggaProgress";
-import { usePerizinanProgress } from "@/hooks/progress_kplt/usePerizinanProgreess"; // Sesuai nama file hook
+import { usePerizinanProgress } from "@/hooks/progress_kplt/usePerizinanProgreess";
 import { useNotarisProgress } from "@/hooks/progress_kplt/useNotarisProgress";
 import { useRenovasiProgress } from "@/hooks/progress_kplt/useRenovasiProgress";
 import { useGrandOpeningProgress } from "@/hooks/progress_kplt/useGrandOpeningProgress";
@@ -34,8 +30,6 @@ interface TimelineProgressProps {
   progressId: string;
 }
 
-// --- FUNGSI generateStaticSteps DIHAPUS ---
-
 const formatDate = (dateString: string | null) => {
   if (!dateString) return "-";
   return new Date(dateString).toLocaleDateString("id-ID", {
@@ -50,6 +44,7 @@ export default function TimelineProgressKplt({
 }: TimelineProgressProps) {
   const [activeStep, setActiveStep] = useState<number | null>(null);
 
+  // ... (Data fetching hooks tidak berubah) ...
   // 1. Ambil data dari semua hook
   const {
     data: mouData,
@@ -211,81 +206,79 @@ export default function TimelineProgressKplt({
     setActiveStep(null);
   };
 
-  // 5. Kalkulasi progressWidth menjadi dinamis
-  const progressWidth =
-    steps.findIndex((s) => s.status === "In Progress") >= 0
-      ? (steps.findIndex((s) => s.status === "In Progress") /
-          (steps.length - 1)) *
-        100
-      : steps.every((s) => s.status === "Done")
-      ? 100
-      : 0;
-
   return (
     <div className="w-full py-8 flex flex-col items-center">
-      <h2 className="text-xl font-semibold text-gray-800 mb-8">
-        Timeline Progress KPLT
-      </h2>
+      <div className="mt-8 w-full bg-white shadow-md rounded-2xl border border-gray-100 p-6 text-center animate-in fade-in duration-300">
+        <h2 className="text-xl font-semibold text-gray-800 mb-8">
+          Timeline Progress KPLT
+        </h2>
 
-      {/* Garis timeline */}
-      <div className="relative w-full px-8 max-w-7xl">
-        <div className="absolute top-7 left-0 right-0 flex items-center px-12">
-          <div className="w-full h-1 bg-gray-300 rounded-full"></div>
-        </div>
-        <div className="absolute top-7 left-0 right-0 flex items-center px-12 pointer-events-none">
-          <div
-            className="h-1 bg-green-500 rounded-full transition-all duration-500"
-            style={{ width: `${progressWidth}%` }}
-          ></div>
-        </div>
+        {/* Garis timeline */}
+        <div className="relative w-full px-8 max-w-7xl">
+          {/* Garis abu-abu (dipertahankan) */}
+          <div className="absolute top-7 left-0 right-0 flex items-center px-12">
+            <div className="w-full h-1 bg-gray-300 rounded-full"></div>
+          </div>
 
-        {/* Step icons */}
-        <div className="relative flex justify-between items-start">
-          {steps.map((step, index) => {
-            const isDone = step.status === "Done";
-            const isInProgress = step.status === "In Progress";
-            const iconColor = isDone
-              ? "bg-green-500"
-              : isInProgress
-              ? "bg-yellow-500"
-              : "bg-gray-300";
+          {/* Step icons */}
+          <div className="relative flex justify-between items-start">
+            {steps.map((step, index) => {
+              const isDone = step.status === "Done";
+              const isInProgress = step.status === "In Progress";
+              const iconColor = isDone
+                ? "bg-green-500"
+                : isInProgress
+                ? "bg-yellow-500"
+                : "bg-gray-300";
 
-            return (
-              <div
-                key={step.id}
-                className="flex flex-col items-center cursor-pointer flex-1"
-                onClick={() =>
-                  setActiveStep(activeStep === index ? null : index)
-                }
-              >
+              // Tentukan apakah step ini sedang aktif
+              const isActive = activeStep === index;
+
+              return (
                 <div
-                  className={`flex items-center justify-center w-14 h-14 rounded-full shadow-md transition-all z-10 ${
-                    activeStep === index
-                      ? "bg-gradient-to-r from-pink-400 to-purple-400 text-white scale-110"
-                      : `${iconColor} text-white hover:scale-105`
-                  }`}
+                  key={step.id}
+                  className="flex flex-col items-center cursor-pointer flex-1"
+                  onClick={() =>
+                    setActiveStep(activeStep === index ? null : index)
+                  }
                 >
-                  {isDone ? (
-                    <CheckCircle size={22} />
-                  ) : isInProgress ? (
-                    <Clock size={22} />
-                  ) : (
-                    <MoreHorizontal size={22} />
-                  )}
-                </div>
+                  <div
+                    className={`flex items-center justify-center w-14 h-14 rounded-full shadow-md transition-all z-10 ${
+                      isActive
+                        ? "bg-gradient-to-r from-pink-400 to-purple-400 text-white scale-110"
+                        : `${iconColor} text-white hover:scale-105`
+                    } ${
+                      isDone
+                        ? isActive
+                          ? "ring-4 ring-purple-400 ring-offset-4" // Warna 'Done' + 'Active'
+                          : "ring-4 ring-green-500 ring-offset-4" // Warna 'Done' + 'Inactive'
+                        : isInProgress
+                        ? isActive
+                          ? "ring-4 ring-purple-400 ring-offset-4" // Warna 'Done' + 'Active'
+                          : "ring-4 ring-yellow-500 ring-offset-4" // Warna 'Done' + 'Inactive'
+                        : "" // Tidak 'Done', tidak ada ring
+                    }`}
+                  >
+                    {isDone ? (
+                      <CheckCircle size={22} />
+                    ) : isInProgress ? (
+                      <Clock size={22} />
+                    ) : (
+                      <MoreHorizontal size={22} />
+                    )}
+                  </div>
 
-                <span
-                  className={`mt-3 text-base font-medium text-center max-w-[100px] leading-tight ${
-                    activeStep === index
-                      ? "text-gray-900 font-semibold"
-                      : "text-gray-500"
-                  }`}
-                >
-                  {step.nama_tahap}
-                </span>
-              </div>
-            );
-          })}
+                  <span
+                    className={`mt-3 text-base font-medium text-center max-w-[100px] leading-tight ${
+                      isActive ? "text-gray-900 font-semibold" : "text-gray-500"
+                    }`}
+                  >
+                    {step.nama_tahap}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
 
@@ -311,9 +304,9 @@ export default function TimelineProgressKplt({
           if (step.nama_tahap === "Grand Opening") {
             return <GrandOpeningProgressCard progressId={step.progress_id} />;
           }
-          // Fallback (seharusnya tidak terpakai)
+          // Fallback
           return (
-            <div className="mt-8 max-w-2xl w-full bg-white shadow-md rounded-2xl border border-gray-100 p-6 text-center animate-in fade-in duration-300">
+            <div className="mt-8 w-full bg-white shadow-[1px_1px_6px_rgba(0,0,0,0.25)] rounded-2xl border border-gray-100 p-6 text-center animate-in fade-in duration-300">
               <h3 className="text-lg font-semibold text-gray-800 mb-2">
                 {step.nama_tahap}
               </h3>

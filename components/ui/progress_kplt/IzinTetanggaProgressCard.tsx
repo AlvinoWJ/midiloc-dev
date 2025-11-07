@@ -148,7 +148,6 @@ const IzinTetanggaForm: React.FC<FormProps> = ({
         }.`,
       });
 
-      // ✅ Langsung panggil onSuccess agar refresh data tanpa reload
       onSuccess();
     } catch (err: any) {
       showToast({ type: "error", message: err.message });
@@ -316,21 +315,21 @@ const IzinTetanggaProgressCard: React.FC<{ progressId: string }> = ({
 
   if (loading || fileLoading)
     return (
-      <div className="flex justify-center py-10 mt-8 w-full max-w-5xl mx-auto">
+      <div className="flex justify-center py-10 mt-8 w-full">
         <Loader2 className="animate-spin text-gray-500" size={28} />
       </div>
     );
 
   if (error)
     return (
-      <div className="text-red-500 text-center py-5 mt-8 w-full max-w-5xl mx-auto">
+      <div className="text-red-500 text-center py-5 mt-8 w-full">
         Terjadi kesalahan: {error}
       </div>
     );
 
   if (!data || isEditing) {
     return (
-      <div className="w-full max-w-5xl mx-auto">
+      <div className="w-full">
         <ProgressStatusCard
           title="Ijin Tetangga"
           status={data?.final_status_it}
@@ -341,7 +340,7 @@ const IzinTetanggaProgressCard: React.FC<{ progressId: string }> = ({
           progressId={progressId}
           onSuccess={() => {
             refetch();
-            refreshFiles(); // ✅ Refresh file otomatis setelah upload/update
+            refreshFiles();
             setIsEditing(false);
           }}
           initialData={data}
@@ -358,7 +357,7 @@ const IzinTetanggaProgressCard: React.FC<{ progressId: string }> = ({
 
   // Mode Read
   return (
-    <div className="w-full max-w-5xl mx-auto">
+    <div className="w-full">
       <ProgressStatusCard
         title="Ijin Tetangga"
         status={data.final_status_it}

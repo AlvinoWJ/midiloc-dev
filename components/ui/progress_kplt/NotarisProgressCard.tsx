@@ -434,21 +434,21 @@ const NotarisProgressCard: React.FC<{ progressId: string }> = ({
 
   if (loading || loadingFiles)
     return (
-      <div className="flex justify-center py-10 mt-8 w-full max-w-5xl mx-auto">
+      <div className="flex justify-center py-10 mt-8 w-full ">
         <Loader2 className="animate-spin text-gray-500" size={28} />
       </div>
     );
 
   if (error || errorFiles)
     return (
-      <div className="text-red-500 text-center py-5 mt-8 w-full max-w-5xl mx-auto">
+      <div className="text-red-500 text-center py-5 mt-8 w-full ">
         Terjadi kesalahan: {error || errorFiles}
       </div>
     );
 
   if (!data || isEditing)
     return (
-      <div className="w-full max-w-5xl mx-auto">
+      <div className="w-full ">
         <ProgressStatusCard
           title="Notaris"
           status={data?.final_status_notaris}
@@ -474,7 +474,7 @@ const NotarisProgressCard: React.FC<{ progressId: string }> = ({
     data.final_status_notaris === "Batal";
 
   return (
-    <div className="w-full max-w-5xl mx-auto">
+    <div className="w-full ">
       <ProgressStatusCard
         title="Notaris"
         status={data.final_status_notaris}
