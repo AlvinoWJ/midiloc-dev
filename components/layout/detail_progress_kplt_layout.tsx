@@ -86,8 +86,8 @@ export default function DetailProgressKpltLayout({
         </div>
       </div>
 
-      {/* Timeline Progress (hanya kirim progressId) */}
-      <div className="overflow-hidden">
+      {/* Timeline Progress  */}
+      <div className="">
         <TimelineProgressKplt progressId={progressData.id} />
       </div>
     </main>

@@ -405,14 +405,14 @@ const MouProgressCard: React.FC<MouProgressCardProps> = ({ progressId }) => {
 
   if (loading)
     return (
-      <div className="flex justify-center py-10 mt-8 w-full max-w-5xl mx-auto">
+      <div className="flex justify-center py-10 mt-8 w-full ">
         <Loader2 className="animate-spin text-gray-500" size={28} />
       </div>
     );
 
   if (error)
     return (
-      <div className="text-red-500 text-center py-5 mt-8 w-full max-w-5xl mx-auto">
+      <div className="text-red-500 text-center py-5 mt-8 w-full ">
         Terjadi kesalahan: {error}
       </div>
     );
@@ -423,7 +423,7 @@ const MouProgressCard: React.FC<MouProgressCardProps> = ({ progressId }) => {
 
   if (!data || isEditing) {
     return (
-      <div className="w-full max-w-5xl mx-auto">
+      <div className="w-full ">
         <ProgressStatusCard
           title="MOU"
           status={data?.final_status_mou}
@@ -449,7 +449,7 @@ const MouProgressCard: React.FC<MouProgressCardProps> = ({ progressId }) => {
 
   // Mode Read - Tampilkan data
   return (
-    <div className="w-full max-w-5xl mx-auto">
+    <div className="w-full ">
       <ProgressStatusCard
         title="MOU"
         status={data.final_status_mou}
