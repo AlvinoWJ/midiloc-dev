@@ -87,7 +87,7 @@ const fetcher = async (url: string): Promise<ProgressDetailData> => {
 
 export function useProgressDetail(id: string | undefined) {
   const { data, error, isLoading } = useSWR(
-    id ? `http://localhost:3000/api/progress/${id}` : null,
+    id ? `api/progress/${id}` : null,
     fetcher
   );
 
