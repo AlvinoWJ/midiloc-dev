@@ -7,8 +7,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import TimelineProgressKplt from "@/components/ui/progress_kplt/timeline";
 import { ProgressDetailData } from "@/hooks/progress_kplt/useProgressDetail";
-import { useModuleFiles, MappedModuleFile } from "@/hooks/useModuleFile";
-
+import { MappedModuleFile } from "@/hooks/useModuleFile";
 import {
   ArrowLeft,
   ChevronDownIcon,
@@ -23,6 +22,8 @@ import { CalendarIcon } from "@heroicons/react/24/solid";
 
 interface LayoutProps {
   progressData: ProgressDetailData;
+  files: MappedModuleFile[] | undefined;
+  isFilesError: any;
 }
 
 const getFileIcon = (fileType: MappedModuleFile["fileType"]) => {
@@ -59,12 +60,12 @@ const formatDate = (dateString?: string | null) =>
 
 export default function DetailProgressKpltLayout({
   progressData,
+  files,
+  isFilesError,
 }: LayoutProps) {
   const router = useRouter();
   const { kplt_id: kplt } = progressData;
   const [isExpanded, setIsExpanded] = useState(false);
-
-  const { files, isLoading, isError } = useModuleFiles("kplt", kplt.id);
 
   return (
     <main className="space-y-4 lg:space-y-6">
@@ -80,7 +81,6 @@ export default function DetailProgressKpltLayout({
         </Button>
       </div>
 
-      {/* Card Gabungan Info KPLT & Dokumen */}
       <div className="bg-white rounded-xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)] transition-all duration-500">
         <div className="p-6">
           {/* Judul dan Created Date */}
@@ -288,14 +288,16 @@ export default function DetailProgressKpltLayout({
               <h4 className="text-base lg:text-lg font-semibold text-gray-700 mb-3">
                 Dokumen KPLT Terkait
               </h4>
-              {/* Pesan error */}
-              {isError && (
+
+              {/* Pesan error HANYA untuk file */}
+              {isFilesError && (
                 <p className="text-sm text-red-600 bg-red-50 p-4 rounded-lg">
                   Gagal memuat dokumen.
                 </p>
               )}
 
-              {/* Grid dokumen dengan desain seperti gambar */}
+              {/* Grid dokumen */}
+              {/* Kita tidak perlu 'isLoading' di sini karena sudah ditangani 'isCardLoading' */}
               {files && files.length > 0 && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {files.map((file) => (

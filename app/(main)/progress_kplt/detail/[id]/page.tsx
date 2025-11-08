@@ -1,41 +1,57 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { useParams } from "next/navigation";
 import DetailProgressKpltLayout from "@/components/layout/detail_progress_kplt_layout";
 import { useProgressDetail } from "@/hooks/progress_kplt/useProgressDetail";
+import { useModuleFiles } from "@/hooks/useModuleFile";
 import { Loader2 } from "lucide-react";
 
 export default function DetailProgressKpltPage() {
   const params = useParams();
-  const id = params.id as string;
-  const [showError, setShowError] = useState(false);
+  const progressId = params.id as string;
 
-  const { progressDetail, isLoading, isError } = useProgressDetail(id);
+  const {
+    progressDetail: progressData,
+    isLoading: isProgressLoading,
+    isError: isProgressError,
+  } = useProgressDetail(progressId);
 
-  useEffect(() => {
-    if (isError) {
-      const timer = setTimeout(() => setShowError(true), 500);
-      return () => clearTimeout(timer);
-    }
-  }, [isError]);
+  const kpltId = progressData?.kplt_id?.id;
 
-  if (isLoading || !progressDetail) {
+  const {
+    files,
+    isLoading: isFilesLoading,
+    error: isFilesError,
+  } = useModuleFiles("kplt", kpltId);
+
+  const isPageLoading = isProgressLoading || (kpltId && isFilesLoading);
+
+  if (isProgressLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[50vh]">
+      <div className="flex flex-col items-center justify-center min-h-[50vh]">
         <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+        <p className="mt-4 text-gray-600">Memuat Detail Progres KPLT...</p>
       </div>
     );
   }
 
-  // 8. Tampilkan status error
-  if (isError && showError) {
+  if (isProgressError || isFilesError || !progressData) {
     return (
-      <div className="text-red-500 text-center p-8">
-        Gagal memuat data progress KPLT.
-      </div>
+      <main className="p-4 lg:p-6 text-center">
+        <p className="text-red-600">
+          Gagal memuat data.
+          {isProgressError || isFilesError?.message}
+        </p>
+      </main>
     );
   }
 
-  return <DetailProgressKpltLayout progressData={progressDetail} />;
+  return (
+    <DetailProgressKpltLayout
+      progressData={progressData}
+      files={files}
+      isFilesError={isFilesError}
+    />
+  );
 }
