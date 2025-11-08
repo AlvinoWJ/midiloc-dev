@@ -63,11 +63,7 @@ export default function DetailProgressKpltLayout({
   const { kplt_id: kplt } = progressData;
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const {
-    files,
-    isLoading: isLoadingFiles,
-    isError: isErrorFiles,
-  } = useKpltFiles(kplt.id);
+  const { files, isLoading, isError } = useKpltFiles(kplt.id);
 
   return (
     <main className="space-y-4 lg:space-y-6">
@@ -292,7 +288,7 @@ export default function DetailProgressKpltLayout({
                 Dokumen KPLT Terkait
               </h4>
               {/* Pesan error */}
-              {isErrorFiles && (
+              {isError && (
                 <p className="text-sm text-red-600 bg-red-50 p-4 rounded-lg">
                   Gagal memuat dokumen.
                 </p>
