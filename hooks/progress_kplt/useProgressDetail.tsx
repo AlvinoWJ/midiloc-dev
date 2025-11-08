@@ -1,6 +1,7 @@
-import useSWR from "swr";
+"use client";
 
-// Tipe untuk objek kplt_id
+import { useState, useEffect } from "react";
+
 export interface KpltDetail {
   id: string;
   apc: number;
@@ -61,39 +62,70 @@ export interface ProgressDetailData {
   kplt_id: KpltDetail;
 }
 
-interface ApiResponse {
-  data: {
-    data: ProgressDetailData;
-    meta: {
-      progress_id: string;
-      kplt_id: string;
-    };
-  };
+interface UseProgressDetailResult {
+  progressDetail: ProgressDetailData | null;
+  isLoading: boolean;
+  isError: string | null;
+  refetch: () => Promise<void>;
 }
 
-// --- Fetcher Function ---
-const fetcher = async (url: string): Promise<ProgressDetailData> => {
-  const res = await fetch(url);
+export function useProgressDetail(
+  id: string | undefined
+): UseProgressDetailResult {
+  const [progressDetail, setProgressDetail] =
+    useState<ProgressDetailData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isError, setIsError] = useState<string | null>(null);
 
-  if (!res.ok) {
-    const error = new Error("Gagal mengambil data progress detail.");
-    // Anda bisa tambahkan info lebih lanjut ke error object jika perlu
-    throw error;
+  async function fetchProgressDetail() {
+    if (!id) {
+      setIsError("ID progress tidak valid");
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    setIsError(null);
+
+    try {
+      const res = await fetch(`/api/progress/${id}`);
+      const json = await res.json();
+
+      if (
+        res.status === 404 ||
+        json.error?.toLowerCase().includes("not found")
+      ) {
+        setProgressDetail(null);
+        setIsLoading(false);
+        return;
+      }
+
+      if (!res.ok) {
+        throw new Error(json.error || "Gagal mengambil data progress detail.");
+      }
+
+      if (!json?.data?.data) {
+        setProgressDetail(null);
+        setIsLoading(false);
+        return;
+      }
+
+      setProgressDetail(json.data.data);
+    } catch (err: any) {
+      setIsError(err.message || "Terjadi kesalahan");
+    } finally {
+      setIsLoading(false);
+    }
   }
 
-  const json: ApiResponse = await res.json();
-  return json.data.data; // Mengembalikan data yang sudah dibungkus
-};
-
-export function useProgressDetail(id: string | undefined) {
-  const { data, error, isLoading } = useSWR(
-    id ? `api/progress/${id}` : null,
-    fetcher
-  );
+  useEffect(() => {
+    fetchProgressDetail();
+  }, [id]);
 
   return {
-    progressDetail: data, // Data akan bertipe ProgressDetailData
+    progressDetail,
     isLoading,
-    isError: error,
+    isError,
+    refetch: fetchProgressDetail,
   };
 }

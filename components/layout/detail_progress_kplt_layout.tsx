@@ -7,7 +7,8 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import TimelineProgressKplt from "@/components/ui/progress_kplt/timeline";
 import { ProgressDetailData } from "@/hooks/progress_kplt/useProgressDetail";
-import { useKpltFiles, MappedKpltFile } from "@/hooks/useKpltfile";
+import { useModuleFiles, MappedModuleFile } from "@/hooks/useModuleFile";
+
 import {
   ArrowLeft,
   ChevronDownIcon,
@@ -24,7 +25,7 @@ interface LayoutProps {
   progressData: ProgressDetailData;
 }
 
-const getFileIcon = (fileType: MappedKpltFile["fileType"]) => {
+const getFileIcon = (fileType: MappedModuleFile["fileType"]) => {
   switch (fileType) {
     case "pdf":
       return <FileText className="w-6 h-6 text-red-600" />;
@@ -63,7 +64,7 @@ export default function DetailProgressKpltLayout({
   const { kplt_id: kplt } = progressData;
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const { files, isLoading, isError } = useKpltFiles(kplt.id);
+  const { files, isLoading, isError } = useModuleFiles("kplt", kplt.id);
 
   return (
     <main className="space-y-4 lg:space-y-6">
