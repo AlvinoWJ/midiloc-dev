@@ -44,8 +44,6 @@ export default function TimelineProgressKplt({
 }: TimelineProgressProps) {
   const [activeStep, setActiveStep] = useState<number | null>(null);
 
-  // ... (Data fetching hooks tidak berubah) ...
-  // 1. Ambil data dari semua hook
   const {
     data: mouData,
     loading: mouLoading,

@@ -5,7 +5,6 @@ import { useParams } from "next/navigation";
 import DetailProgressKpltLayout from "@/components/layout/detail_progress_kplt_layout";
 import { useProgressDetail } from "@/hooks/progress_kplt/useProgressDetail";
 import { Loader2 } from "lucide-react";
-import { useKpltFiles } from "@/hooks/useKpltfile";
 
 export default function DetailProgressKpltPage() {
   const params = useParams();
@@ -21,7 +20,7 @@ export default function DetailProgressKpltPage() {
     }
   }, [isError]);
 
-  if (isLoading) {
+  if (isLoading || !progressDetail) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
         <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
@@ -30,7 +29,7 @@ export default function DetailProgressKpltPage() {
   }
 
   // 8. Tampilkan status error
-  if (isError || !progressDetail) {
+  if (isError && showError) {
     return (
       <div className="text-red-500 text-center p-8">
         Gagal memuat data progress KPLT.
