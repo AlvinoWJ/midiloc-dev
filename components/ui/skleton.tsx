@@ -499,3 +499,81 @@ export default function DetailKpltSkeleton() {
     </main>
   );
 }
+
+// ============================================================================
+// PROGRESS KPLT PAGE SKELETON
+// ============================================================================
+export function ProgressKpltSkeleton() {
+  return (
+    <div className="space-y-4 lg:space-y-6 flex flex-col flex-grow animate-pulse">
+      {/* Header Section */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        {/* Title Skeleton */}
+        <div className="h-8 lg:h-10 bg-gray-200 rounded-lg w-48 lg:w-64"></div>
+
+        {/* Search and Filter Skeleton */}
+        <div className="flex items-center gap-3">
+          {/* Search Input */}
+          <div className="relative">
+            <div className="h-10 bg-gray-200 rounded-lg w-64 lg:w-80"></div>
+          </div>
+          {/* Filter Button */}
+          <div className="h-10 w-10 bg-gray-200 rounded-lg flex-shrink-0"></div>
+        </div>
+      </div>
+
+      {/* Grid Cards Skeleton */}
+      <div className="space-y-6 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-6 min-h-[23rem] flex-grow">
+        {[...Array(9)].map((_, index) => (
+          <div
+            key={index}
+            className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 space-y-4"
+          >
+            {/* Card Header */}
+            <div className="flex items-start justify-between">
+              <div className="flex-1 space-y-3">
+                {/* Title */}
+                <div className="h-6 bg-gray-200 rounded-md w-3/4"></div>
+                {/* Subtitle/Address */}
+                <div className="h-4 bg-gray-200 rounded-md w-full"></div>
+                <div className="h-4 bg-gray-200 rounded-md w-2/3"></div>
+              </div>
+              {/* Edit Icon */}
+              <div className="h-5 w-5 bg-gray-200 rounded"></div>
+            </div>
+
+            {/* Progress Bar Section */}
+            <div className="space-y-2 pt-2">
+              {/* Progress Bar */}
+              <div className="h-2 bg-gray-200 rounded-full w-full"></div>
+              {/* Date */}
+              <div className="flex justify-end">
+                <div className="h-3 bg-gray-200 rounded w-32"></div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Pagination Skeleton */}
+      <div className="flex items-center justify-center gap-1 mt-auto pt-6">
+        {/* First Page Button */}
+        <div className="h-9 w-9 bg-gray-200 rounded-full"></div>
+        {/* Previous Button */}
+        <div className="h-9 w-9 bg-gray-200 rounded-full"></div>
+
+        {/* Page Numbers */}
+        <div className="flex items-center gap-1 mx-2">
+          {[...Array(2)].map((_, i) => (
+            <div key={i} className="h-10 w-10 bg-gray-200 rounded-full"></div>
+          ))}
+        </div>
+
+        {/* Next Button */}
+        <div className="h-9 w-9 bg-gray-200 rounded-full"></div>
+        {/* Last Page Button */}
+        <div className="h-9 w-9 bg-gray-200 rounded-full"></div>
+      </div>
+    </div>
+  );
+}

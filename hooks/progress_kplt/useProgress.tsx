@@ -31,7 +31,7 @@ interface UseProgressProps {
   perPage?: number;
 }
 
-export function useProgress({ page = 1, perPage = 10 }: UseProgressProps = {}) {
+export function useProgress({ page = 1, perPage = 9 }: UseProgressProps = {}) {
   const params = new URLSearchParams();
   params.append("page", String(page));
   params.append("per_page", String(perPage));
