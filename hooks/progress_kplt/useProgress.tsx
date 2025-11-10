@@ -16,7 +16,7 @@ export type ProgressItem = {
 
 export type ProgressMeta = {
   page: number;
-  per_page: number;
+  limit: number;
   total: number;
   total_pages: number;
 };
@@ -29,12 +29,25 @@ export type ApiProgressResponse = {
 interface UseProgressProps {
   page?: number;
   perPage?: number;
+  search?: string;
+  month?: string;
+  year?: string;
 }
 
-export function useProgress({ page = 1, perPage = 9 }: UseProgressProps = {}) {
+export function useProgress({
+  page = 1,
+  perPage = 9,
+  search = "",
+  month = "",
+  year = "",
+}: UseProgressProps = {}) {
   const params = new URLSearchParams();
-  params.append("page", String(page));
-  params.append("per_page", String(perPage));
+  params.append("page", "1");
+  params.append("limit", "100");
+
+  if (search) params.append("search", search);
+  if (month) params.append("month", month);
+  if (year) params.append("year", year);
 
   const key = `/api/progress?${params.toString()}`;
 
@@ -42,9 +55,23 @@ export function useProgress({ page = 1, perPage = 9 }: UseProgressProps = {}) {
     keepPreviousData: true,
   });
 
+  const allData = data?.data ?? [];
+  const total = allData.length;
+  const totalPages = Math.ceil(total / perPage);
+
+  const start = (page - 1) * perPage;
+  const end = start + perPage;
+  const paginatedData = allData.slice(start, end);
+
   return {
-    progressData: data?.data ?? [],
-    meta: data?.meta,
+    progressData: paginatedData,
+    meta: {
+      page,
+      limit: 100,
+      per_page: perPage,
+      total,
+      total_pages: totalPages,
+    },
     isLoading,
     isError: !!error,
     error,
