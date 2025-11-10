@@ -38,7 +38,7 @@ export const ProgressStatusCard: React.FC<ProgressStatusCardProps> = ({
   endDate,
 }) => {
   return (
-    <div className="mt-8 max-w-2xl w-full bg-white shadow-md rounded-2xl border border-gray-100 p-6 text-center animate-in fade-in duration-300 mx-auto">
+    <div className="mt-8 w-full bg-white shadow-[1px_1px_6px_rgba(0,0,0,0.25)] rounded-2xl border border-gray-100 p-6 text-center animate-in fade-in duration-300">
       <h3 className="text-xl font-semibold text-gray-800 mb-2">{title}</h3>
       <p className="text-lg text-gray-600 mb-3">
         <strong>Status:</strong> {getStatus(status)}
