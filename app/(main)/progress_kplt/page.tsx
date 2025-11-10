@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useMemo, useCallback } from "react";
-import { useProgress, ProgressItem } from "@/hooks/useProgress";
+import { useProgress, ProgressItem } from "@/hooks/progress_kplt/useProgress";
 import ProgressKpltLayout from "@/components/layout/progress_kplt_layout";
 
 export default function ProgressKpltPage() {

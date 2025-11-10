@@ -3,8 +3,8 @@
 
 import React from "react";
 import { ProgressInfoCard } from "../ui/progress_kplt/progress_info_card";
-import { UlokPageSkeleton } from "@/components/ui/skleton";
-import { ProgressItem, ProgressMeta } from "@/hooks/useProgress";
+import { ProgressKpltSkeleton } from "@/components/ui/skleton";
+import { ProgressItem, ProgressMeta } from "@/hooks/progress_kplt/useProgress";
 import SearchWithFilter from "../ui/searchwithfilter";
 import {
   ChevronLeft,
@@ -101,7 +101,7 @@ export default function ProgressKpltLayout({
   };
 
   if (isLoading && progressData.length === 0) {
-    return <UlokPageSkeleton cardCount={6} />;
+    return <ProgressKpltSkeleton />;
   }
 
   if (isError) {
