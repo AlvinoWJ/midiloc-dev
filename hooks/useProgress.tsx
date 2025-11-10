@@ -10,6 +10,7 @@ export type ProgressItem = {
   kplt_id: {
     id: string;
     nama_kplt: string | null;
+    alamat: string | null;
   } | null;
 };
 

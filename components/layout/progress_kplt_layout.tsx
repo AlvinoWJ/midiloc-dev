@@ -2,7 +2,7 @@
 "use client";
 
 import React from "react";
-import { InfoCard } from "@/components/ui/infocard";
+import { ProgressInfoCard } from "../ui/progress_kplt/progress_info_card";
 import { UlokPageSkeleton } from "@/components/ui/skleton";
 import { ProgressItem, ProgressMeta } from "@/hooks/useProgress";
 import SearchWithFilter from "../ui/searchwithfilter";
@@ -43,6 +43,27 @@ export default function ProgressKpltLayout({
   const currentPage = meta?.page || 1;
   const totalPages = meta?.total_pages || 1;
 
+  const calculateProgress = (item: ProgressItem): number => {
+    type ValidStatus =
+      | "Not Started"
+      | "Mou"
+      | "Perizinan"
+      | "Notaris"
+      | "Renovasi"
+      | "Grand Opening";
+
+    const statusMap: Record<ValidStatus, number> = {
+      "Not Started": 0,
+      Mou: 20,
+      Perizinan: 40,
+      Notaris: 60,
+      Renovasi: 80,
+      "Grand Opening": 100,
+    };
+    const status = item.status as ValidStatus;
+    return statusMap[status] ?? 0;
+  };
+
   // Function to generate page numbers with ellipsis
   const getPageNumbers = () => {
     const pages = [];
@@ -62,7 +83,6 @@ export default function ProgressKpltLayout({
         pages.push("ellipsis-start");
       }
 
-      // Show current page and surrounding pages
       const start = Math.max(2, currentPage - 1);
       const end = Math.min(totalPages - 1, currentPage + 1);
 
@@ -74,7 +94,6 @@ export default function ProgressKpltLayout({
         pages.push("ellipsis-end");
       }
 
-      // Always show last page
       pages.push(totalPages);
     }
 
@@ -121,38 +140,36 @@ export default function ProgressKpltLayout({
       {/* Konten Grid / List */}
       {progressData.length === 0 ? (
         <div className="flex flex-col items-center justify-center text-center py-16 px-4 flex-grow">
-          <div className="text-gray-300 text-6xl mb-4">⏱️</div>
+          <div className="text-gray-300 text-6xl mb-4">📄</div>
           <h3 className="text-lg font-medium text-gray-900 mb-2">
-            {isFilterActive
-              ? "Tidak ada data yang cocok"
-              : "Belum ada data progress"}
+            Belum ada data progres
           </h3>
           <p className="text-gray-500 text-sm lg:text-base max-w-md">
-            {isFilterActive
-              ? "Coba ubah kata kunci pencarian atau filter untuk menemukan data yang Anda cari."
-              : "Saat ini belum ada data progress KPLT yang tercatat."}
+            Tambahkan data progres baru untuk mulai memantau perkembangan KPLT.
           </p>
         </div>
       ) : (
-        <div className="space-y-6 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-6 min-h-[23rem]">
+        <div className="space-y-6 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-6 min-h-[23rem] flex-grow">
           {progressData.map((item) => {
             const kpltId = item.id;
             const kpltName = item.kplt_id?.nama_kplt;
+            const kpltAlamat = item.kplt_id?.alamat || "Alamat tidak tersedia";
+            const progressPercentage = calculateProgress(item);
 
-            if (!kpltId) {
-              return null;
-            }
+            if (!kpltId) return null;
 
             return (
-              <InfoCard
-                key={item.id}
-                id={kpltId}
-                nama={kpltName || "Nama KPLT tidak ditemukan"}
-                alamat={item.status || "Status tidak diketahui"}
-                created_at={item.created_at || new Date().toISOString()}
-                status={item.status || "N/A"}
-                detailPath="/progress_kplt/detail/"
-              />
+              <div key={item.id} className="flex flex-col h-full">
+                <ProgressInfoCard
+                  id={kpltId}
+                  nama={kpltName || "Nama KPLT tidak ditemukan"}
+                  alamat={kpltAlamat}
+                  created_at={item.created_at || new Date().toISOString()}
+                  status={item.status || "N/A"}
+                  progressPercentage={progressPercentage}
+                  detailPath="/progress_kplt/detail/"
+                />
+              </div>
             );
           })}
         </div>
@@ -162,81 +179,65 @@ export default function ProgressKpltLayout({
       {totalPages > 1 && (
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-auto pt-6">
           <div className="flex items-center gap-1">
-            {/* First Page Button */}
+            {/* Tombol halaman pertama */}
             <button
               onClick={() => onPageChange(1)}
               disabled={currentPage === 1 || isLoading}
               className="p-2 rounded-full text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
-              aria-label="Halaman pertama"
             >
               <ChevronsLeft className="w-5 h-5" />
             </button>
 
-            {/* Previous Button */}
+            {/* Tombol sebelumnya */}
             <button
               onClick={() => onPageChange(currentPage - 1)}
               disabled={currentPage <= 1 || isLoading}
               className="p-2 rounded-full text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
-              aria-label="Halaman sebelumnya"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
 
-            {/* Page Numbers */}
+            {/* Nomor halaman */}
             <div className="flex items-center gap-1 mx-2">
-              {pageNumbers.map((pageNum) => {
-                if (typeof pageNum === "string") {
-                  // Ellipsis
-                  return (
-                    <div
-                      key={pageNum}
-                      className="flex items-center justify-center px-2 text-gray-400"
-                    >
-                      <MoreHorizontal className="w-4 h-4" />
-                    </div>
-                  );
-                }
-
-                const isActive = pageNum === currentPage;
-                return (
+              {pageNumbers.map((pageNum) =>
+                typeof pageNum === "string" ? (
+                  <div
+                    key={pageNum}
+                    className="flex items-center justify-center px-2 text-gray-400"
+                  >
+                    <MoreHorizontal className="w-4 h-4" />
+                  </div>
+                ) : (
                   <button
                     key={pageNum}
                     onClick={() => onPageChange(pageNum)}
                     disabled={isLoading}
-                    className={`
-                      w-10 h-10 rounded-full text-sm font-semibold transition-all
-                      ${
-                        isActive
-                          ? "bg-primary text-white shadow-lg shadow-red-500/30 scale-105"
-                          : "text-gray-700 hover:bg-gray-100"
-                      }
-                      disabled:opacity-40 disabled:cursor-not-allowed
-                    `}
-                    aria-label={`Halaman ${pageNum}`}
-                    aria-current={isActive ? "page" : undefined}
+                    className={`w-10 h-10 rounded-full text-sm font-semibold transition-all ${
+                      pageNum === currentPage
+                        ? "bg-primary text-white shadow-lg shadow-red-500/30 scale-105"
+                        : "text-gray-700 hover:bg-gray-100"
+                    } disabled:opacity-40 disabled:cursor-not-allowed`}
                   >
                     {pageNum}
                   </button>
-                );
-              })}
+                )
+              )}
             </div>
 
-            {/* Next Button */}
+            {/* Tombol berikutnya */}
             <button
               onClick={() => onPageChange(currentPage + 1)}
               disabled={currentPage >= totalPages || isLoading}
               className="p-2 rounded-full text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
-              aria-label="Halaman berikutnya"
             >
               <ChevronRight className="w-5 h-5" />
             </button>
 
-            {/* Last Page Button */}
+            {/* Tombol halaman terakhir */}
             <button
               onClick={() => onPageChange(totalPages)}
               disabled={currentPage >= totalPages || isLoading}
               className="p-2 rounded-full text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
-              aria-label="Halaman terakhir"
             >
               <ChevronsRight className="w-5 h-5" />
             </button>
