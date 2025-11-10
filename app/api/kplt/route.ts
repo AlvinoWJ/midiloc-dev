@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/client";
 import { getCurrentUser, canKplt } from "@/lib/auth/acl";
@@ -32,6 +33,44 @@ async function upload(
   });
   if (error) throw new Error(error.message);
   return path;
+}
+
+function normalizeView(v: string | null): ViewMode {
+  const k = (v || "all").toLowerCase();
+  return (["all", "ulok_ok", "existing"] as const).includes(k as ViewMode)
+    ? (k as ViewMode)
+    : "all";
+}
+
+interface RpcDashboardPayload {
+  kplt_from_ulok_ok: any[];
+  kplt_existing: any[];
+  meta: {
+    kplt_from_ulok_ok_count: number;
+    kplt_existing_count: number;
+    [k: string]: any;
+  };
+}
+
+function paginate<T>(
+  arr: T[] | undefined,
+  page: number,
+  limit: number
+): {
+  slice: T[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+} {
+  const safePage = Number.isFinite(page) && page > 0 ? page : 1;
+  const safeLimit = Number.isFinite(limit) && limit > 0 ? limit : 10;
+  const total = arr?.length ?? 0;
+  const totalPages = total ? Math.ceil(total / safeLimit) : 0;
+  const from = (safePage - 1) * safeLimit;
+  const to = from + safeLimit;
+  const slice = (arr || []).slice(from, to);
+  return { slice, page: safePage, limit: safeLimit, total, totalPages };
 }
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
@@ -296,55 +335,134 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
 }
 
-export async function GET(request: Request) {
+export async function GET(req: NextRequest) {
   const supabase = await createClient();
   const user = await getCurrentUser();
 
   if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json(
+      { success: false, error: "Unauthorized" },
+      { status: 401 }
+    );
   }
   if (!canKplt("read", user)) {
     return NextResponse.json(
-      { error: "Forbidden", message: "Access denied" },
+      { success: false, error: "Forbidden" },
       { status: 403 }
     );
   }
   if (!user.branch_id) {
     return NextResponse.json(
-      { error: "Forbidden", message: "User has no branch" },
+      { success: false, error: "Forbidden", message: "User has no branch" },
       { status: 403 }
     );
   }
 
-  const { searchParams } = new URL(request.url);
-  const viewParam = (searchParams.get("view") ?? "all").toLowerCase();
-  const view: ViewMode = (["all", "ulok_ok", "existing"] as const).includes(
-    viewParam as ViewMode
-  )
-    ? (viewParam as ViewMode)
-    : "all";
+  const url = new URL(req.url);
+  const view = normalizeView(url.searchParams.get("view"));
 
-  // 1 panggilan RPC saja
+  // Parameter umum
+  const page = Number(url.searchParams.get("page") ?? "1");
+  const limit = Number(url.searchParams.get("limit") ?? "10");
+
+  // Parameter khusus jika view=all
+  const pageUlokOk = Number(url.searchParams.get("page_ulok_ok") ?? page);
+  const limitUlokOk = Number(url.searchParams.get("limit_ulok_ok") ?? limit);
+  const pageExisting = Number(url.searchParams.get("page_existing") ?? page);
+  const limitExisting = Number(url.searchParams.get("limit_existing") ?? limit);
+
+  // Panggil RPC (tanpa pagination di level DB, karena kita slicing di aplikasi)
   const { data, error } = await supabase.rpc("fn_kplt_dashboard", {
     p_user_id: user.id,
     p_branch_id: user.branch_id,
-    p_position: String(user.position_nama ?? "").toLowerCase(),
+    p_position: String((user as any).position_nama ?? "").toLowerCase(),
     p_view: view,
   });
 
   if (error) {
     return NextResponse.json(
-      { error: "Failed to fetch data", detail: error.message ?? error },
+      {
+        success: false,
+        error: "Failed to fetch data",
+        detail: (error as any).message ?? error,
+      },
       { status: 500 }
     );
   }
 
-  // data sudah berbentuk payload JSON dari DB
+  const payload: RpcDashboardPayload = (data as RpcDashboardPayload) ?? {
+    kplt_from_ulok_ok: [],
+    kplt_existing: [],
+    meta: { kplt_from_ulok_ok_count: 0, kplt_existing_count: 0 },
+  };
+
+  // Pagination logic
+  let paginatedUlokOk: ReturnType<typeof paginate> | undefined;
+  let paginatedExisting: ReturnType<typeof paginate> | undefined;
+
+  if (view === "ulok_ok") {
+    paginatedUlokOk = paginate(payload.kplt_from_ulok_ok, page, limit);
+  } else if (view === "existing") {
+    paginatedExisting = paginate(payload.kplt_existing, page, limit);
+  } else {
+    // view === "all" -> masing-masing punya pagination sendiri
+    paginatedUlokOk = paginate(
+      payload.kplt_from_ulok_ok,
+      pageUlokOk,
+      limitUlokOk
+    );
+    paginatedExisting = paginate(
+      payload.kplt_existing,
+      pageExisting,
+      limitExisting
+    );
+  }
+
+  // Bangun response sesuai view
+  const responseData: Record<string, any> = {};
+  const pagination: Record<string, any> = {};
+
+  if (view === "ulok_ok") {
+    responseData.kplt_from_ulok_ok = paginatedUlokOk!.slice;
+    pagination.kplt_from_ulok_ok = {
+      page: paginatedUlokOk!.page,
+      limit: paginatedUlokOk!.limit,
+      total: paginatedUlokOk!.total,
+      totalPages: paginatedUlokOk!.totalPages,
+    };
+  } else if (view === "existing") {
+    responseData.kplt_existing = paginatedExisting!.slice;
+    pagination.kplt_existing = {
+      page: paginatedExisting!.page,
+      limit: paginatedExisting!.limit,
+      total: paginatedExisting!.total,
+      totalPages: paginatedExisting!.totalPages,
+    };
+  } else {
+    // all
+    responseData.kplt_from_ulok_ok = paginatedUlokOk!.slice;
+    responseData.kplt_existing = paginatedExisting!.slice;
+    pagination.kplt_from_ulok_ok = {
+      page: paginatedUlokOk!.page,
+      limit: paginatedUlokOk!.limit,
+      total: paginatedUlokOk!.total,
+      totalPages: paginatedUlokOk!.totalPages,
+    };
+    pagination.kplt_existing = {
+      page: paginatedExisting!.page,
+      limit: paginatedExisting!.limit,
+      total: paginatedExisting!.total,
+      totalPages: paginatedExisting!.totalPages,
+    };
+  }
+
   return NextResponse.json(
-    data ?? {
-      kplt_from_ulok_ok: [],
-      kplt_existing: [],
-      meta: { kplt_from_ulok_ok_count: 0, kplt_existing_count: 0 },
+    {
+      success: true,
+      view,
+      data: responseData,
+      pagination,
+      meta: payload.meta,
     },
     { status: 200 }
   );

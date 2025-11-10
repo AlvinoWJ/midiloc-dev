@@ -21,19 +21,13 @@ export async function GET(req: Request) {
   }
 
   const { searchParams } = new URL(req.url);
-  const pageParam = searchParams.get("page");
-  const perPageParam = searchParams.get("per_page");
+  const page = Number(searchParams.get("page") ?? "1");
+  const limit = Number(searchParams.get("limit") ?? "10");
+  const safePage = Number.isFinite(page) && page > 0 ? page : 1;
+  const safeLimit = Number.isFinite(limit) && limit > 0 ? limit : 10;
 
-  let page = Number(pageParam ?? 1);
-  let per_page = Number(perPageParam ?? 10);
-
-  // Normalisasi pagination
-  if (!Number.isFinite(page) || page < 1) page = 1;
-  if (!Number.isFinite(per_page) || per_page < 1) per_page = 10;
-  if (per_page > 100) per_page = 100;
-
-  const from = (page - 1) * per_page;
-  const to = from + per_page - 1;
+  const from = (safePage - 1) * safeLimit;
+  const to = from + safeLimit - 1;
 
   // Ambil data progress_kplt dengan join kplt (ambil nama), dibatasi branch user
   // Ganti kplt(nama) jika nama kolomnya berbeda di tabel kplt Anda
@@ -61,7 +55,7 @@ export async function GET(req: Request) {
   }
 
   const total = count ?? 0;
-  const total_pages = total > 0 ? Math.ceil(total / per_page) : 0;
+  const total_pages = total > 0 ? Math.ceil(total / limit) : 0;
 
   type ProgressRow = {
     id: string;
@@ -95,7 +89,7 @@ export async function GET(req: Request) {
       data: payload,
       meta: {
         page,
-        per_page,
+        limit,
         total,
         total_pages,
       },
