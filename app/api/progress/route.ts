@@ -87,7 +87,7 @@ export async function GET(req: Request) {
   const res = NextResponse.json(
     {
       data: payload,
-      meta: {
+      pagination: {
         page,
         limit,
         total,
