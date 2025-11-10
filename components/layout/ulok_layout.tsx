@@ -7,7 +7,6 @@ import Tabs from "@/components/ui/tabs";
 import SearchWithFilter from "@/components/ui/searchwithfilter";
 import { UlokPageSkeleton } from "@/components/ui/skleton";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
 import {
   ChevronLeft,
   ChevronRight,
