@@ -100,15 +100,18 @@ export function canKplt(
 }
 
 export function canProgressKplt(
-  action: "read" | "create" | "update" |"delete",
+  action: "read" | "create" | "update" | "delete",
   user: CurrentUser
 ) {
-  if (user.position_nama === "admin branch") return true; // write
+  if (user.position_nama === "admin branch") return true;
   if (
     user.position_nama &&
-    ["location manager", "senior/branch manager", "general manager"].includes(
-      user.position_nama
-    )
+    [
+      "location specialist",
+      "location manager",
+      "senior/branch manager",
+      "general manager",
+    ].includes(user.position_nama)
   ) {
     return action === "read";
   }

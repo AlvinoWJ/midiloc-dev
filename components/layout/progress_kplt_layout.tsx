@@ -130,7 +130,7 @@ export default function ProgressKpltLayout({
   const pageNumbers = getPageNumbers();
 
   return (
-    <div className="space-y-4 lg:space-y-6 flex flex-col flex-grow">
+    <div className="space-y-4 lg:space-y-6 flex flex-col">
       {/* Header Halaman */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <h1 className="text-2xl lg:text-4xl font-bold">Progress KPLT</h1>
@@ -177,7 +177,7 @@ export default function ProgressKpltLayout({
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-auto pt-6">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-auto pt-8 ">
           <div className="flex items-center gap-1">
             {/* Tombol halaman pertama */}
             <button

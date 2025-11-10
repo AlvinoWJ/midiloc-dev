@@ -51,7 +51,7 @@ interface BranchOption {
 }
 
 // --- PERUBAHAN 1: Tambahkan Tipe dan Status untuk Progress KPLT ---
-type ActiveMapFilter = "ulok" | "kplt" | "progress_kplt"; 
+type ActiveMapFilter = "ulok" | "kplt" | "progress_kplt";
 
 const STATUS_OPTIONS = {
   ulok: ["Semua Status", "OK", "NOK", "In Progress"] as const,
@@ -63,19 +63,19 @@ const STATUS_OPTIONS = {
     "Waiting for Forum",
   ] as const,
   progress_kplt: [
-  "Semua Status",
-  "Not Started",
-  "Mou",
-  "Izin Tetangga",
-  "Perizinan",
-  "Notaris",
-  "Renovasi",
-  "Grand Opening"
-] as const,
+    "Semua Status",
+    "Not Started",
+    "Mou",
+    "Izin Tetangga",
+    "Perizinan",
+    "Notaris",
+    "Renovasi",
+    "Grand Opening",
+  ] as const,
 };
 
 // Tipe gabungan untuk state status
-type AnyStatus = 
+type AnyStatus =
   | (typeof STATUS_OPTIONS.ulok)[number]
   | (typeof STATUS_OPTIONS.kplt)[number]
   | (typeof STATUS_OPTIONS.progress_kplt)[number];
@@ -104,19 +104,19 @@ export default function DashboardLayout(props: DashboardPageProps) {
   const isRegionalManager = userRole === "regional manager";
   const isGeneralManager = userRole === "general manager"; // BARU: GM bisa filter semua cabang
 
-// --- PERUBAHAN 2: Tipe state statusValue diperbarui ---
-const [statusValue, setStatusValue] = useState<AnyStatus>("Semua Status");
+  // --- PERUBAHAN 2: Tipe state statusValue diperbarui ---
+  const [statusValue, setStatusValue] = useState<AnyStatus>("Semua Status");
 
- // --- PERUBAHAN 3: useEffect diperbarui untuk 3 tipe ---
-useEffect(() => {
+  // --- PERUBAHAN 3: useEffect diperbarui untuk 3 tipe ---
+  useEffect(() => {
     // Tentukan opsi yang valid berdasarkan filter Tipe
- const options = STATUS_OPTIONS[activeMapFilter as ActiveMapFilter];
-    
+    const options = STATUS_OPTIONS[activeMapFilter as ActiveMapFilter];
+
     // @ts-ignore - Biarkan untuk pengecekan dinamis
- if (!options.includes(statusValue)) {
-   setStatusValue("Semua Status");
-  }
- }, [activeMapFilter, statusValue]);
+    if (!options.includes(statusValue)) {
+      setStatusValue("Semua Status");
+    }
+  }, [activeMapFilter, statusValue]);
 
   // Branch options cache (untuk RM/GM)
   const [branchOptionsCache, setBranchOptionsCache] = useState<BranchOption[]>(
@@ -339,11 +339,11 @@ useEffect(() => {
 
   // Bentuk statusFilter untuk komponen peta
   const currentStatusOptions =
-    activeMapFilter === "ulok" ? STATUS_OPTIONS.ulok : STATUS_OPTIONS.kplt;    activeMapFilter === "ulok" ? STATUS_OPTIONS.ulok : STATUS_OPTIONS.kplt;
+    activeMapFilter === "ulok" ? STATUS_OPTIONS.ulok : STATUS_OPTIONS.kplt;
+  activeMapFilter === "ulok" ? STATUS_OPTIONS.ulok : STATUS_OPTIONS.kplt;
 
   const childStatusFilter =
     statusValue === "Semua Status" ? undefined : [statusValue];
-
 
   if (isError) {
     return (
@@ -592,23 +592,24 @@ useEffect(() => {
                 <div className="relative">
                   {" "}
                   {/* DIBUNGKUS DIV RELATIVE */}
-                 <select
-  value={statusValue}
-  onChange={(e) => setStatusValue(e.target.value as any)}
-  className="appearance-none w-full sm:w-auto bg-white border border-gray-300 rounded pl-4 pr-10 py-2.5 text-sm font-medium text-gray-700 hover:border-red-400 hover:shadow-md focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500 transition-all cursor-pointer min-w-[140px]"
-  title="Filter status peta"
->
-  {(STATUS_OPTIONS[activeMapFilter as ActiveMapFilter]).map((s) => (
-    <option
-      key={s}
-      value={s}
-      className="py-[2px] leading-tight text-sm"
-    >
-      {s}
-    </option>
-  ))}
-</select>
-
+                  <select
+                    value={statusValue}
+                    onChange={(e) => setStatusValue(e.target.value as any)}
+                    className="appearance-none w-full sm:w-auto bg-white border border-gray-300 rounded pl-4 pr-10 py-2.5 text-sm font-medium text-gray-700 hover:border-red-400 hover:shadow-md focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500 transition-all cursor-pointer min-w-[140px]"
+                    title="Filter status peta"
+                  >
+                    {STATUS_OPTIONS[activeMapFilter as ActiveMapFilter].map(
+                      (s) => (
+                        <option
+                          key={s}
+                          value={s}
+                          className="py-[2px] leading-tight text-sm"
+                        >
+                          {s}
+                        </option>
+                      )
+                    )}
+                  </select>
                   {/* --- PANAH BAWAH BARU --- */}
                   <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                     <svg
@@ -631,14 +632,11 @@ useEffect(() => {
 
             <div className="h-[400px] w-full">
               <PetaLokasiInteraktif
-  data={propertiUntukPeta}
-  isLoading={isMapLoading}
-statusFilter={childStatusFilter}
-  activeMapFilter={activeMapFilter as ActiveMapFilter} 
-
-
-  
-/>
+                data={propertiUntukPeta}
+                isLoading={isMapLoading}
+                statusFilter={childStatusFilter}
+                activeMapFilter={activeMapFilter as ActiveMapFilter}
+              />
             </div>
           </div>
         </div>

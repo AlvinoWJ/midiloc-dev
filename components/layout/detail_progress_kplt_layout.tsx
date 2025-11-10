@@ -111,174 +111,196 @@ export default function DetailProgressKpltLayout({
                 Informasi Detail KPLT
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4 text-sm">
-                {/* Data Alamat */}
-                <div>
-                  <label className="text-gray-500 block mb-1">Provinsi</label>
-                  <p className="font-semibold text-gray-900">{kplt.provinsi}</p>
-                </div>
-                <div>
-                  <label className="text-gray-500 block mb-1">
-                    Kabupaten/Kota
+                {/* Baris 1 */}
+                <div className="bg-gray-100 p-3 rounded-lg">
+                  <label className="text-gray-500 text-xs block mb-1">
+                    Provinsi<span className="text-red-500">*</span>
                   </label>
-                  <p className="font-semibold text-gray-900">
-                    {kplt.kabupaten}
-                  </p>
+                  <p className="font-medium text-gray-900">{kplt.provinsi}</p>
                 </div>
-                <div>
-                  <label className="text-gray-500 block mb-1">Kecamatan</label>
-                  <p className="font-semibold text-gray-900">
-                    {kplt.kecamatan}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-gray-500 block mb-1">
-                    Kelurahan/Desa
+                <div className="bg-gray-100 p-3 rounded-lg">
+                  <label className="text-gray-500 text-xs block mb-1">
+                    Kabupaten/Kota<span className="text-red-500">*</span>
                   </label>
-                  <p className="font-semibold text-gray-900">
+                  <p className="font-medium text-gray-900">{kplt.kabupaten}</p>
+                </div>
+                <div className="bg-gray-100 p-3 rounded-lg">
+                  <label className="text-gray-500 text-xs block mb-1">
+                    Kecamatan<span className="text-red-500">*</span>
+                  </label>
+                  <p className="font-medium text-gray-900">{kplt.kecamatan}</p>
+                </div>
+
+                {/* Baris 2 */}
+                <div className="bg-gray-100 p-3 rounded-lg">
+                  <label className="text-gray-500 text-xs block mb-1">
+                    Kelurahan/Desa<span className="text-red-500">*</span>
+                  </label>
+                  <p className="font-medium text-gray-900">
                     {kplt.desa_kelurahan}
                   </p>
                 </div>
-                <div className="lg:col-span-2">
-                  <label className="text-gray-500 block mb-1">Alamat</label>
-                  <p className="font-semibold text-gray-900">{kplt.alamat}</p>
+                <div className="bg-gray-100 p-3 rounded-lg">
+                  <label className="text-gray-500 text-xs block mb-1">
+                    Alamat
+                  </label>
+                  <p className="font-medium text-gray-900">{kplt.alamat}</p>
                 </div>
-                <div>
-                  <label className="text-gray-500 block mb-1">LatLong</label>
-                  <p className="font-semibold text-gray-900">
+
+                {/* Baris 3 */}
+                <div className="bg-gray-100 p-3 rounded-lg">
+                  <label className="text-gray-500 text-xs block mb-1">
+                    LatLong
+                  </label>
+                  <p className="font-medium text-gray-900">
                     {kplt.latitude}, {kplt.longitude}
                   </p>
                 </div>
-
-                {/* Data Pemilik & Sewa */}
-                <div>
-                  <label className="text-gray-500 block mb-1">
+                <div className="bg-gray-100 p-3 rounded-lg">
+                  <label className="text-gray-500 text-xs block mb-1">
                     Nama Pemilik
                   </label>
-                  <p className="font-semibold text-gray-900">
+                  <p className="font-medium text-gray-900">
                     {kplt.nama_pemilik}
                   </p>
                 </div>
-                <div>
-                  <label className="text-gray-500 block mb-1">
+                <div className="bg-gray-100 p-3 rounded-lg">
+                  <label className="text-gray-500 text-xs block mb-1">
                     Kontak Pemilik
                   </label>
-                  <p className="font-semibold text-gray-900">
+                  <p className="font-medium text-gray-900">
                     {kplt.kontak_pemilik}
                   </p>
                 </div>
-                <div>
-                  <label className="text-gray-500 block mb-1">Harga Sewa</label>
-                  <p className="font-semibold text-gray-900">
-                    {kplt.harga_sewa}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-gray-500 block mb-1">Alas Hak</label>
-                  <p className="font-semibold text-gray-900">{kplt.alas_hak}</p>
-                </div>
 
-                {/* Data Teknis Bangunan */}
-                <div>
-                  <label className="text-gray-500 block mb-1">
+                {/* Baris 4 */}
+                <div className="bg-gray-100 p-3 rounded-lg">
+                  <label className="text-gray-500 text-xs block mb-1">
+                    Harga Sewa
+                  </label>
+                  <p className="font-medium text-gray-900">{kplt.harga_sewa}</p>
+                </div>
+                <div className="bg-gray-100 p-3 rounded-lg">
+                  <label className="text-gray-500 text-xs block mb-1">
+                    Alas Hak
+                  </label>
+                  <p className="font-medium text-gray-900">{kplt.alas_hak}</p>
+                </div>
+                <div className="bg-gray-100 p-3 rounded-lg">
+                  <label className="text-gray-500 text-xs block mb-1">
                     Bentuk Objek
                   </label>
-                  <p className="font-semibold text-gray-900">
+                  <p className="font-medium text-gray-900">
                     {kplt.bentuk_objek}
                   </p>
                 </div>
-                <div>
-                  <label className="text-gray-500 block mb-1">
+
+                {/* Baris 5 */}
+                <div className="bg-gray-100 p-3 rounded-lg">
+                  <label className="text-gray-500 text-xs block mb-1">
                     Format Store
                   </label>
-                  <p className="font-semibold text-gray-900">
+                  <p className="font-medium text-gray-900">
                     {kplt.format_store}
                   </p>
                 </div>
-                <div>
-                  <label className="text-gray-500 block mb-1">Luas</label>
-                  <p className="font-semibold text-gray-900">{kplt.luas} m²</p>
+                <div className="bg-gray-100 p-3 rounded-lg">
+                  <label className="text-gray-500 text-xs block mb-1">
+                    Luas
+                  </label>
+                  <p className="font-medium text-gray-900">{kplt.luas} m²</p>
                 </div>
-                <div>
-                  <label className="text-gray-500 block mb-1">Panjang</label>
-                  <p className="font-semibold text-gray-900">
-                    {kplt.panjang} m
-                  </p>
+                <div className="bg-gray-100 p-3 rounded-lg">
+                  <label className="text-gray-500 text-xs block mb-1">
+                    Panjang
+                  </label>
+                  <p className="font-medium text-gray-900">{kplt.panjang} m</p>
                 </div>
-                <div>
-                  <label className="text-gray-500 block mb-1">
+
+                {/* Baris 6 */}
+                <div className="bg-gray-100 p-3 rounded-lg">
+                  <label className="text-gray-500 text-xs block mb-1">
                     Lebar Depan
                   </label>
-                  <p className="font-semibold text-gray-900">
+                  <p className="font-medium text-gray-900">
                     {kplt.lebar_depan} m
                   </p>
                 </div>
-                <div>
-                  <label className="text-gray-500 block mb-1">
+                <div className="bg-gray-100 p-3 rounded-lg">
+                  <label className="text-gray-500 text-xs block mb-1">
                     Jumlah Lantai
                   </label>
-                  <p className="font-semibold text-gray-900">
+                  <p className="font-medium text-gray-900">
                     {kplt.jumlah_lantai}
                   </p>
                 </div>
-
-                {/* Data Analisis Lokasi */}
-                <div>
-                  <label className="text-gray-500 block mb-1">
+                <div className="bg-gray-100 p-3 rounded-lg">
+                  <label className="text-gray-500 text-xs block mb-1">
                     Karakter Lokasi
                   </label>
-                  <p className="font-semibold text-gray-900">
+                  <p className="font-medium text-gray-900">
                     {kplt.karakter_lokasi}
                   </p>
                 </div>
-                <div>
-                  <label className="text-gray-500 block mb-1">
+
+                {/* Baris 7 */}
+                <div className="bg-gray-100 p-3 rounded-lg">
+                  <label className="text-gray-500 text-xs block mb-1">
                     Sosial Ekonomi
                   </label>
-                  <p className="font-semibold text-gray-900">
+                  <p className="font-medium text-gray-900">
                     {kplt.sosial_ekonomi}
                   </p>
                 </div>
-                <div>
-                  <label className="text-gray-500 block mb-1">Skor FPL</label>
-                  <p className="font-semibold text-gray-900">{kplt.skor_fpl}</p>
+                <div className="bg-gray-100 p-3 rounded-lg">
+                  <label className="text-gray-500 text-xs block mb-1">
+                    Skor FPL
+                  </label>
+                  <p className="font-medium text-gray-900">{kplt.skor_fpl}</p>
+                </div>
+                <div className="bg-gray-100 p-3 rounded-lg">
+                  <label className="text-gray-500 text-xs block mb-1">
+                    APC
+                  </label>
+                  <p className="font-medium text-gray-900">{kplt.apc}</p>
                 </div>
 
-                {/* Data Potensi */}
-                <div>
-                  <label className="text-gray-500 block mb-1">APC</label>
-                  <p className="font-semibold text-gray-900">{kplt.apc}</p>
+                {/* Baris 8 */}
+                <div className="bg-gray-100 p-3 rounded-lg">
+                  <label className="text-gray-500 text-xs block mb-1">
+                    SPD
+                  </label>
+                  <p className="font-medium text-gray-900">{kplt.spd}</p>
                 </div>
-                <div>
-                  <label className="text-gray-500 block mb-1">SPD</label>
-                  <p className="font-semibold text-gray-900">{kplt.spd}</p>
+                <div className="bg-gray-100 p-3 rounded-lg">
+                  <label className="text-gray-500 text-xs block mb-1">
+                    STD
+                  </label>
+                  <p className="font-medium text-gray-900">{kplt.std}</p>
                 </div>
-                <div>
-                  <label className="text-gray-500 block mb-1">STD</label>
-                  <p className="font-semibold text-gray-900">{kplt.std}</p>
-                </div>
-
-                {/* Status Approval */}
-                <div>
-                  <label className="text-gray-500 block mb-1">
+                <div className="bg-gray-100 p-3 rounded-lg">
+                  <label className="text-gray-500 text-xs block mb-1">
                     Approval Intip
                   </label>
-                  <p className="font-semibold text-gray-900">
+                  <p className="font-medium text-gray-900">
                     {kplt.approval_intip}
                   </p>
                 </div>
-                <div>
-                  <label className="text-gray-500 block mb-1">
+
+                {/* Baris 9 */}
+                <div className="bg-gray-100 p-3 rounded-lg">
+                  <label className="text-gray-500 text-xs block mb-1">
                     KPLT Approval
                   </label>
-                  <p className="font-semibold text-gray-900">
+                  <p className="font-medium text-gray-900">
                     {kplt.kplt_approval}
                   </p>
                 </div>
-                <div>
-                  <label className="text-gray-500 block mb-1">PE Status</label>
-                  <p className="font-semibold text-gray-900">
-                    {kplt.pe_status}
-                  </p>
+                <div className="bg-gray-100 p-3 rounded-lg">
+                  <label className="text-gray-500 text-xs block mb-1">
+                    PE Status
+                  </label>
+                  <p className="font-medium text-gray-900">{kplt.pe_status}</p>
                 </div>
               </div>
             </div>

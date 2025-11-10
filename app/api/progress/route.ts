@@ -21,6 +21,7 @@ export async function GET(req: Request) {
   }
 
   const { searchParams } = new URL(req.url);
+
   const page = Number(searchParams.get("page") ?? "1");
   const limit = Number(searchParams.get("limit") ?? "10");
   const safePage = Number.isFinite(page) && page > 0 ? page : 1;
@@ -29,8 +30,6 @@ export async function GET(req: Request) {
   const from = (safePage - 1) * safeLimit;
   const to = from + safeLimit - 1;
 
-  // Ambil data progress_kplt dengan join kplt (ambil nama), dibatasi branch user
-  // Ganti kplt(nama) jika nama kolomnya berbeda di tabel kplt Anda
   const { data, error, count } = await supabase
     .from("progress_kplt")
     .select(

@@ -59,7 +59,7 @@ export const ProgressInfoCard: React.FC<ProgressInfoCardProps> = ({
             {nama}
           </h3>
         </div>
-        <div className="ml-2 p-2 text-gray-400 rounded-lg transition-all flex-shrink-0">
+        <div className="ml-2 p-2 text-gray-700 rounded-lg transition-all flex-shrink-0">
           <Edit className="w-5 h-5" />
         </div>
       </div>
