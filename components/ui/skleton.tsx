@@ -527,7 +527,7 @@ export function ProgressKpltSkeleton() {
         {[...Array(9)].map((_, index) => (
           <div
             key={index}
-            className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 space-y-4"
+            className="bg-white rounded-xl shadow-md border border-gray-200 p-5 space-y-4"
           >
             {/* Card Header */}
             <div className="flex items-start justify-between">

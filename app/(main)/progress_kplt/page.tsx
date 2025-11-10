@@ -7,7 +7,6 @@ import ProgressKpltLayout from "@/components/layout/progress_kplt_layout";
 
 export default function ProgressKpltPage() {
   const [page, setPage] = useState(1);
-  const [perPage] = useState(9);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterMonth, setFilterMonth] = useState("");
   const [filterYear, setFilterYear] = useState("");

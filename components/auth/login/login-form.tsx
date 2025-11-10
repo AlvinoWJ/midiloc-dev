@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { Loader2 } from "lucide-react";
 
 function LoginFormFields({
   handleLogin,
@@ -79,20 +80,26 @@ function LoginFormFields({
               />
             </button>
           </div>
-          {/* Forgot Password */}
-          <div className="mt-1 text-right text-sm">
-            <Link href="/auth/forgot-password" className="text-primary">
-              Forgot Password?
-            </Link>
+          <div className="mt-1 flex items-center">
+            {error && <p className="text-sm text-primary">{error}</p>}
+            <div className="ml-auto text-sm">
+              <Link href="/auth/forgot-password" className="text-primary">
+                Lupa Sandi?
+              </Link>
+            </div>
           </div>
         </div>
 
-        {/* Error */}
-        {error && <p className="text-sm text-red-500">{error}</p>}
-
         {/* Submit */}
         <Button type="submit" className="w-full" disabled={isLoading}>
-          {isLoading ? "Logging in..." : "Login"}
+          {isLoading ? (
+            <>
+              {/* Ini adalah loader-nya */}
+              <Loader2 className="h-4 w-4 animate-spin" />
+            </>
+          ) : (
+            "Login"
+          )}
         </Button>
       </div>
     </form>
@@ -124,7 +131,15 @@ export function LoginForm({ className, ...props }: LoginFormProps) {
       if (error) throw error;
       router.push("/dashboard");
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "An error occurred");
+      if (
+        error instanceof Error &&
+        error.message === "Invalid login credentials"
+      ) {
+        setError("Email/Password anda salah");
+      } else {
+        // Jika error lain (mis. jaringan), tampilkan pesan umum
+        setError("Terjadi kesalahan. Silakan coba lagi.");
+      }
     } finally {
       setIsLoading(false);
     }
