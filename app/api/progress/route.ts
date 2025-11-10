@@ -45,7 +45,7 @@ export async function GET(req: Request) {
       created_at,
       updated_at,
       status,
-      kplt_id (id,nama_kplt,latitude,longitude)
+      kplt_id (id,nama_kplt,latitude,longitude,alamat)
       `,
       { count: "exact" }
     )
@@ -77,7 +77,9 @@ export async function GET(req: Request) {
   const payload = (data ?? []).map((row: ProgressRow) => {
     // Supabase returns joined kplt_id as array, so extract first element if present
     const kpltObj =
-      Array.isArray(row.kplt_id) && row.kplt_id.length > 0 ? row.kplt_id[0] : null;
+      Array.isArray(row.kplt_id) && row.kplt_id.length > 0
+        ? row.kplt_id[0]
+        : null;
     return {
       id: row.id,
       created_at: row.created_at,
