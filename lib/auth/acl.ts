@@ -65,7 +65,8 @@ export function canUlok(
     return action === "read" || action === "update";
   if (
     user.position_nama === "branch manager" ||
-    user.position_nama === "regional manager"
+    user.position_nama === "regional manager" ||
+    user.position_nama === "admin branch"
   )
     return action === "read";
   return false;
