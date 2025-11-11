@@ -1,11 +1,11 @@
 "use client";
 
 import { KpltPageProps } from "@/types/common";
-import Tabs from "@/components/ui/tabs"; // Gunakan satu komponen Tabs yang responsif
-import SearchWithFilter from "@/components/ui/searchwithfilter"; // Gunakan satu Search yang responsif
+import Tabs from "@/components/ui/tabs";
+import SearchWithFilter from "@/components/ui/searchwithfilter";
 import { InfoCard } from "@/components/ui/infocard";
 import { useState, useMemo } from "react";
-import { KpltSkeleton } from "./ui/skleton";
+import { KpltSkeleton } from "../ui/skleton";
 
 // Helper component for the chevron icon to keep JSX cleaner
 const ChevronIcon = ({ isExpanded }: { isExpanded: boolean }) => (
@@ -191,6 +191,8 @@ export default function KpltLayout(props: KpltPageProps) {
                                     ? `/form_kplt/tambah/`
                                     : `/form_kplt/detail/`
                                 }
+                                has_file_intip={kplt.has_file_intip}
+                                has_form_ukur={kplt.has_form_ukur}
                               />
                             ))}
                           </div>
@@ -201,7 +203,6 @@ export default function KpltLayout(props: KpltPageProps) {
                 </div>
               )}
 
-              {/* 🔥 PERBAIKAN 3: Tampilkan Grid Sederhana HANYA untuk tab History */}
               {activeTab === "History" && (
                 <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-6">
                   {displayData.map((kplt) => (

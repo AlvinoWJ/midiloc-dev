@@ -13,8 +13,6 @@ export default function Navbar() {
     <header className="w-full bg-primary text-primary-foreground shadow-md sticky top-0 z-10 lg:relative">
       <div className="flex items-center justify-between px-4 lg:px-6 py-3 lg:py-4">
         <div className="flex items-center gap-3 lg:gap-4">
-          {/* Tombol Menu (Hamburger) */}
-          {/* Fungsinya sama untuk membuka sidebar mobile dan collapse sidebar desktop */}
           <button
             onClick={toggleSidebar}
             className="p-2 rounded-lg hover:bg-primary-foreground/10 transition-colors"

@@ -101,7 +101,13 @@ async function parseMultipartAndUpload(
   for (const field of FILE_FIELDS) {
     const value = form.get(field);
     if (value instanceof File && value.size > 0) {
-      const key = await uploadOneFile(supabase, ulokId, moduleName, field, value);
+      const key = await uploadOneFile(
+        supabase,
+        ulokId,
+        moduleName,
+        field,
+        value
+      );
       payload[field] = key;
       newUploadedKeys.push(key);
       replacedFileFields.push(field);

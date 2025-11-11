@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import {
   MapContainer,
   TileLayer,
   Marker,
   Popup,
   LayersControl,
+  useMapEvents,
 } from "react-leaflet";
 import { Properti, MapPoint } from "@/types/common";
 import "leaflet/dist/leaflet.css";
@@ -16,6 +17,7 @@ import MarkerClusterGroup from "react-leaflet-markercluster";
 import "leaflet.markercluster/dist/MarkerCluster.css";
 import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 
+// --- Utility untuk membuat ikon marker ---
 const createMarkerIcon = (color: string) => {
   const markerHtml = `
     <svg viewBox="0 0 24 24" width="40" height="40" xmlns="http://www.w3.org/2000/svg">
@@ -30,21 +32,43 @@ const createMarkerIcon = (color: string) => {
   });
 };
 
-const colorInProgress = "#F59E0B";
-const colorApprove = "#22C55E";
-const colorReject = "#EF4444";
-const colorWaiting = "#3B82F6";
-const colorNeedInput = "#6B7280";
+// --- Peta warna status (sudah dibedakan warna progress KPLT) ---
+const STATUS_COLOR_MAP: Record<string, string> = {
+  // Status ULOK/KPLT
+  "In Progress": "#F59E0B", // Kuning
+  "OK": "#22C55E", // Hijau
+  "Approve": "#22C55E",
+  "NOK": "#EF4444", // Merah
+  "Reject": "#EF4444",
+  "Waiting for Forum": "#3B82F6", // Biru
+  "Need Input": "#6B7280", // Abu-abu
 
-const inProgressIcon = createMarkerIcon(colorInProgress);
-const approveIcon = createMarkerIcon(colorApprove);
-const rejectIcon = createMarkerIcon(colorReject);
-const waitingForForumIcon = createMarkerIcon(colorWaiting);
-const needInputIcon = createMarkerIcon(colorNeedInput);
+  // Status Progress KPLT (warna dibedakan)
+  "Not Started": "#6B7280", // Abu-abu
+  "Mou": "#3B82F6", // Biru
+  "Izin Tetangga": "#60A5FA", // Biru muda
+  "Perizinan": "#FBBF24", // Kuning
+  "Notaris": "#8B5CF6", // Ungu
+  "Renovasi": "#EC4899", // Pink
+  "Grand Opening": "#22C55E", // Hijau
 
-// Perbaiki icon default leaflet
-// @ts-expect-error leaflet internals
-delete L.Icon.Default.prototype._getIconUrl;
+  // Default
+  default: "#9CA3AF",
+};
+
+// --- Cache Icon untuk efisiensi ---
+const iconCache: Record<string, L.DivIcon> = {};
+const getMarkerIcon = (status: string): L.DivIcon => {
+  const statusNormalized = status || "default";
+  const color = STATUS_COLOR_MAP[statusNormalized] || STATUS_COLOR_MAP["default"];
+  if (!iconCache[color]) {
+    iconCache[color] = createMarkerIcon(color);
+  }
+  return iconCache[color];
+};
+
+// --- Fix default leaflet icon path ---
+delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl:
     "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
@@ -52,25 +76,37 @@ L.Icon.Default.mergeOptions({
   shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
 });
 
+// --- Komponen StatusBadge ---
 const StatusBadge = ({ status }: { status: string }) => {
   const badgeStyles: Record<string, string> = {
+    // Status Umum
     "In Progress": "bg-yellow-100 text-yellow-800",
-    OK: "bg-green-100 text-green-800",
-    NOK: "bg-red-100 text-red-800",
+    "OK": "bg-green-100 text-green-800",
+    "Approve": "bg-green-100 text-green-800",
+    "NOK": "bg-red-100 text-red-800",
+    "Reject": "bg-red-100 text-red-800",
     "Waiting for Forum": "bg-blue-100 text-blue-800",
     "Need Input": "bg-gray-100 text-gray-800",
+
+    // Status Progress KPLT (dibedakan)
+    "Not Started": "bg-gray-100 text-gray-800",
+    "Mou": "bg-blue-100 text-blue-800",
+    "Izin Tetangga": "bg-blue-100 text-blue-800",
+    "Perizinan": "bg-yellow-100 text-yellow-800",
+    "Notaris": "bg-purple-100 text-purple-800",
+    "Renovasi": "bg-pink-100 text-pink-800",
+    "Grand Opening": "bg-green-100 text-green-800",
   };
   const style = badgeStyles[status] || "bg-gray-100 text-gray-800";
 
   return (
-    <span
-      className={`px-3 py-1 text-sm font-semibold rounded-full flex-shrink-0 ${style}`}
-    >
+    <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${style}`}>
       {status}
     </span>
   );
 };
 
+// --- Fungsi Format Tanggal ---
 const formatTanggal = (tanggalString?: string | null) => {
   if (!tanggalString) return "Tanggal tidak tersedia";
   const d = new Date(tanggalString);
@@ -82,6 +118,7 @@ const formatTanggal = (tanggalString?: string | null) => {
   });
 };
 
+// --- Komponen Utama ---
 export interface PetaProps {
   data: Array<Properti | MapPoint> | undefined;
   isLoading?: boolean;
@@ -93,7 +130,8 @@ export interface PetaProps {
     north: number;
     east: number;
   }) => void;
-  statusFilter?: string[]; // e.g. ["OK"] atau undefined (semua)
+  statusFilter?: string[];
+  activeMapFilter?: "ulok" | "kplt" | "progress_kplt";
 }
 
 export default function PetaLokasiInteraktif({
@@ -103,19 +141,20 @@ export default function PetaLokasiInteraktif({
   showPopup = true,
   onBoundsChange,
   statusFilter,
+  activeMapFilter,
 }: PetaProps) {
   const router = useRouter();
   const [isClient, setIsClient] = useState(false);
+  const mapRef = useRef<L.Map>(null);
 
   useEffect(() => setIsClient(true), []);
 
-  // Normalisasi + filter status
   const points = useMemo(() => {
     const rows = Array.isArray(data) ? data : [];
     const allowed =
       statusFilter && statusFilter.length > 0 ? new Set(statusFilter) : null;
 
-    return rows
+    const parsed = rows
       .map((row: any) => {
         const rawLat = row.lat ?? row.latitude ?? null;
         const rawLng = row.lng ?? row.longitude ?? null;
@@ -130,10 +169,13 @@ export default function PetaLokasiInteraktif({
         if (status === "Reject") status = "NOK";
         if (allowed && !allowed.has(status)) return null;
 
-        const name: string = row.name ?? row.nama ?? row.nama_ulok ?? "Lokasi";
+        const name: string =
+          row.name ?? row.nama ?? row.nama_ulok ?? row.nama_kplt ?? "Lokasi";
         const created_at: string | undefined = row.created_at ?? undefined;
         const alamat: string | undefined = row.alamat ?? undefined;
-        const type: "ulok" | "kplt" = row.type ?? "ulok";
+
+        const type =
+          (row.type || activeMapFilter) as "ulok" | "kplt" | "progress_kplt";
         const id = String(row.id);
 
         return { id, lat, lng, status, name, created_at, alamat, type };
@@ -146,9 +188,37 @@ export default function PetaLokasiInteraktif({
       name: string;
       created_at?: string;
       alamat?: string;
-      type: "ulok" | "kplt";
+      type: "ulok" | "kplt" | "progress_kplt";
     }>;
-  }, [data, statusFilter]);
+
+    return parsed;
+  }, [data, statusFilter, activeMapFilter]);
+
+  function MapEventsHandler() {
+    const map = useMapEvents({
+      moveend: () => {
+        const b = map.getBounds();
+        onBoundsChange?.({
+          south: b.getSouth(),
+          west: b.getWest(),
+          north: b.getNorth(),
+          east: b.getEast(),
+        });
+      },
+      zoomend: () => {
+        const b = map.getBounds();
+        onBoundsChange?.({
+          south: b.getSouth(),
+          west: b.getWest(),
+          north: b.getNorth(),
+          east: b.getEast(),
+        });
+      },
+    });
+
+    mapRef.current = map;
+    return null;
+  }
 
   if (isLoading || !isClient) {
     return (
@@ -159,8 +229,7 @@ export default function PetaLokasiInteraktif({
   }
 
   const mapCenter: [number, number] =
-    centerPoint ??
-    (points[0] ? [points[0].lat, points[0].lng] : [-6.25, 106.65]);
+    centerPoint ?? (points[0] ? [points[0].lat, points[0].lng] : [-6.25, 106.65]);
   const zoomLevel = centerPoint ? 15 : 13;
 
   return (
@@ -168,32 +237,19 @@ export default function PetaLokasiInteraktif({
       center={mapCenter}
       zoom={zoomLevel}
       style={{ height: "100%", width: "100%", zIndex: 0 }}
-      whenReady={(ev) => {
-        const b = ev.target.getBounds();
-        onBoundsChange?.({
-          south: b.getSouth(),
-          west: b.getWest(),
-          north: b.getNorth(),
-          east: b.getEast(),
-        });
-      }}
-      onMoveend={(e) => {
-        const b = e.target.getBounds();
-        onBoundsChange?.({
-          south: b.getSouth(),
-          west: b.getWest(),
-          north: b.getNorth(),
-          east: b.getEast(),
-        });
-      }}
-      onZoomend={(e) => {
-        const b = e.target.getBounds();
-        onBoundsChange?.({
-          south: b.getSouth(),
-          west: b.getWest(),
-          north: b.getNorth(),
-          east: b.getEast(),
-        });
+      ref={mapRef}
+      whenReady={() => {
+        setTimeout(() => {
+          if (mapRef.current) {
+            const b = mapRef.current.getBounds();
+            onBoundsChange?.({
+              south: b.getSouth(),
+              west: b.getWest(),
+              north: b.getNorth(),
+              east: b.getEast(),
+            });
+          }
+        }, 100);
       }}
     >
       <LayersControl position="topright">
@@ -211,55 +267,49 @@ export default function PetaLokasiInteraktif({
         </LayersControl.BaseLayer>
       </LayersControl>
 
+      <MapEventsHandler />
+
       <MarkerClusterGroup showCoverageOnHover={false} maxClusterRadius={60}>
         {points.map((p, index) => {
-          const icon =
-            p.status === "OK"
-              ? approveIcon
-              : p.status === "NOK"
-              ? rejectIcon
-              : p.status === "In Progress"
-              ? inProgressIcon
-              : p.status === "Waiting for Forum"
-              ? waitingForForumIcon
-              : needInputIcon;
-
+          const icon = getMarkerIcon(p.status);
           return (
-            <Marker
-              key={`${p.id}-${index}`}
-              position={[p.lat, p.lng]}
-              icon={icon}
-            >
+            <Marker key={`${p.id}-${index}`} position={[p.lat, p.lng]} icon={icon}>
               {showPopup && (
                 <Popup>
-                  <div className="w-64 p-3 space-y-2">
-                    <h3 className="font-extrabold text-xl text-gray-800">
+                  <div className="w-64 p-2 flex flex-col gap-1">
+                    <h3 className="font-bold text-lg text-gray-800 leading-tight">
                       {p.name}
                     </h3>
-                    {p.alamat ? (
+
+                    {p.alamat && (
                       <p
-                        className="text-sm text-gray-600 truncate"
+                        className="text-xs text-gray-600 truncate"
                         title={p.alamat}
                       >
                         {p.alamat}
                       </p>
-                    ) : null}
-                    <div className="border-b border-gray-200 pt-1"></div>
-                    <div className="flex justify-between items-center gap-2 pt-1">
+                    )}
+
+                    <div className="border-b border-gray-200 my-1"></div>
+
+                    <div className="flex justify-between items-center">
                       <StatusBadge status={p.status} />
-                      <span className="text-sm font-medium text-gray-500 text-right truncate">
+                      <span className="text-xs text-gray-500 text-right">
                         {formatTanggal(p.created_at)}
                       </span>
                     </div>
+
                     <button
                       onClick={() => {
                         const path =
                           p.type === "kplt"
-                            ? "/form-kplt/detail/"
-                            : "/usulan_lokasi/detail/";
-                        router.push(`${path}${p.id}`);
+                            ? `/form_kplt/detail/${p.id}`
+                            : p.type === "progress_kplt"
+                            ? `/progress_kplt/detail/${p.id}`
+                            : `/usulan_lokasi/detail/${p.id}`;
+                        router.push(path);
                       }}
-                      className="w-full mt-2 !ml-0 bg-blue-600 text-white font-bold py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                      className="w-full mt-2 bg-blue-600 text-white text-sm font-semibold py-1.5 rounded-md hover:bg-blue-700 transition-colors"
                     >
                       Lihat Detail
                     </button>

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { UlokCreateInput } from "@/lib/validations/ulok";
 import { useAlert } from "@/components/shared/alertcontext";
 import { invalidate } from "@/lib/swr-invalidate";
-import TambahUlokForm from "@/components/tambah_ulok_layout";
+import TambahUlokForm from "@/components/layout/tambah_ulok_layout";
 
 export default function TambahUlokPage() {
   const router = useRouter();

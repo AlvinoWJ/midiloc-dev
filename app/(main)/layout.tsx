@@ -2,8 +2,8 @@
 "use client";
 
 import React from "react";
-import Sidebar from "@/components/sidebar";
-import Navbar from "@/components/navbar";
+import Sidebar from "@/components/shared/sidebar";
+import Navbar from "@/components/shared/navbar";
 import { useSidebar } from "@/hooks/useSidebar";
 import SWRProvider from "../swr-provider";
 

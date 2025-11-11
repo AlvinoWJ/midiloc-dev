@@ -2,13 +2,11 @@
 
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useTambahKplt, KpltFormData } from "@/hooks/useTambahkplt"; // Hook form kita
-import TambahKpltLayout from "@/components/tambah_kplt_layout"; // Komponen UI
-import { useAlert } from "@/components/shared/alertcontext"; // Untuk notifikasi
+import { useTambahKplt, KpltFormData } from "@/hooks/useTambahkplt";
+import TambahKpltLayout from "@/components/layout/tambah_kplt_layout";
+import { useAlert } from "@/components/shared/alertcontext";
 import { useKpltPrefill } from "@/hooks/useKpltPrefill";
-import { KpltCreatePayload } from "@/lib/validations/kplt";
 
-// Komponen helper untuk menampilkan status halaman
 const PageStatus = ({ message }: { message: string }) => (
   <div className="flex items-center justify-center h-screen bg-gray-100">
     <p className="text-xl text-gray-600">{message}</p>
@@ -67,8 +65,8 @@ export default function TambahKpltPage() {
             title: "Berhasil",
             message: "Data KPLT berhasil disimpan.",
           });
-
-          router.push(`/form_kplt`);
+          router.back();
+          router.refresh();
         } catch (err) {
           showToast({
             type: "error",
