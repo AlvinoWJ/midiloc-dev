@@ -17,9 +17,16 @@ import {
 type ViewMode = "all" | "ulok_ok" | "existing";
 
 const BUCKET = "file_storage";
-const MAX_FILE = 200 * 1024 * 1024; // 200MB max untuk video besar
+const MAX_FILE = 200 * 1024 * 1024; // 200MB video max
 
 type SupaClient = Awaited<ReturnType<typeof createClient>>;
+
+function normalizeView(v: string | null): ViewMode {
+  const k = (v || "all").toLowerCase();
+  return (["all", "ulok_ok", "existing"] as const).includes(k as ViewMode)
+    ? (k as ViewMode)
+    : "all";
+}
 
 async function upload(
   supabase: SupaClient,
@@ -35,44 +42,10 @@ async function upload(
   return path;
 }
 
-function normalizeView(v: string | null): ViewMode {
-  const k = (v || "all").toLowerCase();
-  return (["all", "ulok_ok", "existing"] as const).includes(k as ViewMode)
-    ? (k as ViewMode)
-    : "all";
-}
-
-interface RpcDashboardPayload {
-  kplt_from_ulok_ok: any[];
-  kplt_existing: any[];
-  meta: {
-    kplt_from_ulok_ok_count: number;
-    kplt_existing_count: number;
-    [k: string]: any;
-  };
-}
-
-function paginate<T>(
-  arr: T[] | undefined,
-  page: number,
-  limit: number
-): {
-  slice: T[];
-  page: number;
-  limit: number;
-  total: number;
-  totalPages: number;
-} {
-  const safePage = Number.isFinite(page) && page > 0 ? page : 1;
-  const safeLimit = Number.isFinite(limit) && limit > 0 ? limit : 10;
-  const total = arr?.length ?? 0;
-  const totalPages = total ? Math.ceil(total / safeLimit) : 0;
-  const from = (safePage - 1) * safeLimit;
-  const to = from + safeLimit;
-  const slice = (arr || []).slice(from, to);
-  return { slice, page: safePage, limit: safeLimit, total, totalPages };
-}
-
+/**
+ * POST /api/kplt
+ * Create KPLT from an approved ULOK (multipart or JSON)
+ */
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     const supabase = await createClient();
@@ -85,9 +58,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const contentTypeHeader = req.headers.get("content-type") || "";
     const isMultipart = contentTypeHeader.startsWith("multipart/form-data");
 
-    // Kumpulan path yang diupload untuk rollback bila perlu
-    const uploaded: string[] = [];
-
+    const uploadedPaths: string[] = [];
     let ulokId = "";
     let payload: Record<string, unknown> = {};
 
@@ -95,7 +66,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       const form = await req.formData().catch(() => null);
       if (!form) {
         return NextResponse.json(
-          { error: "Bad Request", message: "Invalid multipart" },
+          { error: "Bad Request", message: "Invalid multipart form" },
           { status: 400 }
         );
       }
@@ -105,21 +76,16 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         return NextResponse.json({ error: "Invalid ulok_id" }, { status: 422 });
       }
 
-      // Ambil field teks non-file
+      // Plain fields
       for (const [k, v] of form.entries()) {
         if (k === "ulok_id") continue;
         if (v instanceof File) continue;
-        if (typeof v === "string") {
-          payload[k] = v;
-        }
+        if (typeof v === "string") payload[k] = v;
       }
 
-      // Helper untuk ubah string jadi null
-      if (payload.progress_toko === "") {
-        payload.progress_toko = null;
-      }
+      if (payload.progress_toko === "") payload.progress_toko = null;
 
-      const ensureSize = (f: File, max: number): void => {
+      const ensureSize = (f: File, max: number) => {
         if (f.size === 0) throw new Error("Empty file");
         if (f.size > max)
           throw new Error(
@@ -127,11 +93,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           );
       };
 
-      // Upload PDF
+      // PDFs
       for (const field of PDF_FIELDS) {
         const entry = form.get(field);
         if (entry && entry instanceof File) {
-          ensureSize(entry, 20 * 1024 * 1024); // 20MB pdf
+          ensureSize(entry, 20 * 1024 * 1024);
           if (
             entry.type &&
             !MIME.pdf.includes(entry.type as (typeof MIME.pdf)[number])
@@ -149,16 +115,16 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
             entry.type
           );
           await upload(supabase, path, entry, "application/pdf");
-          uploaded.push(path);
+          uploadedPaths.push(path);
           payload[field] = path;
         }
       }
 
-      // Upload Excel
+      // Excel
       for (const field of EXCEL_FIELDS) {
         const entry = form.get(field);
         if (entry && entry instanceof File) {
-          ensureSize(entry, 20 * 1024 * 1024); // 20MB excel
+          ensureSize(entry, 20 * 1024 * 1024);
           if (
             entry.type &&
             !MIME.excel.includes(entry.type as (typeof MIME.excel)[number])
@@ -182,12 +148,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
             entry.type ||
               "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
           );
-          uploaded.push(path);
+          uploadedPaths.push(path);
           payload[field] = path;
         }
       }
 
-      // Upload Video
+      // Videos
       for (const field of VIDEO_FIELDS) {
         const entry = form.get(field);
         if (entry && entry instanceof File) {
@@ -209,16 +175,16 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
             entry.type
           );
           await upload(supabase, path, entry, entry.type || "video/mp4");
-          uploaded.push(path);
+          uploadedPaths.push(path);
           payload[field] = path;
         }
       }
 
-      // Upload Image
+      // Images
       for (const field of IMAGE_FIELDS) {
         const entry = form.get(field);
         if (entry && entry instanceof File) {
-          ensureSize(entry, 20 * 1024 * 1024); // 20MB image
+          ensureSize(entry, 20 * 1024 * 1024);
           if (
             entry.type &&
             !MIME.image.includes(entry.type as (typeof MIME.image)[number])
@@ -236,12 +202,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
             entry.type
           );
           await upload(supabase, path, entry, entry.type || "image/png");
-          uploaded.push(path);
+          uploadedPaths.push(path);
           payload[field] = path;
         }
       }
     } else {
-      // JSON mode (path sudah disiapkan FE)
+      // JSON mode
       const bodyUnknown = await req.json().catch(() => null);
       if (!bodyUnknown || typeof bodyUnknown !== "object") {
         return NextResponse.json(
@@ -257,7 +223,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       if (!isUuid(ulokId)) {
         return NextResponse.json({ error: "Invalid ulok_id" }, { status: 422 });
       }
-      // Hapus ulok_id dari payload
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { ulok_id: _ignore, ...rest } = body;
       payload = rest;
@@ -271,7 +236,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       );
     }
 
-    // Simpan via RPC
     const { data, error } = await supabase.rpc("fn_kplt_create_from_ulok", {
       p_user_id: user.id,
       p_ulok_id: ulokId,
@@ -279,11 +243,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     });
 
     if (error) {
-      // Rollback semua file yang barusan diupload
-      if (uploaded.length) {
+      if (uploadedPaths.length) {
         await supabase.storage
           .from(BUCKET)
-          .remove(uploaded)
+          .remove(uploadedPaths)
           .catch(() => undefined);
       }
       const code = isDbError(error) ? error.code : undefined;
@@ -325,7 +288,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       );
     }
 
-    return NextResponse.json(data, { status: 201 });
+    return NextResponse.json({ success: true, data }, { status: 201 });
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : "Internal Server Error";
     return NextResponse.json(
@@ -335,6 +298,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
 }
 
+/**
+ * GET /api/kplt
+ * Query params:
+ *  - view=all|ulok_ok|existing
+ *  - q / search = string (case-insensitive)
+ *  - page_ulok_ok, limit_ulok_ok
+ *  - page_existing, limit_existing
+ *  - (fallback page & limit if specific ones missing)
+ */
 export async function GET(req: NextRequest) {
   const supabase = await createClient();
   const user = await getCurrentUser();
@@ -360,23 +332,54 @@ export async function GET(req: NextRequest) {
 
   const url = new URL(req.url);
   const view = normalizeView(url.searchParams.get("view"));
+  const q = (
+    url.searchParams.get("q") ||
+    url.searchParams.get("search") ||
+    ""
+  ).trim();
 
-  // Parameter umum
-  const page = Number(url.searchParams.get("page") ?? "1");
-  const limit = Number(url.searchParams.get("limit") ?? "10");
+  // Fallback general page/limit
+  const pageGeneral = Number(url.searchParams.get("page") ?? "1");
+  const limitGeneral = Number(url.searchParams.get("limit") ?? "10");
 
-  // Parameter khusus jika view=all
-  const pageUlokOk = Number(url.searchParams.get("page_ulok_ok") ?? page);
-  const limitUlokOk = Number(url.searchParams.get("limit_ulok_ok") ?? limit);
-  const pageExisting = Number(url.searchParams.get("page_existing") ?? page);
-  const limitExisting = Number(url.searchParams.get("limit_existing") ?? limit);
+  const pageUlokOk = Number(
+    url.searchParams.get("page_ulok_ok") ?? pageGeneral
+  );
+  const limitUlokOk = Number(
+    url.searchParams.get("limit_ulok_ok") ?? limitGeneral
+  );
+  const pageExisting = Number(
+    url.searchParams.get("page_existing") ?? pageGeneral
+  );
+  const limitExisting = Number(
+    url.searchParams.get("limit_existing") ?? limitGeneral
+  );
 
-  // Panggil RPC (tanpa pagination di level DB, karena kita slicing di aplikasi)
+  const safePageUlokOk =
+    Number.isFinite(pageUlokOk) && pageUlokOk > 0 ? pageUlokOk : 1;
+  const safeLimitUlokOk =
+    Number.isFinite(limitUlokOk) && limitUlokOk > 0
+      ? Math.min(limitUlokOk, 500)
+      : 10;
+
+  const safePageExisting =
+    Number.isFinite(pageExisting) && pageExisting > 0 ? pageExisting : 1;
+  const safeLimitExisting =
+    Number.isFinite(limitExisting) && limitExisting > 0
+      ? Math.min(limitExisting, 500)
+      : 10;
+
+  // Call new RPC with separate pagination parameters
   const { data, error } = await supabase.rpc("fn_kplt_dashboard", {
     p_user_id: user.id,
     p_branch_id: user.branch_id,
     p_position: String((user as any).position_nama ?? "").toLowerCase(),
     p_view: view,
+    p_search: q || null,
+    p_page_ulok_ok: safePageUlokOk,
+    p_limit_ulok_ok: safeLimitUlokOk,
+    p_page_existing: safePageExisting,
+    p_limit_existing: safeLimitExisting,
   });
 
   if (error) {
@@ -390,79 +393,13 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const payload: RpcDashboardPayload = (data as RpcDashboardPayload) ?? {
-    kplt_from_ulok_ok: [],
-    kplt_existing: [],
-    meta: { kplt_from_ulok_ok_count: 0, kplt_existing_count: 0 },
-  };
-
-  // Pagination logic
-  let paginatedUlokOk: ReturnType<typeof paginate> | undefined;
-  let paginatedExisting: ReturnType<typeof paginate> | undefined;
-
-  if (view === "ulok_ok") {
-    paginatedUlokOk = paginate(payload.kplt_from_ulok_ok, page, limit);
-  } else if (view === "existing") {
-    paginatedExisting = paginate(payload.kplt_existing, page, limit);
-  } else {
-    // view === "all" -> masing-masing punya pagination sendiri
-    paginatedUlokOk = paginate(
-      payload.kplt_from_ulok_ok,
-      pageUlokOk,
-      limitUlokOk
-    );
-    paginatedExisting = paginate(
-      payload.kplt_existing,
-      pageExisting,
-      limitExisting
-    );
-  }
-
-  // Bangun response sesuai view
-  const responseData: Record<string, any> = {};
-  const pagination: Record<string, any> = {};
-
-  if (view === "ulok_ok") {
-    responseData.kplt_from_ulok_ok = paginatedUlokOk!.slice;
-    pagination.kplt_from_ulok_ok = {
-      page: paginatedUlokOk!.page,
-      limit: paginatedUlokOk!.limit,
-      total: paginatedUlokOk!.total,
-      totalPages: paginatedUlokOk!.totalPages,
-    };
-  } else if (view === "existing") {
-    responseData.kplt_existing = paginatedExisting!.slice;
-    pagination.kplt_existing = {
-      page: paginatedExisting!.page,
-      limit: paginatedExisting!.limit,
-      total: paginatedExisting!.total,
-      totalPages: paginatedExisting!.totalPages,
-    };
-  } else {
-    // all
-    responseData.kplt_from_ulok_ok = paginatedUlokOk!.slice;
-    responseData.kplt_existing = paginatedExisting!.slice;
-    pagination.kplt_from_ulok_ok = {
-      page: paginatedUlokOk!.page,
-      limit: paginatedUlokOk!.limit,
-      total: paginatedUlokOk!.total,
-      totalPages: paginatedUlokOk!.totalPages,
-    };
-    pagination.kplt_existing = {
-      page: paginatedExisting!.page,
-      limit: paginatedExisting!.limit,
-      total: paginatedExisting!.total,
-      totalPages: paginatedExisting!.totalPages,
-    };
-  }
-
+  // RPC sudah mengembalikan struktur lengkap: kplt_from_ulok_ok, kplt_existing, meta, pagination, search
   return NextResponse.json(
     {
       success: true,
       view,
-      data: responseData,
-      pagination,
-      meta: payload.meta,
+      search: q || undefined,
+      ...(data as Record<string, unknown>),
     },
     { status: 200 }
   );
