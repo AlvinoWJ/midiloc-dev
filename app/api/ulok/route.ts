@@ -107,6 +107,7 @@ export async function GET(request: Request) {
 
     const from = (safePage - 1) * safeLimit;
     const to = from + safeLimit - 1;
+    const searchName = (searchParams.get("search") || "").trim();
 
     // Kolom list view — sesuaikan dengan kebutuhan front-end
     const listColumns = [
@@ -134,6 +135,10 @@ export async function GET(request: Request) {
       if (specialistId && specialistId !== "semua" && specialistId !== "") {
         query = query.eq("users_id", specialistId);
       }
+    }
+    if (searchName) {
+      // Use ilike for case-insensitive partial match in Supabase/Postgres
+      query = query.ilike("nama_ulok", `%${searchName}%`);
     }
 
     const { data, error, count } = await query;
