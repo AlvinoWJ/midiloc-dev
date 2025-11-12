@@ -13,6 +13,7 @@ import {
   ChevronsLeft,
   ChevronsRight,
   MoreHorizontal,
+  Loader2,
 } from "lucide-react";
 
 export default function UlokLayout(props: UlokPageProps) {
@@ -20,6 +21,7 @@ export default function UlokLayout(props: UlokPageProps) {
 
   const {
     isLoading,
+    isRefreshing,
     isError,
     activeTab,
     filteredUlok,
@@ -122,58 +124,64 @@ export default function UlokLayout(props: UlokPageProps) {
       </div>
 
       {/* Konten Grid / List */}
-      {filteredUlok.length === 0 ? (
-        <div className="flex flex-col items-center justify-center text-center py-16 px-4 flex-grow">
-          <div className="text-gray-300 text-6xl mb-4">📍</div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
-            {searchQuery || filterMonth || filterYear
-              ? "Tidak ada data yang cocok"
-              : "Belum ada data ulok"}
-          </h3>
-          <p className="text-gray-500 text-sm lg:text-base max-w-md">
-            {searchQuery || filterMonth || filterYear
-              ? "Coba ubah kata kunci pencarian atau filter Anda."
-              : activeTab === "Recent"
-              ? "Mulai dengan menambahkan usulan lokasi baru."
-              : "Belum ada data riwayat usulan lokasi."}
-          </p>
-          {isLocationSpecialist() &&
-            !searchQuery &&
-            !filterMonth &&
-            !filterYear &&
-            activeTab === "Recent" && (
-              <button
-                onClick={() => router.push("/usulan_lokasi/tambah")}
-                className="mt-6 bg-red-500 text-white px-6 py-2 rounded-lg hover:bg-red-600 transition-colors w-full max-w-xs lg:w-auto"
-              >
-                Tambah Usulan Lokasi
-              </button>
-            )}
-        </div>
-      ) : (
-        <div className="space-y-6 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-6 min-h-[23rem]">
-          {filteredUlok.map((ulok) => (
-            <InfoCard
-              key={ulok.id}
-              id={ulok.id}
-              nama={ulok.nama_ulok}
-              alamat={ulok.alamat}
-              created_at={ulok.created_at}
-              status={ulok.approval_status}
-              detailPath="/usulan_lokasi/detail"
-            />
-          ))}
-        </div>
-      )}
+      <div className="relative flex-grow">
+        {isRefreshing ? (
+          <div className="flex items-center justify-center min-h-[23rem]">
+            <Loader2 className="w-8 h-8 text-primary animate-spin" />
+          </div>
+        ) : filteredUlok.length === 0 ? (
+          <div className="flex flex-col items-center justify-center text-center py-16 px-4 flex-grow">
+            <div className="text-gray-300 text-6xl mb-4">📍</div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              {searchQuery || filterMonth || filterYear
+                ? "Tidak ada data yang cocok"
+                : "Belum ada data ulok"}
+            </h3>
+            <p className="text-gray-500 text-sm lg:text-base max-w-md">
+              {searchQuery || filterMonth || filterYear
+                ? "Coba ubah kata kunci pencarian atau filter Anda."
+                : activeTab === "Recent"
+                ? "Mulai dengan menambahkan usulan lokasi baru."
+                : "Belum ada data riwayat usulan lokasi."}
+            </p>
+            {isLocationSpecialist() &&
+              !searchQuery &&
+              !filterMonth &&
+              !filterYear &&
+              activeTab === "Recent" && (
+                <button
+                  onClick={() => router.push("/usulan_lokasi/tambah")}
+                  className="mt-6 bg-red-500 text-white px-6 py-2 rounded-lg hover:bg-red-600 transition-colors w-full max-w-xs lg:w-auto"
+                >
+                  Tambah Usulan Lokasi
+                </button>
+              )}
+          </div>
+        ) : (
+          <div className="space-y-6 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-6 min-h-[23rem]">
+            {filteredUlok.map((ulok) => (
+              <InfoCard
+                key={ulok.id}
+                id={ulok.id}
+                nama={ulok.nama_ulok}
+                alamat={ulok.alamat}
+                created_at={ulok.created_at}
+                status={ulok.approval_status}
+                detailPath="/usulan_lokasi/detail"
+              />
+            ))}
+          </div>
+        )}
+      </div>
 
-      {totalPages > 1 && (
+      {totalPages > 1 && !isRefreshing && (
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-auto pt-6">
           {/* Pagination Controls */}
           <div className="flex items-center gap-1">
             {/* First Page Button */}
             <button
               onClick={() => onPageChange(1)}
-              disabled={currentPage === 1 || isLoading}
+              disabled={currentPage === 1 || isLoading || isRefreshing}
               className="p-2 rounded-full text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
               aria-label="Halaman pertama"
             >
@@ -183,7 +191,7 @@ export default function UlokLayout(props: UlokPageProps) {
             {/* Previous Button */}
             <button
               onClick={() => onPageChange(currentPage - 1)}
-              disabled={currentPage <= 1 || isLoading}
+              disabled={currentPage <= 1 || isLoading || isRefreshing}
               className="p-2 rounded-full text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
               aria-label="Halaman sebelumnya"
             >
@@ -210,7 +218,7 @@ export default function UlokLayout(props: UlokPageProps) {
                   <button
                     key={pageNum}
                     onClick={() => onPageChange(pageNum)}
-                    disabled={isLoading}
+                    disabled={isLoading || isRefreshing}
                     className={`
                       w-10 h-10 rounded-full text-sm font-semibold transition-all
                       ${
@@ -231,7 +239,7 @@ export default function UlokLayout(props: UlokPageProps) {
 
             <button
               onClick={() => onPageChange(currentPage + 1)}
-              disabled={currentPage >= totalPages || isLoading}
+              disabled={currentPage >= totalPages || isLoading || isRefreshing}
               className="p-2 rounded-full text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
               aria-label="Halaman berikutnya"
             >
@@ -240,7 +248,7 @@ export default function UlokLayout(props: UlokPageProps) {
 
             <button
               onClick={() => onPageChange(totalPages)}
-              disabled={currentPage >= totalPages || isLoading}
+              disabled={currentPage >= totalPages || isLoading || isRefreshing}
               className="p-2 rounded-full text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
               aria-label="Halaman terakhir"
             >
