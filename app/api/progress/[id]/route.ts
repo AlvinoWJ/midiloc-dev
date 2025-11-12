@@ -80,11 +80,6 @@ export async function GET(
     // Tambah kolom lain jika ada misal: "note","started_at","completed_at"
   ].join(",");
 
-  // Single query dengan embed:
-  // - kplt:kplt_id(...) termasuk ulok:ulok_id(...)
-  // - izin_tetangga(final_status_it) berdasarkan FK progress_kplt_id
-  // Jika Supabase butuh nama constraint khusus untuk embed gunakan:
-  // "izin_tetangga:izin_tetangga_progress_kplt_id_fkey(final_status_it)"
   const { data, error } = await supabase
     .from("progress_kplt")
     .select(
