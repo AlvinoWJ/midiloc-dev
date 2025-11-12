@@ -1,4 +1,3 @@
-// components/ui/progress_kplt/timeline.tsx
 "use client";
 
 import React, { useState, useMemo } from "react";
@@ -9,12 +8,7 @@ import NotarisProgressCard from "./NotarisProgressCard";
 import PerizinanProgressCard from "./PerizinanProgressCard";
 import RenovasiProgressCard from "./RenovasiProgressCard";
 import GrandOpeningProgressCard from "./GrandOpeningProgressCard";
-import { useMouProgress } from "@/hooks/progress_kplt/useMouProgress";
-import { useIzinTetanggaProgress } from "@/hooks/progress_kplt/useIzinTetanggaProgress";
-import { usePerizinanProgress } from "@/hooks/progress_kplt/usePerizinanProgreess";
-import { useNotarisProgress } from "@/hooks/progress_kplt/useNotarisProgress";
-import { useRenovasiProgress } from "@/hooks/progress_kplt/useRenovasiProgress";
-import { useGrandOpeningProgress } from "@/hooks/progress_kplt/useGrandOpeningProgress";
+// HAPUS SEMUA IMPORT use...Progress (MOU, IT, Perizinan, Notaris, Renovasi, GO)
 import { ProgressStatusCard } from "./ProgressStatusCard";
 
 export interface ProgressStep {
@@ -28,7 +22,9 @@ export interface ProgressStep {
 }
 
 interface TimelineProgressProps {
-  progressId: string;
+  progressId: string; // Tetap diperlukan untuk kartu
+  progressStatus?: string; // BARU: Dari progress.status, cth: "Notaris"
+  izinTetanggaStatus?: string | null; // BARU: Dari final_status_it
 }
 
 const formatDate = (dateString: string | null) => {
@@ -40,185 +36,68 @@ const formatDate = (dateString: string | null) => {
   });
 };
 
+const LANGKAH_SEQUENTIAL = [
+  "MOU",
+  "Perizinan",
+  "Notaris",
+  "Renovasi",
+  "Grand Opening",
+];
+const STATUS_FINAL = "Grand Opening";
+
 export default function TimelineProgressKplt({
   progressId,
+  progressStatus,
+  izinTetanggaStatus,
 }: TimelineProgressProps) {
   const [activeStep, setActiveStep] = useState<number | null>(null);
 
-  const {
-    data: mouData,
-    loading: mouLoading,
-    error: mouError,
-  } = useMouProgress(progressId);
-  const {
-    data: itData,
-    loading: itLoading,
-    error: itError,
-  } = useIzinTetanggaProgress(progressId);
-  const {
-    data: perizinanData,
-    loading: perizinanLoading,
-    error: perizinanError,
-  } = usePerizinanProgress(progressId);
-  const {
-    data: notarisData,
-    loading: notarisLoading,
-    error: notarisError,
-  } = useNotarisProgress(progressId);
-  const {
-    data: renovasiData,
-    loading: renovasiLoading,
-    error: renovasiError,
-  } = useRenovasiProgress(progressId);
-  const {
-    data: goData,
-    loading: goLoading,
-    error: goError,
-  } = useGrandOpeningProgress(progressId);
-
-  const isLoading =
-    mouLoading ||
-    itLoading ||
-    perizinanLoading ||
-    notarisLoading ||
-    renovasiLoading ||
-    goLoading;
-  const error =
-    mouError ||
-    itError ||
-    perizinanError ||
-    notarisError ||
-    renovasiError ||
-    goError;
-
-  // 2. Helper untuk menentukan status dasar
-  type BaseStatus = "Done" | "Pending" | "Batal";
-  const getBaseStatus = (
-    finalStatus: string | null | undefined
-  ): BaseStatus => {
-    if (finalStatus === "Selesai") {
-      return "Done";
-    }
-    if (finalStatus === "Batal") {
-      return "Batal";
-    }
-    return "Pending";
-  };
-
   const steps: ProgressStep[] = useMemo(() => {
-    if (isLoading || error) return []; // Kembalikan array kosong jika loading atau error
-
-    const mouBaseStatus = getBaseStatus(mouData?.final_status_mou);
-    const itBaseStatus = getBaseStatus(itData?.final_status_it);
-    const perizinanBaseStatus = getBaseStatus(
-      perizinanData?.final_status_perizinan
-    );
-    const notarisBaseStatus = getBaseStatus(notarisData?.final_status_notaris);
-    const renovasiBaseStatus = getBaseStatus(renovasiData?.final_status_renov);
-    const goBaseStatus = getBaseStatus(goData?.final_status_go);
-
-    // 2. Tentukan status final (Done/In Progress/Pending/Batal) berdasarkan logika dependensi
-    let mouStatus: ProgressStep["status"];
-    if (!mouData) {
-      // Jika data belum ada (null/undefined) setelah loading selesai, statusnya Pending
-      mouStatus = "Pending";
-    } else if (mouBaseStatus === "Done") {
-      mouStatus = "Done";
-    } else if (mouBaseStatus === "Batal") {
-      mouStatus = "Batal";
-    } else {
-      // Jika mouData ada, tapi statusnya bukan Done atau Batal, berarti In Progress
-      mouStatus = "In Progress";
-    }
-
-    let itStatus: ProgressStep["status"];
-    if (mouStatus !== "Done") {
-      itStatus = "Pending"; // Prasyarat (MOU) belum selesai
-    } else {
-      // Prasyarat terpenuhi, cek data IT
-      if (!itData) {
-        itStatus = "Pending"; // MOU Done, tapi data IT belum ada
-      } else if (itBaseStatus === "Done") {
-        itStatus = "Done";
-      } else if (itBaseStatus === "Batal") {
-        itStatus = "Batal";
-      } else {
-        itStatus = "In Progress"; // MOU Done, data IT ada, belum Done/Batal
+    const getLangkahStatus = (namaLangkah: string): ProgressStep["status"] => {
+      if (!progressStatus || progressStatus === "Not Started") {
+        return "Pending";
       }
-    }
+      if (progressStatus === STATUS_FINAL) return "Done";
 
-    let perizinanStatus: ProgressStep["status"];
-    if (mouStatus !== "Done") {
-      perizinanStatus = "Pending"; // Prasyarat (MOU) belum selesai
-    } else {
-      // Prasyarat terpenuhi, cek data Perizinan
-      if (!perizinanData) {
-        perizinanStatus = "Pending"; // MOU Done, tapi data Perizinan belum ada
-      } else if (perizinanBaseStatus === "Done") {
-        perizinanStatus = "Done";
-      } else if (perizinanBaseStatus === "Batal") {
-        perizinanStatus = "Batal";
-      } else {
-        perizinanStatus = "In Progress"; // MOU Done, data Perizinan ada
+      const currentIndex = LANGKAH_SEQUENTIAL.indexOf(progressStatus);
+      const stepIndex = LANGKAH_SEQUENTIAL.indexOf(namaLangkah);
+
+      if (currentIndex === -1 || stepIndex === -1) {
+        if (namaLangkah === "MOU" && currentIndex === -1 && progressStatus) {
+          return "In Progress";
+        }
+        if (progressStatus === STATUS_FINAL) return "Done";
+        return "Pending";
       }
-    }
 
-    let notarisStatus: ProgressStep["status"];
-    if (itStatus !== "Done" || perizinanStatus !== "Done") {
-      notarisStatus = "Pending"; // Prasyarat (IT & Perizinan) belum selesai
-    } else {
-      // Prasyarat terpenuhi, cek data Notaris
-      if (!notarisData) {
-        notarisStatus = "Pending"; // IT/Perizinan Done, tapi data Notaris belum ada
-      } else if (notarisBaseStatus === "Done") {
-        notarisStatus = "Done";
-      } else if (notarisBaseStatus === "Batal") {
-        notarisStatus = "Batal";
-      } else {
-        notarisStatus = "In Progress"; // IT/Perizinan Done, data Notaris ada
-      }
-    }
+      if (stepIndex < currentIndex) return "Done";
+      if (stepIndex === currentIndex) return "In Progress";
+      return "Pending";
+    };
 
-    let renovasiStatus: ProgressStep["status"];
-    if (notarisStatus !== "Done") {
-      renovasiStatus = "Pending"; // Prasyarat (Notaris) belum selesai
-    } else {
-      // Prasyarat terpenuhi, cek data Renovasi
-      if (!renovasiData) {
-        renovasiStatus = "Pending";
-      } else if (renovasiBaseStatus === "Done") {
-        renovasiStatus = "Done";
-      } else if (renovasiBaseStatus === "Batal") {
-        renovasiStatus = "Batal";
-      } else {
-        renovasiStatus = "In Progress";
-      }
-    }
+    const getItStatus = (): ProgressStep["status"] => {
+      if (izinTetanggaStatus === "Selesai") return "Done";
+      if (izinTetanggaStatus === null || izinTetanggaStatus === undefined)
+        return "Pending";
+      // Status lain (cth: "Belum Selesai") berarti In Progress
+      return "In Progress";
+    };
 
-    let goStatus: ProgressStep["status"];
-    if (renovasiStatus !== "Done") {
-      goStatus = "Pending"; // Prasyarat (Renovasi) belum selesai
-    } else {
-      // Prasyarat terpenuhi, cek data GO
-      if (!goData) {
-        goStatus = "Pending";
-      } else if (goBaseStatus === "Done") {
-        goStatus = "Done";
-      } else if (goBaseStatus === "Batal") {
-        goStatus = "Batal";
-      } else {
-        goStatus = "In Progress";
-      }
-    }
+    // 3. Dapatkan status untuk setiap langkah
+    const mouStatus = getLangkahStatus("MOU");
+    const itStatus = getItStatus();
+    const perizinanStatus = getLangkahStatus("Perizinan");
+    const notarisStatus = getLangkahStatus("Notaris");
+    const renovasiStatus = getLangkahStatus("Renovasi");
+    const goStatus = getLangkahStatus("Grand Opening");
 
-    const rawSteps: ProgressStep[] = [
+    // 4. Bangun array steps (sesuai urutan di file lama Anda)
+    const rawSteps: Omit<ProgressStep, "start_date" | "end_date">[] = [
       {
         id: "1",
         progress_id: progressId,
         nama_tahap: "MOU",
         status: mouStatus,
-        start_date: mouData?.created_at || null,
-        end_date: mouData?.tgl_selesai_mou || null,
         urutan: 1,
       },
       {
@@ -226,8 +105,6 @@ export default function TimelineProgressKplt({
         progress_id: progressId,
         nama_tahap: "Ijin Tetangga",
         status: itStatus,
-        start_date: itData?.created_at || null,
-        end_date: itData?.tgl_selesai_izintetangga || null,
         urutan: 2,
       },
       {
@@ -235,8 +112,6 @@ export default function TimelineProgressKplt({
         progress_id: progressId,
         nama_tahap: "Perizinan",
         status: perizinanStatus,
-        start_date: perizinanData?.created_at || null,
-        end_date: perizinanData?.tgl_selesai_perizinan || null,
         urutan: 3,
       },
       {
@@ -244,8 +119,6 @@ export default function TimelineProgressKplt({
         progress_id: progressId,
         nama_tahap: "Notaris",
         status: notarisStatus,
-        start_date: notarisData?.created_at || null,
-        end_date: notarisData?.tgl_selesai_notaris || null,
         urutan: 4,
       },
       {
@@ -253,8 +126,6 @@ export default function TimelineProgressKplt({
         progress_id: progressId,
         nama_tahap: "Renovasi",
         status: renovasiStatus,
-        start_date: renovasiData?.created_at || null,
-        end_date: renovasiData?.tgl_selesai_renov || null,
         urutan: 5,
       },
       {
@@ -262,40 +133,21 @@ export default function TimelineProgressKplt({
         progress_id: progressId,
         nama_tahap: "Grand Opening",
         status: goStatus,
-        start_date: goData?.created_at || null,
-        end_date: goData?.tgl_selesai_go || null,
         urutan: 6,
       },
     ];
+    return rawSteps.map((step) => ({
+      ...step,
+      start_date: null,
+      end_date: null,
+    }));
+  }, [progressId, progressStatus, izinTetanggaStatus]);
 
-    return rawSteps;
-  }, [
-    progressId,
-    isLoading,
-    error,
-    mouData,
-    itData,
-    perizinanData,
-    notarisData,
-    renovasiData,
-    goData,
-  ]);
-
-  if (isLoading) {
+  if (progressStatus === undefined) {
     return (
       <div className="w-full py-8 flex flex-col items-center justify-center min-h-[300px]">
         <Loader2 className="animate-spin text-gray-500" size={32} />
         <p className="mt-4 text-gray-600">Memuat status timeline...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="w-full py-8 flex flex-col items-center justify-center min-h-[300px]">
-        <p className="mt-4 text-red-600">
-          Gagal memuat timeline: {error.toString()}
-        </p>
       </div>
     );
   }
