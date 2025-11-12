@@ -57,9 +57,18 @@ export interface KpltDetail {
   tanggal_approval_intip: string;
 }
 
-export interface ProgressDetailData {
+export interface ProgressData {
   id: string;
-  kplt_id: KpltDetail;
+  kplt_id: string; // ID-nya
+  status: string; // Status utama, cth: "Notaris"
+  created_at: string;
+  updated_at: string;
+  kplt: KpltDetail; // Objek KpltDetail yang di-nest
+}
+
+export interface ProgressDetailData {
+  progress: ProgressData;
+  final_status_it: string | null;
 }
 
 interface UseProgressDetailResult {
@@ -104,13 +113,13 @@ export function useProgressDetail(
         throw new Error(json.error || "Gagal mengambil data progress detail.");
       }
 
-      if (!json?.data?.data) {
+      if (!json?.data) {
         setProgressDetail(null);
         setIsLoading(false);
         return;
       }
 
-      setProgressDetail(json.data.data);
+      setProgressDetail(json.data);
     } catch (err: any) {
       setIsError(err.message || "Terjadi kesalahan");
     } finally {
