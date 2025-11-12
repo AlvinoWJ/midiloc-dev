@@ -106,7 +106,7 @@ export function canProgressKplt(
   if (user.position_nama === "admin branch") return true; // write
   if (
     user.position_nama &&
-    ["location manager", "senior/branch manager", "general manager"].includes(
+    ["location specialist","location manager", "senior/branch manager", "general manager"].includes(
       user.position_nama
     )
   ) {
