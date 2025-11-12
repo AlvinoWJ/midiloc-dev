@@ -260,6 +260,7 @@ const IzinTetanggaProgressCard: React.FC<{ progressId: string }> = ({
 
   const [isEditing, setIsEditing] = useState(false);
   const [isSubmittingApproval, setIsSubmittingApproval] = useState(false);
+  const [isSubmittingBatal, setIsSubmittingBatal] = useState(false);
   const { showToast, showConfirmation } = useAlert();
 
   const fileIzinTetangga = filesMap.get("file_izin_tetangga");

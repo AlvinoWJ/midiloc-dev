@@ -185,6 +185,10 @@ export interface KpltPageProps {
   onFilterChange: (month: string, year: string) => void;
   onTabChange: (tab: string) => void;
   isLocationSpecialist: () => boolean;
+
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
 }
 
 // ==================================

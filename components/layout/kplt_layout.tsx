@@ -6,6 +6,13 @@ import SearchWithFilter from "@/components/ui/searchwithfilter";
 import { InfoCard } from "@/components/ui/infocard";
 import { useState, useMemo } from "react";
 import { KpltSkeleton } from "../ui/skleton";
+import {
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  MoreHorizontal,
+} from "lucide-react";
 
 // Helper component for the chevron icon to keep JSX cleaner
 const ChevronIcon = ({ isExpanded }: { isExpanded: boolean }) => (
@@ -38,6 +45,9 @@ export default function KpltLayout(props: KpltPageProps) {
     onSearch,
     onFilterChange,
     onTabChange,
+    currentPage,
+    totalPages,
+    onPageChange,
   } = props;
 
   const [expandedStatuses, setExpandedStatuses] = useState<{
@@ -91,6 +101,36 @@ export default function KpltLayout(props: KpltPageProps) {
         return status;
     }
   };
+
+  const getPageNumbers = () => {
+    const pages = [];
+    const showEllipsisStart = currentPage > 3;
+    const showEllipsisEnd = totalPages && currentPage < totalPages - 2;
+
+    if (!totalPages || totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      pages.push(1);
+      if (showEllipsisStart) {
+        pages.push("ellipsis-start");
+      }
+      const start = Math.max(2, currentPage - 1);
+      const end = Math.min(totalPages - 1, currentPage + 1);
+      for (let i = start; i <= end; i++) {
+        pages.push(i);
+      }
+      if (showEllipsisEnd) {
+        pages.push("ellipsis-end");
+      }
+      pages.push(totalPages);
+    }
+
+    return pages;
+  };
+
+  const pageNumbers = getPageNumbers();
 
   return (
     <main className="space-y-4 lg:space-y-6">
@@ -216,6 +256,106 @@ export default function KpltLayout(props: KpltPageProps) {
                       detailPath={`/form_kplt/detail/`}
                     />
                   ))}
+                </div>
+              )}
+
+              {activeTab === "History" && totalPages && totalPages > 1 && (
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-auto pt-6">
+                  {/* ... (Seluruh JSX pagination Anda) ... */}
+                  <div className="flex items-center gap-1">
+                    {/* First Page Button */}
+                    <button
+                      onClick={() => onPageChange && onPageChange(1)}
+                      disabled={!currentPage || currentPage === 1 || isLoading}
+                      className="p-2 rounded-full text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
+                      aria-label="Halaman pertama"
+                    >
+                      <ChevronsLeft className="w-5 h-5" />
+                    </button>
+
+                    {/* Previous Button */}
+                    <button
+                      onClick={() =>
+                        onPageChange && onPageChange(currentPage - 1)
+                      }
+                      disabled={!currentPage || currentPage <= 1 || isLoading}
+                      className="p-2 rounded-full text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
+                      aria-label="Halaman sebelumnya"
+                    >
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
+
+                    {/* Page Numbers */}
+                    <div className="flex items-center gap-1 mx-2">
+                      {pageNumbers.map((pageNum) => {
+                        if (typeof pageNum === "string") {
+                          // Ellipsis
+                          return (
+                            <div
+                              key={pageNum}
+                              className="flex items-center justify-center px-2 text-gray-400"
+                            >
+                              <MoreHorizontal className="w-4 h-4" />
+                            </div>
+                          );
+                        }
+
+                        const isActive = pageNum === currentPage;
+                        return (
+                          <button
+                            key={pageNum}
+                            onClick={() =>
+                              onPageChange && onPageChange(pageNum)
+                            }
+                            disabled={isLoading}
+                            className={`
+                              w-10 h-10 rounded-full text-sm font-semibold transition-all
+                              ${
+                                isActive
+                                  ? "bg-red-500 text-white shadow-lg shadow-red-500/30 scale-105" // Ganti 'bg-primary' menjadi 'bg-red-500' agar konsisten
+                                  : "text-gray-700 hover:bg-gray-100"
+                              }
+                              disabled:opacity-40 disabled:cursor-not-allowed
+                            `}
+                            aria-label={`Halaman ${pageNum}`}
+                            aria-current={isActive ? "page" : undefined}
+                          >
+                            {pageNum}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <button
+                      onClick={() =>
+                        onPageChange && onPageChange(currentPage + 1)
+                      }
+                      disabled={
+                        !totalPages ||
+                        !currentPage ||
+                        currentPage >= totalPages ||
+                        isLoading
+                      }
+                      className="p-2 rounded-full text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
+                      aria-label="Halaman berikutnya"
+                    >
+                      <ChevronRight className="w-5 h-5" />
+                    </button>
+
+                    <button
+                      onClick={() => onPageChange && onPageChange(totalPages)}
+                      disabled={
+                        !totalPages ||
+                        !currentPage ||
+                        currentPage >= totalPages ||
+                        isLoading
+                      }
+                      className="p-2 rounded-full text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
+                      aria-label="Halaman terakhir"
+                    >
+                      <ChevronsRight className="w-5 h-5" />
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
