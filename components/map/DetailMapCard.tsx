@@ -3,7 +3,6 @@
 import { useState } from "react";
 import PetaLoader from "@/components/map/PetaLoader";
 import { MapPin } from "lucide-react";
-import { useUlokDetail } from "@/hooks/useUlokDetail";
 import { Properti } from "@/types/common";
 
 interface DetailMapCardProps {

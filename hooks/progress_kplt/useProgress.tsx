@@ -9,9 +9,9 @@ export type ProgressItem = {
   status: string | null;
   kplt_id: {
     id: string;
-    nama_kplt: string | null;
     alamat: string | null;
   } | null;
+  kplt_nama: string | null;
 };
 
 export type ProgressMeta = {
@@ -23,12 +23,12 @@ export type ProgressMeta = {
 
 export type ApiProgressResponse = {
   data: ProgressItem[];
-  meta: ProgressMeta;
+  pagination: ProgressMeta;
 };
 
 interface UseProgressProps {
   page?: number;
-  perPage?: number;
+  limit?: number;
   search?: string;
   month?: string;
   year?: string;
@@ -36,14 +36,14 @@ interface UseProgressProps {
 
 export function useProgress({
   page = 1,
-  perPage = 9,
+  limit = 9,
   search = "",
   month = "",
   year = "",
 }: UseProgressProps = {}) {
   const params = new URLSearchParams();
-  params.append("page", "1");
-  params.append("limit", "100");
+  params.append("page", page.toString());
+  params.append("limit", limit.toString());
 
   if (search) params.append("search", search);
   if (month) params.append("month", month);
@@ -55,23 +55,9 @@ export function useProgress({
     keepPreviousData: true,
   });
 
-  const allData = data?.data ?? [];
-  const total = allData.length;
-  const totalPages = Math.ceil(total / perPage);
-
-  const start = (page - 1) * perPage;
-  const end = start + perPage;
-  const paginatedData = allData.slice(start, end);
-
   return {
-    progressData: paginatedData,
-    meta: {
-      page,
-      limit: 100,
-      per_page: perPage,
-      total,
-      total_pages: totalPages,
-    },
+    progressData: data?.data ?? [],
+    meta: data?.pagination,
     isLoading,
     isError: !!error,
     error,

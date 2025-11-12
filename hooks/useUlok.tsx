@@ -20,7 +20,7 @@ interface ApiUlokResponse {
 
 export function useUlok() {
   const { data, error, isLoading, mutate } = useSWR<ApiUlokResponse>(
-    "/api/ulok?limit=100"
+    "/api/ulok?limit=1000"
   );
 
   return {

@@ -1,7 +1,7 @@
 // app/kplt/page.tsx
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { useUser } from "@/hooks/useUser";
 import { useKplt } from "@/hooks/useKplt";
 import { KpltPageProps, UnifiedKpltItem } from "@/types/common";
@@ -12,6 +12,23 @@ export default function KPLTPage() {
   const [filterMonth, setFilterMonth] = useState("");
   const [filterYear, setFilterYear] = useState("");
   const [activeTab, setActiveTab] = useState("Recent");
+
+  // pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const history_per_page = 9;
+
+  // debounce search input
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(searchQuery);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+      setCurrentPage(1);
+    }, 500);
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [searchQuery]);
 
   const { user, loadingUser, userError } = useUser();
 
@@ -24,7 +41,7 @@ export default function KPLTPage() {
     ulokForKplt,
     isLoading: loadingKPLT,
     isError: kpltError,
-  } = useKplt();
+  } = useKplt(debouncedSearchQuery, activeTab);
 
   const isPageLoading = loadingUser || loadingKPLT;
   const isPageError = !!userError || !!kpltError;
@@ -35,7 +52,7 @@ export default function KPLTPage() {
   };
   console.log("Data Mentah dari Hook:", { kpltExisting, ulokForKplt });
 
-  const displayData = useMemo(() => {
+  const filteredData = useMemo(() => {
     const existingTransformed: UnifiedKpltItem[] = (kpltExisting || []).map(
       (item) => ({
         id: item.id,
@@ -105,12 +122,6 @@ export default function KPLTPage() {
         matchTab = historyStatuses.includes(lowerCaseStatus);
       }
 
-      // LOGIKA FILTER PENCARIAN
-      const matchSearch =
-        item.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.alamat.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.id.toLowerCase().includes(searchQuery.toLowerCase());
-
       // LOGIKA FILTER BULAN & TAHUN
       const itemDate = new Date(item.created_at);
       const matchMonth = filterMonth
@@ -120,18 +131,41 @@ export default function KPLTPage() {
         ? itemDate.getFullYear().toString() === filterYear
         : true;
 
-      // Item akan ditampilkan jika cocok dengan SEMUA filter
-      return matchRole && matchTab && matchSearch && matchMonth && matchYear;
+      return matchRole && matchTab && matchMonth && matchYear;
     });
-  }, [
-    kpltExisting,
-    ulokForKplt,
-    searchQuery,
-    filterMonth,
-    filterYear,
-    activeTab,
-    user,
-  ]);
+  }, [kpltExisting, ulokForKplt, filterMonth, filterYear, activeTab, user]);
+
+  const totalPages = useMemo(() => {
+    if (activeTab !== "History") {
+      return 1; // Tidak ada pagination untuk "Recent"
+    }
+    // Hitung total halaman berdasarkan data yang SUDAH difilter
+    return Math.ceil(filteredData.length / history_per_page) || 1;
+  }, [filteredData, activeTab]);
+
+  // LANGKAH C: Paginasikan data (hanya untuk History)
+  const displayData = useMemo(() => {
+    if (activeTab !== "History") {
+      return filteredData; // Tampilkan semua data "Recent"
+    }
+    // Jika "History", potong data sesuai halaman
+    const startIndex = (currentPage - 1) * history_per_page;
+    const endIndex = startIndex + history_per_page;
+    return filteredData.slice(startIndex, endIndex);
+  }, [filteredData, activeTab, currentPage]);
+
+  // Handler ganti halaman (logika tidak berubah)
+  const handlePageChange = (newPage: number) => {
+    if (newPage > 0 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+    }
+  };
+
+  // Bungkus onTabChange agar me-reset halaman
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    // setCurrentPage(1); // Sudah ditangani oleh useEffect [activeTab]
+  };
 
   const kpltProps: KpltPageProps = {
     user,
@@ -144,8 +178,11 @@ export default function KPLTPage() {
     activeTab,
     onSearch: setSearchQuery,
     onFilterChange,
-    onTabChange: setActiveTab,
+    onTabChange: handleTabChange,
     isLocationSpecialist,
+    currentPage: currentPage,
+    totalPages: totalPages,
+    onPageChange: handlePageChange,
   };
 
   return <KpltLayout {...kpltProps} />;
