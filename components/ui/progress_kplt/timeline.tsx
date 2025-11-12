@@ -3,8 +3,8 @@
 
 import React, { useState, useMemo } from "react";
 import { CheckCircle, Clock, MoreHorizontal, Loader2 } from "lucide-react";
-import MouProgressCard from "@/components/ui/progress_kplt/MouProgressCard";
-import IzinTetanggaProgressCard from "@/components/ui/progress_kplt/IzinTetanggaProgressCard";
+import MouProgressCard from "./MouProgressCard";
+import IzinTetanggaProgressCard from "./IzinTetanggaProgressCard";
 import NotarisProgressCard from "./NotarisProgressCard";
 import PerizinanProgressCard from "./PerizinanProgressCard";
 import RenovasiProgressCard from "./RenovasiProgressCard";
