@@ -196,6 +196,7 @@ export interface KpltPageProps {
 // ==================================
 export interface UlokPageProps {
   isLoading: boolean;
+  isRefreshing: boolean;
   isError: boolean;
   user: CurrentUser | null;
   filteredUlok: Ulok[];

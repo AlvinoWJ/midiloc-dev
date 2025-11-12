@@ -1,7 +1,7 @@
 // app/kplt/page.tsx
 "use client";
 
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useUser } from "@/hooks/useUser";
 import { useKplt } from "@/hooks/useKplt";
 import { KpltPageProps, UnifiedKpltItem } from "@/types/common";
