@@ -23,7 +23,6 @@ export type KpltFormData = Omit<
   | "pdf_kks"
   | "excel_fpl"
   | "excel_pe"
-  | "pdf_form_ukur"
   | "video_traffic_siang"
   | "video_traffic_malam"
   | "video_360_siang"
@@ -43,7 +42,6 @@ export type KpltFormData = Omit<
   pdf_kks: File | null;
   excel_fpl: File | null;
   excel_pe: File | null;
-  pdf_form_ukur: File | null;
   video_traffic_siang: File | null;
   video_traffic_malam: File | null;
   video_360_siang: File | null;
@@ -82,18 +80,17 @@ export function useTambahKplt({
     pe_status: "",
     pe_rab: "",
     progress_toko: "",
-    pdf_foto: null as File | null,
-    counting_kompetitor: null as File | null,
-    pdf_pembanding: null as File | null,
-    pdf_kks: null as File | null,
-    excel_fpl: null as File | null,
-    excel_pe: null as File | null,
-    pdf_form_ukur: null as File | null,
-    video_traffic_siang: null as File | null,
-    video_traffic_malam: null as File | null,
-    video_360_siang: null as File | null,
-    video_360_malam: null as File | null,
-    peta_coverage: null as File | null,
+    pdf_foto: null,
+    counting_kompetitor: null,
+    pdf_pembanding: null,
+    pdf_kks: null,
+    excel_fpl: null,
+    excel_pe: null,
+    video_traffic_siang: null,
+    video_traffic_malam: null,
+    video_360_siang: null,
+    video_360_malam: null,
+    peta_coverage: null,
   });
 
   const [errors, setErrors] = useState<FormErrors>({});
@@ -173,7 +170,6 @@ export function useTambahKplt({
       pdf_kks: "PDF KKS wajib diunggah",
       excel_fpl: "Excel FPL wajib diunggah",
       excel_pe: "Excel PE wajib diunggah",
-      pdf_form_ukur: "PDF Form Ukur wajib diunggah",
       video_traffic_siang: "Video Traffic Siang wajib diunggah",
       video_traffic_malam: "Video Traffic Malam wajib diunggah",
       video_360_siang: "Video 360 Siang wajib diunggah",
@@ -189,7 +185,6 @@ export function useTambahKplt({
       "pdf_kks",
       "excel_fpl",
       "excel_pe",
-      "pdf_form_ukur",
       "video_traffic_siang",
       "video_traffic_malam",
       "video_360_siang",
@@ -240,7 +235,6 @@ export function useTambahKplt({
       pdf_kks: formData.pdf_kks?.name,
       excel_fpl: formData.excel_fpl?.name,
       excel_pe: formData.excel_pe?.name,
-      pdf_form_ukur: formData.pdf_form_ukur?.name,
       video_traffic_siang: formData.video_traffic_siang?.name,
       video_traffic_malam: formData.video_traffic_malam?.name,
       video_360_siang: formData.video_360_siang?.name,

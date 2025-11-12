@@ -5,7 +5,7 @@ import { useState, useCallback, useMemo } from "react";
 import { useUser } from "@/hooks/useUser";
 import { useKplt } from "@/hooks/useKplt";
 import { KpltPageProps, UnifiedKpltItem } from "@/types/common";
-import KpltLayout from "@/components/kplt_layout";
+import KpltLayout from "@/components/layout/kplt_layout";
 
 export default function KPLTPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -36,7 +36,6 @@ export default function KPLTPage() {
   console.log("Data Mentah dari Hook:", { kpltExisting, ulokForKplt });
 
   const displayData = useMemo(() => {
-    // 1. Transformasi dan gabungkan data seperti sebelumnya
     const existingTransformed: UnifiedKpltItem[] = (kpltExisting || []).map(
       (item) => ({
         id: item.id,
@@ -44,6 +43,8 @@ export default function KPLTPage() {
         alamat: item.alamat,
         created_at: item.created_at,
         status: item.kplt_approval,
+        has_file_intip: item.has_file_intip || false,
+        has_form_ukur: item.has_form_ukur || false,
       })
     );
     const ulokTransformed: UnifiedKpltItem[] = (ulokForKplt || []).map(
@@ -53,6 +54,8 @@ export default function KPLTPage() {
         alamat: item.alamat,
         created_at: item.created_at,
         status: item.ui_status,
+        has_file_intip: item.has_file_intip || false,
+        has_form_ukur: item.has_form_ukur || false,
       })
     );
     const combinedData = [...existingTransformed, ...ulokTransformed];

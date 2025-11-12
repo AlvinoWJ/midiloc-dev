@@ -122,6 +122,8 @@ export interface KpltExisting {
   latitude: string; // <-- Tambahkan ini
   longitude: string;
   ulok_id: string; // ✅ sesuai kebutuhan UI
+  has_file_intip?: boolean;
+  has_form_ukur?: boolean;
 }
 
 // Tipe untuk setiap objek di dalam array "kplt_from_ulok_ok"
@@ -135,6 +137,8 @@ export interface UlokForKplt {
   approval_status: string;
   latitude: string; // <-- Tambahkan ini
   longitude: string;
+  has_file_intip?: boolean;
+  has_form_ukur?: boolean;
 }
 
 // Tipe data terpadu untuk ditampilkan di card UI
@@ -144,6 +148,8 @@ export interface UnifiedKpltItem {
   alamat: string;
   created_at: string;
   status: string;
+  has_file_intip: boolean;
+  has_form_ukur: boolean;
 }
 
 // Tipe untuk objek "meta" pada respons KPLT
@@ -196,6 +202,9 @@ export interface UlokPageProps {
   onSearch: (query: string) => void;
   onFilterChange: (month: string, year: string) => void;
   onTabChange: (tab: string) => void;
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
   isLocationSpecialist: () => boolean;
 }
 
@@ -236,8 +245,8 @@ export interface DashboardPageProps {
   onSpecialistChange: (id: string | null) => void;
   selectedBranchId: string | null;
   onBranchChange: (branchId: string | null) => void;
-  activeMapFilter: "ulok" | "kplt";
-  onMapFilterChange: (filter: "ulok" | "kplt") => void;
+  activeMapFilter: "ulok" | "kplt" | "progress_kplt";
+  onMapFilterChange: (filter: "ulok" | "kplt" | "progress_kplt") => void;
 }
 
 // Legacy Properti (dipakai komponen peta lama)
@@ -292,6 +301,7 @@ export type KpltBaseData = {
   kontak_pemilik: string;
   tanggal_approval_intip: string;
   kplt_approval: string;
+  created_at: string | null;
 };
 
 export type KpltBaseUIMapped = {
@@ -317,6 +327,7 @@ export type KpltBaseUIMapped = {
   isActive: boolean;
   formUlok: string | null;
   kpltapproval?: string;
+  created_at?: string;
 };
 
 /**

@@ -100,19 +100,18 @@ export function canKplt(
 }
 
 export function canProgressKplt(
-  action: "read" | "create" | "update" |"delete",
+  action: "read" | "create" | "update" | "delete",
   user: CurrentUser
 ) {
-  if (user.position_nama === "admin branch") return true; // write
+  if (user.position_nama === "admin branch") return true;
   if (
     user.position_nama &&
-<<<<<<< HEAD
-    ["location specialist","location manager", "senior/branch manager", "general manager"].includes(
-=======
-    ["location manager", "senior/branch manager", "general manager"].includes(
->>>>>>> parent of 5295b6f (Merge branch 'Front_end' into debug)
-      user.position_nama
-    )
+    [
+      "location specialist",
+      "location manager",
+      "senior/branch manager",
+      "general manager",
+    ].includes(user.position_nama)
   ) {
     return action === "read";
   }

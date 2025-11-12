@@ -1,9 +1,9 @@
 // app/(main)/form_kplt/detail/[id]/page.tsx
 "use client";
 
-import React, { useState, useMemo, useCallback } from "react"; // Tambahkan useCallback
+import React, { useState, useMemo, useCallback } from "react";
 import { useParams } from "next/navigation";
-import DetailKpltLayout from "@/components/detail_kplt_layout";
+import DetailKpltLayout from "@/components/layout/detail_kplt_layout";
 import { useKpltDetail } from "@/hooks/useKpltDetail";
 import { useAlert } from "@/components/shared/alertcontext";
 import { useUser } from "@/hooks/useUser";
@@ -15,7 +15,10 @@ export default function DetailKpltPage() {
   const { showToast, showConfirmation } = useAlert(); // Tambahkan showConfirmation
   const { user } = useUser();
   const [isApproving, setIsApproving] = useState(false);
-  const { data, isLoading, isError, error, mutate } = useKpltDetail(kpltId);
+  const { data, isLoading, isError, error, mutate, rawData } =
+    useKpltDetail(kpltId);
+
+  console.log("CEK RAW DATA DARI useKpltDetail:", rawData);
 
   // State baru untuk modal LM
   const [showIntipModal, setShowIntipModal] = useState(false);
@@ -86,7 +89,7 @@ export default function DetailKpltPage() {
           message: "Status approval berhasil dikirim!",
         });
       }
-      await mutate(); // Refresh data setelah sukses
+      await mutate();
     } catch (err: any) {
       console.error("Proses approval/set status gagal:", err);
       showToast({ type: "error", message: err.message || "Terjadi kesalahan" });
@@ -112,8 +115,8 @@ export default function DetailKpltPage() {
           type: "success",
           message: "Data Intip berhasil diperbarui.",
         });
-        setShowIntipModal(false); // Tutup modal
-        await mutate(); // Refresh data
+        setShowIntipModal(false);
+        await mutate();
       } catch (err: any) {
         console.error("Gagal submit Intip:", err);
         showToast({
@@ -144,8 +147,8 @@ export default function DetailKpltPage() {
           type: "success",
           message: "Data Form Ukur berhasil diperbarui.",
         });
-        setShowFormUkurModal(false); // Tutup modal
-        await mutate(); // Refresh data
+        setShowFormUkurModal(false);
+        await mutate();
       } catch (err: any) {
         console.error("Gagal submit Form Ukur:", err);
         showToast({
@@ -186,20 +189,16 @@ export default function DetailKpltPage() {
       };
     }
 
-    // RM bisa approve jika status "In Progress", BM sudah approve, dan RM belum approve
+    // RM bisa approve jika status "In Progress" dan RM belum approve
     if (position === "regional manager") {
-      const bmApproved = !!summary?.bm?.is_approved; // Cek apakah BM sudah setuju
-      const rmAlreadyApproved = !!summary?.rm;
-      // Tampilkan jika status In Progress, BM sudah OK, dan RM belum approve
-      const show =
-        mainStatus === "In Progress" && bmApproved && !rmAlreadyApproved;
+      const AlreadyApproved = !!summary?.rm;
+      const show = mainStatus === "In Progress" && !AlreadyApproved;
       return {
-        isAlreadyApproved: rmAlreadyApproved,
+        isAlreadyApproved: AlreadyApproved,
         showApprovalSection: show,
       };
     }
 
-    // Role lain tidak bisa approve KPLT
     return { isAlreadyApproved: false, showApprovalSection: false };
   }, [data, user]);
 

@@ -6,9 +6,9 @@ import { Input } from "@/components/ui/input"; // Asumsi path ini benar
 import { Label } from "@/components/ui/label"; // Asumsi path ini benar
 import { ArrowLeft, LinkIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import CustomSelect from "./ui/customselect";
+import CustomSelect from "../ui/customselect";
 import { KpltCreatePayload } from "@/lib/validations/kplt";
-import PrefillKpltCard from "./ui/prefillkpltcard";
+import PrefillKpltCard from "../ui/prefillkpltcard";
 import { KpltBaseUIMapped } from "@/types/common";
 
 // --- 1. PROPS DISESUAIKAN UNTUK MENERIMA LOGIKA DARI PARENT ---
@@ -25,18 +25,6 @@ interface TambahKpltLayoutProps {
   handleFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void; // <-- Tipe standar React
   handleFormSubmit: (e: React.FormEvent) => void;
 }
-
-// --- Komponen Skeleton (Tidak ada perubahan) ---
-// const TambahKpltSkeleton = () => (
-//   <div className="animate-pulse">
-//     <div className="h-8 w-1/3 bg-gray-200 rounded-md mb-6"></div>
-//     <div className="bg-white rounded-xl shadow-md p-6">
-//       <div className="h-6 w-3/4 bg-gray-200 rounded-md"></div>
-//       <div className="h-4 w-1/2 bg-gray-200 rounded-md mt-2"></div>
-//       <div className="h-4 w-1/3 bg-gray-200 rounded-md mt-4"></div>
-//     </div>
-//   </div>
-// );
 
 // --- TIPE UNTUK ARRAY FILE INPUT (MEMPERBAIKI ERROR TYPESCRIPT) ---
 interface FileInputConfig {
@@ -87,7 +75,6 @@ export default function TambahKpltLayout({
     { name: "pdf_foto", label: "Foto", accept: ".pdf" },
     { name: "pdf_pembanding", label: "Data Pembanding", accept: ".pdf" },
     { name: "pdf_kks", label: "Kertas Kerja Survei", accept: ".pdf" },
-    { name: "pdf_form_ukur", label: "Form Ukur Lokasi", accept: ".pdf" },
     {
       name: "counting_kompetitor",
       label: "Counting Kompetitor",
@@ -137,7 +124,7 @@ export default function TambahKpltLayout({
         </Button>
 
         {/* Bagian ini sekarang menampilkan prefillData */}
-        {prefillData && <PrefillKpltCard data={prefillData} />}
+        {prefillData && <PrefillKpltCard baseData={prefillData} />}
 
         {/* --- MULAI AREA FORM INPUT KPLT --- */}
         <div className="relative mt-10 mx-auto max-w-7xl">

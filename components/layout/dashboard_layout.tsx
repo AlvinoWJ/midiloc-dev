@@ -2,11 +2,12 @@
 
 import React, { useMemo, useEffect, useState } from "react";
 import { DashboardPageProps } from "@/types/common";
-import { StatsCard } from "./ui/statscard";
-import { DonutChart } from "./ui/donutchart";
-import { BarChart } from "./ui/barchart";
+import { StatsCard } from "../ui/statscard";
+import { DonutChart } from "../ui/donutchart";
+import { BarChart } from "../ui/barchart";
 import dynamic from "next/dynamic";
-import { DashboardSkeleton } from "./ui/skleton";
+import { DashboardSkeleton } from "../ui/skleton";
+import YearPicker from "../ui/yearpicker";
 
 const PetaLokasiInteraktif = dynamic(
   () => import("@/components/map/PetaLokasiInteraktif"),
@@ -49,6 +50,9 @@ interface BranchOption {
   nama_cabang: string;
 }
 
+// --- PERUBAHAN 1: Tambahkan Tipe dan Status untuk Progress KPLT ---
+type ActiveMapFilter = "ulok" | "kplt" | "progress_kplt";
+
 const STATUS_OPTIONS = {
   ulok: ["Semua Status", "OK", "NOK", "In Progress"] as const,
   kplt: [
@@ -58,7 +62,23 @@ const STATUS_OPTIONS = {
     "In Progress",
     "Waiting for Forum",
   ] as const,
+  progress_kplt: [
+    "Semua Status",
+    "Not Started",
+    "Mou",
+    "Izin Tetangga",
+    "Perizinan",
+    "Notaris",
+    "Renovasi",
+    "Grand Opening",
+  ] as const,
 };
+
+// Tipe gabungan untuk state status
+type AnyStatus =
+  | (typeof STATUS_OPTIONS.ulok)[number]
+  | (typeof STATUS_OPTIONS.kplt)[number]
+  | (typeof STATUS_OPTIONS.progress_kplt)[number];
 
 export default function DashboardLayout(props: DashboardPageProps) {
   const {
@@ -84,16 +104,16 @@ export default function DashboardLayout(props: DashboardPageProps) {
   const isRegionalManager = userRole === "regional manager";
   const isGeneralManager = userRole === "general manager"; // BARU: GM bisa filter semua cabang
 
-  // State filter status (dropdown sejajar ULOK/KPLT)
-  const [statusValue, setStatusValue] = useState<
-    (typeof STATUS_OPTIONS.ulok)[number] | (typeof STATUS_OPTIONS.kplt)[number]
-  >("Semua Status");
+  // --- PERUBAHAN 2: Tipe state statusValue diperbarui ---
+  const [statusValue, setStatusValue] = useState<AnyStatus>("Semua Status");
 
-  // Reset status dropdown jika berganti jenis peta dan value tidak valid
+  // --- PERUBAHAN 3: useEffect diperbarui untuk 3 tipe ---
   useEffect(() => {
-    const options =
-      activeMapFilter === "ulok" ? STATUS_OPTIONS.ulok : STATUS_OPTIONS.kplt;
-    if (!options.includes(statusValue as any)) {
+    // Tentukan opsi yang valid berdasarkan filter Tipe
+    const options = STATUS_OPTIONS[activeMapFilter as ActiveMapFilter];
+
+    // @ts-ignore - Biarkan untuk pengecekan dinamis
+    if (!options.includes(statusValue)) {
       setStatusValue("Semua Status");
     }
   }, [activeMapFilter, statusValue]);
@@ -312,6 +332,19 @@ export default function DashboardLayout(props: DashboardPageProps) {
     });
   }, [propertiUntukPeta, propertiData?.filters?.year]);
 
+  const getYearDate = (year: number | undefined | null) => {
+    const yearToUse = year || new Date().getFullYear();
+    return new Date(yearToUse, 0, 1);
+  };
+
+  // Bentuk statusFilter untuk komponen peta
+  const currentStatusOptions =
+    activeMapFilter === "ulok" ? STATUS_OPTIONS.ulok : STATUS_OPTIONS.kplt;
+  activeMapFilter === "ulok" ? STATUS_OPTIONS.ulok : STATUS_OPTIONS.kplt;
+
+  const childStatusFilter =
+    statusValue === "Semua Status" ? undefined : [statusValue];
+
   if (isError) {
     return (
       <main className="space-y-4 lg:space-y-6">
@@ -461,30 +494,14 @@ export default function DashboardLayout(props: DashboardPageProps) {
                   />
                 </svg>
               </div>
-              <select
-                value={propertiData.filters.year || new Date().getFullYear()}
-                onChange={(e) => setYear(Number(e.target.value))}
-                className="appearance-none w-full sm:w-auto bg-white border border-gray-300 rounded pl-10 pr-10 py-2.5 text-sm font-medium text-gray-700 hover:border-red-400 hover:shadow-md focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500 transition-all cursor-pointer min-w-[140px]"
-              >
-                <option value={2025}>2025</option>
-                <option value={2024}>2024</option>
-                <option value={2023}>2023</option>
-              </select>
-              <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                <svg
-                  className="w-4 h-4 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 9l-7 7-7-7"
-                  />
-                </svg>
-              </div>
+              <YearPicker
+                selectedYear={
+                  propertiData.filters.year || new Date().getFullYear()
+                }
+                onYearChange={setYear}
+                minYear={2017}
+                maxYear={new Date().getFullYear()}
+              />
             </div>
           </div>
         </div>
@@ -544,13 +561,14 @@ export default function DashboardLayout(props: DashboardPageProps) {
                   <select
                     value={activeMapFilter}
                     onChange={(e) =>
-                      onMapFilterChange(e.target.value as "ulok" | "kplt")
+                      onMapFilterChange(e.target.value as ActiveMapFilter)
                     }
                     // --- pl-10 diubah menjadi pl-4 ---
                     className="appearance-none w-full sm:w-auto bg-white border border-gray-300 rounded pl-4 pr-10 py-2.5 text-sm font-medium text-gray-700 hover:border-red-400 hover:shadow-md focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500 transition-all cursor-pointer min-w-[140px]"
                   >
                     <option value="ulok">ULOK</option>
                     <option value="kplt">KPLT</option>
+                    <option value="progress_kplt">Progress KPLT</option>
                   </select>
                   {/* --- PANAH BAWAH BARU --- */}
                   <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
@@ -577,18 +595,20 @@ export default function DashboardLayout(props: DashboardPageProps) {
                   <select
                     value={statusValue}
                     onChange={(e) => setStatusValue(e.target.value as any)}
-                    // --- pl-10 diubah menjadi pl-4 ---
                     className="appearance-none w-full sm:w-auto bg-white border border-gray-300 rounded pl-4 pr-10 py-2.5 text-sm font-medium text-gray-700 hover:border-red-400 hover:shadow-md focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500 transition-all cursor-pointer min-w-[140px]"
                     title="Filter status peta"
                   >
-                    {(activeMapFilter === "ulok"
-                      ? STATUS_OPTIONS.ulok
-                      : STATUS_OPTIONS.kplt
-                    ).map((s) => (
-                      <option key={s} value={s}>
-                        {s}
-                      </option>
-                    ))}
+                    {STATUS_OPTIONS[activeMapFilter as ActiveMapFilter].map(
+                      (s) => (
+                        <option
+                          key={s}
+                          value={s}
+                          className="py-[2px] leading-tight text-sm"
+                        >
+                          {s}
+                        </option>
+                      )
+                    )}
                   </select>
                   {/* --- PANAH BAWAH BARU --- */}
                   <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
@@ -612,11 +632,10 @@ export default function DashboardLayout(props: DashboardPageProps) {
 
             <div className="h-[400px] w-full">
               <PetaLokasiInteraktif
-                data={filteredProperti}
+                data={propertiUntukPeta}
                 isLoading={isMapLoading}
-                statusFilter={
-                  statusValue === "Semua Status" ? undefined : [statusValue]
-                }
+                statusFilter={childStatusFilter}
+                activeMapFilter={activeMapFilter as ActiveMapFilter}
               />
             </div>
           </div>
