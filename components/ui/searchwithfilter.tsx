@@ -6,7 +6,6 @@ import SearchBar from "@/components/ui/searchbar";
 import FilterDropdown from "@/components/ui/filterdropdown";
 import { useMediaQuery } from "@/hooks/use-media-query";
 
-// 1. Interface props yang sama untuk keduanya
 interface SearchWithFilterProps {
   onSearch: (value: string) => void;
   onFilterChange: (month: string, year: string) => void;
@@ -16,19 +15,29 @@ export default function SearchWithFilter({
   onSearch,
   onFilterChange,
 }: SearchWithFilterProps) {
-  // ========================================================================
-  // 2. State dan Logika Disatukan di Sini
-  // ========================================================================
   const [search, setSearch] = useState("");
   const [month, setMonth] = useState("");
   const [year, setYear] = useState("");
   const [showFilter, setShowFilter] = useState(false);
   const isDesktop = useMediaQuery("(min-width: 768px)");
 
-  // Fungsi-fungsi ini akan digunakan oleh kedua versi UI
+  // hanya ubah state search, tapi tidak langsung trigger onSearch
   const handleSearchChange = (value: string) => {
     setSearch(value);
-    onSearch(value);
+    if (value === "") {
+      onSearch(""); // tampilkan data semula kalau dikosongkan
+    }
+  };
+
+  // trigger saat tekan Enter atau klik tombol Search
+  const handleSearchSubmit = () => {
+    onSearch(search.trim());
+  };
+
+  // tombol clear (X) di searchbar
+  const handleSearchClear = () => {
+    setSearch("");
+    onSearch(""); // reset data ke awal
   };
 
   const handleMonthChange = (value: string) => {
@@ -47,7 +56,6 @@ export default function SearchWithFilter({
     onFilterChange("", "");
   };
 
-  // Data untuk filter (diambil dari versi mobile)
   const months = [
     { value: "01", label: "Januari" },
     { value: "02", label: "Februari" },
@@ -62,18 +70,20 @@ export default function SearchWithFilter({
     { value: "11", label: "November" },
     { value: "12", label: "Desember" },
   ];
+
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
 
-  // ========================================================================
-  // 3. UI Rendering: Pilih JSX berdasarkan ukuran layar
-  // ========================================================================
   return (
     <>
-      {/* ----------------- Tampilan Desktop ----------------- */}
-      {/* Tampil jika layar medium atau lebih besar (md:flex) */}
+      {/* ----------------- Desktop ----------------- */}
       <div className="hidden md:flex items-center gap-5 relative">
-        <SearchBar value={search} onChange={handleSearchChange} />
+        <SearchBar
+          value={search}
+          onChange={handleSearchChange}
+          onSubmit={handleSearchSubmit}
+          onClear={handleSearchClear} // ✅ reset ke data semula
+        />
         <button
           onClick={() => setShowFilter(!showFilter)}
           className="flex items-center justify-center bg-white shadow-[1px_1px_6px_rgba(0,0,0,0.25)] rounded-xl w-[46px] h-[46px] p-2 hover:bg-gray-100"
@@ -92,22 +102,42 @@ export default function SearchWithFilter({
         )}
       </div>
 
-      {/* ----------------- Tampilan Mobile ----------------- */}
-      {/* Tampil jika layar kecil (block), sembunyi di layar medium ke atas (md:hidden) */}
+      {/* ----------------- Mobile ----------------- */}
       <div className="space-y-4 md:hidden">
-        {/* Search Bar */}
         <div className="relative">
-          <Search
-            size={20}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-          />
-          <input
-            type="text"
-            placeholder="Cari usulan lokasi..."
-            value={search}
-            onChange={(e) => handleSearchChange(e.target.value)}
-            className="w-full pl-10 pr-12 py-3 border border-gray-300 bg-white px-3 py-1 text-base shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
-          />
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              onSearch(search.trim());
+            }}
+          >
+            <Search
+              size={20}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+            />
+            <input
+              type="text"
+              placeholder="Cari usulan lokasi..."
+              value={search}
+              onChange={(e) => {
+                const value = e.target.value;
+                setSearch(value);
+                if (value === "") onSearch("");
+              }}
+              className="w-full pl-10 pr-12 py-3 border border-gray-300 bg-white text-base shadow-sm transition-colors placeholder:text-muted-foreground focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+            />
+
+            {search && (
+              <button
+                type="button"
+                onClick={handleSearchClear}
+                className="absolute right-10 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                <X size={18} />
+              </button>
+            )}
+          </form>
+
           <button
             onClick={() => setShowFilter(!showFilter)}
             className={`absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded transition-colors duration-200 ${
@@ -118,7 +148,6 @@ export default function SearchWithFilter({
           </button>
         </div>
 
-        {/* Filter Panel (Expandable) */}
         {showFilter && !isDesktop && (
           <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-lg">
             <div className="flex justify-between items-center mb-4">
@@ -131,7 +160,6 @@ export default function SearchWithFilter({
               </button>
             </div>
             <div className="space-y-4">
-              {/* Month & Year Selectors */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Bulan

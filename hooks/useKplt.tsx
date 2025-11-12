@@ -1,13 +1,8 @@
-// hooks/useKplt.tsx
 "use client";
 
 import useSWR from "swr";
-import {
-  ApiKpltResponse,
-  KpltExisting,
-  UlokForKplt,
-  KpltMeta,
-} from "@/types/common"; // ✅ pakai tipe global
+import { ApiKpltResponse, KpltExisting, UlokForKplt } from "@/types/common";
+import { useState, useEffect, useRef } from "react";
 
 export function useKplt(searchQuery?: string, activeTab?: string) {
   const buildUrl = () => {
@@ -16,9 +11,8 @@ export function useKplt(searchQuery?: string, activeTab?: string) {
       params.set("q", searchQuery.trim());
     }
     if (activeTab === "History") {
-      params.set("limit", "1000"); // Ambil 1000 data untuk "History"
+      params.set("limit", "5"); // Ambil 1000 data untuk "History"
     } else {
-      // "Recent" tidak dipaginasi, jadi ambil limit yang wajar
       params.set("limit", "500");
     }
     const queryString = params.toString();
@@ -26,18 +20,31 @@ export function useKplt(searchQuery?: string, activeTab?: string) {
   };
 
   const { data, error, isLoading, mutate } = useSWR<ApiKpltResponse>(
-    // Key SWR sekarang bergantung pada searchQuery dan activeTab
     () => buildUrl(),
-    null,
-    // --- TAMBAHKAN OPSI INI ---
-    { keepPreviousData: true }
+    {
+      keepPreviousData: true, // ✅ tetap pertahankan data lama saat fetching baru
+    }
   );
+
+  // ✅ logika untuk kontrol skeleton
+  const firstLoad = useRef(true);
+  const [showSkeleton, setShowSkeleton] = useState(true);
+
+  useEffect(() => {
+    if (data) {
+      firstLoad.current = false;
+      setShowSkeleton(false);
+    } else if (firstLoad.current && isLoading) {
+      setShowSkeleton(true);
+    }
+  }, [data, isLoading]);
 
   return {
     kpltExisting: data?.kplt_existing ?? ([] as KpltExisting[]),
     ulokForKplt: data?.kplt_from_ulok_ok ?? ([] as UlokForKplt[]),
     isLoading,
     isError: error,
+    showSkeleton, // ✅ tambahkan properti ini agar bisa dikontrol di layout
     refreshKplt: () => mutate(),
   };
 }

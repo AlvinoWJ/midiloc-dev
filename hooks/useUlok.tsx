@@ -15,6 +15,12 @@ export type Ulok = {
 
 interface ApiUlokResponse {
   data: Ulok[];
+  pagination?: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
   meta?: { user?: AppUser };
 }
 
