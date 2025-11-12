@@ -19,12 +19,10 @@ export function useKplt(searchQuery?: string, activeTab?: string) {
     return queryString ? `/api/kplt?${queryString}` : "/api/kplt";
   };
 
-  const { data, error, isLoading, mutate } = useSWR<ApiKpltResponse>(
-    () => buildUrl(),
-    {
+  const { data, error, isLoading, isValidating, mutate } =
+    useSWR<ApiKpltResponse>(() => buildUrl(), {
       keepPreviousData: true, // ✅ tetap pertahankan data lama saat fetching baru
-    }
-  );
+    });
 
   // ✅ logika untuk kontrol skeleton
   const firstLoad = useRef(true);
@@ -39,12 +37,18 @@ export function useKplt(searchQuery?: string, activeTab?: string) {
     }
   }, [data, isLoading]);
 
+  const hasData =
+    !!data &&
+    (data.kplt_existing.length > 0 || data.kplt_from_ulok_ok.length > 0); // [!code ++]
+  const isRefreshing = isValidating && hasData && !showSkeleton; // [!code ++]
+
   return {
     kpltExisting: data?.kplt_existing ?? ([] as KpltExisting[]),
     ulokForKplt: data?.kplt_from_ulok_ok ?? ([] as UlokForKplt[]),
     isLoading,
     isError: error,
-    showSkeleton, // ✅ tambahkan properti ini agar bisa dikontrol di layout
+    showSkeleton,
+    isRefreshing: isRefreshing,
     refreshKplt: () => mutate(),
   };
 }

@@ -29,6 +29,7 @@ export default function KPLTPage() {
     isLoading: loadingKPLT,
     isError: kpltError,
     showSkeleton,
+    isRefreshing,
   } = useKplt(searchQuery, activeTab);
 
   const isPageLoading = loadingUser || loadingKPLT;
@@ -161,6 +162,7 @@ export default function KPLTPage() {
   const kpltProps: KpltPageProps = {
     user,
     isLoading: showSkeleton,
+    isRefreshing: isRefreshing,
     isError: isPageError,
     displayData,
     searchQuery,

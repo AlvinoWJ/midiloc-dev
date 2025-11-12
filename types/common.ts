@@ -168,6 +168,7 @@ export interface ApiKpltResponse {
 // Tipe untuk KpltPageProps yang sudah sesuai dengan data dari API
 export interface KpltPageProps {
   isLoading: boolean;
+  isRefreshing: boolean;
   isError: boolean;
   user: CurrentUser | null;
 
