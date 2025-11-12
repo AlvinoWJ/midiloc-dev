@@ -15,7 +15,7 @@ export default function KPLTPage() {
 
   // pagination
   const [currentPage, setCurrentPage] = useState(1);
-  const history_per_page = 2;
+  const history_per_page = 9;
 
   const { user, loadingUser, userError } = useUser();
 

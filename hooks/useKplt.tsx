@@ -11,7 +11,7 @@ export function useKplt(searchQuery?: string, activeTab?: string) {
       params.set("q", searchQuery.trim());
     }
     if (activeTab === "History") {
-      params.set("limit", "5"); // Ambil 1000 data untuk "History"
+      params.set("limit", "1000"); // Ambil 1000 data untuk "History"
     } else {
       params.set("limit", "500");
     }
