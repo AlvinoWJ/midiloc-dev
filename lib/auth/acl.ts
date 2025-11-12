@@ -106,7 +106,11 @@ export function canProgressKplt(
   if (user.position_nama === "admin branch") return true; // write
   if (
     user.position_nama &&
+<<<<<<< HEAD
     ["location specialist","location manager", "senior/branch manager", "general manager"].includes(
+=======
+    ["location manager", "senior/branch manager", "general manager"].includes(
+>>>>>>> parent of 5295b6f (Merge branch 'Front_end' into debug)
       user.position_nama
     )
   ) {

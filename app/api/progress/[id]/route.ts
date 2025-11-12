@@ -36,6 +36,17 @@ import { getCurrentUser, canProgressKplt } from "@/lib/auth/acl";
     (dan opsional unique constraint jika memang satu baris per progress_kplt)
 */
 
+// GET /api/progress/[id]
+// Mengembalikan detail KPLT dari progress_kplt.id (beserta ringkas branch & ulok)
+// Response:
+// {
+//   data: {
+//     kplt: {...},        // detail kplt
+//     branch?: {...},     // ringkas
+//     ulok?: {...},       // ringkas
+//     meta: { progress_id, kplt_id }
+//   }
+// }
 export async function GET(
   _req: Request,
   { params }: { params: { id: string } }
@@ -115,9 +126,18 @@ export async function GET(
     );
   }
 
+<<<<<<< HEAD
   // Scope branch (opsional jika sudah dijaga oleh RLS)
   const branchId = (data as any)?.kplt?.branch_id;
   if (branchId && branchId !== user.branch_id) {
+=======
+  const kpltData = Array.isArray(data.kplt_id) ? data.kplt_id[0] : data.kplt_id;
+  const kpltId: string | undefined = kpltData?.id;
+  const branchId: string | undefined = kpltData?.branch_id;
+
+  // Validasi scope cabang
+  if (!branchId || branchId !== (user as any).branch_id) {
+>>>>>>> parent of 5295b6f (Merge branch 'Front_end' into debug)
     return NextResponse.json(
       {
         success: false,
