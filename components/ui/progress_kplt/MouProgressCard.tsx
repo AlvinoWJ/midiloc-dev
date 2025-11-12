@@ -95,7 +95,7 @@ const MouForm: React.FC<MouFormProps> = ({
     return value;
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
 
@@ -134,7 +134,7 @@ const MouForm: React.FC<MouFormProps> = ({
     try {
       const method = initialData ? "PATCH" : "POST";
 
-      const res = await fetch(`/api/progress/${progressId}/mou/approval`, {
+      const res = await fetch(`/api/progress/${progressId}/mou`, {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(parsed.data),
@@ -167,7 +167,7 @@ const MouForm: React.FC<MouFormProps> = ({
       className="mt-10"
     >
       <form
-        onSubmit={handleSubmit}
+        onSubmit={handleSave}
         className="grid grid-cols-1 md:grid-cols-2 gap-4"
       >
         <div>
@@ -385,26 +385,44 @@ const MouProgressCard: React.FC<MouProgressCardProps> = ({ progressId }) => {
         let errorTitle = "Gagal Mengirim";
         let errorMessage = json.error || "Gagal melakukan submit.";
 
-        if (json.missing_fields && json.missing_fields.length > 0) {
+        // ‹- PERBAIKAN 1: Pesan error dibuat lebih spesifik
+        if (
+          res.status === 422 &&
+          json.missing_fields &&
+          json.missing_fields.length > 0
+        ) {
           errorTitle = "Data Belum Lengkap";
-          errorMessage = `Mohon lengkapi data`;
+          // Tampilkan field apa saja yang kurang
+          errorMessage = `Field berikut harus diisi: ${json.missing_fields.join(
+            ", "
+          )}`;
         }
 
         showToast({
           type: "error",
           title: errorTitle,
           message: errorMessage,
-        }); // Hentikan fungsi
+        });
         return;
       }
+
       showToast({
         type: "success",
-        message: "MOU berhasil disubmit.",
+        // ‹- PERBAIKAN 2: Pesan sukses dinamis sesuai 'actionText'
+        message: `MOU berhasil di-${actionText}.`,
       });
       await refetch();
     } catch (err: any) {
       console.error(err);
+      // Tampilkan toast error jika ada kesalahan 'catch'
+      showToast({
+        type: "error",
+        title: "Terjadi Kesalahan",
+        message: err.message || "Tidak dapat terhubung ke server.",
+      });
     } finally {
+      // ‹- PERBAIKAN 3 (UTAMA): Selalu reset KEDUA state
+      setIsSubmittingApprove(false);
       setIsSubmittingReject(false);
     }
   };
