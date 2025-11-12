@@ -279,38 +279,76 @@ const IzinTetanggaProgressCard: React.FC<{ progressId: string }> = ({
     }
   };
 
-  const handleSubmitApproval = async () => {
+  const handleFinalizeIT = async (status: "Selesai" | "Batal") => {
+    const actionText = status === "Selesai" ? "submit" : "membatalkan";
+    const actionTitle = status === "Selesai" ? "Submit" : "Pembatalan";
+    const confirmText = status === "Selesai" ? "Ya, Submit" : "Ya, Batalkan";
+
     const isConfirmed = await showConfirmation({
-      title: "Konfirmasi Approval Izin Tetangga",
-      message:
-        "Apakah Anda yakin ingin submit data ini? Data yang sudah di-submit tidak dapat diubah kembali.",
-      confirmText: "Ya, Submit",
+      title: `Konfirmasi ${actionTitle} Izin Tetangga`,
+      message: `Apakah Anda yakin ingin ${actionText} Izin Tetangga ini? Data yang sudah di-${actionText} tidak dapat diubah kembali.`,
+      confirmText: confirmText,
       type: "warning",
     });
 
     if (!isConfirmed) return;
-    setIsSubmittingApproval(true);
+
+    // Atur state loading yang sesuai
+    if (status === "Selesai") {
+      setIsSubmittingApproval(true);
+    } else {
+      setIsSubmittingBatal(true);
+    }
 
     try {
+      const apiStatus = status.toLowerCase() as "selesai" | "batal";
       const res = await fetch(
-        `/api/progress/${progressId}/izin_tetangga/approval`,
+        `/api/progress/${progressId}/izin_tetangga/approval`, //
         {
-          method: "PATCH",
+          method: "PATCH", //
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ final_status_it: "selesai" }),
+          body: JSON.stringify({ final_status_it: apiStatus }), //
         }
       );
 
-      if (!res.ok) throw new Error("Gagal melakukan submit.");
+      const json = await res.json();
+
+      if (!res.ok) {
+        //
+        const errorMsg =
+          json.detail || json.error || "Gagal melakukan " + actionText;
+        let errorTitle = "Gagal";
+
+        //
+        if (errorMsg.includes("Required fields missing")) {
+          errorTitle = "Data Belum Lengkap";
+        } else if (errorMsg.includes("already finalized")) {
+          //
+          errorTitle = "Sudah Final";
+        }
+
+        showToast({
+          type: "error",
+          title: errorTitle,
+          message: errorMsg,
+        });
+        return; // Hentikan eksekusi jika gagal
+      }
+
       showToast({
         type: "success",
-        message: "Izin Tetangga berhasil disubmit.",
+        message: `Izin Tetangga berhasil di-${actionText}.`,
       });
       await refetch();
-    } catch (err) {
-      showToast({ type: "error", message: "Gagal melakukan submit." });
+    } catch (err: any) {
+      showToast({
+        type: "error",
+        message: err.message || `Gagal melakukan ${actionText}.`,
+      });
     } finally {
+      // Selalu reset kedua state
       setIsSubmittingApproval(false);
+      setIsSubmittingBatal(false);
     }
   };
 
@@ -404,17 +442,39 @@ const IzinTetanggaProgressCard: React.FC<{ progressId: string }> = ({
         </div>
 
         {!isFinalized && (
-          <div className="flex justify-end gap-3 mt-8">
-            <Button variant="default" onClick={() => setIsEditing(true)}>
+          <div className="flex gap-3 mt-8">
+            {/* Tombol Edit */}
+            <Button
+              variant="secondary" // Ganti variant agar konsisten
+              onClick={() => setIsEditing(true)}
+              disabled={isSubmittingApproval || isSubmittingBatal} //
+              className="mr-auto" // Pindahkan ke kiri
+            >
               <Pencil className="mr-2" size={16} /> Edit
             </Button>
+
+            {/* Tombol Batal (Baru) */}
+            <Button
+              variant="default"
+              onClick={() => handleFinalizeIT("Batal")} //
+              disabled={isSubmittingApproval || isSubmittingBatal} //
+            >
+              {isSubmittingBatal ? ( //
+                <Loader2 className="animate-spin mr-2" size={16} />
+              ) : (
+                <XCircle className="mr-2" size={16} />
+              )}
+              Batal
+            </Button>
+
+            {/* Tombol Submit (Modifikasi) */}
             <Button
               type="submit"
               variant="submit"
-              onClick={handleSubmitApproval}
-              disabled={isSubmittingApproval}
+              onClick={() => handleFinalizeIT("Selesai")} //
+              disabled={isSubmittingApproval || isSubmittingBatal} //
             >
-              {isSubmittingApproval ? (
+              {isSubmittingApproval ? ( //
                 <Loader2 className="animate-spin" size={16} />
               ) : (
                 <CheckCircle className="mr-2" size={16} />

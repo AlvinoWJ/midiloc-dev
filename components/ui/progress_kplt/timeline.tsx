@@ -16,6 +16,7 @@ export interface ProgressStep {
   progress_id: string;
   nama_tahap: string;
   status: "Done" | "In Progress" | "Pending" | "Batal";
+
   start_date: string | null;
   end_date: string | null;
   urutan: number;
