@@ -15,20 +15,7 @@ export default function KPLTPage() {
 
   // pagination
   const [currentPage, setCurrentPage] = useState(1);
-  const history_per_page = 9;
-
-  // debounce search input
-  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(searchQuery);
-
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedSearchQuery(searchQuery);
-      setCurrentPage(1);
-    }, 500);
-    return () => {
-      clearTimeout(handler);
-    };
-  }, [searchQuery]);
+  const history_per_page = 2;
 
   const { user, loadingUser, userError } = useUser();
 
@@ -41,7 +28,8 @@ export default function KPLTPage() {
     ulokForKplt,
     isLoading: loadingKPLT,
     isError: kpltError,
-  } = useKplt(debouncedSearchQuery, activeTab);
+    showSkeleton,
+  } = useKplt(searchQuery, activeTab);
 
   const isPageLoading = loadingUser || loadingKPLT;
   const isPageError = !!userError || !!kpltError;
@@ -122,39 +110,42 @@ export default function KPLTPage() {
         matchTab = historyStatuses.includes(lowerCaseStatus);
       }
 
-      // LOGIKA FILTER BULAN & TAHUN
       const itemDate = new Date(item.created_at);
+
       const matchMonth = filterMonth
         ? (itemDate.getMonth() + 1).toString() === filterMonth
         : true;
+
       const matchYear = filterYear
         ? itemDate.getFullYear().toString() === filterYear
         : true;
 
-      return matchRole && matchTab && matchMonth && matchYear;
+      const matchSearch = searchQuery
+        ? item.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          item.alamat.toLowerCase().includes(searchQuery.toLowerCase())
+        : true;
+
+      return matchRole && matchTab && matchMonth && matchYear && matchSearch;
     });
   }, [kpltExisting, ulokForKplt, filterMonth, filterYear, activeTab, user]);
 
   const totalPages = useMemo(() => {
     if (activeTab !== "History") {
-      return 1; // Tidak ada pagination untuk "Recent"
+      return 1;
     }
-    // Hitung total halaman berdasarkan data yang SUDAH difilter
     return Math.ceil(filteredData.length / history_per_page) || 1;
   }, [filteredData, activeTab]);
 
-  // LANGKAH C: Paginasikan data (hanya untuk History)
   const displayData = useMemo(() => {
     if (activeTab !== "History") {
       return filteredData; // Tampilkan semua data "Recent"
     }
-    // Jika "History", potong data sesuai halaman
+
     const startIndex = (currentPage - 1) * history_per_page;
     const endIndex = startIndex + history_per_page;
     return filteredData.slice(startIndex, endIndex);
   }, [filteredData, activeTab, currentPage]);
 
-  // Handler ganti halaman (logika tidak berubah)
   const handlePageChange = (newPage: number) => {
     if (newPage > 0 && newPage <= totalPages) {
       setCurrentPage(newPage);
@@ -169,7 +160,7 @@ export default function KPLTPage() {
 
   const kpltProps: KpltPageProps = {
     user,
-    isLoading: isPageLoading,
+    isLoading: showSkeleton,
     isError: isPageError,
     displayData,
     searchQuery,
