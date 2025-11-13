@@ -10,16 +10,16 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-primary text-primary-foreground shadow hover:bg-primary/90 rounded-xl",
+          "bg-primary text-primary-foreground shadow hover:brightness-110 transition-all rounded-xl",
         destructive:
           "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90",
         back: "border-2 border-primary bg-background shadow hover:text-accent-foreground hover:bg-primary hover:border-transparent text-primary rounded-xl",
         secondary:
-          "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80",
+          "bg-secondary text-secondary-foreground shadow hover:brightness-110 transition-all rounded-xl",
         ghost: "bg-gray-200 hover:bg-gray-300",
         link: "text-primary underline-offset-4 hover:underline",
         submit:
-          "bg-green-600 text-submit-foreground shadow rounded-xl hover:bg-green-500",
+          "bg-green-600 text-submit-foreground shadow rounded-xl hover:brightness-110 transition-all",
       },
       size: {
         default: "h-10 px-4 py-4 text-md",

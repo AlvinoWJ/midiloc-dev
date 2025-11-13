@@ -13,6 +13,10 @@ export default function KPLTPage() {
   const [filterYear, setFilterYear] = useState("");
   const [activeTab, setActiveTab] = useState("Recent");
 
+  // pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const history_per_page = 9;
+
   const { user, loadingUser, userError } = useUser();
 
   const isLocationSpecialist = useCallback(() => {
@@ -24,7 +28,9 @@ export default function KPLTPage() {
     ulokForKplt,
     isLoading: loadingKPLT,
     isError: kpltError,
-  } = useKplt();
+    showSkeleton,
+    isRefreshing,
+  } = useKplt(searchQuery, activeTab);
 
   const isPageLoading = loadingUser || loadingKPLT;
   const isPageError = !!userError || !!kpltError;
@@ -35,7 +41,7 @@ export default function KPLTPage() {
   };
   console.log("Data Mentah dari Hook:", { kpltExisting, ulokForKplt });
 
-  const displayData = useMemo(() => {
+  const filteredData = useMemo(() => {
     const existingTransformed: UnifiedKpltItem[] = (kpltExisting || []).map(
       (item) => ({
         id: item.id,
@@ -105,37 +111,58 @@ export default function KPLTPage() {
         matchTab = historyStatuses.includes(lowerCaseStatus);
       }
 
-      // LOGIKA FILTER PENCARIAN
-      const matchSearch =
-        item.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.alamat.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.id.toLowerCase().includes(searchQuery.toLowerCase());
-
-      // LOGIKA FILTER BULAN & TAHUN
       const itemDate = new Date(item.created_at);
+
       const matchMonth = filterMonth
         ? (itemDate.getMonth() + 1).toString() === filterMonth
         : true;
+
       const matchYear = filterYear
         ? itemDate.getFullYear().toString() === filterYear
         : true;
 
-      // Item akan ditampilkan jika cocok dengan SEMUA filter
-      return matchRole && matchTab && matchSearch && matchMonth && matchYear;
+      const matchSearch = searchQuery
+        ? item.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          item.alamat.toLowerCase().includes(searchQuery.toLowerCase())
+        : true;
+
+      return matchRole && matchTab && matchMonth && matchYear && matchSearch;
     });
-  }, [
-    kpltExisting,
-    ulokForKplt,
-    searchQuery,
-    filterMonth,
-    filterYear,
-    activeTab,
-    user,
-  ]);
+  }, [kpltExisting, ulokForKplt, filterMonth, filterYear, activeTab, user]);
+
+  const totalPages = useMemo(() => {
+    if (activeTab !== "History") {
+      return 1;
+    }
+    return Math.ceil(filteredData.length / history_per_page) || 1;
+  }, [filteredData, activeTab]);
+
+  const displayData = useMemo(() => {
+    if (activeTab !== "History") {
+      return filteredData; // Tampilkan semua data "Recent"
+    }
+
+    const startIndex = (currentPage - 1) * history_per_page;
+    const endIndex = startIndex + history_per_page;
+    return filteredData.slice(startIndex, endIndex);
+  }, [filteredData, activeTab, currentPage]);
+
+  const handlePageChange = (newPage: number) => {
+    if (newPage > 0 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+    }
+  };
+
+  // Bungkus onTabChange agar me-reset halaman
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    // setCurrentPage(1); // Sudah ditangani oleh useEffect [activeTab]
+  };
 
   const kpltProps: KpltPageProps = {
     user,
-    isLoading: isPageLoading,
+    isLoading: showSkeleton,
+    isRefreshing: isRefreshing,
     isError: isPageError,
     displayData,
     searchQuery,
@@ -144,8 +171,11 @@ export default function KPLTPage() {
     activeTab,
     onSearch: setSearchQuery,
     onFilterChange,
-    onTabChange: setActiveTab,
+    onTabChange: handleTabChange,
     isLocationSpecialist,
+    currentPage: currentPage,
+    totalPages: totalPages,
+    onPageChange: handlePageChange,
   };
 
   return <KpltLayout {...kpltProps} />;

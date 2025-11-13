@@ -6,7 +6,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import TimelineProgressKplt from "@/components/ui/progress_kplt/timeline";
-import { ProgressDetailData } from "@/hooks/progress_kplt/useProgressDetail";
+import { ProgressData } from "@/hooks/progress_kplt/useProgressDetail";
 import { MappedModuleFile } from "@/hooks/useModuleFile";
 import {
   ArrowLeft,
@@ -21,9 +21,11 @@ import {
 import { CalendarIcon } from "@heroicons/react/24/solid";
 
 interface LayoutProps {
-  progressData: ProgressDetailData;
+  progressData: ProgressData;
   files: MappedModuleFile[] | undefined;
   isFilesError: any;
+  currentMainStatus?: string;
+  izinTetanggaStatus?: string | null;
 }
 
 const getFileIcon = (fileType: MappedModuleFile["fileType"]) => {
@@ -62,9 +64,11 @@ export default function DetailProgressKpltLayout({
   progressData,
   files,
   isFilesError,
+  currentMainStatus,
+  izinTetanggaStatus,
 }: LayoutProps) {
   const router = useRouter();
-  const { kplt_id: kplt } = progressData;
+  const { kplt } = progressData;
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
@@ -377,7 +381,11 @@ export default function DetailProgressKpltLayout({
 
       {/* Timeline Progress  */}
       <div className="mt-8 lg:mt-10">
-        <TimelineProgressKplt progressId={progressData.id} />
+        <TimelineProgressKplt
+          progressId={progressData.id}
+          progressStatus={currentMainStatus}
+          izinTetanggaStatus={izinTetanggaStatus}
+        />
       </div>
     </main>
   );
