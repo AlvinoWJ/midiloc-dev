@@ -2,11 +2,23 @@
 
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import TimelineProgressKplt from "@/components/ui/progress_kplt/timeline";
-import { ProgressData } from "@/hooks/progress_kplt/useProgressDetail";
+import VerticalProgressTimeline, {
+  ProgressStep,
+} from "../ui/progress_kplt/VerticalTimeline";
+import MouProgressCard from "@/components/ui/progress_kplt/MouProgressCard";
+import IzinTetanggaProgressCard from "@/components/ui/progress_kplt/IzinTetanggaProgressCard";
+import NotarisProgressCard from "@/components/ui/progress_kplt/NotarisProgressCard";
+import PerizinanProgressCard from "@/components/ui/progress_kplt/PerizinanProgressCard";
+import RenovasiProgressCard from "@/components/ui/progress_kplt/RenovasiProgressCard";
+import GrandOpeningProgressCard from "@/components/ui/progress_kplt/GrandOpeningProgressCard";
+import { ProgressStatusCard } from "@/components/ui/progress_kplt/ProgressStatusCard";
+import {
+  ProgressData,
+  TimelineItem,
+} from "@/hooks/progress_kplt/useProgressDetail";
 import { MappedModuleFile } from "@/hooks/useModuleFile";
 import {
   ArrowLeft,
@@ -17,6 +29,7 @@ import {
   Video,
   Image,
   FileQuestion,
+  Loader2,
 } from "lucide-react";
 import { CalendarIcon } from "@heroicons/react/24/solid";
 
@@ -26,6 +39,7 @@ interface LayoutProps {
   isFilesError: any;
   currentMainStatus?: string;
   izinTetanggaStatus?: string | null;
+  timeline: TimelineItem[];
 }
 
 const getFileIcon = (fileType: MappedModuleFile["fileType"]) => {
@@ -60,6 +74,16 @@ const formatDate = (dateString?: string | null) =>
       })
     : "-";
 
+const LANGKAH_SEQUENTIAL = [
+  "MOU",
+  "Ijin Tetangga",
+  "Perizinan",
+  "Notaris",
+  "Renovasi",
+  "Grand Opening",
+];
+const STATUS_FINAL = "Grand Opening";
+
 export default function DetailProgressKpltLayout({
   progressData,
   files,
@@ -70,6 +94,160 @@ export default function DetailProgressKpltLayout({
   const router = useRouter();
   const { kplt } = progressData;
   const [isExpanded, setIsExpanded] = useState(false);
+
+  const [activeStep, setActiveStep] = useState<number | null>(null); // Default step 1
+  const progressId = progressData.id;
+
+  const steps: ProgressStep[] = useMemo(() => {
+    const getLangkahStatus = (namaLangkah: string): ProgressStep["status"] => {
+      if (!currentMainStatus || currentMainStatus === "Not Started") {
+        return "Pending";
+      }
+      if (currentMainStatus === STATUS_FINAL) return "Done";
+
+      const currentIndex = LANGKAH_SEQUENTIAL.indexOf(currentMainStatus);
+      const stepIndex = LANGKAH_SEQUENTIAL.indexOf(namaLangkah);
+
+      if (currentIndex === -1 || stepIndex === -1) {
+        if (namaLangkah === "MOU" && currentIndex === -1 && currentMainStatus) {
+          return "In Progress";
+        }
+        if (currentMainStatus === STATUS_FINAL) return "Done";
+        return "Pending";
+      }
+
+      if (stepIndex < currentIndex) return "Done";
+      if (stepIndex === currentIndex) return "In Progress";
+      return "Pending";
+    };
+
+    const getItStatus = (): ProgressStep["status"] => {
+      if (izinTetanggaStatus === "Selesai") return "Done";
+      if (izinTetanggaStatus === null || izinTetanggaStatus === undefined)
+        return "Pending";
+      return "In Progress";
+    };
+
+    const rawSteps: Omit<ProgressStep, "start_date" | "end_date">[] = [
+      {
+        id: "1",
+        progress_id: progressId,
+        nama_tahap: "MOU",
+        status: getLangkahStatus("MOU"),
+        urutan: 1,
+      },
+      {
+        id: "2",
+        progress_id: progressId,
+        nama_tahap: "Ijin Tetangga",
+        status: getItStatus(),
+        urutan: 2,
+      },
+      {
+        id: "3",
+        progress_id: progressId,
+        nama_tahap: "Perizinan",
+        status: getLangkahStatus("Perizinan"),
+        urutan: 3,
+      },
+      {
+        id: "4",
+        progress_id: progressId,
+        nama_tahap: "Notaris",
+        status: getLangkahStatus("Notaris"),
+        urutan: 4,
+      },
+      {
+        id: "5",
+        progress_id: progressId,
+        nama_tahap: "Renovasi",
+        status: getLangkahStatus("Renovasi"),
+        urutan: 5,
+      },
+      {
+        id: "6",
+        progress_id: progressId,
+        nama_tahap: "Grand Opening",
+        status: getLangkahStatus("Grand Opening"),
+        urutan: 6,
+      },
+    ];
+    return rawSteps.map((step) => ({
+      ...step,
+      start_date: null,
+      end_date: null,
+    }));
+  }, [progressId, currentMainStatus, izinTetanggaStatus]);
+
+  const renderActiveStepForm = () => {
+    if (activeStep === null) {
+      return (
+        <div className="flex items-center justify-center h-full min-h-[400px] bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+          <p className="text-gray-500">
+            Pilih salah satu tahap dari timeline di sebelah kiri.
+          </p>
+        </div>
+      );
+    }
+
+    const mouStatus = steps.find((s) => s.nama_tahap === "MOU")?.status;
+    const itStatus = steps.find(
+      (s) => s.nama_tahap === "Ijin Tetangga"
+    )?.status;
+    const perizinanStatus = steps.find(
+      (s) => s.nama_tahap === "Perizinan"
+    )?.status;
+    const notarisStatus = steps.find((s) => s.nama_tahap === "Notaris")?.status;
+    const renovasiStatus = steps.find(
+      (s) => s.nama_tahap === "Renovasi"
+    )?.status;
+
+    const step = steps[activeStep];
+    const stepProgressId = step.progress_id; // gunakan progressId dari step
+
+    if (step.status === "Batal") {
+      // Logika untuk menampilkan data meski Batal
+    }
+
+    if (step.nama_tahap === "MOU") {
+      return <MouProgressCard progressId={stepProgressId} />;
+    }
+    if (step.nama_tahap === "Ijin Tetangga") {
+      if (mouStatus === "Done") {
+        return <IzinTetanggaProgressCard progressId={stepProgressId} />;
+      }
+    }
+    if (step.nama_tahap === "Perizinan") {
+      if (mouStatus === "Done") {
+        return <PerizinanProgressCard progressId={stepProgressId} />;
+      }
+    }
+    if (step.nama_tahap === "Notaris") {
+      if (itStatus === "Done" && perizinanStatus === "Done") {
+        return <NotarisProgressCard progressId={stepProgressId} />;
+      }
+    }
+    if (step.nama_tahap === "Renovasi") {
+      if (notarisStatus === "Done") {
+        return <RenovasiProgressCard progressId={stepProgressId} />;
+      }
+    }
+    if (step.nama_tahap === "Grand Opening") {
+      if (renovasiStatus === "Done") {
+        return <GrandOpeningProgressCard progressId={stepProgressId} />;
+      }
+    }
+
+    // Fallback jika belum 'unlocked'
+    return (
+      <ProgressStatusCard
+        title={step.nama_tahap}
+        status={step.status}
+        startDate={step.start_date}
+        endDate={step.end_date}
+      />
+    );
+  };
 
   return (
     <main className="space-y-4 lg:space-y-6">
@@ -379,13 +557,33 @@ export default function DetailProgressKpltLayout({
         </button>
       </div>
 
-      {/* Timeline Progress  */}
       <div className="mt-8 lg:mt-10">
-        <TimelineProgressKplt
-          progressId={progressData.id}
-          progressStatus={currentMainStatus}
-          izinTetanggaStatus={izinTetanggaStatus}
-        />
+        {currentMainStatus === undefined ? (
+          // Tampilkan loading jika status utama belum ada
+          <div className="w-full py-8 flex flex-col items-center justify-center min-h-[300px]">
+            <Loader2 className="animate-spin text-gray-500" size={32} />
+            <p className="mt-4 text-gray-600">Memuat status timeline...</p>
+          </div>
+        ) : (
+          // Tampilkan layout 2 kolom jika status sudah ada
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* KOLOM KIRI: Timeline Vertikal */}
+            <div className="lg:col-span-1">
+              <div className="">
+                <VerticalProgressTimeline
+                  steps={steps}
+                  activeStep={activeStep}
+                  onStepClick={setActiveStep}
+                />
+              </div>
+            </div>
+
+            {/* KOLOM KANAN: Form Input Dinamis */}
+            <div className="lg:col-span-2">
+              <div className="sticky top-24">{renderActiveStepForm()}</div>
+            </div>
+          </div>
+        )}
       </div>
     </main>
   );
