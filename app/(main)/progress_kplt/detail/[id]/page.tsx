@@ -15,6 +15,7 @@ export default function DetailProgressKpltPage() {
     progressDetail: progressData,
     isLoading: isProgressLoading,
     isError: isProgressError,
+    refetch: refetchProgressDetail,
   } = useProgressDetail(progressId);
 
   const kpltId = progressData?.progress?.kplt_id;
@@ -56,6 +57,7 @@ export default function DetailProgressKpltPage() {
       isFilesError={isFilesError}
       currentMainStatus={currentMainStatus}
       timeline={progressData.timeline}
+      onDataUpdate={refetchProgressDetail}
     />
   );
 }

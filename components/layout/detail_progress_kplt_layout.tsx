@@ -38,6 +38,7 @@ interface LayoutProps {
   isFilesError: any;
   currentMainStatus?: string;
   timeline: TimelineItem[];
+  onDataUpdate: () => void;
 }
 
 const getFileIcon = (fileType: MappedModuleFile["fileType"]) => {
@@ -112,6 +113,7 @@ export default function DetailProgressKpltLayout({
   isFilesError,
   currentMainStatus,
   timeline,
+  onDataUpdate,
 }: LayoutProps) {
   const router = useRouter();
   const { kplt } = progressData;
@@ -139,7 +141,7 @@ export default function DetailProgressKpltLayout({
   const renderActiveStepForm = () => {
     if (activeStep === null) {
       return (
-        <div className="bg-white rounded-2xl shadow-lg p-8 h-full flex items-center justify-center">
+        <div className="bg-white rounded-2xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)] p-8 h-full flex items-center justify-center">
           <div className="w-full max-w-xl text-center">
             {/* Icon Header */}
             <div className="flex items-center justify-center mb-6">
@@ -215,31 +217,61 @@ export default function DetailProgressKpltLayout({
     }
 
     if (step.nama_tahap === "MOU") {
-      return <MouProgressCard progressId={stepProgressId} />;
+      return (
+        <MouProgressCard
+          progressId={stepProgressId}
+          onDataUpdate={onDataUpdate}
+        />
+      );
     }
     if (step.nama_tahap === "Ijin Tetangga") {
       if (mouStatus === "Done") {
-        return <IzinTetanggaProgressCard progressId={stepProgressId} />;
+        return (
+          <IzinTetanggaProgressCard
+            progressId={stepProgressId}
+            // onDataUpdate={onDataUpdate}
+          />
+        );
       }
     }
     if (step.nama_tahap === "Perizinan") {
       if (mouStatus === "Done") {
-        return <PerizinanProgressCard progressId={stepProgressId} />;
+        return (
+          <PerizinanProgressCard
+            progressId={stepProgressId}
+            // onDataUpdate={onDataUpdate}
+          />
+        );
       }
     }
     if (step.nama_tahap === "Notaris") {
       if (itStatus === "Done" && perizinanStatus === "Done") {
-        return <NotarisProgressCard progressId={stepProgressId} />;
+        return (
+          <NotarisProgressCard
+            progressId={stepProgressId}
+            // onDataUpdate={onDataUpdate}
+          />
+        );
       }
     }
     if (step.nama_tahap === "Renovasi") {
       if (notarisStatus === "Done") {
-        return <RenovasiProgressCard progressId={stepProgressId} />;
+        return (
+          <RenovasiProgressCard
+            progressId={stepProgressId}
+            // onDataUpdate={onDataUpdate}
+          />
+        );
       }
     }
     if (step.nama_tahap === "Grand Opening") {
       if (renovasiStatus === "Done") {
-        return <GrandOpeningProgressCard progressId={stepProgressId} />;
+        return (
+          <GrandOpeningProgressCard
+            progressId={stepProgressId}
+            // onDataUpdate={onDataUpdate}
+          />
+        );
       }
     }
 
@@ -563,13 +595,11 @@ export default function DetailProgressKpltLayout({
 
       <div className="mt-8 lg:mt-10">
         {currentMainStatus === undefined ? (
-          // Tampilkan loading jika status utama belum ada
           <div className="w-full py-8 flex flex-col items-center justify-center min-h-[300px]">
             <Loader2 className="animate-spin text-gray-500" size={32} />
             <p className="mt-4 text-gray-600">Memuat status timeline...</p>
           </div>
         ) : (
-          // Tampilkan layout 2 kolom jika status sudah ada
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* KOLOM KIRI: Timeline Vertikal */}
             <div className="lg:col-span-1">
@@ -578,8 +608,6 @@ export default function DetailProgressKpltLayout({
                 <VerticalProgressTimeline
                   steps={steps}
                   activeStep={activeStep}
-                  // --- MODIFIKASI DIMULAI (Request #2) ---
-                  // Tambahkan logika toggle
                   onStepClick={(index) =>
                     setActiveStep(activeStep === index ? null : index)
                   }
@@ -589,7 +617,7 @@ export default function DetailProgressKpltLayout({
 
             {/* KOLOM KANAN: Form Input Dinamis */}
             <div className="lg:col-span-2">
-              <div className="sticky top-24">{renderActiveStepForm()}</div>
+              <div className="sticky top-12">{renderActiveStepForm()}</div>
             </div>
           </div>
         )}
