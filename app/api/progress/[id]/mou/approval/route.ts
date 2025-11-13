@@ -35,7 +35,6 @@ export async function PATCH(
     );
 
   const parsed = MouApprovalSchema.safeParse(body);
-  const parsed = MouApprovalSchema.safeParse(body);
   if (!parsed.success)
     return NextResponse.json(
       {
@@ -46,7 +45,7 @@ export async function PATCH(
       { status: 422 }
     );
 
-  const { final_status_mou } = parsed.data;
+
   const { final_status_mou } = parsed.data;
 
   const { data, error } = await supabase.rpc("fn_mou_approve", {

@@ -3,39 +3,6 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/client";
 import { getCurrentUser, canProgressKplt } from "@/lib/auth/acl";
 
-/*
-  Single-query detail progress_kplt dengan embed:
-    - kplt (ringkas + ulok ringkas)
-    - izin_tetangga.final_status_it (melalui FK izin_tetangga.progress_kplt_id -> progress_kplt.id)
-
-  GET /api/progress_kplt/[id]
-
-  Response contoh:
-  {
-    success: true,
-    data: {
-      progress: {
-        id,
-        kplt_id,
-        status,
-        created_at,
-        updated_at,
-        kplt: { id, nama_kplt, branch_id, ulok_id, ulok: { id, nama_ulok } }
-      },
-      final_status_it: "DONE" | null
-    }
-  }
-
-  Catatan:
-  - Jika relasi FK unik (one-to-one) akan dikembalikan sebagai object tunggal oleh PostgREST.
-  - Jika relasi tidak unik (one-to-many) maka izin_tetangga akan berupa array; kode di bawah menormalisasi keduanya.
-  - Pastikan di Supabase sudah ada foreign key:
-      ALTER TABLE public.izin_tetangga
-        ADD CONSTRAINT izin_tetangga_progress_kplt_id_fkey
-        FOREIGN KEY (progress_kplt_id) REFERENCES public.progress_kplt(id) ON DELETE CASCADE;
-    (dan opsional unique constraint jika memang satu baris per progress_kplt)
-*/
-
 export async function GET(
   _req: Request,
   { params }: { params: { id: string } }
@@ -70,48 +37,42 @@ export async function GET(
     );
   }
 
-  // Kolom progress_kplt yang ingin diambil (tambahkan jika perlu)
+  // Ambil detail progress + kplt + ulok ringkas
   const progressColumns = [
     "id",
     "kplt_id",
     "status",
     "created_at",
     "updated_at",
-    // Tambah kolom lain jika ada misal: "note","started_at","completed_at"
+    "kplt:kplt_id (*)",
   ].join(",");
 
-  const { data, error } = await supabase
+  const { data: progress, error: progressErr } = await supabase
     .from("progress_kplt")
-    .select(
-      [
-        progressColumns,
-        "kplt:kplt_id (*)",
-        "izin_tetangga(final_status_it)",
-      ].join(",")
-    )
+    .select(progressColumns)
     .eq("id", progressId)
     .maybeSingle();
 
-  if (error) {
+  if (progressErr) {
     return NextResponse.json(
       {
         success: false,
         error: "Failed to fetch progress_kplt",
-        detail: error.message,
+        detail: progressErr.message,
       },
       { status: 500 }
     );
   }
 
-  if (!data || typeof data !== "object" || !("id" in data)) {
+  if (!progress || typeof progress !== "object" || !("id" in progress)) {
     return NextResponse.json(
       { success: false, error: "Not Found", message: "Progress not found" },
       { status: 404 }
     );
   }
 
-  // Scope branch (opsional jika sudah dijaga oleh RLS)
-  const branchId = (data as any)?.kplt?.branch_id;
+  // Scope branch oleh kplt.branch_id
+  const branchId = (progress as any)?.kplt?.branch_id;
   if (branchId && branchId !== user.branch_id) {
     return NextResponse.json(
       {
@@ -123,20 +84,24 @@ export async function GET(
     );
   }
 
-  // Normalisasi izin_tetangga embed (object atau array)
-  let finalStatusIt: string | null = null;
-  const izinEmbed = (data as any).izin_tetangga;
-
-  if (izinEmbed) {
-    if (Array.isArray(izinEmbed)) {
-      // Ambil baris pertama kalau banyak
-      finalStatusIt = izinEmbed.length
-        ? izinEmbed[0]?.final_status_it ?? null
-        : null;
-    } else {
-      // Object tunggal
-      finalStatusIt = izinEmbed.final_status_it ?? null;
+  // Panggil RPC timeline
+  const { data: timelineResp, error: tlErr } = await supabase.rpc(
+    "fn_progress_timeline",
+    {
+      p_branch_id: user.branch_id,
+      p_progress_kplt_id: progressId,
     }
+  );
+
+  if (tlErr) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Failed to fetch timeline",
+        detail: (tlErr as any).message ?? tlErr,
+      },
+      { status: 500 }
+    );
   }
 
   return NextResponse.json(
@@ -144,14 +109,14 @@ export async function GET(
       success: true,
       data: {
         progress: {
-          id: (data as any).id,
-          kplt_id: (data as any).kplt_id,
-          status: (data as any).status,
-          created_at: (data as any).created_at,
-          updated_at: (data as any).updated_at,
-          kplt: (data as any).kplt,
+          id: (progress as any).id,
+          kplt_id: (progress as any).kplt_id,
+          status: (progress as any).status,
+          created_at: (progress as any).created_at,
+          updated_at: (progress as any).updated_at,
+          kplt: (progress as any).kplt,
         },
-        final_status_it: finalStatusIt,
+        timeline: (timelineResp as any)?.timeline ?? [],
       },
     },
     { status: 200 }
