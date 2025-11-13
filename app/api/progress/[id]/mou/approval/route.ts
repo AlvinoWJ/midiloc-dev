@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/client";
 import { getCurrentUser, canProgressKplt } from "@/lib/auth/acl";
-import { MouApprovalSchema } from "@/lib/validations/mou";
+import { MouApprovalSchema} from "@/lib/validations/mou"
 
 export async function PATCH(
   req: NextRequest,
@@ -44,6 +44,7 @@ export async function PATCH(
       },
       { status: 422 }
     );
+
 
   const { final_status_mou } = parsed.data;
 
