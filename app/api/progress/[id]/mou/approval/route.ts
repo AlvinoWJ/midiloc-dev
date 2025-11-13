@@ -2,18 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/client";
 import { getCurrentUser, canProgressKplt } from "@/lib/auth/acl";
-import { z } from "zod";
-
-const ApprovalSchema = z.object({
-  final_status: z
-    .string()
-    .trim()
-    .toLowerCase()
-    .refine(
-      (v) => v === "selesai" || v === "batal",
-      "final_status must be 'selesai' or 'batal'"
-    ),
-});
+import { MouApprovalSchema} from "@/lib/validations/mou"
 
 export async function PATCH(
   req: NextRequest,
@@ -45,7 +34,7 @@ export async function PATCH(
       { status: 400 }
     );
 
-  const parsed = ApprovalSchema.safeParse(body);
+  const parsed = MouApprovalSchema.safeParse(body);
   if (!parsed.success)
     return NextResponse.json(
       {
@@ -56,13 +45,13 @@ export async function PATCH(
       { status: 422 }
     );
 
-  const { final_status } = parsed.data;
+  const { final_status_mou } = parsed.data;
 
   const { data, error } = await supabase.rpc("fn_mou_approve", {
     p_user_id: user.id,
     p_branch_id: user.branch_id,
     p_progress_kplt_id: progressId,
-    p_final_status: final_status,
+    p_final_status: final_status_mou,
   });
 
   if (error) {
