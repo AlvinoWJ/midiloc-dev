@@ -21,6 +21,24 @@ const MAX_FILE = 200 * 1024 * 1024; // 200MB video max
 
 type SupaClient = Awaited<ReturnType<typeof createClient>>;
 
+function parseMonthYear(url: URL) {
+  const mRaw = url.searchParams.get("month") ?? url.searchParams.get("bulan");
+  const yRaw = url.searchParams.get("year") ?? url.searchParams.get("tahun");
+
+  const month = mRaw ? Number(mRaw) : undefined;
+  const year = yRaw ? Number(yRaw) : undefined;
+
+  const isValidMonth = (v: unknown) =>
+    Number.isInteger(v) && (v as number) >= 1 && (v as number) <= 12;
+  const isValidYear = (v: unknown) =>
+    Number.isInteger(v) && (v as number) >= 1970 && (v as number) <= 2100;
+
+  if ((mRaw && !isValidMonth(month)) || (yRaw && !isValidYear(year))) {
+    return { error: "Invalid month/year. month=1..12, year=1970..2100" };
+  }
+  return { month, year };
+}
+
 function normalizeView(v: string | null): ViewMode {
   const k = (v || "all").toLowerCase();
   return (["all", "ulok_ok", "existing"] as const).includes(k as ViewMode)
@@ -313,13 +331,13 @@ export async function GET(req: NextRequest) {
 
   if (!user) {
     return NextResponse.json(
-      { success: false, error: "Unauthorized" },
+      { success: false, error: "Unauthorized", message: "User must login" },
       { status: 401 }
     );
   }
   if (!canKplt("read", user)) {
     return NextResponse.json(
-      { success: false, error: "Forbidden" },
+      { success: false, error: "Forbidden", message: "Access denied" },
       { status: 403 }
     );
   }
@@ -337,6 +355,23 @@ export async function GET(req: NextRequest) {
     url.searchParams.get("search") ||
     ""
   ).trim();
+
+  // Month / Year parsing
+  const {
+    month,
+    year,
+    error: timeError,
+  } = parseMonthYear(url) as {
+    month?: number;
+    year?: number;
+    error?: string;
+  };
+  if (timeError) {
+    return NextResponse.json(
+      { success: false, error: "Bad Request", message: timeError },
+      { status: 422 }
+    );
+  }
 
   const pageGeneral = Number(url.searchParams.get("page") ?? "1");
   const limitGeneral = Number(url.searchParams.get("limit") ?? "10");
@@ -368,7 +403,6 @@ export async function GET(req: NextRequest) {
       ? Math.min(limitExisting, 500)
       : 10;
 
-  // Call new RPC with separate pagination parameters
   const { data, error } = await supabase.rpc("fn_kplt_dashboard", {
     p_user_id: user.id,
     p_branch_id: user.branch_id,
@@ -379,6 +413,8 @@ export async function GET(req: NextRequest) {
     p_limit_ulok_ok: safeLimitUlokOk,
     p_page_existing: safePageExisting,
     p_limit_existing: safeLimitExisting,
+    p_month: month ?? null,
+    p_year: year ?? null,
   });
 
   if (error) {
@@ -392,7 +428,6 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  // RPC sudah mengembalikan struktur lengkap: kplt_from_ulok_ok, kplt_existing, meta, pagination, search
   return NextResponse.json(
     {
       success: true,
