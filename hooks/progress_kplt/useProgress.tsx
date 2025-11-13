@@ -7,11 +7,11 @@ export type ProgressItem = {
   created_at: string | null;
   updated_at: string | null;
   status: string | null;
-  kplt_id: {
+  kplt: {
     id: string;
     alamat: string | null;
+    nama_kplt: string | null;
   } | null;
-  kplt_nama: string | null;
 };
 
 export type ProgressMeta = {

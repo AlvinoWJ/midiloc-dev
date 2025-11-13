@@ -19,6 +19,26 @@ interface VerticalProgressTimelineProps {
   onStepClick: (index: number) => void;
 }
 
+const formatDate = (date: string | null) => {
+  if (!date) return "";
+  const d = new Date(date);
+  const months = [
+    "Januari",
+    "Februari",
+    "Maret",
+    "April",
+    "Mei",
+    "Juni",
+    "Juli",
+    "Agustus",
+    "September",
+    "Oktober",
+    "November",
+    "Desember",
+  ];
+  return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+};
+
 export default function VerticalProgressTimeline({
   steps,
   activeStep,
@@ -28,29 +48,15 @@ export default function VerticalProgressTimeline({
     startDate: string | null,
     endDate: string | null
   ) => {
-    if (!startDate && !endDate) return null;
+    if (!startDate) return null;
 
-    const formatDate = (date: string | null) => {
-      if (!date) return "";
-      const d = new Date(date);
-      const months = [
-        "Januari",
-        "Februari",
-        "Maret",
-        "April",
-        "Mei",
-        "Juni",
-        "Juli",
-        "Agustus",
-        "September",
-        "Oktober",
-        "November",
-        "Desember",
-      ];
-      return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
-    };
+    const formattedStartDate = formatDate(startDate);
 
-    return `${formatDate(startDate)} - ${formatDate(endDate)}`;
+    if (!endDate) {
+      return formattedStartDate;
+    }
+
+    return `${formattedStartDate} - ${formatDate(endDate)}`;
   };
 
   const getStatusText = (status: string) => {
@@ -69,7 +75,7 @@ export default function VerticalProgressTimeline({
   };
 
   return (
-    <div className="w-full bg-white rounded-2xl shadow-lg p-6">
+    <div className="w-full bg-white rounded-2xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)] p-6">
       {/* Header */}
       <div className="mb-8">
         <h2 className="text-xl font-bold text-gray-900">Timeline Progress</h2>
@@ -83,9 +89,9 @@ export default function VerticalProgressTimeline({
           const isActive = activeStep === index;
 
           const dotColor = isDone
-            ? "bg-gray-500"
+            ? "bg-submit"
             : isInProgress
-            ? "bg-blue-500"
+            ? "bg-yellow-500"
             : isBatal
             ? "bg-red-500"
             : "bg-gray-300";
@@ -115,7 +121,7 @@ export default function VerticalProgressTimeline({
                 />
 
                 {/* Content */}
-                <div className="flex-1 pt-0">
+                <div className="flex-1">
                   {/* Nama Step - 18px */}
                   <h3
                     className={`text-lg font-semibold mb-1 ${

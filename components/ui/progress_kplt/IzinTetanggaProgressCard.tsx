@@ -216,7 +216,7 @@ const IzinTetanggaForm: React.FC<FormProps> = ({
           />
         </div>
 
-        <div className="md:col-span-2 flex justify-end gap-3 mt-6">
+        <div className="md:col-span-2 flex justify-end gap-3 mt-2">
           {onCancelEdit && (
             <Button
               onClick={onCancelEdit}
