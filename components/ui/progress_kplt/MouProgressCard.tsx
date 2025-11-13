@@ -95,7 +95,7 @@ const MouForm: React.FC<MouFormProps> = ({
     return value;
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
 
@@ -167,7 +167,7 @@ const MouForm: React.FC<MouFormProps> = ({
       className="mt-10"
     >
       <form
-        onSubmit={handleSubmit}
+        onSubmit={handleSave}
         className="grid grid-cols-1 md:grid-cols-2 gap-4"
       >
         <div>
@@ -340,25 +340,35 @@ interface MouProgressCardProps {
 const MouProgressCard: React.FC<MouProgressCardProps> = ({ progressId }) => {
   const { data, loading, error, refetch } = useMouProgress(progressId);
   const [isEditing, setIsEditing] = useState(false);
-  const [isSubmittingApproval, setIsSubmittingApproval] = useState(false);
+
+  const [isSubmittingApprove, setIsSubmittingApprove] = useState(false);
+  const [isSubmittingReject, setIsSubmittingReject] = useState(false);
 
   const { showToast, showConfirmation } = useAlert();
 
-  const handleSubmitApproval = async () => {
+  const handleFinalizeMou = async (status: "Selesai" | "Batal") => {
+    const actionText = status === "Selesai" ? "submit" : "membatalkan";
+    const actionTitle = status === "Selesai" ? "Submit" : "Pembatalan";
+    const confirmText = status === "Selesai" ? "Ya, Submit" : "Ya, Batalkan";
+
     const isConfirmed = await showConfirmation({
-      title: "Konfirmasi Approval MOU",
-      message:
-        "Apakah Anda yakin ingin submit data ini? Data yang sudah di-submit tidak dapat diubah kembali.",
-      confirmText: "Ya, Submit",
+      title: `Konfirmasi ${actionTitle} MOU`,
+      message: `Apakah Anda yakin ingin ${actionText} MOU ini? Data yang sudah di-${actionText} tidak dapat diubah kembali.`,
+      confirmText: confirmText,
       type: "warning",
     });
 
     if (!isConfirmed) return;
 
-    setIsSubmittingApproval(true);
+    if (status === "Selesai") {
+      setIsSubmittingApprove(true);
+    } else {
+      setIsSubmittingReject(true);
+    }
 
     try {
-      const payload = { final_status_mou: "selesai" };
+      const apiStatus = status.toLowerCase() as "selesai" | "batal";
+      const payload = { final_status_mou: apiStatus };
 
       const res = await fetch(
         `/api/progress/${progressId}/mou/approval`, // URL diperbaiki
@@ -372,12 +382,18 @@ const MouProgressCard: React.FC<MouProgressCardProps> = ({ progressId }) => {
       const json = await res.json();
 
       if (!res.ok) {
-        let errorTitle = "Submit Gagal";
+        let errorTitle = "Gagal Mengirim";
         let errorMessage = json.error || "Gagal melakukan submit.";
 
-        if (json.missing_fields && json.missing_fields.length > 0) {
+        // ‹- PERBAIKAN 1: Pesan error dibuat lebih spesifik
+        if (
+          res.status === 422 &&
+          json.missing_fields &&
+          json.missing_fields.length > 0
+        ) {
           errorTitle = "Data Belum Lengkap";
-          errorMessage = `Mohon isi field berikut: ${json.missing_fields.join(
+          // Tampilkan field apa saja yang kurang
+          errorMessage = `Field berikut harus diisi: ${json.missing_fields.join(
             ", "
           )}`;
         }
@@ -386,20 +402,28 @@ const MouProgressCard: React.FC<MouProgressCardProps> = ({ progressId }) => {
           type: "error",
           title: errorTitle,
           message: errorMessage,
-        }); // Hentikan fungsi
-
-        setIsSubmittingApproval(false);
+        });
         return;
       }
+
       showToast({
         type: "success",
-        message: "MOU berhasil disubmit.",
+        // ‹- PERBAIKAN 2: Pesan sukses dinamis sesuai 'actionText'
+        message: `MOU berhasil di-${actionText}.`,
       });
       await refetch();
     } catch (err: any) {
       console.error(err);
+      // Tampilkan toast error jika ada kesalahan 'catch'
+      showToast({
+        type: "error",
+        title: "Terjadi Kesalahan",
+        message: err.message || "Tidak dapat terhubung ke server.",
+      });
     } finally {
-      setIsSubmittingApproval(false);
+      // ‹- PERBAIKAN 3 (UTAMA): Selalu reset KEDUA state
+      setIsSubmittingApprove(false);
+      setIsSubmittingReject(false);
     }
   };
 
@@ -564,17 +588,34 @@ const MouProgressCard: React.FC<MouProgressCardProps> = ({ progressId }) => {
         </div>
 
         {!isFinalized && (
-          <div className="flex justify-end gap-3 mt-8">
-            <Button variant="default" onClick={() => setIsEditing(true)}>
+          <div className="flex gap-3 mt-8">
+            <Button
+              variant="secondary"
+              onClick={() => setIsEditing(true)}
+              disabled={isSubmittingApprove || isSubmittingReject}
+              className="mr-auto"
+            >
               <Pencil className="mr-2" size={16} /> Edit
+            </Button>
+            <Button
+              variant="default"
+              onClick={() => handleFinalizeMou("Batal")}
+              disabled={isSubmittingApprove || isSubmittingReject}
+            >
+              {isSubmittingReject ? (
+                <Loader2 className="animate-spin mr-2" size={16} />
+              ) : (
+                <XCircle className="mr-2" size={16} />
+              )}
+              Batal
             </Button>
             <Button
               type="submit"
               variant="submit"
-              onClick={handleSubmitApproval}
-              disabled={isSubmittingApproval}
+              onClick={() => handleFinalizeMou("Selesai")}
+              disabled={isSubmittingApprove || isSubmittingReject}
             >
-              {isSubmittingApproval ? (
+              {isSubmittingApprove ? (
                 <Loader2 className="animate-spin" size={16} />
               ) : (
                 <CheckCircle className="mr-2" size={16} />

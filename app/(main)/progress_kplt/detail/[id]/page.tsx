@@ -17,7 +17,7 @@ export default function DetailProgressKpltPage() {
     isError: isProgressError,
   } = useProgressDetail(progressId);
 
-  const kpltId = progressData?.kplt_id?.id;
+  const kpltId = progressData?.progress?.kplt_id;
 
   const {
     files,
@@ -27,7 +27,10 @@ export default function DetailProgressKpltPage() {
 
   const isPageLoading = isProgressLoading || (kpltId && isFilesLoading);
 
-  if (isProgressLoading) {
+  const currentMainStatus = progressData?.progress?.status;
+  const izinTetanggaStatus = progressData?.final_status_it;
+
+  if (isPageLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh]">
         <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
@@ -49,9 +52,11 @@ export default function DetailProgressKpltPage() {
 
   return (
     <DetailProgressKpltLayout
-      progressData={progressData}
+      progressData={progressData.progress}
       files={files}
       isFilesError={isFilesError}
+      currentMainStatus={currentMainStatus}
+      izinTetanggaStatus={izinTetanggaStatus}
     />
   );
 }

@@ -6,6 +6,14 @@ import SearchWithFilter from "@/components/ui/searchwithfilter";
 import { InfoCard } from "@/components/ui/infocard";
 import { useState, useMemo } from "react";
 import { KpltSkeleton } from "../ui/skleton";
+import {
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  MoreHorizontal,
+  Loader2,
+} from "lucide-react";
 
 // Helper component for the chevron icon to keep JSX cleaner
 const ChevronIcon = ({ isExpanded }: { isExpanded: boolean }) => (
@@ -29,6 +37,7 @@ const ChevronIcon = ({ isExpanded }: { isExpanded: boolean }) => (
 export default function KpltLayout(props: KpltPageProps) {
   const {
     isLoading,
+    isRefreshing,
     isError,
     activeTab,
     displayData,
@@ -38,6 +47,9 @@ export default function KpltLayout(props: KpltPageProps) {
     onSearch,
     onFilterChange,
     onTabChange,
+    currentPage,
+    totalPages,
+    onPageChange,
   } = props;
 
   const [expandedStatuses, setExpandedStatuses] = useState<{
@@ -92,6 +104,36 @@ export default function KpltLayout(props: KpltPageProps) {
     }
   };
 
+  const getPageNumbers = () => {
+    const pages = [];
+    const showEllipsisStart = currentPage > 3;
+    const showEllipsisEnd = totalPages && currentPage < totalPages - 2;
+
+    if (!totalPages || totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      pages.push(1);
+      if (showEllipsisStart) {
+        pages.push("ellipsis-start");
+      }
+      const start = Math.max(2, currentPage - 1);
+      const end = Math.min(totalPages - 1, currentPage + 1);
+      for (let i = start; i <= end; i++) {
+        pages.push(i);
+      }
+      if (showEllipsisEnd) {
+        pages.push("ellipsis-end");
+      }
+      pages.push(totalPages);
+    }
+
+    return pages;
+  };
+
+  const pageNumbers = getPageNumbers();
+
   return (
     <main className="space-y-4 lg:space-y-6">
       {isLoading ? (
@@ -134,92 +176,206 @@ export default function KpltLayout(props: KpltPageProps) {
             />
           </div>
 
-          {/* Konten Utama */}
-          {displayData.length === 0 ? (
-            <div className="col-span-full flex flex-col items-center justify-center py-12 md:py-16 text-center">
-              <div className="text-gray-300 text-5xl md:text-6xl mb-4">📍</div>
-              <h3 className="text-base md:text-lg font-medium text-gray-900 mb-2">
-                {searchQuery || filterMonth || filterYear
-                  ? "Tidak ada data yang cocok"
-                  : "Belum ada data KPLT"}
-              </h3>
-              <p className="text-gray-500 text-sm md:text-base max-w-md">
-                {searchQuery || filterMonth || filterYear
-                  ? "Coba ubah kata kunci pencarian atau filter untuk menemukan data yang Anda cari."
-                  : activeTab === "Recent"
-                  ? "Mulai dengan menambahkan KPLT baru."
-                  : "Belum ada data riwayat KPLT."}
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-6">
-              {activeTab === "Recent" && (
-                <div className="space-y-6">
-                  {statusOrder.map((status) => {
-                    const items = groupedData[status];
-                    if (!items || items.length === 0) return null;
-                    return (
-                      <div key={status}>
-                        <button
-                          onClick={() => toggleStatus(status)}
-                          className="flex items-center gap-3 text-left w-full p-2 rounded-lg hover:bg-gray-50 transition-colors"
-                        >
-                          <ChevronIcon isExpanded={expandedStatuses[status]} />
-                          <h2 className="text-lg md:text-xl font-semibold text-gray-800">
-                            {getStatusLabel(status)}
-                          </h2>
-                          <span
-                            className={`px-3 py-1 text-sm font-medium rounded-full ${getStatusBadgeClass(
-                              status
-                            )}`}
+          <div className="relative flex-grow min-h-[23rem]">
+            {isRefreshing ? ( // [!code ++]
+              <div className="flex items-center justify-center min-h-[23rem]">
+                {" "}
+                {/* [!code ++] */}
+                <Loader2 className="w-8 h-8 text-primary animate-spin" />{" "}
+                {/* [!code ++] */}
+              </div> // [!code ++]
+            ) : displayData.length === 0 ? (
+              <div className="col-span-full flex flex-col items-center justify-center py-12 md:py-16 text-center">
+                <div className="text-gray-300 text-5xl md:text-6xl mb-4">
+                  📍
+                </div>
+                <h3 className="text-base md:text-lg font-medium text-gray-900 mb-2">
+                  {searchQuery || filterMonth || filterYear
+                    ? "Tidak ada data yang cocok"
+                    : "Belum ada data KPLT"}
+                </h3>
+                <p className="text-gray-500 text-sm md:text-base max-w-md">
+                  {searchQuery || filterMonth || filterYear
+                    ? "Coba ubah kata kunci pencarian atau filter untuk menemukan data yang Anda cari."
+                    : activeTab === "Recent"
+                    ? "Mulai dengan menambahkan KPLT baru."
+                    : "Belum ada data riwayat KPLT."}
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {activeTab === "Recent" && (
+                  <div className="space-y-6">
+                    {statusOrder.map((status) => {
+                      const items = groupedData[status];
+                      if (!items || items.length === 0) return null;
+                      return (
+                        <div key={status}>
+                          <button
+                            onClick={() => toggleStatus(status)}
+                            className="flex items-center gap-3 text-left w-full p-2 rounded-lg hover:bg-gray-50 transition-colors"
                           >
-                            {items.length}
-                          </span>
-                        </button>
-                        {expandedStatuses[status] && (
-                          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-6">
-                            {items.map((kplt) => (
-                              <InfoCard
-                                key={kplt.id}
-                                id={kplt.id}
-                                nama={kplt.nama}
-                                alamat={kplt.alamat}
-                                created_at={kplt.created_at}
-                                status={kplt.status}
-                                detailPath={
-                                  kplt.status.toLowerCase() === "need input"
-                                    ? `/form_kplt/tambah/`
-                                    : `/form_kplt/detail/`
-                                }
-                                has_file_intip={kplt.has_file_intip}
-                                has_form_ukur={kplt.has_form_ukur}
-                              />
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+                            <ChevronIcon
+                              isExpanded={expandedStatuses[status]}
+                            />
+                            <h2 className="text-lg md:text-xl font-semibold text-gray-800">
+                              {getStatusLabel(status)}
+                            </h2>
+                            <span
+                              className={`px-3 py-1 text-sm font-medium rounded-full ${getStatusBadgeClass(
+                                status
+                              )}`}
+                            >
+                              {items.length}
+                            </span>
+                          </button>
+                          {expandedStatuses[status] && (
+                            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-6">
+                              {items.map((kplt) => (
+                                <InfoCard
+                                  key={kplt.id}
+                                  id={kplt.id}
+                                  nama={kplt.nama}
+                                  alamat={kplt.alamat}
+                                  created_at={kplt.created_at}
+                                  status={kplt.status}
+                                  detailPath={
+                                    kplt.status.toLowerCase() === "need input"
+                                      ? `/form_kplt/tambah/`
+                                      : `/form_kplt/detail/`
+                                  }
+                                  has_file_intip={kplt.has_file_intip}
+                                  has_form_ukur={kplt.has_form_ukur}
+                                />
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
 
-              {activeTab === "History" && (
-                <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-6">
-                  {displayData.map((kplt) => (
-                    <InfoCard
-                      key={kplt.id}
-                      id={kplt.id}
-                      nama={kplt.nama}
-                      alamat={kplt.alamat}
-                      created_at={kplt.created_at}
-                      status={kplt.status}
-                      detailPath={`/form_kplt/detail/`}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+                {activeTab === "History" && (
+                  <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-6">
+                    {displayData.map((kplt) => (
+                      <InfoCard
+                        key={kplt.id}
+                        id={kplt.id}
+                        nama={kplt.nama}
+                        alamat={kplt.alamat}
+                        created_at={kplt.created_at}
+                        status={kplt.status}
+                        detailPath={`/form_kplt/detail/`}
+                      />
+                    ))}
+                  </div>
+                )}
+
+                {activeTab === "History" && totalPages && totalPages > 1 && (
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-auto pt-6">
+                    {/* ... (Seluruh JSX pagination Anda) ... */}
+                    <div className="flex items-center gap-1">
+                      {/* First Page Button */}
+                      <button
+                        onClick={() => onPageChange && onPageChange(1)}
+                        disabled={
+                          !currentPage || currentPage === 1 || isLoading
+                        }
+                        className="p-2 rounded-full text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
+                        aria-label="Halaman pertama"
+                      >
+                        <ChevronsLeft className="w-5 h-5" />
+                      </button>
+
+                      {/* Previous Button */}
+                      <button
+                        onClick={() =>
+                          onPageChange && onPageChange(currentPage - 1)
+                        }
+                        disabled={!currentPage || currentPage <= 1 || isLoading}
+                        className="p-2 rounded-full text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
+                        aria-label="Halaman sebelumnya"
+                      >
+                        <ChevronLeft className="w-5 h-5" />
+                      </button>
+
+                      {/* Page Numbers */}
+                      <div className="flex items-center gap-1 mx-2">
+                        {pageNumbers.map((pageNum) => {
+                          if (typeof pageNum === "string") {
+                            // Ellipsis
+                            return (
+                              <div
+                                key={pageNum}
+                                className="flex items-center justify-center px-2 text-gray-400"
+                              >
+                                <MoreHorizontal className="w-4 h-4" />
+                              </div>
+                            );
+                          }
+
+                          const isActive = pageNum === currentPage;
+                          return (
+                            <button
+                              key={pageNum}
+                              onClick={() =>
+                                onPageChange && onPageChange(pageNum)
+                              }
+                              disabled={isLoading}
+                              className={`
+                            w-10 h-10 rounded-full text-sm font-semibold transition-all
+                            ${
+                              isActive
+                                ? "bg-red-500 text-white shadow-lg shadow-red-500/30 scale-105" // Ganti 'bg-primary' menjadi 'bg-red-500' agar konsisten
+                                : "text-gray-700 hover:bg-gray-100"
+                            }
+                              disabled:opacity-40 disabled:cursor-not-allowed
+                              `}
+                              aria-label={`Halaman ${pageNum}`}
+                              aria-current={isActive ? "page" : undefined}
+                            >
+                              {pageNum}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      <button
+                        onClick={() =>
+                          onPageChange && onPageChange(currentPage + 1)
+                        }
+                        disabled={
+                          !totalPages ||
+                          !currentPage ||
+                          currentPage >= totalPages ||
+                          isLoading
+                        }
+                        className="p-2 rounded-full text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
+                        aria-label="Halaman berikutnya"
+                      >
+                        <ChevronRight className="w-5 h-5" />
+                      </button>
+
+                      <button
+                        onClick={() => onPageChange && onPageChange(totalPages)}
+                        disabled={
+                          !totalPages ||
+                          !currentPage ||
+                          currentPage >= totalPages ||
+                          isLoading
+                        }
+                        className="p-2 rounded-full text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
+                        aria-label="Halaman terakhir"
+                      >
+                        <ChevronsRight className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </>
       )}
     </main>

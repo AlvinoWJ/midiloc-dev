@@ -168,6 +168,7 @@ export interface ApiKpltResponse {
 // Tipe untuk KpltPageProps yang sudah sesuai dengan data dari API
 export interface KpltPageProps {
   isLoading: boolean;
+  isRefreshing: boolean;
   isError: boolean;
   user: CurrentUser | null;
 
@@ -185,6 +186,10 @@ export interface KpltPageProps {
   onFilterChange: (month: string, year: string) => void;
   onTabChange: (tab: string) => void;
   isLocationSpecialist: () => boolean;
+
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
 }
 
 // ==================================
@@ -192,6 +197,7 @@ export interface KpltPageProps {
 // ==================================
 export interface UlokPageProps {
   isLoading: boolean;
+  isRefreshing: boolean;
   isError: boolean;
   user: CurrentUser | null;
   filteredUlok: Ulok[];

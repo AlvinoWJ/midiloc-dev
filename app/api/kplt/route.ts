@@ -338,7 +338,6 @@ export async function GET(req: NextRequest) {
     ""
   ).trim();
 
-  // Fallback general page/limit
   const pageGeneral = Number(url.searchParams.get("page") ?? "1");
   const limitGeneral = Number(url.searchParams.get("limit") ?? "10");
 
