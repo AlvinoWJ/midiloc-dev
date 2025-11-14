@@ -4,6 +4,8 @@
 import { useEffect, useState } from "react";
 
 interface PerizinanData {
+  oss?: string | null;
+  tgl_oss?: string | null;
   tgl_sph?: string | null;
   tgl_st_berkas?: string | null;
   tgl_gambar_denah?: string | null;
