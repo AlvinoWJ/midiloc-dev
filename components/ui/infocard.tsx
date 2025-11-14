@@ -109,8 +109,8 @@ export function InfoCard({
           />
         </CardHeader>
 
-        <CardFooter className="flex justify-between items-center pt-6">
-          <StatusBadge status={status} className="mt-2" />
+        <CardFooter className="flex justify-between items-center gap-4">
+          <StatusBadge status={status} />
           <span className="text-gray-700 text-m font-medium">
             {formattedDate}
           </span>

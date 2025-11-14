@@ -10,7 +10,6 @@ import { ClipboardList } from "lucide-react";
 import CustomSelect from "@/components/ui/customselect";
 import { MouEditableSchema } from "@/lib/validations/mou";
 import { useAlert } from "@/components/shared/alertcontext";
-import { ProgressStatusCard } from "./ProgressStatusCard";
 import { useRouter } from "next/navigation";
 
 const formatnumeric = (value: string | number | undefined | null) => {
@@ -106,7 +105,7 @@ const MouForm: React.FC<MouFormProps> = ({
 
   const pembayaranPphOptions = [
     "Pemilik",
-    "Perusahan",
+    "Perusahaan",
     "Pemilik dan Perusahaan",
   ];
 
@@ -215,7 +214,7 @@ const MouForm: React.FC<MouFormProps> = ({
     <DetailCard
       title="MOU"
       icon={<ClipboardList className="text-red-500 mr-3" size={20} />}
-      className="mt-10"
+      className=""
     >
       <form
         onSubmit={handleSave}
@@ -362,7 +361,7 @@ const MouForm: React.FC<MouFormProps> = ({
           />
         </div>
 
-        <div className="md:col-span-2 flex justify-end gap-3 mt-6">
+        <div className="md:col-span-2 flex justify-end gap-3 mt-2">
           {onCancelEdit && (
             <Button
               variant="default"
@@ -510,12 +509,6 @@ const MouProgressCard: React.FC<MouProgressCardProps> = ({
   if (!data || isEditing) {
     return (
       <div className="w-full ">
-        <ProgressStatusCard
-          title="MOU"
-          status={data?.final_status_mou}
-          startDate={data?.created_at}
-          endDate={data?.tgl_selesai_mou}
-        />
         <MouForm
           progressId={progressId}
           onSuccess={() => {
@@ -537,16 +530,10 @@ const MouProgressCard: React.FC<MouProgressCardProps> = ({
   // Mode Read - Tampilkan data
   return (
     <div className="w-full ">
-      <ProgressStatusCard
-        title="MOU"
-        status={data.final_status_mou}
-        startDate={data.created_at}
-        endDate={data.tgl_selesai_mou}
-      />
       <DetailCard
         title="MOU"
         icon={<ClipboardList className="text-red-500 mr-3" size={20} />}
-        className="mt-10"
+        className=""
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Tanggal MOU */}

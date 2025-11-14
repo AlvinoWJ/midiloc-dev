@@ -229,7 +229,7 @@ export default function DetailProgressKpltLayout({
         return (
           <IzinTetanggaProgressCard
             progressId={stepProgressId}
-            // onDataUpdate={onDataUpdate}
+            onDataUpdate={onDataUpdate}
           />
         );
       }
@@ -239,7 +239,7 @@ export default function DetailProgressKpltLayout({
         return (
           <PerizinanProgressCard
             progressId={stepProgressId}
-            // onDataUpdate={onDataUpdate}
+            onDataUpdate={onDataUpdate}
           />
         );
       }
@@ -249,7 +249,7 @@ export default function DetailProgressKpltLayout({
         return (
           <NotarisProgressCard
             progressId={stepProgressId}
-            // onDataUpdate={onDataUpdate}
+            onDataUpdate={onDataUpdate}
           />
         );
       }
@@ -259,7 +259,7 @@ export default function DetailProgressKpltLayout({
         return (
           <RenovasiProgressCard
             progressId={stepProgressId}
-            // onDataUpdate={onDataUpdate}
+            onDataUpdate={onDataUpdate}
           />
         );
       }
@@ -269,18 +269,70 @@ export default function DetailProgressKpltLayout({
         return (
           <GrandOpeningProgressCard
             progressId={stepProgressId}
-            // onDataUpdate={onDataUpdate}
+            onDataUpdate={onDataUpdate}
           />
         );
       }
     }
 
     return (
-      <div className="flex items-center justify-center h-full min-h-[400px] bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-        <p className="text-gray-500 text-center px-4">
-          Tahap &quot;{step.nama_tahap}&quot; belum dapat diakses. <br />
-          Selesaikan tahap sebelumnya terlebih dahulu.
-        </p>
+      <div className="bg-white rounded-2xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)] p-8 h-full flex items-center justify-center min-h-[400px]">
+        <div className="w-full max-w-xl text-center">
+          {/* Icon Header */}
+          <div className="flex items-center justify-center mb-6">
+            <div className="w-20 h-20 bg-gradient-to-br from-amber-50 to-amber-100 rounded-full flex items-center justify-center shadow-md">
+              <svg
+                className="w-10 h-10 text-amber-500"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                />
+              </svg>
+            </div>
+          </div>
+
+          {/* Content */}
+          <div>
+            <h3 className="text-2xl font-bold text-gray-900 mb-3">
+              Tahap Terkunci
+            </h3>
+            <p className="text-gray-600 text-base leading-relaxed mb-2">
+              <span className="font-semibold text-gray-800">
+                Tahap &quot;{step.nama_tahap}&quot;
+              </span>{" "}
+              belum dapat diakses
+            </p>
+            <p className="text-gray-500 text-base leading-relaxed">
+              Selesaikan tahap sebelumnya terlebih dahulu untuk membuka akses
+            </p>
+          </div>
+
+          {/* Decorative Element */}
+          <div className="mt-8 pt-6 border-t border-gray-100">
+            <div className="flex items-center justify-center gap-2 text-sm text-gray-400">
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              <span>Selesaikan tahap berurutan untuk melanjutkan</span>
+            </div>
+          </div>
+        </div>
       </div>
     );
   };
@@ -617,7 +669,7 @@ export default function DetailProgressKpltLayout({
 
             {/* KOLOM KANAN: Form Input Dinamis */}
             <div className="lg:col-span-2">
-              <div className="sticky top-12">{renderActiveStepForm()}</div>
+              <div className="">{renderActiveStepForm()}</div>
             </div>
           </div>
         )}

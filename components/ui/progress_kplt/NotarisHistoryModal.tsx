@@ -54,7 +54,6 @@ function getChanges(
   const changes: string[] = [];
   const allKeys = new Set([...Object.keys(current), ...Object.keys(previous)]);
 
-  // Sesuaikan field labels dengan skema Notaris
   const fieldLabels: Record<string, string> = {
     tanggal_par: "Tgl PAR",
     validasi_legal: "Validasi Legal",

@@ -116,7 +116,7 @@ export default function VerticalProgressTimeline({
                 {/* Dot timeline - 20px */}
                 <div
                   className={`relative z-10 flex-shrink-0 w-5 h-5 rounded-full transition-all ${dotColor} ${
-                    isActive ? "ring-4 ring-blue-300 " : ""
+                    isActive ? "ring-2 ring-black " : ""
                   }`}
                 />
 
