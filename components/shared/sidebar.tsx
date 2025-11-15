@@ -3,7 +3,15 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { Home, MapPin, FileText, User, X, TimerIcon } from "lucide-react"; // Tambahkan ikon X
+import {
+  Home,
+  MapPin,
+  FileText,
+  User,
+  X,
+  TimerIcon,
+  MapPinned,
+} from "lucide-react"; // Tambahkan ikon X
 import Image from "next/image";
 import { LogoutButton } from "../ui/logout-button"; // Sesuaikan path jika perlu
 import { useSidebar } from "@/hooks/useSidebar";
@@ -13,6 +21,11 @@ import { useUser } from "@/hooks/useUser";
 const menu = [
   { name: "Dashboard", href: "/dashboard", icon: <Home size={20} /> },
   { name: "Usulan Lokasi", href: "/usulan_lokasi", icon: <MapPin size={20} /> },
+  {
+    name: "Usulan Lokasi Eksternal",
+    href: "/ulok_eksternal",
+    icon: <MapPinned size={20} />,
+  },
   { name: "Form KPLT", href: "/form_kplt", icon: <FileText size={20} /> },
   {
     name: "Progress KPLT",
