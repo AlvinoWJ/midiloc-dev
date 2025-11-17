@@ -334,7 +334,9 @@ export default function DetailUlokEksternalLayout({
           {/* Penugasan */}
           {!loadingUser &&
             user &&
-            user.position_nama === "regional manager" && (
+            user.position_nama === "regional manager" &&
+            ulok.status_ulok_eksternal !== "OK" &&
+            ulok.status_ulok_eksternal !== "NOK" && (
               <DetailCard
                 title="Penugasan"
                 icon={<Briefcase className="w-5 h-5 text-red-500" />}
@@ -372,7 +374,9 @@ export default function DetailUlokEksternalLayout({
           {!loadingUser &&
             user &&
             (user.position_nama === "branch manager" ||
-              user.position_nama === "location manager") && (
+              user.position_nama === "location manager") &&
+            ulok.status_ulok_eksternal !== "OK" &&
+            ulok.status_ulok_eksternal !== "NOK" && (
               <DetailCard
                 title="Penugasan"
                 icon={<Briefcase className="w-5 h-5 text-red-500" />}
@@ -524,13 +528,6 @@ export default function DetailUlokEksternalLayout({
                   value={ulok.penanggungjawab.nama}
                 />
               )}
-
-              {/* {ulok.penanggungjawab && (
-                <InfoItem
-                  label="PenanggungJawab"
-                  value={ulok.penanggungjawab.nama}
-                />
-              )} */}
             </div>
           </DetailCard>
         </div>
