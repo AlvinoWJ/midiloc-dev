@@ -67,8 +67,8 @@ export async function GET(request: Request) {
       "created_at",
       "branch_id",
       "penanggungjawab",
-      "branch_id(id,nama)",
-      "penanggungjawab (id,nama)" // relasi ke tabel branch, ambil kolom nama
+      "alamat",
+      "nama_pemilik" // relasi ke tabel branch, ambil kolom nama
     ].join(",");
 
     let query = supabase

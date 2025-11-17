@@ -153,25 +153,15 @@ export default function UlokEksternalLayout(props: UlokEksternalPageProps) {
         ) : (
           <div className="space-y-6 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-6 min-h-[23rem]">
             {filteredUlok.map((ulok) => (
-              // ===== 4. PERUBAHAN DI SINI =====
-              // Menyesuaikan props InfoCard dengan data yang ada
               <InfoCard
                 key={ulok.id}
                 id={ulok.id}
-                // Karena 'nama_ulok' tidak ada, kita gunakan Penanggung Jawab atau ID
-                nama={
-                  ulok.penanggungjawab?.nama ||
-                  ulok.branch_id?.nama ||
-                  "Data Eksternal"
-                }
-                // Karena 'alamat' tidak ada, kita gunakan nama Branch
-                alamat={ulok.branch_id?.nama || "Lokasi belum ditentukan"}
+                nama={ulok.nama_pemilik || "Data Eksternal"}
+                alamat={ulok.alamat || "Lokasi belum ditentukan"}
                 created_at={ulok.created_at}
-                // Menggunakan 'status_ulok_eksternal'
                 status={ulok.status_ulok_eksternal}
-                detailPath="/ulok_eksternal/detail" // Path detail baru
+                detailPath="/ulok_eksternal/detail"
               />
-              // =================================
             ))}
           </div>
         )}
