@@ -1,8 +1,12 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useState, ChangeEvent } from "react";
+import { useUser } from "@/hooks/useUser";
+import { useAlert } from "@/components/shared/alertcontext";
+import { useBranchList } from "@/hooks/ulok_eksternal/useBranchList";
 import { UlokEksternalDetail } from "@/hooks/ulok_eksternal/useUlokEksternalDetail";
-import { UlokPageSkeleton } from "@/components/ui/skleton";
+import DetailUlokEksternalSkeleton from "@/components/ui/skleton";
 import {
   ArrowLeft,
   Loader2,
@@ -11,6 +15,7 @@ import {
   Building,
   ClipboardList,
   Camera,
+  Briefcase,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/statusbadge";
@@ -18,8 +23,8 @@ import DetailMapCard from "@/components/map/DetailMapCard";
 import Image from "next/image";
 import { format } from "date-fns";
 import { id as inLocale } from "date-fns/locale";
+import SelectBranch from "../ui/SelectBranch";
 
-// Helper untuk memformat mata uang
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat("id-ID", {
     style: "currency",
@@ -72,9 +77,54 @@ export default function DetailUlokEksternalLayout({
   isError,
 }: DetailUlokEksternalLayoutProps) {
   const router = useRouter();
+  const { user, loadingUser } = useUser();
+  const { showToast } = useAlert();
+
+  const [selectedBranch, setSelectedBranch] = useState<string>("");
+  const [isAssigning, setIsAssigning] = useState<boolean>(false);
+
+  const handleAssignBranch = async () => {
+    if (!selectedBranch || !ulok?.id) return;
+    setIsAssigning(true);
+    try {
+      const response = await fetch(
+        `/api/ulok_eksternal/${ulok.id}/assign-branch`, // Sesuai dengan API route
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ branch_id: selectedBranch }),
+        }
+      );
+
+      if (!response.ok) {
+        const err = await response.json();
+        const errorMessage = err.error || "Gagal melakukan penugasan";
+        showToast({
+          type: "error",
+          title: "Gagal",
+          message: errorMessage,
+        });
+        throw new Error(errorMessage);
+      }
+      showToast({
+        type: "success",
+        title: "Sukses",
+        message: "Branch berhasil ditugaskan!",
+      });
+      router.refresh();
+    } catch (error) {
+      showToast({
+        type: "error",
+        title: "Gagal",
+        message: error instanceof Error ? error.message : "Terjadi kesalahan",
+      });
+    } finally {
+      setIsAssigning(false);
+    }
+  };
 
   if (isLoading) {
-    return <UlokPageSkeleton />; // Pakai skeleton yang ada
+    return <DetailUlokEksternalSkeleton />; // Pakai skeleton yang ada
   }
 
   if (isError || !ulok) {
@@ -161,6 +211,44 @@ export default function DetailUlokEksternalLayout({
               <InfoItem label="Kontak Pemilik" value={ulok.kontak_pemilik} />
             </div>
           </DetailCard>
+
+          {/* Penugasan */}
+          {!loadingUser &&
+            user &&
+            user.position_nama === "regional manager" && (
+              <DetailCard
+                title="Penugasan"
+                icon={<Briefcase className="w-5 h-5 text-red-500" />}
+              >
+                <div className="space-y-4">
+                  <div>
+                    <label
+                      htmlFor="branch-select"
+                      className="text-base font-medium text-gray-700 mb-1 block"
+                    >
+                      Pilih Branch
+                    </label>
+                    <SelectBranch
+                      id="branch-select"
+                      value={selectedBranch} // Berikan ID
+                      onValueChange={setSelectedBranch} // Terima ID
+                      disabled={isAssigning} // Nonaktifkan saat mengirim
+                    />
+                  </div>
+
+                  <Button
+                    onClick={handleAssignBranch}
+                    disabled={!selectedBranch || isAssigning}
+                    className="w-full"
+                  >
+                    {isAssigning && (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )}
+                    {isAssigning ? "Menyimpan..." : "Tugaskan Branch"}
+                  </Button>
+                </div>
+              </DetailCard>
+            )}
         </div>
 
         {/* Kolom Kanan (Peta & Foto) */}

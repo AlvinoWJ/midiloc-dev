@@ -8,14 +8,8 @@ export type UlokEksternal = {
   id: string;
   status_ulok_eksternal: "In Progress" | "OK" | "NOK" | string;
   created_at: string;
-  branch_id: {
-    id: string;
-    nama: string;
-  } | null;
-  penanggungjawab: {
-    id: string;
-    nama: string;
-  } | null;
+  alamat: string;
+  nama_pemilik: string;
 };
 
 interface ApiUlokEksternalResponse {
