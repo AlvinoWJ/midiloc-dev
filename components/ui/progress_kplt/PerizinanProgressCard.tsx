@@ -14,11 +14,28 @@ import {
   History,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import CustomSelect from "@/components/ui/customselect";
 import { Input } from "@/components/ui/input";
 import { PerizinanEditableSchema } from "@/lib/validations/perizinan";
 import { useAlert } from "@/components/shared/alertcontext";
-import { ProgressStatusCard } from "./ProgressStatusCard";
 import { PerizinanHistoryModal } from "./PerizinanHistoryModal";
+
+const formatnumeric = (value: string | number | undefined | null) => {
+  if (value === undefined || value === null || value === "") return "";
+  const numberValue =
+    typeof value === "string"
+      ? Number(value.replace(/\./g, ""))
+      : Number(value);
+  if (isNaN(numberValue)) return "";
+  return new Intl.NumberFormat("id-ID").format(numberValue);
+};
+
+const unformatnumeric = (value: string | undefined | null) => {
+  if (!value) return undefined;
+  const unformatted = value.replace(/\./g, "");
+  const numberValue = Number(unformatted);
+  return isNaN(numberValue) ? undefined : numberValue;
+};
 
 const DetailCard = ({
   title,
@@ -56,24 +73,21 @@ const FileLink = ({
 }) => {
   if (!file) {
     return (
-      <div className="flex items-center justify-between bg-gray-100 p-3 rounded-lg border">
-        <span className="text-sm text-gray-400 italic">{label} (Kosong)</span>
+      <div className="flex items-center border justify-between bg-white px-3 py-2 rounded text-sm">
+        <span className="text-gray-400 italic">{label} (Kosong)</span>
       </div>
     );
   }
   return (
-    <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border">
-      <span
-        className="text-sm text-gray-700 font-medium truncate pr-4"
-        title={file.name}
-      >
-        {label}
+    <div className="flex items-center border justify-between bg-white px-3 py-1 rounded text-sm gap-2">
+      <span className="text-gray-900 truncate flex-1 min-w-0" title={file.name}>
+        {file.name}
       </span>
       <a
         href={file.href}
         target="_blank"
         rel="noopener noreferrer"
-        className="inline-flex items-center bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-1.5 px-3 rounded-lg flex-shrink-0"
+        className="inline-flex items-center bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-1.5 px-3 rounded flex-shrink-0 whitespace-nowrap"
       >
         <LinkIcon className="w-3 h-3 mr-1.5" />
         Lihat
@@ -89,11 +103,8 @@ const FormFileInput: React.FC<{
   isFileSelected: boolean;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }> = ({ label, name, currentFile, isFileSelected, onChange }) => (
-  <div className="md:col-span-2">
-    <label
-      htmlFor={name}
-      className="block font-semibold text-base lg:text-lg mb-2"
-    >
+  <div>
+    <label htmlFor={name} className="block font-semibold text-base mb-2">
       {label}
     </label>
     {currentFile && !isFileSelected && (
@@ -113,6 +124,7 @@ interface FormProps {
   progressId: string;
   onSuccess: () => void;
   initialData?: any;
+  onDataUpdate: () => void;
   onCancelEdit?: () => void;
   filesMap: Map<string, ApiFile>;
 }
@@ -121,6 +133,7 @@ const PerizinanForm: React.FC<FormProps> = ({
   progressId,
   onSuccess,
   initialData,
+  onDataUpdate,
   onCancelEdit,
   filesMap,
 }) => {
@@ -133,24 +146,62 @@ const PerizinanForm: React.FC<FormProps> = ({
   const [fileSpk, setFileSpk] = useState<File | null>(null);
   const [fileNotaris, setFileNotaris] = useState<File | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const [displayNominalSph, setDisplayNominalSph] = useState<string>("");
+
+  const [oss, setoss] = useState<string>(initialData?.oss || "");
+  const OssOptions = ["Belum", "Selesai", "Batal"];
+
+  useEffect(() => {
+    if (initialData) {
+      setDisplayNominalSph(formatnumeric(initialData.nominal_sph));
+      setoss(initialData?.oss || "");
+    }
+  }, [initialData]);
+
+  const handleOssChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setoss(e.target.value);
+  };
+
+  const handleNumericInputChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    setter: React.Dispatch<React.SetStateAction<string>>
+  ) => {
+    const { value } = e.target;
+    const rawValue = value.replace(/\./g, "");
+    if (!/^\d*$/.test(rawValue)) return;
+
+    setter(formatnumeric(rawValue));
+  };
+
+  const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
 
     const formData = new FormData(e.currentTarget);
+
     if (fileSph) formData.append("file_sph", fileSph);
     if (fileSt) formData.append("file_bukti_st", fileSt);
     if (fileDenah) formData.append("file_denah", fileDenah);
     if (fileSpk) formData.append("file_spk", fileSpk);
     if (fileNotaris) formData.append("file_rekom_notaris", fileNotaris);
 
+    formData.append("oss", oss);
+
+    const nominalSphUnformatted = unformatnumeric(displayNominalSph);
+    formData.set(
+      "nominal_sph",
+      nominalSphUnformatted !== undefined ? String(nominalSphUnformatted) : ""
+    );
+
     const payload = {
+      oss: oss || undefined,
+      tgl_oss: formData.get("tgl_oss"),
       tgl_sph: formData.get("tgl_sph") || undefined,
       tgl_st_berkas: formData.get("tgl_st_berkas") || undefined,
       tgl_gambar_denah: formData.get("tgl_gambar_denah") || undefined,
       tgl_spk: formData.get("tgl_spk") || undefined,
       tgl_rekom_notaris: formData.get("tgl_rekom_notaris") || undefined,
-      nominal_sph: Number(formData.get("nominal_sph")) || undefined,
+      nominal_sph: nominalSphUnformatted,
     };
     const parsed = PerizinanEditableSchema.partial().safeParse(payload);
 
@@ -172,6 +223,7 @@ const PerizinanForm: React.FC<FormProps> = ({
 
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Gagal menyimpan data");
+      onDataUpdate();
       showToast({
         type: "success",
         message: `Data Perizinan berhasil di${
@@ -190,82 +242,142 @@ const PerizinanForm: React.FC<FormProps> = ({
     <DetailCard
       title="Perizinan"
       icon={<FileText className="text-blue-500 mr-3" size={20} />}
-      className="mt-10"
     >
-      <form
-        onSubmit={handleSubmit}
-        className="grid grid-cols-1 md:grid-cols-2 gap-4"
-      >
-        {[
-          ["tgl_sph", "Tanggal SPH"],
-          ["tgl_st_berkas", "Tanggal ST"],
-          ["tgl_gambar_denah", "Tanggal Denah"],
-          ["tgl_spk", "Tanggal SPK"],
-          ["tgl_rekom_notaris", "Tanggal Rekom Notaris"],
-        ].map(([name, label]) => (
-          <div key={name}>
-            <label htmlFor={name} className="block font-semibold mb-2">
-              {label}
+      <form onSubmit={handleSave} className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label htmlFor="tgl_oss" className="block font-semibold mb-2">
+              Tanggal OSS
             </label>
             <Input
-              id={name}
-              name={name}
+              id="tgl_oss"
+              name="tgl_oss"
               type="date"
-              defaultValue={initialData?.[name] || ""}
+              defaultValue={initialData?.tgl_oss || ""}
+              className="[&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-3 [&::-webkit-calendar-picker-indicator]:cursor-pointer pr-10"
             />
           </div>
-        ))}
-
+          <CustomSelect
+            id="oss"
+            name="oss"
+            label="OSS"
+            placeholder="Pilih Status"
+            value={oss}
+            options={OssOptions}
+            onChange={handleOssChange}
+          />
+          <div>
+            <label htmlFor="tgl_sph" className="block font-semibold mb-2">
+              Tanggal SPH
+            </label>
+            <Input
+              id="tgl_sph"
+              name="tgl_sph"
+              type="date"
+              defaultValue={initialData?.tgl_sph || ""}
+            />
+          </div>
+          <FormFileInput
+            label="File SPH"
+            name="file_sph"
+            currentFile={filesMap.get("file_sph")}
+            isFileSelected={!!fileSph}
+            onChange={(e) => setFileSph(e.target.files?.[0] || null)}
+          />
+          <div>
+            <label htmlFor="tgl_st_berkas" className="block font-semibold mb-2">
+              Tanggal ST
+            </label>
+            <Input
+              id="tgl_st_berkas"
+              name="tgl_st_berkas"
+              type="date"
+              defaultValue={initialData?.tgl_st_berkas || ""}
+            />
+          </div>
+          <FormFileInput
+            label="File Bukti ST"
+            name="file_bukti_st"
+            currentFile={filesMap.get("file_bukti_st")}
+            isFileSelected={!!fileSt}
+            onChange={(e) => setFileSt(e.target.files?.[0] || null)}
+          />
+          <div>
+            <label
+              htmlFor="tgl_gambar_denah"
+              className="block font-semibold mb-2"
+            >
+              Tanggal Denah
+            </label>
+            <Input
+              id="tgl_gambar_denah"
+              name="tgl_gambar_denah"
+              type="date"
+              defaultValue={initialData?.tgl_gambar_denah || ""}
+            />
+          </div>
+          <FormFileInput
+            label="File Denah"
+            name="file_denah"
+            currentFile={filesMap.get("file_denah")}
+            isFileSelected={!!fileDenah}
+            onChange={(e) => setFileDenah(e.target.files?.[0] || null)}
+          />
+          <div>
+            <label htmlFor="tgl_spk" className="block font-semibold mb-2">
+              Tanggal SPK
+            </label>
+            <Input
+              id="tgl_spk"
+              name="tgl_spk"
+              type="date"
+              defaultValue={initialData?.tgl_spk || ""}
+            />
+          </div>
+          <FormFileInput
+            label="File SPK"
+            name="file_spk"
+            currentFile={filesMap.get("file_spk")}
+            isFileSelected={!!fileSpk}
+            onChange={(e) => setFileSpk(e.target.files?.[0] || null)}
+          />
+          <div>
+            <label
+              htmlFor="tgl_rekom_notaris"
+              className="block font-semibold mb-2"
+            >
+              Tanggal Rekom Notaris
+            </label>
+            <Input
+              id="tgl_rekom_notaris"
+              name="tgl_rekom_notaris"
+              type="date"
+              defaultValue={initialData?.tgl_rekom_notaris || ""}
+            />
+          </div>
+          <FormFileInput
+            label="File Rekom Notaris"
+            name="file_rekom_notaris"
+            currentFile={filesMap.get("file_rekom_notaris")}
+            isFileSelected={!!fileNotaris}
+            onChange={(e) => setFileNotaris(e.target.files?.[0] || null)}
+          />
+        </div>
         <div>
           <label htmlFor="nominal_sph" className="block font-semibold mb-2">
-            Biaya Perizinan (Rp)
+            Nominal SPH (Rp)
           </label>
           <Input
             id="nominal_sph"
             name="nominal_sph"
-            type="number"
-            defaultValue={initialData?.nominal_sph || ""}
+            inputMode="numeric"
+            value={displayNominalSph}
+            onChange={(e) => handleNumericInputChange(e, setDisplayNominalSph)}
+            placeholder="Masukkan nominal sph"
           />
         </div>
 
-        {/* Input File */}
-        <FormFileInput
-          label="File SPH"
-          name="file_sph"
-          currentFile={filesMap.get("file_sph")}
-          isFileSelected={!!fileSph}
-          onChange={(e) => setFileSph(e.target.files?.[0] || null)}
-        />
-        <FormFileInput
-          label="File Bukti ST"
-          name="file_bukti_st"
-          currentFile={filesMap.get("file_bukti_st")}
-          isFileSelected={!!fileSt}
-          onChange={(e) => setFileSt(e.target.files?.[0] || null)}
-        />
-        <FormFileInput
-          label="File Denah"
-          name="file_denah"
-          currentFile={filesMap.get("file_denah")}
-          isFileSelected={!!fileDenah}
-          onChange={(e) => setFileDenah(e.target.files?.[0] || null)}
-        />
-        <FormFileInput
-          label="File SPK"
-          name="file_spk"
-          currentFile={filesMap.get("file_spk")}
-          isFileSelected={!!fileSpk}
-          onChange={(e) => setFileSpk(e.target.files?.[0] || null)}
-        />
-        <FormFileInput
-          label="File Rekom Notaris"
-          name="file_rekom_notaris"
-          currentFile={filesMap.get("file_rekom_notaris")}
-          isFileSelected={!!fileNotaris}
-          onChange={(e) => setFileNotaris(e.target.files?.[0] || null)}
-        />
-
-        <div className="md:col-span-2 flex justify-end gap-3 mt-6">
+        <div className="flex justify-end gap-3 mt-6">
           {onCancelEdit && (
             <Button
               variant="default"
@@ -296,8 +408,14 @@ const PerizinanForm: React.FC<FormProps> = ({
   );
 };
 
-const PerizinanProgressCard: React.FC<{ progressId: string }> = ({
+interface PerizinanProgressCardProps {
+  progressId: string;
+  onDataUpdate: () => void;
+}
+
+const PerizinanProgressCard: React.FC<PerizinanProgressCardProps> = ({
   progressId,
+  onDataUpdate,
 }) => {
   const { data, loading, error, refetch } = usePerizinanProgress(progressId);
   const {
@@ -308,7 +426,8 @@ const PerizinanProgressCard: React.FC<{ progressId: string }> = ({
   } = useFile("perizinan", progressId);
 
   const [isEditing, setIsEditing] = useState(false);
-  const [isSubmittingApproval, setIsSubmittingApproval] = useState(false);
+  const [isSubmittingApprove, setIsSubmittingApprove] = useState(false);
+  const [isSubmittingReject, setIsSubmittingReject] = useState(false);
 
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const { showToast, showConfirmation } = useAlert();
@@ -322,42 +441,71 @@ const PerizinanProgressCard: React.FC<{ progressId: string }> = ({
         })
       : "-";
 
-  useEffect(() => {
-    // Refetch ulang setiap kali halaman dibuka ulang
-    refetch();
-    refreshFiles();
-  }, [progressId]);
+  const handleFinalizeIT = async (status: "Selesai" | "Batal") => {
+    const actionText = status === "Selesai" ? "submit" : "batalkan";
+    const actionTitle = status === "Selesai" ? "Submit" : "Pembatalan";
+    const confirmText = status === "Selesai" ? "Ya, Submit" : "Ya, Batalkan";
 
-  const handleSubmitApproval = async () => {
-    const confirmed = await showConfirmation({
-      title: "Konfirmasi Approval Perizinan",
-      message: "Apakah Anda yakin ingin submit data ini?",
-      confirmText: "Ya, Submit",
+    const isConfirmed = await showConfirmation({
+      title: `Konfirmasi ${actionTitle} Perizinan`,
+      message: `Apakah Anda yakin ingin ${actionText} Perizinan ini? Data yang sudah di-${actionText} tidak dapat diubah kembali.`,
+      confirmText: confirmText,
       type: "warning",
     });
-    if (!confirmed) return;
-    setIsSubmittingApproval(true);
+
+    if (!isConfirmed) return;
+
+    if (status === "Selesai") {
+      setIsSubmittingApprove(true);
+    } else {
+      setIsSubmittingReject(true);
+    }
+
     try {
+      const apiStatus = status.toLowerCase() as "selesai" | "batal";
       const res = await fetch(
         `/api/progress/${progressId}/perizinan/approval`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ final_status_perizinan: "selesai" }),
+          body: JSON.stringify({ final_status_perizinan: apiStatus }),
         }
       );
+
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Gagal submit");
+
+      if (!res.ok) {
+        const errorMsg =
+          json.detail || json.error || "Gagal melakukan " + actionText;
+        let errorTitle = "Gagal";
+
+        if (errorMsg.includes("Required fields missing")) {
+          errorTitle = "Data Belum Lengkap";
+        } else if (errorMsg.includes("already finalized")) {
+          errorTitle = "Sudah Final";
+        }
+
+        showToast({
+          type: "error",
+          title: errorTitle,
+          message: errorMsg,
+        });
+        return;
+      }
+      onDataUpdate();
       showToast({
         type: "success",
-        message: "Perizinan berhasil disubmit.",
+        message: `Perizinan berhasil di-${actionText}.`,
       });
       await refetch();
-      await refreshFiles();
     } catch (err: any) {
-      showToast({ type: "error", message: err.message });
+      showToast({
+        type: "error",
+        message: err.message || `Gagal melakukan ${actionText}.`,
+      });
     } finally {
-      setIsSubmittingApproval(false);
+      setIsSubmittingApprove(false);
+      setIsSubmittingReject(false);
     }
   };
 
@@ -378,12 +526,6 @@ const PerizinanProgressCard: React.FC<{ progressId: string }> = ({
   if (!data || isEditing)
     return (
       <div className="w-full ">
-        <ProgressStatusCard
-          title="Perizinan"
-          status={data?.final_status_perizinan}
-          startDate={data?.created_at}
-          endDate={data?.tgl_selesai_perizinan}
-        />
         <PerizinanForm
           progressId={progressId}
           onSuccess={async () => {
@@ -392,6 +534,7 @@ const PerizinanProgressCard: React.FC<{ progressId: string }> = ({
             setIsEditing(false);
           }}
           initialData={data}
+          onDataUpdate={onDataUpdate}
           onCancelEdit={isEditing ? () => setIsEditing(false) : undefined}
           filesMap={filesMap}
         />
@@ -404,16 +547,9 @@ const PerizinanProgressCard: React.FC<{ progressId: string }> = ({
 
   return (
     <div className="w-full ">
-      <ProgressStatusCard
-        title="Perizinan"
-        status={data.final_status_perizinan}
-        startDate={data.created_at}
-        endDate={data.tgl_selesai_perizinan}
-      />
       <DetailCard
         title="Perizinan"
         icon={<FileText className="text-blue-500 mr-3" size={20} />}
-        className="mt-10"
         actions={
           <Button
             variant="default"
@@ -426,76 +562,125 @@ const PerizinanProgressCard: React.FC<{ progressId: string }> = ({
           </Button>
         }
       >
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <h3 className="font-semibold mb-2">Tanggal SPH</h3>
-            <div className="bg-gray-100 px-4 py-2 rounded-md">
-              {formatDate(data.tgl_sph)}
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <h3 className="font-semibold mb-2">Tanggal OSS</h3>
+              <div className="bg-gray-100 px-4 py-2 rounded-md">
+                {formatDate(data.tgl_oss)}
+              </div>
             </div>
-          </div>
-          <div>
-            <h3 className="font-semibold mb-2">Tanggal ST</h3>
-            <div className="bg-gray-100 px-4 py-2 rounded-md">
-              {formatDate(data.tgl_st_berkas)}
+            <div>
+              <h3 className="font-semibold mb-2">OSS</h3>
+              <div className="bg-gray-100 px-4 py-2 rounded-md">
+                {data.oss || "-"}
+              </div>
             </div>
-          </div>
-          <div>
-            <h3 className="font-semibold mb-2">Tanggal Denah</h3>
-            <div className="bg-gray-100 px-4 py-2 rounded-md">
-              {formatDate(data.tgl_gambar_denah)}
+            <div>
+              <h3 className="font-semibold mb-2">Tanggal SPH</h3>
+              <div className="bg-gray-100 px-4 py-2 rounded-md">
+                {formatDate(data.tgl_sph)}
+              </div>
             </div>
-          </div>
-          <div>
-            <h3 className="font-semibold mb-2">Tanggal SPK</h3>
-            <div className="bg-gray-100 px-4 py-2 rounded-md">
-              {formatDate(data.tgl_spk)}
-            </div>
-          </div>
-          <div>
-            <h3 className="font-semibold mb-2">Tanggal Rekom Notaris</h3>
-            <div className="bg-gray-100 px-4 py-2 rounded-md">
-              {formatDate(data.tgl_rekom_notaris)}
-            </div>
-          </div>
-          <div>
-            <h3 className="font-semibold mb-2">Nominal SPH (Rp)</h3>
-            <div className="bg-gray-100 px-4 py-2 rounded-md">
-              Rp {data.nominal_sph?.toLocaleString("id-ID") || "-"}
-            </div>
-          </div>
-          <div className="md:col-span-2">
-            <h3 className="font-semibold mb-2">Dokumen</h3>
-            <div className="space-y-3">
+            <div>
+              <h3 className="font-semibold mb-2">File SPH</h3>
               <FileLink label="File SPH" file={filesMap.get("file_sph")} />
+            </div>
+            <div>
+              <h3 className="font-semibold mb-2">Tanggal ST</h3>
+              <div className="bg-gray-100 px-4 py-2 rounded-md">
+                {formatDate(data.tgl_st_berkas)}
+              </div>
+            </div>
+            <div>
+              <h3 className="font-semibold mb-2">File Bukti ST</h3>
               <FileLink
                 label="File Bukti ST"
                 file={filesMap.get("file_bukti_st")}
               />
+            </div>
+            <div>
+              <h3 className="font-semibold mb-2">Tanggal Denah</h3>
+              <div className="bg-gray-100 px-4 py-2 rounded-md">
+                {formatDate(data.tgl_gambar_denah)}
+              </div>
+            </div>
+            <div>
+              <h3 className="font-semibold mb-2">File Denah</h3>
               <FileLink label="File Denah" file={filesMap.get("file_denah")} />
+            </div>
+            <div>
+              <h3 className="font-semibold mb-2">Tanggal SPK</h3>
+              <div className="bg-gray-100 px-4 py-2 rounded-md">
+                {formatDate(data.tgl_spk)}
+              </div>
+            </div>
+            <div>
+              <h3 className="font-semibold mb-2">File SPK</h3>
               <FileLink label="File SPK" file={filesMap.get("file_spk")} />
+            </div>
+            <div>
+              <h3 className="font-semibold mb-2">Tanggal Rekom Notaris</h3>
+              <div className="bg-gray-100 px-4 py-2 rounded-md">
+                {formatDate(data.tgl_rekom_notaris)}
+              </div>
+            </div>
+            <div>
+              <h3 className="font-semibold mb-2">File Rekom Notaris</h3>
               <FileLink
                 label="File Rekom Notaris"
                 file={filesMap.get("file_rekom_notaris")}
               />
             </div>
           </div>
+
+          {/* Row 6: Nominal SPH (Full Width) */}
+          <div>
+            <h3 className="font-semibold mb-2">Nominal SPH</h3>
+            <div className="bg-gray-100 px-4 py-2 rounded-md">
+              Rp {data.nominal_sph?.toLocaleString("id-ID") || "-"}
+            </div>
+          </div>
         </div>
+
         {!isFinalized && (
-          <div className="flex justify-end gap-3 mt-8">
-            <Button variant="default" onClick={() => setIsEditing(true)}>
+          <div className="flex gap-3 mt-6">
+            {/* Tombol Edit */}
+            <Button
+              variant="secondary"
+              onClick={() => setIsEditing(true)}
+              disabled={isSubmittingApprove || isSubmittingReject}
+              className="mr-auto"
+            >
               <Pencil className="mr-2" size={16} /> Edit
             </Button>
+
+            {/* Tombol Batal */}
+            <Button
+              variant="default"
+              onClick={() => handleFinalizeIT("Batal")}
+              disabled={isSubmittingApprove || isSubmittingReject}
+            >
+              {isSubmittingReject ? (
+                <Loader2 className="animate-spin mr-2" size={16} />
+              ) : (
+                <XCircle className="mr-2" size={16} />
+              )}
+              Batal
+            </Button>
+
+            {/* Tombol Submit */}
             <Button
               type="submit"
               variant="submit"
-              onClick={handleSubmitApproval}
-              disabled={isSubmittingApproval}
+              onClick={() => handleFinalizeIT("Selesai")}
+              disabled={isSubmittingApprove || isSubmittingReject}
             >
-              {isSubmittingApproval ? (
+              {isSubmittingApprove ? (
                 <Loader2 className="animate-spin" size={16} />
               ) : (
                 <CheckCircle className="mr-2" size={16} />
-              )}{" "}
+              )}
               Submit
             </Button>
           </div>

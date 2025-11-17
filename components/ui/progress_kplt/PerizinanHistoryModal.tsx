@@ -235,6 +235,11 @@ const HistoryDetailView: React.FC<{
         {/* Data Fields */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <DetailField
+            label="Tanggal OSS"
+            value={formatDateOnly(data.tgl_oss)}
+          />
+          <DetailField label="OSS" value={data.oss} />
+          <DetailField
             label="Tanggal SPH"
             value={formatDateOnly(data.tgl_sph)}
           />

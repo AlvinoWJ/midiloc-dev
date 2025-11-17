@@ -15,7 +15,6 @@ import { Input } from "@/components/ui/input";
 import CustomSelect from "@/components/ui/customselect";
 import { GOEditableSchema } from "@/lib/validations/grand_opening";
 import { useAlert } from "@/components/shared/alertcontext";
-import { ProgressStatusCard } from "./ProgressStatusCard";
 
 // DetailCard (Helper)
 const DetailCard = ({
@@ -50,6 +49,7 @@ interface FormProps {
   progressId: string;
   onSuccess: () => void;
   initialData?: any;
+  onDataUpdate: () => void;
   onCancelEdit?: () => void;
 }
 
@@ -57,12 +57,12 @@ const GrandOpeningForm: React.FC<FormProps> = ({
   progressId,
   onSuccess,
   initialData,
+  onDataUpdate,
   onCancelEdit,
 }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { showToast } = useAlert();
 
-  // Opsi untuk dropdown
   const statusOptions = ["Belum", "Selesai", "Batal"];
 
   const [rekomGoVendor, setRekomGoVendor] = useState<string>(
@@ -101,7 +101,9 @@ const GrandOpeningForm: React.FC<FormProps> = ({
       });
 
       const json = await res.json();
+
       if (!res.ok) throw new Error(json.error || "Gagal menyimpan data");
+      onDataUpdate();
       showToast({
         type: "success",
         message: `Data Grand Opening berhasil di${
@@ -120,7 +122,6 @@ const GrandOpeningForm: React.FC<FormProps> = ({
     <DetailCard
       title="Grand Opening"
       icon={<PartyPopper className="text-green-500 mr-3" size={20} />}
-      className="mt-10"
     >
       <form
         onSubmit={handleSubmit}
@@ -197,7 +198,6 @@ const GrandOpeningForm: React.FC<FormProps> = ({
   );
 };
 
-// Komponen Read-Only
 const DetailField: React.FC<{ label: string; value: React.ReactNode }> = ({
   label,
   value,
@@ -210,9 +210,14 @@ const DetailField: React.FC<{ label: string; value: React.ReactNode }> = ({
   </div>
 );
 
-// Komponen Utama
-const GrandOpeningProgressCard: React.FC<{ progressId: string }> = ({
+interface GrandOpeningProgressCardProps {
+  progressId: string;
+  onDataUpdate: () => void;
+}
+
+const GrandOpeningProgressCard: React.FC<GrandOpeningProgressCardProps> = ({
   progressId,
+  onDataUpdate,
 }) => {
   const { data, loading, error, refetch } = useGrandOpeningProgress(progressId);
 
@@ -233,9 +238,9 @@ const GrandOpeningProgressCard: React.FC<{ progressId: string }> = ({
     refetch();
   }, [progressId]);
 
-  const handleSubmitApproval = async () => {
+  const handleFinalizeGO = async () => {
     const confirmed = await showConfirmation({
-      title: "Konfirmasi Approval Grand Opening",
+      title: "Konfirmasi submit Grand Opening",
       message: "Apakah Anda yakin ingin submit data ini?",
       confirmText: "Ya, Submit",
       type: "warning",
@@ -253,13 +258,19 @@ const GrandOpeningProgressCard: React.FC<{ progressId: string }> = ({
       );
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Gagal submit");
+      onDataUpdate();
       showToast({
         type: "success",
+        title: "Berhasil melakukan Submit",
         message: "Grand Opening berhasil disubmit.",
       });
       await refetch();
     } catch (err: any) {
-      showToast({ type: "error", message: err.message });
+      showToast({
+        type: "error",
+        title: "Gagal melakukan Submit",
+        message: "Terdapat kolom yang kosong atau belum selesai",
+      });
     } finally {
       setIsSubmittingApproval(false);
     }
@@ -282,12 +293,6 @@ const GrandOpeningProgressCard: React.FC<{ progressId: string }> = ({
   if (!data || isEditing)
     return (
       <div className="w-full w-full">
-        <ProgressStatusCard
-          title="Grand Opening"
-          status={data?.final_status_go}
-          startDate={data?.created_at}
-          endDate={data?.tgl_selesai_go}
-        />
         <GrandOpeningForm
           progressId={progressId}
           onSuccess={async () => {
@@ -295,6 +300,7 @@ const GrandOpeningProgressCard: React.FC<{ progressId: string }> = ({
             setIsEditing(false);
           }}
           initialData={data}
+          onDataUpdate={onDataUpdate}
           onCancelEdit={isEditing ? () => setIsEditing(false) : undefined}
         />
       </div>
@@ -305,43 +311,36 @@ const GrandOpeningProgressCard: React.FC<{ progressId: string }> = ({
 
   return (
     <div className="w-full w-full">
-      <ProgressStatusCard
-        title="Grand Opening"
-        status={data.final_status_go}
-        startDate={data.created_at}
-        endDate={data.tgl_selesai_go}
-      />
       <DetailCard
         title="Grand Opening"
         icon={<PartyPopper className="text-green-500" size={20} />}
-        className="mt-10"
-        // Tidak ada `actions` prop untuk tombol Riwayat
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <DetailField
-            label="Rekomendasi GO Vendor"
-            value={data.rekom_go_vendor}
+            label="Tanggal Grand Opening"
+            value={formatDate(data.tgl_go)}
           />
+
           <DetailField
             label="Tanggal Rekom GO Vendor"
             value={formatDate(data.tgl_rekom_go_vendor)}
           />
           <div className="md:col-span-2">
             <DetailField
-              label="Tanggal Grand Opening"
-              value={formatDate(data.tgl_go)}
+              label="Rekomendasi GO Vendor"
+              value={data.rekom_go_vendor}
             />
           </div>
         </div>
         {!isFinalized && (
-          <div className="flex justify-end gap-3 mt-8">
-            <Button variant="default" onClick={() => setIsEditing(true)}>
+          <div className="flex justify-between items-center mt-8">
+            <Button variant="secondary" onClick={() => setIsEditing(true)}>
               <Pencil className="mr-2" size={16} /> Edit
             </Button>
             <Button
               type="submit"
               variant="submit"
-              onClick={handleSubmitApproval}
+              onClick={handleFinalizeGO}
               disabled={isSubmittingApproval}
             >
               {isSubmittingApproval ? (

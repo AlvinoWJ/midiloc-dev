@@ -19,7 +19,6 @@ import { Input } from "@/components/ui/input";
 import CustomSelect from "@/components/ui/customselect";
 import { NotarisEditableSchema } from "@/lib/validations/notaris";
 import { useAlert } from "@/components/shared/alertcontext";
-import { ProgressStatusCard } from "./ProgressStatusCard";
 import { NotarisHistoryModal } from "./NotarisHistoryModal";
 
 // DetailCard (Helper)
@@ -119,6 +118,7 @@ interface FormProps {
   progressId: string;
   onSuccess: () => void;
   initialData?: any;
+  onDataUpdate: () => void;
   onCancelEdit?: () => void;
   filesMap: Map<string, ApiFile>;
 }
@@ -128,13 +128,13 @@ const NotarisForm: React.FC<FormProps> = ({
   onSuccess,
   initialData,
   onCancelEdit,
+  onDataUpdate,
   filesMap,
 }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { showToast } = useAlert();
   const [fileParOnline, setFileParOnline] = useState<File | null>(null);
 
-  // Opsi untuk dropdown
   const statusOptions = ["Belum", "Selesai", "Batal"];
 
   const [validasiLegal, setValidasiLegal] = useState<string>(
@@ -147,14 +147,13 @@ const NotarisForm: React.FC<FormProps> = ({
     initialData?.status_pembayaran || ""
   );
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
 
     const formData = new FormData(e.currentTarget);
     if (fileParOnline) formData.append("par_online", fileParOnline);
 
-    // Tambahkan nilai dari state select
     formData.append("validasi_legal", validasiLegal);
     formData.append("status_notaris", statusNotaris);
     formData.append("status_pembayaran", statusPembayaran);
@@ -190,6 +189,7 @@ const NotarisForm: React.FC<FormProps> = ({
 
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Gagal menyimpan data");
+      onDataUpdate();
       showToast({
         type: "success",
         message: `Data Notaris berhasil di${
@@ -208,20 +208,11 @@ const NotarisForm: React.FC<FormProps> = ({
     <DetailCard
       title="Notaris"
       icon={<Briefcase className="text-purple-500 mr-3" size={20} />}
-      className="mt-10"
     >
       <form
-        onSubmit={handleSubmit}
+        onSubmit={handleSave}
         className="grid grid-cols-1 md:grid-cols-2 gap-4"
       >
-        <FormFileInput
-          label="PAR Online"
-          name="par_online"
-          currentFile={filesMap.get("par_online")}
-          isFileSelected={!!fileParOnline}
-          onChange={(e) => setFileParOnline(e.target.files?.[0] || null)}
-        />
-
         <div>
           <label
             htmlFor="tanggal_par"
@@ -326,6 +317,13 @@ const NotarisForm: React.FC<FormProps> = ({
             defaultValue={initialData?.tanggal_pembayaran || ""}
           />
         </div>
+        <FormFileInput
+          label="PAR Online"
+          name="par_online"
+          currentFile={filesMap.get("par_online")}
+          isFileSelected={!!fileParOnline}
+          onChange={(e) => setFileParOnline(e.target.files?.[0] || null)}
+        />
 
         <div className="md:col-span-2 flex justify-end gap-3 mt-6">
           {onCancelEdit && (
@@ -358,7 +356,11 @@ const NotarisForm: React.FC<FormProps> = ({
   );
 };
 
-// Komponen Read-Only
+interface NotarisProgressCardProps {
+  progressId: string;
+  onDataUpdate: () => void;
+}
+
 const DetailField: React.FC<{ label: string; value: React.ReactNode }> = ({
   label,
   value,
@@ -372,8 +374,9 @@ const DetailField: React.FC<{ label: string; value: React.ReactNode }> = ({
 );
 
 // Komponen Utama
-const NotarisProgressCard: React.FC<{ progressId: string }> = ({
+const NotarisProgressCard: React.FC<NotarisProgressCardProps> = ({
   progressId,
+  onDataUpdate,
 }) => {
   const { data, loading, error, refetch } = useNotarisProgress(progressId);
   const {
@@ -384,9 +387,11 @@ const NotarisProgressCard: React.FC<{ progressId: string }> = ({
   } = useFile("notaris", progressId);
 
   const [isEditing, setIsEditing] = useState(false);
-  const [isSubmittingApproval, setIsSubmittingApproval] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const { showToast, showConfirmation } = useAlert();
+
+  const [isSubmittingApprove, setIsSubmittingApprove] = useState(false);
+  const [isSubmittingReject, setIsSubmittingReject] = useState(false);
 
   const formatDate = (dateString?: string | null) =>
     dateString
@@ -397,38 +402,68 @@ const NotarisProgressCard: React.FC<{ progressId: string }> = ({
         })
       : "-";
 
-  useEffect(() => {
-    refetch();
-    refreshFiles();
-  }, [progressId]);
+  const handleFinalizeNotaris = async (status: "Selesai" | "Batal") => {
+    const actionText = status === "Selesai" ? "submit" : "batalkan";
+    const actionTitle = status === "Selesai" ? "Submit" : "Pembatalan";
+    const confirmText = status === "Selesai" ? "Ya, Submit" : "Ya, Batalkan";
 
-  const handleSubmitApproval = async () => {
-    const confirmed = await showConfirmation({
-      title: "Konfirmasi Approval Notaris",
-      message: "Apakah Anda yakin ingin submit data ini?",
-      confirmText: "Ya, Submit",
+    const isConfirmed = await showConfirmation({
+      title: `Konfirmasi ${actionTitle} Notaris`,
+      message: `Apakah Anda yakin ingin ${actionText} Notaris ini? Data yang sudah di-${actionText} tidak dapat diubah kembali.`,
+      confirmText: confirmText,
       type: "warning",
     });
-    if (!confirmed) return;
-    setIsSubmittingApproval(true);
+
+    if (!isConfirmed) return;
+
+    if (status === "Selesai") {
+      setIsSubmittingApprove(true);
+    } else {
+      setIsSubmittingReject(true);
+    }
+
     try {
+      const apiStatus = status.toLowerCase() as "selesai" | "batal";
       const res = await fetch(`/api/progress/${progressId}/notaris/approval`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ final_status_notaris: "selesai" }),
+        body: JSON.stringify({ final_status_notaris: apiStatus }),
       });
+
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Gagal submit");
+
+      if (!res.ok) {
+        const errorMsg =
+          json.detail || json.error || "Gagal melakukan " + actionText;
+        let errorTitle = `Gagal melakukan ${actionText}`;
+
+        if (errorMsg.includes("Required fields missing")) {
+          errorTitle = "Data Belum Lengkap";
+        } else if (errorMsg.includes("already finalized")) {
+          errorTitle = "Sudah Final";
+        }
+
+        showToast({
+          type: "error",
+          title: errorTitle,
+          message: "Terdapat kolom yang kosong atau belum selesai",
+        });
+        return;
+      }
+      onDataUpdate();
       showToast({
         type: "success",
-        message: "Notaris berhasil disubmit.",
+        message: `Perizinan berhasil di-${actionText}.`,
       });
       await refetch();
-      await refreshFiles();
     } catch (err: any) {
-      showToast({ type: "error", message: err.message });
+      showToast({
+        type: "error",
+        message: `Gagal melakukan ${actionText}.`,
+      });
     } finally {
-      setIsSubmittingApproval(false);
+      setIsSubmittingApprove(false);
+      setIsSubmittingReject(false);
     }
   };
 
@@ -449,12 +484,6 @@ const NotarisProgressCard: React.FC<{ progressId: string }> = ({
   if (!data || isEditing)
     return (
       <div className="w-full ">
-        <ProgressStatusCard
-          title="Notaris"
-          status={data?.final_status_notaris}
-          startDate={data?.created_at}
-          endDate={data?.tgl_selesai_notaris}
-        />
         <NotarisForm
           progressId={progressId}
           onSuccess={async () => {
@@ -463,6 +492,7 @@ const NotarisProgressCard: React.FC<{ progressId: string }> = ({
             setIsEditing(false);
           }}
           initialData={data}
+          onDataUpdate={onDataUpdate}
           onCancelEdit={isEditing ? () => setIsEditing(false) : undefined}
           filesMap={filesMap}
         />
@@ -475,16 +505,9 @@ const NotarisProgressCard: React.FC<{ progressId: string }> = ({
 
   return (
     <div className="w-full ">
-      <ProgressStatusCard
-        title="Notaris"
-        status={data.final_status_notaris}
-        startDate={data.created_at}
-        endDate={data.tgl_selesai_notaris}
-      />
       <DetailCard
         title="Notaris"
         icon={<Briefcase className="text-purple-500" size={20} />}
-        className="mt-10"
         actions={
           <Button
             variant="default"
@@ -532,17 +555,39 @@ const NotarisProgressCard: React.FC<{ progressId: string }> = ({
           </div>
         </div>
         {!isFinalized && (
-          <div className="flex justify-end gap-3 mt-8">
-            <Button variant="default" onClick={() => setIsEditing(true)}>
+          <div className="flex gap-3 mt-6">
+            {/* Tombol Edit */}
+            <Button
+              variant="secondary"
+              onClick={() => setIsEditing(true)}
+              disabled={isSubmittingApprove || isSubmittingReject} //
+              className="mr-auto"
+            >
               <Pencil className="mr-2" size={16} /> Edit
             </Button>
+
+            {/* Tombol Batal (Baru) */}
+            <Button
+              variant="default"
+              onClick={() => handleFinalizeNotaris("Batal")} //
+              disabled={isSubmittingApprove || isSubmittingReject} //
+            >
+              {isSubmittingReject ? ( //
+                <Loader2 className="animate-spin mr-2" size={16} />
+              ) : (
+                <XCircle className="mr-2" size={16} />
+              )}
+              Batal
+            </Button>
+
+            {/* Tombol Submit (Modifikasi) */}
             <Button
               type="submit"
               variant="submit"
-              onClick={handleSubmitApproval}
-              disabled={isSubmittingApproval}
+              onClick={() => handleFinalizeNotaris("Selesai")} //
+              disabled={isSubmittingApprove || isSubmittingReject} //
             >
-              {isSubmittingApproval ? (
+              {isSubmittingApprove ? ( //
                 <Loader2 className="animate-spin" size={16} />
               ) : (
                 <CheckCircle className="mr-2" size={16} />

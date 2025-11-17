@@ -15,6 +15,7 @@ export default function DetailProgressKpltPage() {
     progressDetail: progressData,
     isLoading: isProgressLoading,
     isError: isProgressError,
+    refetch: refetchProgressDetail,
   } = useProgressDetail(progressId);
 
   const kpltId = progressData?.progress?.kplt_id;
@@ -28,7 +29,6 @@ export default function DetailProgressKpltPage() {
   const isPageLoading = isProgressLoading || (kpltId && isFilesLoading);
 
   const currentMainStatus = progressData?.progress?.status;
-  const izinTetanggaStatus = progressData?.final_status_it;
 
   if (isPageLoading) {
     return (
@@ -56,7 +56,8 @@ export default function DetailProgressKpltPage() {
       files={files}
       isFilesError={isFilesError}
       currentMainStatus={currentMainStatus}
-      izinTetanggaStatus={izinTetanggaStatus}
+      timeline={progressData.timeline}
+      onDataUpdate={refetchProgressDetail}
     />
   );
 }

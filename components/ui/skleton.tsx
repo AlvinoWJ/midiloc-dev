@@ -577,3 +577,163 @@ export function ProgressKpltSkeleton() {
     </div>
   );
 }
+
+// ============================================================================
+// DETAIL ULOK EKSTERNA PAGE SKELETON
+// ============================================================================
+const DetailUlokEksternalSkeleton = () => {
+  return (
+    <div className="space-y-6 w-full animate-pulse">
+      {/* Header (Tombol Kembali dan Status Badge) */}
+      <div className="flex items-center justify-between gap-4">
+        <div className="h-10 w-32 bg-gray-200 rounded-lg"></div>
+        <div className="h-8 w-28 bg-gray-200 rounded-full"></div>
+      </div>
+
+      {/* Grid Konten */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Kolom Kiri */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Card Informasi Lokasi */}
+          <div className="bg-white rounded-xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)]">
+            {/* Header */}
+            <div className="border-b border-gray-200 px-6 py-4">
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 bg-gray-200 rounded"></div>
+                <div className="h-6 w-40 bg-gray-200 rounded"></div>
+              </div>
+            </div>
+            {/* Content */}
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Alamat - Full Width */}
+                <div className="md:col-span-2">
+                  <div className="h-6 w-20 bg-gray-200 rounded mb-2"></div>
+                  <div className="h-12 bg-gray-100 rounded-lg"></div>
+                </div>
+                {/* Desa/Kelurahan */}
+                <div>
+                  <div className="h-6 w-32 bg-gray-200 rounded mb-2"></div>
+                  <div className="h-12 bg-gray-100 rounded-lg"></div>
+                </div>
+                {/* Kecamatan */}
+                <div>
+                  <div className="h-6 w-28 bg-gray-200 rounded mb-2"></div>
+                  <div className="h-12 bg-gray-100 rounded-lg"></div>
+                </div>
+                {/* Kabupaten/Kota */}
+                <div>
+                  <div className="h-6 w-36 bg-gray-200 rounded mb-2"></div>
+                  <div className="h-12 bg-gray-100 rounded-lg"></div>
+                </div>
+                {/* Provinsi */}
+                <div>
+                  <div className="h-6 w-24 bg-gray-200 rounded mb-2"></div>
+                  <div className="h-12 bg-gray-100 rounded-lg"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Card Spesifikasi Objek */}
+          <div className="bg-white rounded-xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)]">
+            {/* Header */}
+            <div className="border-b border-gray-200 px-6 py-4">
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 bg-gray-200 rounded"></div>
+                <div className="h-6 w-40 bg-gray-200 rounded"></div>
+              </div>
+            </div>
+            {/* Content */}
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* 6 Items in 2 columns */}
+                {[...Array(6)].map((_, i) => (
+                  <div key={i}>
+                    <div className="h-6 w-28 bg-gray-200 rounded mb-2"></div>
+                    <div className="h-12 bg-gray-100 rounded-lg"></div>
+                  </div>
+                ))}
+                {/* Harga Sewa - Full Width */}
+                <div className="md:col-span-2">
+                  <div className="h-6 w-40 bg-gray-200 rounded mb-2"></div>
+                  <div className="h-12 bg-gray-100 rounded-lg"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Card Informasi Pemilik */}
+          <div className="bg-white rounded-xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)]">
+            {/* Header */}
+            <div className="border-b border-gray-200 px-6 py-4">
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 bg-gray-200 rounded"></div>
+                <div className="h-6 w-44 bg-gray-200 rounded"></div>
+              </div>
+            </div>
+            {/* Content */}
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Nama Pemilik */}
+                <div>
+                  <div className="h-6 w-32 bg-gray-200 rounded mb-2"></div>
+                  <div className="h-12 bg-gray-100 rounded-lg"></div>
+                </div>
+                {/* Kontak Pemilik */}
+                <div>
+                  <div className="h-6 w-32 bg-gray-200 rounded mb-2"></div>
+                  <div className="h-12 bg-gray-100 rounded-lg"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Kolom Kanan */}
+        <div className="space-y-6">
+          {/* Card Peta */}
+          <div className="bg-white rounded-xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)] overflow-hidden">
+            <div className="aspect-square bg-gray-200"></div>
+          </div>
+
+          {/* Card Foto Lokasi */}
+          <div className="bg-white rounded-xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)]">
+            {/* Header */}
+            <div className="border-b border-gray-200 px-6 py-4">
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 bg-gray-200 rounded"></div>
+                <div className="h-6 w-28 bg-gray-200 rounded"></div>
+              </div>
+            </div>
+            {/* Content */}
+            <div className="p-6">
+              <div className="aspect-video bg-gray-100 rounded-lg border border-gray-200"></div>
+            </div>
+          </div>
+
+          {/* Card Riwayat */}
+          <div className="bg-white rounded-xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)]">
+            {/* Header */}
+            <div className="border-b border-gray-200 px-6 py-4">
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 bg-gray-200 rounded"></div>
+                <div className="h-6 w-24 bg-gray-200 rounded"></div>
+              </div>
+            </div>
+            {/* Content */}
+            <div className="p-6 space-y-4">
+              {/* 3 Items */}
+              {[...Array(3)].map((_, i) => (
+                <div key={i}>
+                  <div className="h-6 w-32 bg-gray-200 rounded mb-2"></div>
+                  <div className="h-12 bg-gray-100 rounded-lg"></div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
