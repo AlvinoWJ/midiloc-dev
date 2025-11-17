@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/statusbadge";
-import DetailMapCard from "@/components/map/DetailMapCard";
+import DetailMapCard from "@/components/map/DetailMapCardUlokEksternal";
 import Image from "next/image";
 import { format } from "date-fns";
 import { id as inLocale } from "date-fns/locale";
@@ -456,6 +456,7 @@ export default function DetailUlokEksternalLayout({
           {/* Peta */}
           <div className="bg-white rounded-xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)] ">
             <DetailMapCard
+              id={ulok.id}
               latitude={ulok.latitude}
               longitude={ulok.longitude}
             />
@@ -490,7 +491,7 @@ export default function DetailUlokEksternalLayout({
                   )}
                 />
               )}
-              {ulok.updated_at && (
+              {ulok.updated_at && !ulok.approved_at && (
                 <InfoItem
                   label="Diperbarui Pada"
                   value={format(
