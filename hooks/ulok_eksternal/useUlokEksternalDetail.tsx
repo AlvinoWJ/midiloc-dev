@@ -4,7 +4,6 @@ import useSWR from "swr";
 import { swrKeys } from "@/lib/swr-keys";
 import type { AppUser } from "../useUser";
 
-// 1. Definisikan tipe data detail berdasarkan respons API Anda
 export type UlokEksternalDetail = {
   id: string;
   users_eksternal_id: string;
@@ -26,8 +25,8 @@ export type UlokEksternalDetail = {
   kontak_pemilik: string;
   created_at: string;
   updated_at: string;
-  branch_id: string; // Anda bisa membuatnya lebih detail jika perlu
-  penanggungjawab: string; // Anda bisa membuatnya lebih detail jika perlu
+  branch_id: { nama: string };
+  penanggungjawab: { nama: string };
   foto_lokasi: string;
   status_ulok_eksternal: "OK" | "NOK" | "In Progress" | string;
   approved_at: string | null;
@@ -40,16 +39,15 @@ interface ApiUlokEksternalDetailResponse {
 }
 
 export function useUlokEksternalDetail(id: string) {
-  // 3. Gunakan SWR key yang sudah kita definisikan sebelumnya
   const apiUrl = id ? swrKeys.ulokEksternalDetail(id) : null;
 
   const { data, error, isLoading, mutate } =
     useSWR<ApiUlokEksternalDetailResponse>(apiUrl);
 
   return {
-    ulokEksternalDetail: data?.data, // Mengembalikan data di dalam { data: ... }
+    ulokEksternalDetail: data?.data,
     isLoading,
     isError: error,
-    refreshData: () => mutate(),
+    mutate,
   };
 }
