@@ -96,7 +96,6 @@ export async function GET(
   const { data, error } = await supabase.rpc("fn_kplt_detail", {
     p_user_id: user.id,
     p_branch_id: user.branch_id,
-    p_position: String(user.position_nama ?? "").toLowerCase(),
     p_kplt_id: parsed.data.id,
   });
 

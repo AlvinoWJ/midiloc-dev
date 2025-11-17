@@ -109,11 +109,35 @@ export function canProgressKplt(
     [
       "location specialist",
       "location manager",
-      "senior/branch manager",
+      "senior manager",
+      "branch manager",
+      "regional manager",
       "general manager",
     ].includes(user.position_nama)
   ) {
     return action === "read";
   }
   return false;
+}
+
+export function canUlokEksternal(
+  action: "read" | "create" | "update" | "approve" | "final-approve" | "delete",
+  user: CurrentUser
+) {
+  switch (user.position_nama?.toLowerCase()) {
+    case "location specialist":
+      return action === "read" || action === "update";
+    case "location manager":
+      return action === "read" || action === "update";
+    case "branch manager":
+      return action === "read" || action === "update";
+    case "regional manager":
+      return action === "read" || action === "update";
+    case "general manager":
+      return action === "read";
+    case "admin branch":
+      return action === "read"; // membaca untuk konteks progres
+    default:
+      return false;
+  }
 }

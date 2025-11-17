@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/client";
-import { getCurrentUser, canKplt } from "@/lib/auth/acl";
+import { getCurrentUser, canProgressKplt } from "@/lib/auth/acl";
 
 // GET /api/progress-kplt?q=&status=&kplt_approval=&month=&year=&page=1&limit=10
 export async function GET(req: NextRequest) {
@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
       { status: 401 }
     );
   }
-  if (!canKplt("read", user)) {
+  if (!canProgressKplt("read", user)) {
     return NextResponse.json(
       { success: false, error: "Forbidden" },
       { status: 403 }

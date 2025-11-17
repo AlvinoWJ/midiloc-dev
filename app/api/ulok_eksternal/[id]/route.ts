@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/client";
-import { getCurrentUser, canUlok } from "@/lib/auth/acl";
+import { getCurrentUser, canUlokEksternal } from "@/lib/auth/acl";
 
 function roleFromPositionName(
   name?: string | null
@@ -26,7 +26,7 @@ export async function GET(
 
     if (!user)
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    if (!canUlok("read", user))
+    if (!canUlokEksternal("read", user))
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const positionName =
@@ -47,7 +47,7 @@ export async function GET(
 
     let query = supabase
       .from("ulok_eksternal")
-      .select("*")
+      .select("*, penanggungjawab(nama), branch_id(nama)")
       .eq("id", id)
       .limit(1);
 
