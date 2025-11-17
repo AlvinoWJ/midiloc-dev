@@ -1,10 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, ChangeEvent } from "react";
+import { useState } from "react";
 import { useUser } from "@/hooks/useUser";
 import { useAlert } from "@/components/shared/alertcontext";
-import { useBranchList } from "@/hooks/ulok_eksternal/useBranchList";
 import { UlokEksternalDetail } from "@/hooks/ulok_eksternal/useUlokEksternalDetail";
 import DetailUlokEksternalSkeleton from "@/components/ui/skleton";
 import {
@@ -24,6 +23,7 @@ import Image from "next/image";
 import { format } from "date-fns";
 import { id as inLocale } from "date-fns/locale";
 import SelectBranch from "../ui/SelectBranch";
+import SelectLocationSpecialist from "../ui/SelectLocationSpecialist";
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat("id-ID", {
@@ -69,19 +69,26 @@ type DetailUlokEksternalLayoutProps = {
   ulok: UlokEksternalDetail | null;
   isLoading: boolean;
   isError: boolean;
+  mutate: () => void;
 };
 
 export default function DetailUlokEksternalLayout({
   ulok,
   isLoading,
   isError,
+  mutate,
 }: DetailUlokEksternalLayoutProps) {
   const router = useRouter();
   const { user, loadingUser } = useUser();
   const { showToast } = useAlert();
+  const { showAlert } = useAlert();
 
   const [selectedBranch, setSelectedBranch] = useState<string>("");
   const [isAssigning, setIsAssigning] = useState<boolean>(false);
+
+  const [selectedSpecialist, setSelectedSpecialist] = useState<string>("");
+  const [isAssigningSpecialist, setIsAssigningSpecialist] =
+    useState<boolean>(false);
 
   const handleAssignBranch = async () => {
     if (!selectedBranch || !ulok?.id) return;
@@ -106,11 +113,13 @@ export default function DetailUlokEksternalLayout({
         });
         throw new Error(errorMessage);
       }
+      mutate();
       showToast({
         type: "success",
         title: "Sukses",
         message: "Branch berhasil ditugaskan!",
       });
+      router.back();
       router.refresh();
     } catch (error) {
       showToast({
@@ -120,6 +129,48 @@ export default function DetailUlokEksternalLayout({
       });
     } finally {
       setIsAssigning(false);
+    }
+  };
+
+  const handleAssignSpecialist = async () => {
+    if (!selectedSpecialist || !ulok?.id) return;
+    setIsAssigningSpecialist(true);
+    try {
+      const response = await fetch(
+        `/api/ulok_eksternal/${ulok.id}/assign-penanggungjawab`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ penanggungjawab: selectedSpecialist }),
+        }
+      );
+
+      if (!response.ok) {
+        const err = await response.json();
+        const errorMessage = err.error || "Gagal melakukan penugasan";
+        showToast({
+          type: "error",
+          title: "Gagal",
+          message: errorMessage,
+        });
+        throw new Error(errorMessage);
+      }
+      mutate();
+      showToast({
+        type: "success",
+        title: "Sukses",
+        message: "Location Specialist berhasil ditugaskan!",
+      });
+      router.back();
+      router.refresh();
+    } catch (error) {
+      showToast({
+        type: "error",
+        title: "Gagal",
+        message: error instanceof Error ? error.message : "Terjadi kesalahan",
+      });
+    } finally {
+      setIsAssigningSpecialist(false);
     }
   };
 
@@ -220,19 +271,19 @@ export default function DetailUlokEksternalLayout({
                 title="Penugasan"
                 icon={<Briefcase className="w-5 h-5 text-red-500" />}
               >
-                <div className="space-y-4">
+                <div className="space-y-6">
                   <div>
                     <label
                       htmlFor="branch-select"
-                      className="text-base font-medium text-gray-700 mb-1 block"
+                      className="text-base font-medium text-gray-900 mb-2 block"
                     >
                       Pilih Branch
                     </label>
                     <SelectBranch
                       id="branch-select"
-                      value={selectedBranch} // Berikan ID
-                      onValueChange={setSelectedBranch} // Terima ID
-                      disabled={isAssigning} // Nonaktifkan saat mengirim
+                      value={selectedBranch}
+                      onValueChange={setSelectedBranch}
+                      disabled={isAssigning}
                     />
                   </div>
 
@@ -245,6 +296,45 @@ export default function DetailUlokEksternalLayout({
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     )}
                     {isAssigning ? "Menyimpan..." : "Tugaskan Branch"}
+                  </Button>
+                </div>
+              </DetailCard>
+            )}
+          {!loadingUser &&
+            user &&
+            (user.position_nama === "branch manager" ||
+              user.position_nama === "location manager") && (
+              <DetailCard
+                title="Penugasan"
+                icon={<Briefcase className="w-5 h-5 text-red-500" />}
+              >
+                <div className="space-y-6">
+                  <div>
+                    <label
+                      htmlFor="LocationSpecialist-select"
+                      className="text-base font-medium text-gray-900 mb-2 block"
+                    >
+                      Pilih Location Specialist
+                    </label>
+                    <SelectLocationSpecialist
+                      id="LocationSpecialist-select"
+                      value={selectedSpecialist}
+                      onValueChange={setSelectedSpecialist}
+                      disabled={isAssigningSpecialist}
+                    />
+                  </div>
+
+                  <Button
+                    onClick={handleAssignSpecialist}
+                    disabled={!selectedSpecialist || isAssigningSpecialist}
+                    className="w-full"
+                  >
+                    {isAssigningSpecialist && (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )}
+                    {isAssigningSpecialist
+                      ? "Menyimpan..."
+                      : "Tugaskan Location Specialist"}
                   </Button>
                 </div>
               </DetailCard>
@@ -317,6 +407,15 @@ export default function DetailUlokEksternalLayout({
                       locale: inLocale,
                     }
                   )}
+                />
+              )}
+              {ulok.branch_id.nama && (
+                <InfoItem label="Branch" value={ulok.branch_id.nama} />
+              )}
+              {ulok.penanggungjawab && (
+                <InfoItem
+                  label="PenanggungJawab"
+                  value={ulok.penanggungjawab.nama}
                 />
               )}
             </div>
