@@ -5,6 +5,8 @@ export const invalidate = {
   me: () => mutate(swrKeys.me),
   ulok: () => mutate(swrKeys.ulok),
   ulokDetail: (id: string) => mutate(swrKeys.ulokDetail(id)),
+  ulokEksternal: () => mutate(swrKeys.ulokEksternal),
+  ulokEksternalDetail: (id: string) => mutate(swrKeys.ulokEksternalDetail(id)),
   kplt: () => mutate(swrKeys.kplt),
   kpltDetail: (id: string) => mutate(swrKeys.kpltDetail(id)),
 };
