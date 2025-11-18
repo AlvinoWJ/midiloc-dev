@@ -33,6 +33,7 @@ const REQUIRED_FIELDS_BEFORE_APPROVAL: (keyof any)[] = [
   "harga_sewa",
   "nama_pemilik",
   "kontak_pemilik",
+  "form_ulok"
   // tambahkan fields lain yang menurut Anda wajib sebelum di-approve
 ];
 
