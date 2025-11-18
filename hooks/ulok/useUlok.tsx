@@ -1,7 +1,7 @@
 "use client";
 
 import useSWR from "swr";
-import type { AppUser } from "./useUser";
+import type { AppUser } from "../useUser";
 
 export type Ulok = {
   id: string;

@@ -13,7 +13,7 @@ import {
   CalendarIcon,
 } from "@heroicons/react/24/solid";
 import { CheckCircle, XCircle, History } from "lucide-react";
-import { ApprovalDetail } from "@/hooks/useKpltDetail";
+import { ApprovalDetail } from "@/hooks/kplt/useKpltDetail";
 
 const DetailField = ({ label, value }: { label: string; value: any }) => (
   <div>

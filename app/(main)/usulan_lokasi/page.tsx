@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useMemo } from "react";
 import { useUser } from "@/hooks/useUser";
-import { useUlok } from "@/hooks/useUlok";
+import { useUlok } from "@/hooks/ulok/useUlok";
 import UlokLayout from "@/components/layout/ulok_layout";
 
 const ITEMS_PER_PAGE = 9;
