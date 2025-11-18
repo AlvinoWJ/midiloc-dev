@@ -161,28 +161,6 @@ export default function PrefillKpltCard({
               </p>
             )}
           </div>
-          <div className="space-y-4">
-            <div className="flex flex-col md:flex-row justify-between md:items-start gap-8">
-              {approvalsData && approvalsData.length > 0 && (
-                <div className="space-y-4">
-                  <div className="flex flex-col md:flex-row justify-between md:items-start gap-8">
-                    {approvalsData
-                      .sort(
-                        (a, b) =>
-                          new Date(b.approved_at).getTime() -
-                          new Date(a.approved_at).getTime()
-                      )
-                      .map((approval) => (
-                        <ApprovalLogItem
-                          key={approval.id}
-                          approval={approval}
-                        />
-                      ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
         </div>
       </div>
 

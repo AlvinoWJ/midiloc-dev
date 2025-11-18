@@ -16,6 +16,7 @@ import {
   CheckCircle,
   XCircle,
   History,
+  Loader,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { MappedKpltDetail, ApprovalDetail } from "@/hooks/kplt/useKpltDetail";

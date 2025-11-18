@@ -41,7 +41,7 @@ export default function ProgressKpltLayout({
 }: ProgressKpltLayoutProps) {
   const isFilterActive = !!searchQuery || !!filterMonth || !!filterYear;
   const currentPage = meta?.page || 1;
-  const totalPages = meta?.total_pages || 1;
+  const totalPages = meta?.totalPages || 1;
 
   const calculateProgress = (item: ProgressItem): number => {
     type ValidStatus =
@@ -177,7 +177,7 @@ export default function ProgressKpltLayout({
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-auto pt-8 ">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-auto pt-2">
           <div className="flex items-center gap-1">
             {/* Tombol halaman pertama */}
             <button

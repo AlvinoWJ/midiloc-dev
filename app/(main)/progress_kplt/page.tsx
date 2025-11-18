@@ -21,7 +21,7 @@ export default function ProgressKpltPage() {
   });
 
   const handlePageChange = (newPage: number) => {
-    if (newPage > 0 && (!meta || newPage <= meta.total_pages)) {
+    if (newPage > 0 && (!meta || newPage <= meta.totalPages)) {
       setPage(newPage);
     }
   };

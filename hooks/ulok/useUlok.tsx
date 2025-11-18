@@ -24,15 +24,34 @@ interface ApiUlokResponse {
   meta?: { user?: AppUser };
 }
 
-export function useUlok(searchQuery?: string) {
-  // Bangun URL secara dinamis
+interface UseUlokProps {
+  page?: number;
+  limit?: number;
+  search?: string;
+  month?: string;
+  year?: string;
+  activeTab?: string;
+}
+
+export function useUlok({
+  page = 1,
+  limit = 9,
+  search = "",
+  month = "",
+  year = "",
+  activeTab = "Recent",
+}: UseUlokProps = {}) {
   const createUrl = () => {
     const params = new URLSearchParams();
-    params.set("limit", "1000");
+    params.set("page", page.toString());
+    params.set("limit", limit.toString());
 
-    if (searchQuery && searchQuery.trim() !== "") {
-      params.set("search", searchQuery.trim());
+    if (search && search.trim() !== "") {
+      params.set("search", search.trim());
     }
+    if (month) params.set("month", month);
+    if (year) params.set("year", year);
+    if (activeTab) params.set("tab", activeTab);
 
     return `/api/ulok?${params.toString()}`;
   };
@@ -45,25 +64,15 @@ export function useUlok(searchQuery?: string) {
     });
 
   const hasData = !!data;
-
-  // isInitialLoading HANYA true jika:
-  // 1. SWR sedang 'isLoading' (tidak ada data stale)
-  // 2. DAN kita benar-benar tidak punya data
   const isInitialLoading = isLoading && !hasData;
-
-  // isRefreshing HANYA true jika:
-  // 1. SWR sedang 'isValidating' (me-refresh)
-  // 2. DAN kita SUDAH punya data (yang lama)
   const isRefreshing = isValidating && hasData;
 
   return {
     ulokData: data?.data ?? [],
-
     isInitialLoading: isInitialLoading,
-
+    meta: data?.pagination,
     isRefreshing: isRefreshing,
     ulokError: error,
-    meta: data?.meta,
     refreshUlok: () => mutate(),
   };
 }

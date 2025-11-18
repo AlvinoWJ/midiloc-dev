@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 
 interface ApprovalStatusPanelProps {
   currentStatus: string | null;
@@ -32,7 +33,7 @@ export function ApprovalStatusbutton({
             size="default"
             className="flex-1 md:flex-initial md:min-w-[180px] lg:min-w-[200px] h-10 md:h-10"
           >
-            {loading ? "Processing..." : "NOK"}
+            {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "NOK"}
           </Button>
           <Button
             disabled={disabled || loading}
@@ -41,7 +42,7 @@ export function ApprovalStatusbutton({
             size="default"
             className="flex-1 md:flex-initial md:min-w-[180px] lg:min-w-[200px] h-10 md:h-10"
           >
-            {loading ? "Processing..." : "OK"}
+            {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "OK"}
           </Button>
         </div>
       )}
