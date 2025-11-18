@@ -6,7 +6,7 @@ import { MapPin } from "lucide-react";
 import { Properti } from "@/types/common";
 
 interface DetailMapCardProps {
-  id: string; // ID tetap dibutuhkan untuk membuat data marker
+  id: string;
   latitude: string | null | undefined;
   longitude: string | null | undefined;
   approval_status: string;

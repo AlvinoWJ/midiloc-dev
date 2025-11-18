@@ -57,18 +57,25 @@ export interface KpltDetail {
   tanggal_approval_intip: string;
 }
 
+export interface TimelineItem {
+  step: string;
+  ui_status: "done" | "pending" | "in_progress" | string;
+  created_at: string | null;
+  finalized_at: string | null;
+}
+
 export interface ProgressData {
   id: string;
-  kplt_id: string; // ID-nya
-  status: string; // Status utama, cth: "Notaris"
+  kplt_id: string;
+  status: string;
   created_at: string;
   updated_at: string;
-  kplt: KpltDetail; // Objek KpltDetail yang di-nest
+  kplt: KpltDetail;
 }
 
 export interface ProgressDetailData {
   progress: ProgressData;
-  final_status_it: string | null;
+  timeline: TimelineItem[];
 }
 
 interface UseProgressDetailResult {
@@ -102,7 +109,8 @@ export function useProgressDetail(
 
       if (
         res.status === 404 ||
-        json.error?.toLowerCase().includes("not found")
+        (typeof json.error === "string" &&
+          json.error.toLowerCase().includes("not found"))
       ) {
         setProgressDetail(null);
         setIsLoading(false);
@@ -119,7 +127,10 @@ export function useProgressDetail(
         return;
       }
 
-      setProgressDetail(json.data);
+      setProgressDetail({
+        progress: json.data.progress,
+        timeline: json.data.timeline ?? [],
+      });
     } catch (err: any) {
       setIsError(err.message || "Terjadi kesalahan");
     } finally {

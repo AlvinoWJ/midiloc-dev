@@ -1,7 +1,7 @@
 // components/ui/progress_kplt/IzinTetanggaProgressCard.tsx
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useIzinTetanggaProgress } from "@/hooks/progress_kplt/useIzinTetanggaProgress";
 import {
   Loader2,
@@ -15,10 +15,25 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ITEditableSchema } from "@/lib/validations/izin_tetangga";
 import { useAlert } from "@/components/shared/alertcontext";
-import { ProgressStatusCard } from "./ProgressStatusCard";
 import { useFile, ApiFile } from "@/hooks/progress_kplt/useFilesProgress";
 
-// 🔸 Komponen DetailCard
+const formatnumeric = (value: string | number | undefined | null) => {
+  if (value === undefined || value === null || value === "") return "";
+  const numberValue =
+    typeof value === "string"
+      ? Number(value.replace(/\./g, ""))
+      : Number(value);
+  if (isNaN(numberValue)) return "";
+  return new Intl.NumberFormat("id-ID").format(numberValue);
+};
+
+const unformatnumeric = (value: string | undefined | null) => {
+  if (!value) return undefined;
+  const unformatted = value.replace(/\./g, "");
+  const numberValue = Number(unformatted);
+  return isNaN(numberValue) ? undefined : numberValue;
+};
+
 const DetailCard = ({
   title,
   icon,
@@ -43,7 +58,6 @@ const DetailCard = ({
   </div>
 );
 
-// 🔸 Komponen FileLink
 const FileLink = ({
   label,
   file,
@@ -85,6 +99,7 @@ interface FormProps {
   onSuccess: () => void;
   initialData?: any;
   onCancelEdit?: () => void;
+  onDataUpdate: () => void;
   currentFileIzin: ApiFile | undefined;
   currentFileBukti: ApiFile | undefined;
 }
@@ -97,13 +112,33 @@ const IzinTetanggaForm: React.FC<FormProps> = ({
   onCancelEdit,
   currentFileIzin,
   currentFileBukti,
+  onDataUpdate,
 }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { showToast } = useAlert();
   const [fileIzin, setFileIzin] = useState<File | null>(null);
   const [fileBukti, setFileBukti] = useState<File | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const [displayNominal, setDisplayNominal] = useState<string>("");
+
+  useEffect(() => {
+    if (initialData) {
+      setDisplayNominal(formatnumeric(initialData.nominal));
+    }
+  }, [initialData]);
+
+  const handleNumericInputChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    setter: React.Dispatch<React.SetStateAction<string>>
+  ) => {
+    const { value } = e.target;
+    const rawValue = value.replace(/\./g, "");
+    if (!/^\d*$/.test(rawValue)) return;
+
+    setter(formatnumeric(rawValue));
+  };
+
+  const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
 
@@ -112,9 +147,16 @@ const IzinTetanggaForm: React.FC<FormProps> = ({
     if (fileIzin) formData.append("file_izin_tetangga", fileIzin);
     if (fileBukti) formData.append("file_bukti_pembayaran", fileBukti);
 
+    const nominalUnformatted = unformatnumeric(displayNominal);
+
+    formData.set(
+      "nominal",
+      nominalUnformatted !== undefined ? String(nominalUnformatted) : ""
+    );
+
     const payload = {
       tanggal_terbit: formData.get("tanggal_terbit") || undefined,
-      nominal: Number(formData.get("nominal")) || undefined,
+      nominal: nominalUnformatted,
     };
     const parsed = ITEditableSchema.partial().safeParse(payload);
 
@@ -140,7 +182,7 @@ const IzinTetanggaForm: React.FC<FormProps> = ({
           json.detail?.[0]?.message || json.error || "Gagal menyimpan data"
         );
       }
-
+      onDataUpdate();
       showToast({
         type: "success",
         message: `Data Izin Tetangga berhasil di${
@@ -160,10 +202,9 @@ const IzinTetanggaForm: React.FC<FormProps> = ({
     <DetailCard
       title="Ijin Tetangga"
       icon={<Users className="text-red-500 mr-3" size={20} />}
-      className="mt-10"
     >
       <form
-        onSubmit={handleSubmit}
+        onSubmit={handleSave}
         className="grid grid-cols-1 md:grid-cols-2 gap-4"
       >
         {/* Input tanggal & nominal */}
@@ -181,8 +222,10 @@ const IzinTetanggaForm: React.FC<FormProps> = ({
           <Input
             id="nominal"
             name="nominal"
-            type="number"
-            defaultValue={initialData?.nominal || ""}
+            inputMode="numeric"
+            value={displayNominal}
+            onChange={(e) => handleNumericInputChange(e, setDisplayNominal)}
+            placeholder="Masukkan nominal"
           />
         </div>
 
@@ -216,7 +259,7 @@ const IzinTetanggaForm: React.FC<FormProps> = ({
           />
         </div>
 
-        <div className="md:col-span-2 flex justify-end gap-3 mt-6">
+        <div className="md:col-span-2 flex justify-end gap-3 mt-2">
           {onCancelEdit && (
             <Button
               onClick={onCancelEdit}
@@ -247,9 +290,15 @@ const IzinTetanggaForm: React.FC<FormProps> = ({
   );
 };
 
+interface IzinTetanggaProgressCardProps {
+  progressId: string;
+  onDataUpdate: () => void;
+}
+
 // 🔸 Komponen Utama
-const IzinTetanggaProgressCard: React.FC<{ progressId: string }> = ({
+const IzinTetanggaProgressCard: React.FC<IzinTetanggaProgressCardProps> = ({
   progressId,
+  onDataUpdate,
 }) => {
   const { data, loading, error, refetch } = useIzinTetanggaProgress(progressId);
   const {
@@ -259,8 +308,8 @@ const IzinTetanggaProgressCard: React.FC<{ progressId: string }> = ({
   } = useFile("izin_tetangga", progressId);
 
   const [isEditing, setIsEditing] = useState(false);
-  const [isSubmittingApproval, setIsSubmittingApproval] = useState(false);
-  const [isSubmittingBatal, setIsSubmittingBatal] = useState(false);
+  const [isSubmittingApprove, setIsSubmittingApprove] = useState(false);
+  const [isSubmittingReject, setIsSubmittingReject] = useState(false);
   const { showToast, showConfirmation } = useAlert();
 
   const fileIzinTetangga = filesMap.get("file_izin_tetangga");
@@ -280,7 +329,7 @@ const IzinTetanggaProgressCard: React.FC<{ progressId: string }> = ({
   };
 
   const handleFinalizeIT = async (status: "Selesai" | "Batal") => {
-    const actionText = status === "Selesai" ? "submit" : "membatalkan";
+    const actionText = status === "Selesai" ? "submit" : "batalkan";
     const actionTitle = status === "Selesai" ? "Submit" : "Pembatalan";
     const confirmText = status === "Selesai" ? "Ya, Submit" : "Ya, Batalkan";
 
@@ -293,48 +342,44 @@ const IzinTetanggaProgressCard: React.FC<{ progressId: string }> = ({
 
     if (!isConfirmed) return;
 
-    // Atur state loading yang sesuai
     if (status === "Selesai") {
-      setIsSubmittingApproval(true);
+      setIsSubmittingApprove(true);
     } else {
-      setIsSubmittingBatal(true);
+      setIsSubmittingReject(true);
     }
 
     try {
       const apiStatus = status.toLowerCase() as "selesai" | "batal";
       const res = await fetch(
-        `/api/progress/${progressId}/izin_tetangga/approval`, //
+        `/api/progress/${progressId}/izin_tetangga/approval`,
         {
-          method: "PATCH", //
+          method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ final_status_it: apiStatus }), //
+          body: JSON.stringify({ final_status_it: apiStatus }),
         }
       );
 
       const json = await res.json();
 
       if (!res.ok) {
-        //
         const errorMsg =
           json.detail || json.error || "Gagal melakukan " + actionText;
         let errorTitle = "Gagal";
 
-        //
         if (errorMsg.includes("Required fields missing")) {
           errorTitle = "Data Belum Lengkap";
         } else if (errorMsg.includes("already finalized")) {
-          //
           errorTitle = "Sudah Final";
         }
 
         showToast({
           type: "error",
           title: errorTitle,
-          message: errorMsg,
+          message: "Terdapat kolom yang kosong atau belum selesai",
         });
-        return; // Hentikan eksekusi jika gagal
+        return;
       }
-
+      onDataUpdate();
       showToast({
         type: "success",
         message: `Izin Tetangga berhasil di-${actionText}.`,
@@ -346,9 +391,8 @@ const IzinTetanggaProgressCard: React.FC<{ progressId: string }> = ({
         message: err.message || `Gagal melakukan ${actionText}.`,
       });
     } finally {
-      // Selalu reset kedua state
-      setIsSubmittingApproval(false);
-      setIsSubmittingBatal(false);
+      setIsSubmittingApprove(false);
+      setIsSubmittingReject(false);
     }
   };
 
@@ -369,12 +413,6 @@ const IzinTetanggaProgressCard: React.FC<{ progressId: string }> = ({
   if (!data || isEditing) {
     return (
       <div className="w-full">
-        <ProgressStatusCard
-          title="Ijin Tetangga"
-          status={data?.final_status_it}
-          startDate={data?.created_at}
-          endDate={data?.tgl_selesai_izintetangga}
-        />
         <IzinTetanggaForm
           progressId={progressId}
           onSuccess={() => {
@@ -386,6 +424,7 @@ const IzinTetanggaProgressCard: React.FC<{ progressId: string }> = ({
           onCancelEdit={isEditing ? () => setIsEditing(false) : undefined}
           currentFileIzin={fileIzinTetangga}
           currentFileBukti={fileBuktiPembayaran}
+          onDataUpdate={onDataUpdate}
         />
       </div>
     );
@@ -397,16 +436,9 @@ const IzinTetanggaProgressCard: React.FC<{ progressId: string }> = ({
   // Mode Read
   return (
     <div className="w-full">
-      <ProgressStatusCard
-        title="Ijin Tetangga"
-        status={data.final_status_it}
-        startDate={data.created_at}
-        endDate={data.tgl_selesai_izintetangga}
-      />
       <DetailCard
         title="Ijin Tetangga"
         icon={<Users className="text-red-500 mr-3" size={20} />}
-        className="mt-10"
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
@@ -442,12 +474,12 @@ const IzinTetanggaProgressCard: React.FC<{ progressId: string }> = ({
         </div>
 
         {!isFinalized && (
-          <div className="flex gap-3 mt-8">
+          <div className="flex gap-3 mt-6">
             {/* Tombol Edit */}
             <Button
               variant="secondary" // Ganti variant agar konsisten
               onClick={() => setIsEditing(true)}
-              disabled={isSubmittingApproval || isSubmittingBatal} //
+              disabled={isSubmittingApprove || isSubmittingReject} //
               className="mr-auto" // Pindahkan ke kiri
             >
               <Pencil className="mr-2" size={16} /> Edit
@@ -457,9 +489,9 @@ const IzinTetanggaProgressCard: React.FC<{ progressId: string }> = ({
             <Button
               variant="default"
               onClick={() => handleFinalizeIT("Batal")} //
-              disabled={isSubmittingApproval || isSubmittingBatal} //
+              disabled={isSubmittingApprove || isSubmittingReject} //
             >
-              {isSubmittingBatal ? ( //
+              {isSubmittingReject ? ( //
                 <Loader2 className="animate-spin mr-2" size={16} />
               ) : (
                 <XCircle className="mr-2" size={16} />
@@ -472,9 +504,9 @@ const IzinTetanggaProgressCard: React.FC<{ progressId: string }> = ({
               type="submit"
               variant="submit"
               onClick={() => handleFinalizeIT("Selesai")} //
-              disabled={isSubmittingApproval || isSubmittingBatal} //
+              disabled={isSubmittingApprove || isSubmittingReject} //
             >
-              {isSubmittingApproval ? ( //
+              {isSubmittingApprove ? ( //
                 <Loader2 className="animate-spin" size={16} />
               ) : (
                 <CheckCircle className="mr-2" size={16} />

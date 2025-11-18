@@ -18,7 +18,6 @@ import { Input } from "@/components/ui/input";
 import CustomSelect from "@/components/ui/customselect";
 import { RenovasiEditableSchema } from "@/lib/validations/renovasi";
 import { useAlert } from "@/components/shared/alertcontext";
-import { ProgressStatusCard } from "./ProgressStatusCard";
 import { RenovasiHistoryModal } from "./RenovasiHistoryModal";
 
 // DetailCard (Helper)
@@ -118,6 +117,7 @@ interface FormProps {
   progressId: string;
   onSuccess: () => void;
   initialData?: any;
+  onDataUpdate: () => void;
   onCancelEdit?: () => void;
   filesMap: Map<string, ApiFile>;
 }
@@ -126,6 +126,7 @@ const RenovasiForm: React.FC<FormProps> = ({
   progressId,
   onSuccess,
   initialData,
+  onDataUpdate,
   onCancelEdit,
   filesMap,
 }) => {
@@ -133,18 +134,62 @@ const RenovasiForm: React.FC<FormProps> = ({
   const { showToast } = useAlert();
   const [fileRekomRenovasi, setFileRekomRenovasi] = useState<File | null>(null);
 
-  // Opsi untuk dropdown
   const statusOptions = ["Belum", "Selesai", "Batal"];
   const objekOptions = ["Tanah", "Bangunan"];
 
   const [rekomRenovasi, setRekomRenovasi] = useState<string>(
     initialData?.rekom_renovasi || ""
   );
-  const [BentukObjek, setBentukObjek] = useState<string>(
+  const [bentukObjek, setBentukObjek] = useState<string>(
     initialData?.rekom_renovasi || ""
   );
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const [planRenov, setPlanRenov] = useState<string>("");
+  const [prosesRenov, setProsesRenov] = useState<string>("");
+  const [deviasi, setDeviasi] = useState<string>("");
+
+  const handlePercentageChange = (
+    value: string,
+    setter: React.Dispatch<React.SetStateAction<string>>
+  ) => {
+    const rawValue = value.replace(/[^0-9]/g, ""); // Hanya izinkan angka
+    if (rawValue === "") {
+      setter("");
+      return;
+    }
+
+    let numValue = parseInt(rawValue, 10);
+
+    if (numValue > 100) {
+      numValue = 100;
+    }
+
+    setter(String(numValue));
+  };
+
+  useEffect(() => {
+    if (initialData) {
+      setRekomRenovasi(initialData.rekom_renovasi || "");
+      setBentukObjek(initialData.bentuk_objek || "");
+      setPlanRenov(initialData.plan_renov?.toString() || "");
+      setProsesRenov(initialData.proses_renov?.toString() || "");
+      setDeviasi(initialData.deviasi?.toString() || "");
+    }
+  }, [initialData]);
+
+  useEffect(() => {
+    const plan = parseInt(planRenov, 10);
+    const proses = parseInt(prosesRenov, 10);
+
+    if (!isNaN(plan) && !isNaN(proses)) {
+      const dev = proses - plan;
+      setDeviasi(dev.toString());
+    } else {
+      setDeviasi("");
+    }
+  }, [planRenov, prosesRenov]);
+
+  const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
 
@@ -152,10 +197,9 @@ const RenovasiForm: React.FC<FormProps> = ({
     if (fileRekomRenovasi)
       formData.append("file_rekom_renovasi", fileRekomRenovasi);
 
-    // Tambahkan nilai dari state select
     formData.append("rekom_renovasi", rekomRenovasi);
+    formData.append("bentuk_objek", bentukObjek);
 
-    // Ambil semua field dari form
     const payload = {
       kode_store: formData.get("kode_store") || undefined,
       tipe_toko: formData.get("tipe_toko") || undefined,
@@ -164,9 +208,9 @@ const RenovasiForm: React.FC<FormProps> = ({
       tgl_rekom_renovasi: formData.get("tgl_rekom_renovasi") || undefined,
       start_spk_renov: formData.get("start_spk_renov") || undefined,
       end_spk_renov: formData.get("end_spk_renov") || undefined,
-      plan_renov: Number(formData.get("plan_renov")) || undefined,
-      proses_renov: Number(formData.get("proses_renov")) || undefined,
-      deviasi: Number(formData.get("deviasi")) || undefined,
+      plan_renov: planRenov === "" ? undefined : Number(planRenov),
+      proses_renov: prosesRenov === "" ? undefined : Number(prosesRenov),
+      deviasi: deviasi === "" ? undefined : Number(deviasi),
       tgl_serah_terima: formData.get("tgl_serah_terima") || undefined,
     };
     const parsed = RenovasiEditableSchema.partial().safeParse(payload);
@@ -180,6 +224,10 @@ const RenovasiForm: React.FC<FormProps> = ({
       return;
     }
 
+    formData.set("plan_renov", planRenov);
+    formData.set("proses_renov", prosesRenov);
+    formData.set("deviasi", deviasi);
+
     try {
       const method = initialData ? "PATCH" : "POST";
       const res = await fetch(`/api/progress/${progressId}/renovasi`, {
@@ -189,6 +237,7 @@ const RenovasiForm: React.FC<FormProps> = ({
 
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Gagal menyimpan data");
+      onDataUpdate();
       showToast({
         type: "success",
         message: `Data Renovasi berhasil di${
@@ -207,10 +256,9 @@ const RenovasiForm: React.FC<FormProps> = ({
     <DetailCard
       title="Renovasi"
       icon={<Wrench className="text-orange-500 mr-3" size={20} />}
-      className="mt-10"
     >
       <form
-        onSubmit={handleSubmit}
+        onSubmit={handleSave}
         className="grid grid-cols-1 md:grid-cols-2 gap-4"
       >
         <div>
@@ -248,7 +296,7 @@ const RenovasiForm: React.FC<FormProps> = ({
           name="bentuk_objek"
           label="Bentuk Objek"
           placeholder="Pilih Objek"
-          value={BentukObjek}
+          value={bentukObjek}
           options={objekOptions}
           onChange={(e) => setBentukObjek(e.target.value)}
         />
@@ -313,13 +361,17 @@ const RenovasiForm: React.FC<FormProps> = ({
             htmlFor="plan_renov"
             className="block font-semibold text-base lg:text-lg mb-2"
           >
-            Plan Renovasi (hari)
+            Plan Renovasi (%)
           </label>
           <Input
             id="plan_renov"
             name="plan_renov"
-            type="number"
-            defaultValue={initialData?.plan_renov || ""}
+            inputMode="numeric"
+            value={planRenov}
+            onChange={(e) =>
+              handlePercentageChange(e.target.value, setPlanRenov)
+            }
+            placeholder="0-100"
           />
         </div>
 
@@ -333,8 +385,12 @@ const RenovasiForm: React.FC<FormProps> = ({
           <Input
             id="proses_renov"
             name="proses_renov"
-            type="number"
-            defaultValue={initialData?.proses_renov || ""}
+            inputMode="numeric"
+            value={prosesRenov}
+            onChange={(e) =>
+              handlePercentageChange(e.target.value, setProsesRenov)
+            }
+            placeholder="0-100"
           />
         </div>
 
@@ -348,8 +404,10 @@ const RenovasiForm: React.FC<FormProps> = ({
           <Input
             id="deviasi"
             name="deviasi"
-            type="number"
-            defaultValue={initialData?.deviasi || ""}
+            value={deviasi}
+            readOnly
+            className="bg-gray-100"
+            placeholder="Deviasi"
           />
         </div>
 
@@ -376,7 +434,7 @@ const RenovasiForm: React.FC<FormProps> = ({
           onChange={(e) => setFileRekomRenovasi(e.target.files?.[0] || null)}
         />
 
-        <div className="md:col-span-2 flex justify-end gap-3 mt-6">
+        <div className="md:col-span-2 flex justify-end gap-3 mt-2">
           {onCancelEdit && (
             <Button
               variant="default"
@@ -420,9 +478,14 @@ const DetailField: React.FC<{ label: string; value: React.ReactNode }> = ({
   </div>
 );
 
-// Komponen Utama
-const RenovasiProgressCard: React.FC<{ progressId: string }> = ({
+interface RenovasiProgressCardProps {
+  progressId: string;
+  onDataUpdate: () => void;
+}
+
+const RenovasiProgressCard: React.FC<RenovasiProgressCardProps> = ({
   progressId,
+  onDataUpdate,
 }) => {
   const { data, loading, error, refetch } = useRenovasiProgress(progressId);
   const {
@@ -433,7 +496,8 @@ const RenovasiProgressCard: React.FC<{ progressId: string }> = ({
   } = useFile("renovasi", progressId);
 
   const [isEditing, setIsEditing] = useState(false);
-  const [isSubmittingApproval, setIsSubmittingApproval] = useState(false);
+  const [isSubmittingApprove, setIsSubmittingApprove] = useState(false);
+  const [isSubmittingReject, setIsSubmittingReject] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const { showToast, showConfirmation } = useAlert();
 
@@ -446,38 +510,68 @@ const RenovasiProgressCard: React.FC<{ progressId: string }> = ({
         })
       : "-";
 
-  useEffect(() => {
-    refetch();
-    refreshFiles();
-  }, [progressId]);
+  const handleFinalizeRenovasi = async (status: "Selesai" | "Batal") => {
+    const actionText = status === "Selesai" ? "submit" : "batalkan";
+    const actionTitle = status === "Selesai" ? "Submit" : "Pembatalan";
+    const confirmText = status === "Selesai" ? "Ya, Submit" : "Ya, Batalkan";
 
-  const handleSubmitApproval = async () => {
-    const confirmed = await showConfirmation({
-      title: "Konfirmasi Approval Renovasi",
-      message: "Apakah Anda yakin ingin submit data ini?",
-      confirmText: "Ya, Submit",
+    const isConfirmed = await showConfirmation({
+      title: `Konfirmasi ${actionTitle} Renovasi`,
+      message: `Apakah Anda yakin ingin ${actionText} Renovasi ini? Data yang sudah di-${actionText} tidak dapat diubah kembali.`,
+      confirmText: confirmText,
       type: "warning",
     });
-    if (!confirmed) return;
-    setIsSubmittingApproval(true);
+
+    if (!isConfirmed) return;
+
+    if (status === "Selesai") {
+      setIsSubmittingApprove(true);
+    } else {
+      setIsSubmittingReject(true);
+    }
+
     try {
+      const apiStatus = status.toLowerCase() as "selesai" | "batal";
       const res = await fetch(`/api/progress/${progressId}/renovasi/approval`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ final_status_renov: "selesai" }),
+        body: JSON.stringify({ final_status_renov: apiStatus }),
       });
+
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Gagal submit");
+
+      if (!res.ok) {
+        const errorMsg =
+          json.detail || json.error || "Gagal melakukan " + actionText;
+        let errorTitle = `Gagal melakukan ${actionText}`;
+
+        if (errorMsg.includes("Required fields missing")) {
+          errorTitle = "Data Belum Lengkap";
+        } else if (errorMsg.includes("already finalized")) {
+          errorTitle = "Sudah Final";
+        }
+
+        showToast({
+          type: "error",
+          title: errorTitle,
+          message: "Terdapat kolom yang kosong atau belum selesai",
+        });
+        return;
+      }
+      onDataUpdate();
       showToast({
         type: "success",
-        message: "Renovasi berhasil disubmit.",
+        message: `Renovasi berhasil di-${actionText}.`,
       });
       await refetch();
-      await refreshFiles();
     } catch (err: any) {
-      showToast({ type: "error", message: err.message });
+      showToast({
+        type: "error",
+        message: `Gagal melakukan ${actionText}.`,
+      });
     } finally {
-      setIsSubmittingApproval(false);
+      setIsSubmittingApprove(false);
+      setIsSubmittingReject(false);
     }
   };
 
@@ -498,12 +592,6 @@ const RenovasiProgressCard: React.FC<{ progressId: string }> = ({
   if (!data || isEditing)
     return (
       <div className="w-full ">
-        <ProgressStatusCard
-          title="Renovasi"
-          status={data?.final_status_renov}
-          startDate={data?.created_at}
-          endDate={data?.tgl_selesai_renov}
-        />
         <RenovasiForm
           progressId={progressId}
           onSuccess={async () => {
@@ -512,6 +600,7 @@ const RenovasiProgressCard: React.FC<{ progressId: string }> = ({
             setIsEditing(false);
           }}
           initialData={data}
+          onDataUpdate={onDataUpdate}
           onCancelEdit={isEditing ? () => setIsEditing(false) : undefined}
           filesMap={filesMap}
         />
@@ -524,16 +613,9 @@ const RenovasiProgressCard: React.FC<{ progressId: string }> = ({
 
   return (
     <div className="w-full ">
-      <ProgressStatusCard
-        title="Renovasi"
-        status={data.final_status_renov}
-        startDate={data.created_at}
-        endDate={data.tgl_selesai_renov}
-      />
       <DetailCard
         title="Renovasi"
         icon={<Wrench className="text-orange-500" size={20} />}
-        className="mt-10"
         actions={
           <Button
             variant="default"
@@ -582,17 +664,39 @@ const RenovasiProgressCard: React.FC<{ progressId: string }> = ({
           </div>
         </div>
         {!isFinalized && (
-          <div className="flex justify-end gap-3 mt-8">
-            <Button variant="default" onClick={() => setIsEditing(true)}>
+          <div className="flex gap-3 mt-6">
+            {/* Tombol Edit */}
+            <Button
+              variant="secondary"
+              onClick={() => setIsEditing(true)}
+              disabled={isSubmittingApprove || isSubmittingReject} //
+              className="mr-auto"
+            >
               <Pencil className="mr-2" size={16} /> Edit
             </Button>
+
+            {/* Tombol Batal (Baru) */}
+            <Button
+              variant="default"
+              onClick={() => handleFinalizeRenovasi("Batal")} //
+              disabled={isSubmittingApprove || isSubmittingReject} //
+            >
+              {isSubmittingReject ? ( //
+                <Loader2 className="animate-spin mr-2" size={16} />
+              ) : (
+                <XCircle className="mr-2" size={16} />
+              )}
+              Batal
+            </Button>
+
+            {/* Tombol Submit (Modifikasi) */}
             <Button
               type="submit"
               variant="submit"
-              onClick={handleSubmitApproval}
-              disabled={isSubmittingApproval}
+              onClick={() => handleFinalizeRenovasi("Selesai")} //
+              disabled={isSubmittingApprove || isSubmittingReject} //
             >
-              {isSubmittingApproval ? (
+              {isSubmittingApprove ? ( //
                 <Loader2 className="animate-spin" size={16} />
               ) : (
                 <CheckCircle className="mr-2" size={16} />

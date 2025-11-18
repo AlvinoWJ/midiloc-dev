@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useMouProgress } from "@/hooks/progress_kplt/useMouProgress";
 import { Loader2, Pencil, CheckCircle, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,24 @@ import { ClipboardList } from "lucide-react";
 import CustomSelect from "@/components/ui/customselect";
 import { MouEditableSchema } from "@/lib/validations/mou";
 import { useAlert } from "@/components/shared/alertcontext";
-import { ProgressStatusCard } from "./ProgressStatusCard";
+import { useRouter } from "next/navigation";
+
+const formatnumeric = (value: string | number | undefined | null) => {
+  if (value === undefined || value === null || value === "") return "";
+  const numberValue =
+    typeof value === "string"
+      ? Number(value.replace(/\./g, ""))
+      : Number(value);
+  if (isNaN(numberValue)) return "";
+  return new Intl.NumberFormat("id-ID").format(numberValue);
+};
+
+const unformatnumeric = (value: string | undefined | null) => {
+  if (!value) return undefined;
+  const unformatted = value.replace(/\./g, "");
+  const numberValue = Number(unformatted);
+  return isNaN(numberValue) ? undefined : numberValue;
+};
 
 interface MouFormProps {
   progressId: string;
@@ -18,6 +35,7 @@ interface MouFormProps {
   initialData?: any;
   isEditMode?: boolean;
   onCancelEdit?: () => void;
+  onDataUpdate: () => void;
 }
 
 const DetailCard = ({
@@ -51,7 +69,9 @@ const MouForm: React.FC<MouFormProps> = ({
   onSuccess,
   initialData,
   onCancelEdit,
+  onDataUpdate,
 }) => {
+  const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { showToast } = useAlert();
 
@@ -64,12 +84,28 @@ const MouForm: React.FC<MouFormProps> = ({
   const [caraPembayaran, setCaraPembayaran] = useState<string>(
     initialData?.cara_pembayaran || ""
   );
+  const [displayNilaiSewa, setDisplayNilaiSewa] = useState<string>("");
+  const [displayHargaFinal, setDisplayHargaFinal] = useState<string>("");
+  const [displayPeriodeSewa, setDisplayPeriodeSewa] = useState<string>("");
+  const [displayGracePeriod, setDisplayGracePeriod] = useState<string>("");
+
+  useEffect(() => {
+    if (initialData) {
+      setDisplayNilaiSewa(formatnumeric(initialData.nilai_sewa));
+      setDisplayHargaFinal(formatnumeric(initialData.harga_final));
+      setDisplayPeriodeSewa(formatnumeric(initialData.periode_sewa));
+      setDisplayGracePeriod(formatnumeric(initialData.grace_period));
+    }
+    setStatusPajak(initialData?.status_pajak || "");
+    setPembayaranPph(initialData?.pembayaran_pph || "");
+    setCaraPembayaran(initialData?.cara_pembayaran || "");
+  }, [initialData]);
 
   const statusPajakOptions = ["PKP", "NPKP"];
 
   const pembayaranPphOptions = [
     "Pemilik",
-    "Perusahan",
+    "Perusahaan",
     "Pemilik dan Perusahaan",
   ];
 
@@ -95,11 +131,27 @@ const MouForm: React.FC<MouFormProps> = ({
     return value;
   };
 
+  const handleNumericInputChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    setter: React.Dispatch<React.SetStateAction<string>>
+  ) => {
+    const { value } = e.target;
+    const rawValue = value.replace(/\./g, "");
+    if (!/^\d*$/.test(rawValue)) return;
+
+    setter(formatnumeric(rawValue));
+  };
+
   const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
 
     const formData = new FormData(e.currentTarget);
+
+    const nilaiSewaUnformatted = unformatnumeric(displayNilaiSewa);
+    const hargaFinalUnformatted = unformatnumeric(displayHargaFinal);
+    const periodesewaUnformated = unformatnumeric(displayPeriodeSewa);
+    const graceperiodUnformatted = unformatnumeric(displayGracePeriod);
 
     const payload = {
       nama_pemilik_final: emptyToUndefined(
@@ -110,14 +162,10 @@ const MouForm: React.FC<MouFormProps> = ({
       pembayaran_pph: emptyToUndefined(pembayaranPph),
       cara_pembayaran: emptyToUndefined(caraPembayaran),
       keterangan: emptyToUndefined(formData.get("keterangan") as string),
-      periode_sewa: emptyToUndefined(
-        Number(formData.get("periode_sewa")) || ""
-      ),
-      nilai_sewa: emptyToUndefined(Number(formData.get("nilai_sewa")) || ""),
-      grace_period: emptyToUndefined(
-        Number(formData.get("grace_period")) || ""
-      ),
-      harga_final: emptyToUndefined(Number(formData.get("harga_final")) || ""),
+      periode_sewa: emptyToUndefined(Number(periodesewaUnformated) || ""),
+      nilai_sewa: emptyToUndefined(Number(nilaiSewaUnformatted) || ""),
+      grace_period: emptyToUndefined(Number(graceperiodUnformatted) || ""),
+      harga_final: emptyToUndefined(Number(hargaFinalUnformatted) || ""),
     };
 
     const parsed = MouEditableSchema.safeParse(payload);
@@ -147,11 +195,13 @@ const MouForm: React.FC<MouFormProps> = ({
           json.detail?.[0]?.message || json.error || "Gagal menyimpan data";
         throw new Error(errMsg);
       }
+      onDataUpdate();
       showToast({
         type: "success",
         message: `Data MOU berhasil di${initialData ? "update" : "simpan"}.`,
       });
       onSuccess();
+      router.refresh();
     } catch (err: any) {
       console.error(err);
       showToast({ type: "error", message: err.message });
@@ -164,7 +214,7 @@ const MouForm: React.FC<MouFormProps> = ({
     <DetailCard
       title="MOU"
       icon={<ClipboardList className="text-red-500 mr-3" size={20} />}
-      className="mt-10"
+      className=""
     >
       <form
         onSubmit={handleSave}
@@ -195,6 +245,7 @@ const MouForm: React.FC<MouFormProps> = ({
           <Input
             id="nama_pemilik_final"
             name="nama_pemilik_final"
+            placeholder="Masukkan nama pemilik"
             defaultValue={initialData?.nama_pemilik_final || ""}
           />
         </div>
@@ -208,8 +259,10 @@ const MouForm: React.FC<MouFormProps> = ({
           <Input
             id="periode_sewa"
             name="periode_sewa"
-            type="number"
-            defaultValue={initialData?.periode_sewa || ""}
+            inputMode="numeric"
+            placeholder="Masukkan periode sewa"
+            value={displayPeriodeSewa}
+            onChange={(e) => handleNumericInputChange(e, setDisplayPeriodeSewa)}
           />
         </div>
         <div>
@@ -222,8 +275,10 @@ const MouForm: React.FC<MouFormProps> = ({
           <Input
             id="nilai_sewa"
             name="nilai_sewa"
-            type="number"
-            defaultValue={initialData?.nilai_sewa || ""}
+            inputMode="numeric"
+            value={displayNilaiSewa}
+            onChange={(e) => handleNumericInputChange(e, setDisplayNilaiSewa)}
+            placeholder="Masukkan nilai sewa"
           />
         </div>
         <div>
@@ -269,8 +324,10 @@ const MouForm: React.FC<MouFormProps> = ({
           <Input
             id="grace_period"
             name="grace_period"
-            type="number"
-            defaultValue={initialData?.grace_period || ""}
+            inputMode="numeric"
+            placeholder="Masukkan grace period"
+            value={displayGracePeriod}
+            onChange={(e) => handleNumericInputChange(e, setDisplayGracePeriod)}
           />
         </div>
         <div className="md:col-span-2">
@@ -283,8 +340,10 @@ const MouForm: React.FC<MouFormProps> = ({
           <Input
             id="harga_final"
             name="harga_final"
-            type="number"
-            defaultValue={initialData?.harga_final || ""}
+            value={displayHargaFinal}
+            inputMode="numeric"
+            onChange={(e) => handleNumericInputChange(e, setDisplayHargaFinal)}
+            placeholder="Masukkan harga final"
           />
         </div>
         {/* Full width */}
@@ -302,7 +361,7 @@ const MouForm: React.FC<MouFormProps> = ({
           />
         </div>
 
-        <div className="md:col-span-2 flex justify-end gap-3 mt-6">
+        <div className="md:col-span-2 flex justify-end gap-3 mt-2">
           {onCancelEdit && (
             <Button
               variant="default"
@@ -335,9 +394,15 @@ const MouForm: React.FC<MouFormProps> = ({
 
 interface MouProgressCardProps {
   progressId: string;
+  onDataUpdate: () => void;
 }
 
-const MouProgressCard: React.FC<MouProgressCardProps> = ({ progressId }) => {
+const MouProgressCard: React.FC<MouProgressCardProps> = ({
+  progressId,
+  onDataUpdate,
+}) => {
+  const router = useRouter();
+
   const { data, loading, error, refetch } = useMouProgress(progressId);
   const [isEditing, setIsEditing] = useState(false);
 
@@ -347,7 +412,7 @@ const MouProgressCard: React.FC<MouProgressCardProps> = ({ progressId }) => {
   const { showToast, showConfirmation } = useAlert();
 
   const handleFinalizeMou = async (status: "Selesai" | "Batal") => {
-    const actionText = status === "Selesai" ? "submit" : "membatalkan";
+    const actionText = status === "Selesai" ? "submit" : "batalkan";
     const actionTitle = status === "Selesai" ? "Submit" : "Pembatalan";
     const confirmText = status === "Selesai" ? "Ya, Submit" : "Ya, Batalkan";
 
@@ -385,19 +450,16 @@ const MouProgressCard: React.FC<MouProgressCardProps> = ({ progressId }) => {
         let errorTitle = "Gagal Mengirim";
         let errorMessage = json.error || "Gagal melakukan submit.";
 
-        // ‹- PERBAIKAN 1: Pesan error dibuat lebih spesifik
         if (
           res.status === 422 &&
           json.missing_fields &&
           json.missing_fields.length > 0
         ) {
           errorTitle = "Data Belum Lengkap";
-          // Tampilkan field apa saja yang kurang
           errorMessage = `Field berikut harus diisi: ${json.missing_fields.join(
             ", "
           )}`;
         }
-
         showToast({
           type: "error",
           title: errorTitle,
@@ -405,13 +467,12 @@ const MouProgressCard: React.FC<MouProgressCardProps> = ({ progressId }) => {
         });
         return;
       }
-
+      onDataUpdate();
       showToast({
         type: "success",
-        // ‹- PERBAIKAN 2: Pesan sukses dinamis sesuai 'actionText'
         message: `MOU berhasil di-${actionText}.`,
       });
-      await refetch();
+      router.refresh();
     } catch (err: any) {
       console.error(err);
       // Tampilkan toast error jika ada kesalahan 'catch'
@@ -448,12 +509,6 @@ const MouProgressCard: React.FC<MouProgressCardProps> = ({ progressId }) => {
   if (!data || isEditing) {
     return (
       <div className="w-full ">
-        <ProgressStatusCard
-          title="MOU"
-          status={data?.final_status_mou}
-          startDate={data?.created_at}
-          endDate={data?.tgl_selesai_mou}
-        />
         <MouForm
           progressId={progressId}
           onSuccess={() => {
@@ -463,6 +518,7 @@ const MouProgressCard: React.FC<MouProgressCardProps> = ({ progressId }) => {
           initialData={data}
           isEditMode={!!data}
           onCancelEdit={isEditing ? () => setIsEditing(false) : undefined}
+          onDataUpdate={onDataUpdate}
         />
       </div>
     );
@@ -474,16 +530,10 @@ const MouProgressCard: React.FC<MouProgressCardProps> = ({ progressId }) => {
   // Mode Read - Tampilkan data
   return (
     <div className="w-full ">
-      <ProgressStatusCard
-        title="MOU"
-        status={data.final_status_mou}
-        startDate={data.created_at}
-        endDate={data.tgl_selesai_mou}
-      />
       <DetailCard
         title="MOU"
         icon={<ClipboardList className="text-red-500 mr-3" size={20} />}
-        className="mt-10"
+        className=""
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Tanggal MOU */}
