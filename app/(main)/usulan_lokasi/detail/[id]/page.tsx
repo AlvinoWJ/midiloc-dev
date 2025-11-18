@@ -48,8 +48,8 @@ export default function DetailPage() {
         title: "Berhasil",
         message: "Data ULOK telah diperbarui.",
       });
-      await refresh(); // Muat ulang data untuk menampilkan perubahan
-      return true; // Sinyal sukses ke hook
+      await refresh();
+      return true;
     } catch (error: any) {
       showToast({
         type: "error",

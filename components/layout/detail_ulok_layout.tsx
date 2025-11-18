@@ -55,7 +55,7 @@ const DetailField = ({
   onChange,
 }: any) => (
   <div>
-    <label className="block font-bold mb-1">
+    <label className="block font-semibold text-base lg:text-lg mb-2">
       {label}
       <span className="text-red-500">*</span>
     </label>
@@ -65,7 +65,7 @@ const DetailField = ({
           name={name}
           value={value}
           onChange={onChange}
-          className="w-full text-sm"
+          className="w-full"
           rows={3}
         />
       ) : (
@@ -74,11 +74,11 @@ const DetailField = ({
           type={type}
           value={value}
           onChange={onChange}
-          className="w-full text-sm"
+          className="w-full"
         />
       )
     ) : (
-      <div className="text-gray-900 py-2 text-sm bg-gray-100 rounded-lg px-3 min-h-[40px] flex items-start w-full break-words">
+      <div className="text-gray-900 py-2 text-base text-black font-medium bg-gray-100 rounded-lg px-3 min-h-[40px] flex items-start w-full break-words">
         {value || "-"}
       </div>
     )}
@@ -201,7 +201,7 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
 
   return (
     <>
-      <main className="space-y-4 lg:space-y-6 pb-2 lg:pb-6">
+      <main className="space-y-4 lg:space-y-6 pb-16 lg:pb-2">
         <div className="flex justify-between items-center mb-6">
           <Button onClick={() => router.back()} variant="back">
             <ArrowLeft size={20} className="mr-1" />
@@ -427,9 +427,7 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
                       label="Kelurahan/Desa"
                       value={editedData?.kelurahan}
                     />
-                    <div className="md:col-span-2">
-                      <DetailField label="Alamat" value={editedData?.alamat} />
-                    </div>
+                    <DetailField label="Alamat" value={editedData?.alamat} />
                     <DetailField
                       label="LatLong"
                       value={`${editedData.latitude ?? ""}, ${
@@ -683,7 +681,7 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
 
       {isLocationSpecialist && isPendingApproval && (
         <div
-          className={` lg:hidden fixed bottom-0 left-0 right-0 z-40 p-4 transition-all duration-300 ease-in-out
+          className={` lg:hidden fixed bottom-0 left-0 right-0 z-40 p-4 transition-all duration-300 ease-in-out 
                         ${
                           isAtBottom
                             ? "bg-transparent shadow-none border-transparent"
