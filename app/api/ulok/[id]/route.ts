@@ -12,6 +12,31 @@ function isUuid(v: string) {
   );
 }
 
+// Tambah di atas (dekat FINAL_STATUSES)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const REQUIRED_FIELDS_BEFORE_APPROVAL: (keyof any)[] = [
+  "nama_ulok",
+  "latitude",
+  "longitude",
+  "desa_kelurahan",
+  "kecamatan",
+  "kabupaten",
+  "provinsi",
+  "alamat",
+  "format_store",
+  "bentuk_objek",
+  "alas_hak",
+  "jumlah_lantai",
+  "lebar_depan",
+  "panjang",
+  "luas",
+  "harga_sewa",
+  "nama_pemilik",
+  "kontak_pemilik",
+  "form_ulok"
+  // tambahkan fields lain yang menurut Anda wajib sebelum di-approve
+];
+
 type AnyObj = Record<string, unknown>;
 
 function omit<T extends Record<string, unknown>, K extends keyof T>(
@@ -145,13 +170,13 @@ export async function PATCH(
       );
     }
 
-    // Ambil approval_status saat ini
+    // Ambil data lengkap ULOK yang akan di-approve
     const { data: existing, error: existErr } = await supabase
       .from("ulok")
-      .select("id, branch_id, approval_status")
+      .select("*")
       .eq("id", id)
       .eq("branch_id", user.branch_id)
-      .single();
+      .maybeSingle();
 
     if (existErr || !existing) {
       return NextResponse.json({ error: "Not Found" }, { status: 404 });
@@ -208,6 +233,45 @@ export async function PATCH(
         },
         { status: 422 }
       );
+    }
+
+    // Cek semua kolom wajib sebelum approve (mis. ketika approval_status akan diubah ke OK)
+    const targetStatus = String(
+      validationResult.data.approval_status
+    ).toUpperCase();
+    if (targetStatus === "OK") {
+      const missingFields: string[] = [];
+
+      for (const field of REQUIRED_FIELDS_BEFORE_APPROVAL) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const value = (existing as any)[field];
+
+        // Aturan "kosong" bisa Anda sesuaikan:
+        // - null atau undefined
+        // - string kosong
+        // - angka 0 kalau tidak diperbolehkan
+        const isEmpty =
+          value === null ||
+          value === undefined ||
+          (typeof value === "string" && value.trim() === "") ||
+          (typeof value === "number" && isNaN(value));
+
+        if (isEmpty) {
+          missingFields.push(String(field));
+        }
+      }
+
+      if (missingFields.length > 0) {
+        return NextResponse.json(
+          {
+            error: "ULOK data incomplete",
+            message:
+              "Tidak bisa approval OK, masih ada kolom yang wajib diisi.",
+            missingFields,
+          },
+          { status: 409 }
+        );
+      }
     }
 
     // Server-only stamping: approved_by dan approved_at SELALU di-set di server

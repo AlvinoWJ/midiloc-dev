@@ -6,6 +6,8 @@ import { useTambahKplt, KpltFormData } from "@/hooks/kplt/useTambahkplt";
 import TambahKpltLayout from "@/components/layout/tambah_kplt_layout";
 import { useAlert } from "@/components/shared/alertcontext";
 import { useKpltPrefill } from "@/hooks/kplt/useKpltPrefill";
+import { useSWRConfig } from "swr";
+import { swrKeys } from "@/lib/swr-keys";
 
 const PageStatus = ({ message }: { message: string }) => (
   <div className="flex items-center justify-center h-screen bg-gray-100">
@@ -19,6 +21,7 @@ export default function TambahKpltPage() {
   const { showToast } = useAlert();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const ulokId = params?.id;
+  const { mutate } = useSWRConfig();
 
   if (!ulokId) {
     return <PageStatus message="ID ULOK tidak ditemukan di URL." />;
@@ -65,6 +68,13 @@ export default function TambahKpltPage() {
             title: "Berhasil",
             message: "Data KPLT berhasil disimpan.",
           });
+
+          await mutate(
+            (key) => typeof key === "string" && key.startsWith(swrKeys.kplt),
+            undefined,
+            { revalidate: true }
+          );
+
           router.back();
           router.refresh();
         } catch (err) {
