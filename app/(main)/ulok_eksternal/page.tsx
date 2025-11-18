@@ -21,28 +21,17 @@ export default function UlokEksternalPage() {
     isInitialLoading,
     isRefreshing,
     ulokEksternalError,
-  } = useUlokEksternal(searchQuery);
+  } = useUlokEksternal(searchQuery, filterMonth, filterYear);
 
   const paginatedData = useMemo(() => {
-    const allFilteredUlok = (ulokEksternalData || [])
-      .filter((ulok) => {
-        const date = new Date(ulok.created_at);
-        const ulokMonth = (date.getMonth() + 1).toString().padStart(2, "0");
-        const ulokYear = date.getFullYear().toString();
-        const matchMonth = filterMonth ? ulokMonth === filterMonth : true;
-        const matchYear = filterYear ? ulokYear === filterYear : true;
-        return matchMonth && matchYear;
-      })
-      .filter((ulok) => {
-        // ===== 3. PERUBAHAN DI SINI =====
-        // Menggunakan 'status_ulok_eksternal'
-        if (activeTab === "Recent")
-          return ulok.status_ulok_eksternal === "In Progress";
-        if (activeTab === "History")
-          return ["OK", "NOK"].includes(ulok.status_ulok_eksternal);
-        // =================================
-        return true;
-      });
+    const allFilteredUlok = (ulokEksternalData || []).filter((ulok) => {
+      if (activeTab === "Recent")
+        return ulok.status_ulok_eksternal === "In Progress";
+      if (activeTab === "History")
+        return ["OK", "NOK"].includes(ulok.status_ulok_eksternal);
+
+      return true;
+    });
 
     const totalPages = Math.ceil(allFilteredUlok.length / ITEMS_PER_PAGE);
     const paginatedUlok = allFilteredUlok.slice(
@@ -51,7 +40,7 @@ export default function UlokEksternalPage() {
     );
 
     return { paginatedUlok, totalPages };
-  }, [ulokEksternalData, filterMonth, filterYear, activeTab, currentPage]);
+  }, [ulokEksternalData, activeTab, currentPage]);
 
   const onFilterChange = useCallback((month: string, year: string) => {
     setFilterMonth(month);

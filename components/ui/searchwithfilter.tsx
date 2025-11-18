@@ -50,6 +50,12 @@ export default function SearchWithFilter({
     onFilterChange(month, value);
   };
 
+  const handleFilterChange = (newMonth: string, newYear: string) => {
+    setMonth(newMonth);
+    setYear(newYear);
+    onFilterChange(newMonth, newYear);
+  };
+
   const clearFilters = () => {
     setMonth("");
     setYear("");
@@ -77,29 +83,43 @@ export default function SearchWithFilter({
   return (
     <>
       {/* ----------------- Desktop ----------------- */}
-      <div className="hidden md:flex items-center gap-5 relative">
+      <div className="hidden md:flex items-center gap-3 relative">
         <SearchBar
           value={search}
           onChange={handleSearchChange}
           onSubmit={handleSearchSubmit}
-          onClear={handleSearchClear} // ✅ reset ke data semula
+          onClear={handleSearchClear}
         />
-        <button
-          onClick={() => setShowFilter(!showFilter)}
-          className="flex items-center justify-center bg-white shadow-[1px_1px_6px_rgba(0,0,0,0.25)] rounded-xl w-[46px] h-[46px] p-2 hover:bg-gray-100"
-        >
-          <Filter className="text-red-600 w-[18px] h-[18px]" />
-        </button>
-        {showFilter && isDesktop && (
-          <FilterDropdown
-            month={month}
-            year={year}
-            setMonth={handleMonthChange}
-            setYear={handleYearChange}
-            show={showFilter}
-            setShow={setShowFilter}
-          />
-        )}
+
+        {/* Tombol Filter (Satu-satunya trigger) */}
+        <div className="relative">
+          <button
+            onClick={() => setShowFilter(!showFilter)}
+            className={`flex items-center justify-center bg-white shadow-[1px_1px_6px_rgba(0,0,0,0.25)] rounded-xl w-[46px] h-[46px] p-2 transition-colors ${
+              month || year // Highlight jika ada filter aktif (bulan ATAU tahun)
+                ? "text-red-600"
+                : "hover:bg-gray-100 text-gray-600"
+            }`}
+            title="Filter Data"
+          >
+            <Filter
+              className={`w-[18px] h-[18px] ${
+                month || year ? "text-red-600" : ""
+              }`}
+            />
+          </button>
+
+          {showFilter && isDesktop && (
+            <FilterDropdown
+              month={month}
+              year={year}
+              // Mengirimkan fungsi update sekaligus
+              onApply={(m, y) => handleFilterChange(m, y)}
+              show={showFilter}
+              setShow={setShowFilter}
+            />
+          )}
+        </div>
       </div>
 
       {/* ----------------- Mobile ----------------- */}

@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { X } from "lucide-react";
 
 type FilterDropdownProps = {
   month: string;
   year: string;
-  setMonth: (value: string) => void;
-  setYear: (value: string) => void;
+  onApply: (month: string, year: string) => void; // Fungsi untuk apply sekaligus
   show: boolean;
   setShow: (value: boolean) => void;
 };
@@ -14,14 +14,34 @@ type FilterDropdownProps = {
 export default function FilterDropdown({
   month,
   year,
-  setMonth,
-  setYear,
+  onApply,
   show,
   setShow,
 }: FilterDropdownProps) {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Klik luar → tutup filter
+  // State lokal untuk menampung pilihan sebelum user klik "Terapkan" (opsional)
+  // Atau kita bisa langsung update (seperti behavior dashboard biasanya).
+  // Di sini saya buat langsung update agar UX-nya cepat.
+
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: 6 }, (_, i) => currentYear - i); // 2025, 2024, ...
+
+  const months = [
+    { value: "01", label: "Jan" },
+    { value: "02", label: "Feb" },
+    { value: "03", label: "Mar" },
+    { value: "04", label: "Apr" },
+    { value: "05", label: "Mei" },
+    { value: "06", label: "Jun" },
+    { value: "07", label: "Jul" },
+    { value: "08", label: "Ags" },
+    { value: "09", label: "Sep" },
+    { value: "10", label: "Okt" },
+    { value: "11", label: "Nov" },
+    { value: "12", label: "Des" },
+  ];
+
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (
@@ -40,48 +60,96 @@ export default function FilterDropdown({
   return (
     <div
       ref={dropdownRef}
-      className="absolute top-14 right-0 bg-white shadow-lg rounded-xl p-4 w-72 z-50"
+      className="absolute top-14 right-0 bg-white shadow-xl border border-gray-100 rounded-xl p-5 w-[340px] z-50 animate-in fade-in zoom-in-95 duration-200"
     >
-      <h3 className="text-sm font-semibold mb-3">Filter</h3>
-      <div className="flex gap-3">
-        {/* Bulan */}
-        <div className="flex-1">
-          <label className="block text-xs text-gray-500 mb-1">Bulan</label>
-          <select
-            value={month}
-            onChange={(e) => setMonth(e.target.value)}
-            className="w-full border rounded-md px-2 py-1 text-sm"
-          >
-            <option value="">Semua</option>
-            <option value="01">Januari</option>
-            <option value="02">Februari</option>
-            <option value="03">Maret</option>
-            <option value="04">April</option>
-            <option value="05">Mei</option>
-            <option value="06">Juni</option>
-            <option value="07">Juli</option>
-            <option value="08">Agustus</option>
-            <option value="09">September</option>
-            <option value="10">Oktober</option>
-            <option value="11">November</option>
-            <option value="12">Desember</option>
-          </select>
+      <div className="flex justify-between items-center mb-4 border-b pb-2">
+        <h3 className="font-semibold text-gray-800">Filter Data</h3>
+        <button
+          onClick={() => setShow(false)}
+          className="text-gray-400 hover:text-gray-600"
+        >
+          <X size={18} />
+        </button>
+      </div>
+
+      <div className="space-y-5">
+        {/* Bagian TAHUN (Gaya Grid / YearPicker Style) */}
+        <div>
+          <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">
+            Tahun
+          </label>
+          <div className="grid grid-cols-4 gap-2">
+            {/* Tombol 'All' untuk reset tahun */}
+            <button
+              onClick={() => onApply(month, "")}
+              className={`px-2 py-2 text-sm rounded-lg border transition-all ${
+                year === ""
+                  ? "bg-red-600 text-white border-red-600 shadow-md"
+                  : "bg-white text-gray-600 border-gray-200 hover:border-red-300 hover:text-red-600"
+              }`}
+            >
+              All
+            </button>
+            {years.map((y) => (
+              <button
+                key={y}
+                onClick={() => onApply(month, y.toString())}
+                className={`px-2 py-2 text-sm rounded-lg border transition-all ${
+                  year === y.toString()
+                    ? "bg-red-600 text-white border-red-600 shadow-md"
+                    : "bg-white text-gray-600 border-gray-200 hover:border-red-300 hover:text-red-600"
+                }`}
+              >
+                {y}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* Tahun */}
-        <div className="flex-1">
-          <label className="block text-xs text-gray-500 mb-1">Tahun</label>
-          <select
-            value={year}
-            onChange={(e) => setYear(e.target.value)}
-            className="w-full border rounded-md px-2 py-1 text-sm"
-          >
-            <option value="">Semua</option>
-            <option value="2023">2023</option>
-            <option value="2024">2024</option>
-            <option value="2025">2025</option>
-          </select>
+        {/* Bagian BULAN (Gaya Grid untuk konsistensi) */}
+        <div>
+          <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">
+            Bulan
+          </label>
+          <div className="grid grid-cols-4 gap-2">
+            <button
+              onClick={() => onApply("", year)}
+              className={`px-2 py-2 text-sm rounded-lg border transition-all col-span-4 ${
+                month === ""
+                  ? "bg-red-600 text-white border-red-600 shadow-md"
+                  : "bg-white text-gray-600 border-gray-200 hover:border-red-300 hover:text-red-600"
+              }`}
+            >
+              Semua Bulan
+            </button>
+            {months.map((m) => (
+              <button
+                key={m.value}
+                onClick={() => onApply(m.value, year)}
+                className={`px-2 py-2 text-sm rounded-lg border transition-all ${
+                  month === m.value
+                    ? "bg-red-600 text-white border-red-600 shadow-md"
+                    : "bg-white text-gray-600 border-gray-200 hover:border-red-300 hover:text-red-600"
+                }`}
+              >
+                {m.label}
+              </button>
+            ))}
+          </div>
         </div>
+      </div>
+
+      {/* Footer: Reset All */}
+      <div className="mt-6 pt-3 border-t flex justify-end">
+        <button
+          onClick={() => {
+            onApply("", "");
+            setShow(false);
+          }}
+          className="text-xs text-red-600 hover:text-red-800 font-semibold hover:underline"
+        >
+          Reset Filter
+        </button>
       </div>
     </div>
   );

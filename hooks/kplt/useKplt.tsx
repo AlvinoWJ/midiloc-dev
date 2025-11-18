@@ -1,30 +1,93 @@
 "use client";
 
 import useSWR from "swr";
-import { ApiKpltResponse, KpltExisting, UlokForKplt } from "@/types/common";
 import { useState, useEffect, useRef } from "react";
 
-export function useKplt(searchQuery?: string, activeTab?: string) {
+export interface KpltExisting {
+  id: string;
+  nama_kplt: string;
+  alamat: string;
+  created_at: string;
+  kplt_approval: string;
+  latitude: string;
+  longitude: string;
+  ulok_id: string;
+  has_file_intip?: boolean;
+  has_form_ukur?: boolean;
+}
+
+export interface UlokForKplt {
+  id: string;
+  ulok_id: string;
+  nama_ulok: string;
+  alamat: string;
+  created_at: string;
+  ui_status: string;
+  approval_status: string;
+  latitude: string;
+  longitude: string;
+  has_file_intip?: boolean;
+  has_form_ukur?: boolean;
+}
+
+export interface ApiKpltResponse {
+  kplt_existing: KpltExisting[];
+  kplt_from_ulok_ok: UlokForKplt[];
+  pagination_existing?: {
+    page: number;
+    limit: number;
+    total: number;
+    total_pages: number;
+  };
+  view?: string;
+  search?: string;
+}
+
+interface UseKpltProps {
+  searchQuery?: string;
+  activeTab?: string;
+  page?: number;
+  limit?: number;
+  month?: string;
+  year?: string;
+}
+
+export function useKplt({
+  searchQuery,
+  activeTab,
+  page = 1,
+  limit = 9,
+  month,
+  year,
+}: UseKpltProps = {}) {
   const buildUrl = () => {
     const params = new URLSearchParams();
+
     if (searchQuery && searchQuery.trim() !== "") {
       params.set("q", searchQuery.trim());
     }
+    if (month) params.set("month", month);
+    if (year) params.set("year", year);
+
     if (activeTab === "History") {
-      params.set("limit", "1000"); // Ambil 1000 data untuk "History"
+      params.set("view", "existing");
+      params.set("page_existing", page.toString());
+      params.set("limit_existing", limit.toString());
     } else {
-      params.set("limit", "500");
+      params.set("view", "all");
+      params.set("limit_ulok_ok", "500");
+      params.set("limit_existing", "500");
     }
+
     const queryString = params.toString();
     return queryString ? `/api/kplt?${queryString}` : "/api/kplt";
   };
 
   const { data, error, isLoading, isValidating, mutate } =
     useSWR<ApiKpltResponse>(() => buildUrl(), {
-      keepPreviousData: true, // ✅ tetap pertahankan data lama saat fetching baru
+      keepPreviousData: true,
     });
 
-  // ✅ logika untuk kontrol skeleton
   const firstLoad = useRef(true);
   const [showSkeleton, setShowSkeleton] = useState(true);
 
@@ -45,6 +108,7 @@ export function useKplt(searchQuery?: string, activeTab?: string) {
   return {
     kpltExisting: data?.kplt_existing ?? ([] as KpltExisting[]),
     ulokForKplt: data?.kplt_from_ulok_ok ?? ([] as UlokForKplt[]),
+    meta: data?.pagination_existing,
     isLoading,
     isError: error,
     showSkeleton,
