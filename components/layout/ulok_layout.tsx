@@ -37,7 +37,6 @@ export default function UlokLayout(props: UlokPageProps) {
     onPageChange,
   } = props;
 
-  // Function to generate page numbers with ellipsis
   const getPageNumbers = () => {
     const pages = [];
     const showEllipsisStart = currentPage > 3;

@@ -1,4 +1,4 @@
-// app/kplt/page.tsx
+// app/(main)/form_kplt/page.tsx
 "use client";
 
 import { useState, useCallback, useMemo } from "react";
@@ -15,7 +15,7 @@ export default function KPLTPage() {
 
   // pagination
   const [currentPage, setCurrentPage] = useState(1);
-  const history_per_page = 9;
+  const history_per_page = 9; // Tentukan limit per halaman
 
   const { user, loadingUser, userError } = useUser();
 
@@ -26,11 +26,19 @@ export default function KPLTPage() {
   const {
     kpltExisting,
     ulokForKplt,
+    meta,
     isLoading: loadingKPLT,
     isError: kpltError,
     showSkeleton,
     isRefreshing,
-  } = useKplt(searchQuery, activeTab);
+  } = useKplt({
+    searchQuery,
+    activeTab,
+    page: currentPage,
+    limit: history_per_page,
+    month: filterMonth,
+    year: filterYear,
+  });
 
   const isPageLoading = loadingUser || loadingKPLT;
   const isPageError = !!userError || !!kpltError;
@@ -38,10 +46,18 @@ export default function KPLTPage() {
   const onFilterChange = (month: string, year: string) => {
     setFilterMonth(month);
     setFilterYear(year);
+    setCurrentPage(1); // Reset ke halaman 1 saat filter
   };
+
+  const onSearchChange = (query: string) => {
+    setSearchQuery(query);
+    setCurrentPage(1);
+  };
+
   console.log("Data Mentah dari Hook:", { kpltExisting, ulokForKplt });
 
   const filteredData = useMemo(() => {
+    // Transformasi data tetap diperlukan
     const existingTransformed: UnifiedKpltItem[] = (kpltExisting || []).map(
       (item) => ({
         id: item.id,
@@ -67,9 +83,11 @@ export default function KPLTPage() {
     const combinedData = [...existingTransformed, ...ulokTransformed];
     const userRole = user?.position_nama?.trim().toLowerCase() || "";
 
+    // Filter client-side hanya untuk role dan status tab
     return combinedData.filter((item) => {
       const lowerCaseStatus = item.status.trim().toLowerCase();
 
+      // Filter Role (Logika Asli)
       let matchRole = true;
       switch (lowerCaseStatus) {
         case "need input":
@@ -111,52 +129,34 @@ export default function KPLTPage() {
         matchTab = historyStatuses.includes(lowerCaseStatus);
       }
 
-      const itemDate = new Date(item.created_at);
-
-      const matchMonth = filterMonth
-        ? (itemDate.getMonth() + 1).toString() === filterMonth
-        : true;
-
-      const matchYear = filterYear
-        ? itemDate.getFullYear().toString() === filterYear
-        : true;
-
-      const matchSearch = searchQuery
-        ? item.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          item.alamat.toLowerCase().includes(searchQuery.toLowerCase())
-        : true;
-
-      return matchRole && matchTab && matchMonth && matchYear && matchSearch;
+      return matchRole && matchTab;
     });
-  }, [kpltExisting, ulokForKplt, filterMonth, filterYear, activeTab, user]);
+  }, [kpltExisting, ulokForKplt, activeTab, user]);
 
   const totalPages = useMemo(() => {
     if (activeTab !== "History") {
       return 1;
     }
-    return Math.ceil(filteredData.length / history_per_page) || 1;
-  }, [filteredData, activeTab]);
+
+    return meta?.total_pages ?? 1;
+  }, [meta, activeTab]);
 
   const displayData = useMemo(() => {
     if (activeTab !== "History") {
-      return filteredData; // Tampilkan semua data "Recent"
+      return filteredData;
     }
-
-    const startIndex = (currentPage - 1) * history_per_page;
-    const endIndex = startIndex + history_per_page;
-    return filteredData.slice(startIndex, endIndex);
-  }, [filteredData, activeTab, currentPage]);
+    return filteredData;
+  }, [filteredData, activeTab]);
 
   const handlePageChange = (newPage: number) => {
-    if (newPage > 0 && newPage <= totalPages) {
+    if (newPage > 0) {
       setCurrentPage(newPage);
     }
   };
 
-  // Bungkus onTabChange agar me-reset halaman
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
-    // setCurrentPage(1); // Sudah ditangani oleh useEffect [activeTab]
+    setCurrentPage(1); // Reset ke halaman 1
   };
 
   const kpltProps: KpltPageProps = {
@@ -169,11 +169,11 @@ export default function KPLTPage() {
     filterMonth,
     filterYear,
     activeTab,
-    onSearch: setSearchQuery,
+    onSearch: onSearchChange,
     onFilterChange,
     onTabChange: handleTabChange,
     isLocationSpecialist,
-    currentPage: currentPage,
+    currentPage: meta?.page ?? currentPage,
     totalPages: totalPages,
     onPageChange: handlePageChange,
   };

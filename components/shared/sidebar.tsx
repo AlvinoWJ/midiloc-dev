@@ -20,12 +20,12 @@ import { useUser } from "@/hooks/useUser";
 // Definisikan menu sekali saja
 const menu = [
   { name: "Dashboard", href: "/dashboard", icon: <Home size={20} /> },
-  { name: "Usulan Lokasi", href: "/usulan_lokasi", icon: <MapPin size={20} /> },
   {
     name: "Usulan Lokasi Eksternal",
     href: "/ulok_eksternal",
     icon: <MapPinned size={20} />,
   },
+  { name: "Usulan Lokasi", href: "/usulan_lokasi", icon: <MapPin size={20} /> },
   { name: "Form KPLT", href: "/form_kplt", icon: <FileText size={20} /> },
   {
     name: "Progress KPLT",
