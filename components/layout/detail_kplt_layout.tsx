@@ -18,8 +18,8 @@ import {
   History,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { MappedKpltDetail, ApprovalDetail } from "@/hooks/useKpltDetail";
-import { useKpltFiles, MappedKpltFile } from "@/hooks/useKpltfile";
+import { MappedKpltDetail, ApprovalDetail } from "@/hooks/kplt/useKpltDetail";
+import { useKpltFiles, MappedKpltFile } from "@/hooks/kplt/useKpltfile";
 import PrefillKpltCard from "../ui/prefillkpltcard";
 import { ApprovalStatusbutton } from "../ui/approvalbutton";
 import DetailKpltSkeleton from "../ui/skleton";

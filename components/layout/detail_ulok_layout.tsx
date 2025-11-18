@@ -27,8 +27,8 @@ import DetailMapCard from "@/components/map/DetailMapCard";
 import WilayahSelector from "@/components/ui/customselectwilayah";
 import { DetailUlokSkeleton } from "../ui/skleton";
 import { useUser } from "@/hooks/useUser";
-import { useDetailUlokForm } from "@/hooks/useDetailUlokForm";
-import { MappedUlokData } from "@/hooks/useUlokDetail";
+import { useDetailUlokForm } from "@/hooks/ulok/useDetailUlokForm";
+import { MappedUlokData } from "@/hooks/ulok/useUlokDetail";
 import { UlokUpdateInput } from "@/lib/validations/ulok";
 import { FileUpload } from "../ui/uploadfile";
 

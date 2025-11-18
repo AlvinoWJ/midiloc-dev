@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useTambahKplt, KpltFormData } from "@/hooks/useTambahkplt";
+import { useTambahKplt, KpltFormData } from "@/hooks/kplt/useTambahkplt";
 import TambahKpltLayout from "@/components/layout/tambah_kplt_layout";
 import { useAlert } from "@/components/shared/alertcontext";
-import { useKpltPrefill } from "@/hooks/useKpltPrefill";
+import { useKpltPrefill } from "@/hooks/kplt/useKpltPrefill";
 
 const PageStatus = ({ message }: { message: string }) => (
   <div className="flex items-center justify-center h-screen bg-gray-100">

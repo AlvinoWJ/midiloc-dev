@@ -1,8 +1,7 @@
 // hooks/useDetailUlokForm.tsx
 import { useState, useEffect } from "react";
-import { MappedUlokData } from "@/hooks/useUlokDetail";
+import { MappedUlokData } from "@/hooks/ulok/useUlokDetail";
 import { UlokUpdateSchema, UlokUpdateInput } from "@/lib/validations/ulok";
-import { useAlert } from "@/components/shared/alertcontext";
 
 type SaveData = UlokUpdateInput | FormData;
 

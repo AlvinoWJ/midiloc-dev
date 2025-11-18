@@ -3,7 +3,7 @@
 
 import { useState, useCallback, useMemo } from "react";
 import { useUser } from "@/hooks/useUser";
-import { useKplt } from "@/hooks/useKplt";
+import { useKplt } from "@/hooks/kplt/useKplt";
 import { KpltPageProps, UnifiedKpltItem } from "@/types/common";
 import KpltLayout from "@/components/layout/kplt_layout";
 
