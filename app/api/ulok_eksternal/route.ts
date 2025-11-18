@@ -56,6 +56,62 @@ export async function GET(request: Request) {
     const from = (safePage - 1) * safeLimit;
     const to = from + safeLimit - 1;
 
+    const searchName = (searchParams.get("search") || "").trim();
+
+    // Filter bulan/tahun (month|bulan, year|tahun)
+    const monthParam = searchParams.get("month") ?? searchParams.get("bulan");
+    const yearParam = searchParams.get("year") ?? searchParams.get("tahun");
+
+    const month = monthParam ? Number(monthParam) : undefined;
+    const year = yearParam ? Number(yearParam) : undefined;
+
+    const isValidMonth = (m: unknown) =>
+      Number.isInteger(m) && (m as number) >= 1 && (m as number) <= 12;
+    const isValidYear = (y: unknown) =>
+      Number.isInteger(y) && (y as number) >= 1970 && (y as number) <= 2100;
+
+    if (
+      (monthParam && !isValidMonth(month)) ||
+      (yearParam && !isValidYear(year))
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Bad Request",
+          error: "Invalid month/year. Example: month=1..12, year=1970..2100",
+        },
+        { status: 422 }
+      );
+    }
+
+    // Hitung rentang waktu UTC untuk filter created_at
+    // Jika hanya month diberikan, default ke tahun UTC saat ini
+    let startISO: string | undefined;
+    let endISO: string | undefined;
+
+    if (month && year) {
+      const start = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0));
+      const nextMonth = month === 12 ? 1 : month + 1;
+      const nextYear = month === 12 ? year + 1 : year;
+      const end = new Date(Date.UTC(nextYear, nextMonth - 1, 1, 0, 0, 0, 0));
+      startISO = start.toISOString();
+      endISO = end.toISOString();
+    } else if (year && !month) {
+      const start = new Date(Date.UTC(year, 0, 1, 0, 0, 0, 0));
+      const end = new Date(Date.UTC(year + 1, 0, 1, 0, 0, 0, 0));
+      startISO = start.toISOString();
+      endISO = end.toISOString();
+    } else if (!year && month) {
+      const nowUTC = new Date();
+      const y = nowUTC.getUTCFullYear();
+      const start = new Date(Date.UTC(y, month - 1, 1, 0, 0, 0, 0));
+      const nextMonth = month === 12 ? 1 : month + 1;
+      const nextYear = month === 12 ? y + 1 : y;
+      const end = new Date(Date.UTC(nextYear, nextMonth - 1, 1, 0, 0, 0, 0));
+      startISO = start.toISOString();
+      endISO = end.toISOString();
+    }
+
     // Kolom list view untuk frontend:
     // - status_ulok_eksternal (approval status)
     // - created_at (tidak ada kolom nama)
@@ -68,7 +124,7 @@ export async function GET(request: Request) {
       "branch_id",
       "penanggungjawab",
       "alamat",
-      "nama_pemilik" // relasi ke tabel branch, ambil kolom nama
+      "nama_pemilik", // relasi ke tabel branch, ambil kolom nama
     ].join(",");
 
     let query = supabase
@@ -76,6 +132,17 @@ export async function GET(request: Request) {
       .select(listColumns, { count: "exact" })
       .order("created_at", { ascending: false })
       .range(from, to);
+
+    if (startISO && endISO) {
+      // Filter created_at dalam rentang [start, end)
+      query = query.gte("created_at", startISO).lt("created_at", endISO);
+    }
+
+    if (searchName) {
+      query = query.or(
+        `nama_pemilik.ilike.%${searchName}%,alamat.ilike.%${searchName}%`
+      );
+    }
 
     // Filter berdasarkan posisi
     if (role === "ls") {
@@ -93,6 +160,8 @@ export async function GET(request: Request) {
     } else {
       // RM: melihat semua (tanpa filter)
     }
+
+    query = query.order("created_at", { ascending: false }).range(from, to);
 
     const { data, error, count } = await query;
 
@@ -118,8 +187,13 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         success: true,
-        data: data ?? [],
+        search: searchName,
         pagination,
+        filters: {
+          month: month ?? null,
+          year: year ?? null,
+        },
+        data,
       },
       { status: 200 }
     );
