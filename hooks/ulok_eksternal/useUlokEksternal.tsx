@@ -1,7 +1,6 @@
 "use client";
 
 import useSWR from "swr";
-import type { AppUser } from "../useUser";
 import { swrKeys } from "@/lib/swr-keys";
 
 export type UlokEksternal = {
@@ -23,7 +22,11 @@ interface ApiUlokEksternalResponse {
   // meta dihapus
 }
 
-export function useUlokEksternal(searchQuery?: string) {
+export function useUlokEksternal(
+  searchQuery?: string,
+  month?: string,
+  year?: string
+) {
   // Bangun URL secara dinamis
   const createUrl = () => {
     const params = new URLSearchParams();
@@ -31,6 +34,12 @@ export function useUlokEksternal(searchQuery?: string) {
 
     if (searchQuery && searchQuery.trim() !== "") {
       params.set("search", searchQuery.trim());
+    }
+    if (month && month !== "") {
+      params.set("month", month);
+    }
+    if (year && year !== "") {
+      params.set("year", year);
     }
 
     return `${swrKeys.ulokEksternal}?${params.toString()}`;
