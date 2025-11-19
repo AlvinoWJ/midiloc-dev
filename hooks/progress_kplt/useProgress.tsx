@@ -51,14 +51,21 @@ export function useProgress({
 
   const key = `/api/progress?${params.toString()}`;
 
-  const { data, error, isLoading, mutate } = useSWR<ApiProgressResponse>(key, {
-    keepPreviousData: true,
-  });
+  const { data, error, isLoading, isValidating, mutate } =
+    useSWR<ApiProgressResponse>(key, {
+      keepPreviousData: true,
+    });
+
+  const hasData = !!data;
+  const isInitialLoading = isLoading && !hasData;
+  const isRefreshing = isValidating && hasData;
 
   return {
     progressData: data?.data ?? [],
     meta: data?.pagination,
-    isLoading,
+    isLoading: isInitialLoading,
+    isInitialLoading,
+    isRefreshing,
     isError: !!error,
     error,
     refreshProgress: () => mutate(),

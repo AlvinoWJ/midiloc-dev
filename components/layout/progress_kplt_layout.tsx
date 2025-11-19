@@ -12,10 +12,12 @@ import {
   ChevronsLeft,
   ChevronsRight,
   MoreHorizontal,
+  Loader2,
 } from "lucide-react";
 
 interface ProgressKpltLayoutProps {
   isLoading: boolean;
+  isRefreshing: boolean;
   isError: boolean;
   progressData: ProgressItem[];
   meta: ProgressMeta | undefined;
@@ -27,21 +29,25 @@ interface ProgressKpltLayoutProps {
   onFilterChange: (month: string, year: string) => void;
 }
 
-export default function ProgressKpltLayout({
-  isLoading,
-  isError,
-  progressData,
-  meta,
-  onPageChange,
-  searchQuery,
-  filterMonth,
-  filterYear,
-  onSearch,
-  onFilterChange,
-}: ProgressKpltLayoutProps) {
+export default function ProgressKpltLayout(props: ProgressKpltLayoutProps) {
+  const {
+    isLoading,
+    isRefreshing,
+    isError,
+    progressData,
+    meta,
+    onPageChange,
+    searchQuery,
+    filterMonth,
+    filterYear,
+    onSearch,
+    onFilterChange,
+  } = props;
+
   const isFilterActive = !!searchQuery || !!filterMonth || !!filterYear;
   const currentPage = meta?.page || 1;
   const totalPages = meta?.totalPages || 1;
+  const isContentLoading = isLoading || isRefreshing;
 
   const calculateProgress = (item: ProgressItem): number => {
     type ValidStatus =
@@ -138,7 +144,11 @@ export default function ProgressKpltLayout({
       </div>
 
       {/* Konten Grid / List */}
-      {progressData.length === 0 ? (
+      {isRefreshing ? (
+        <div className="flex items-center justify-center min-h-[23rem]">
+          <Loader2 className="w-8 h-8 text-primary animate-spin" />
+        </div>
+      ) : progressData.length === 0 ? (
         <div className="flex flex-col items-center justify-center text-center py-16 px-4 flex-grow">
           <div className="text-gray-300 text-6xl mb-4">📄</div>
           <h3 className="text-lg font-medium text-gray-900 mb-2">
@@ -174,9 +184,8 @@ export default function ProgressKpltLayout({
           })}
         </div>
       )}
-
       {/* Pagination */}
-      {totalPages > 1 && (
+      {totalPages > 1 && !isContentLoading && (
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-auto pt-2">
           <div className="flex items-center gap-1">
             {/* Tombol halaman pertama */}

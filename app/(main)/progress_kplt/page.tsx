@@ -12,13 +12,14 @@ export default function ProgressKpltPage() {
   const [filterYear, setFilterYear] = useState("");
   const itemsPerPage = 9;
 
-  const { progressData, meta, isLoading, isError } = useProgress({
-    page,
-    limit: itemsPerPage,
-    search: searchQuery,
-    month: filterMonth,
-    year: filterYear,
-  });
+  const { progressData, meta, isInitialLoading, isRefreshing, isError } =
+    useProgress({
+      page,
+      limit: itemsPerPage,
+      search: searchQuery,
+      month: filterMonth,
+      year: filterYear,
+    });
 
   const handlePageChange = (newPage: number) => {
     if (newPage > 0 && (!meta || newPage <= meta.totalPages)) {
@@ -38,7 +39,8 @@ export default function ProgressKpltPage() {
   }, []);
 
   const layoutProps = {
-    isLoading,
+    isLoading: isInitialLoading,
+    isRefreshing,
     isError,
     progressData,
     meta,
