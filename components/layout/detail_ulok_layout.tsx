@@ -17,6 +17,7 @@ import {
   LinkIcon,
   Paperclip,
   FileText,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
@@ -164,7 +165,7 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
           <Button
             variant="back"
             size="default"
-            className="rounded-full flex-1"
+            className="rounded-full flex-1 lg:w-32 lg:flex-none"
             onClick={handleCancel}
             disabled={isSubmitting}
           >
@@ -173,11 +174,18 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
           <Button
             variant="submit"
             size="default"
-            className="rounded-full flex-1" // Dibuat flex-1 agar memenuhi ruang
+            className="rounded-full flex-1 lg:w-32 lg:flex-none"
             onClick={handleSaveWrapper}
             disabled={isSubmitting}
           >
-            {isSubmitting ? "Menyimpan..." : "Simpan"}
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+              </>
+            ) : (
+              "Simpan"
+            )}
+            {/* {isSubmitting ? "Menyimpan..." : "Simpan"} */}
           </Button>
         </>
       ) : (
@@ -186,7 +194,7 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
           <Button
             variant="default"
             size="default"
-            className="rounded-full w-full"
+            className="rounded-full w-full lg:w-32"
             onClick={() => setIsEditing(true)}
             // Nonaktifkan tombol Edit jika LM sedang dalam proses approval
             disabled={isApproving}
@@ -328,7 +336,7 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
                   })()}
               </div>
             </div>
-            <div className="flex-shrink-0">
+            <div className="flex-shrink-0  ">
               <StatusBadge status={initialData.approval_status} />
             </div>
           </div>

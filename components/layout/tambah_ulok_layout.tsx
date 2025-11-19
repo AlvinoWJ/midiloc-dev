@@ -1,7 +1,7 @@
 "use client";
 
 import { Input } from "@/components/ui/input";
-import { MapPin, ArrowLeft } from "lucide-react";
+import { MapPin, ArrowLeft, Loader2 } from "lucide-react";
 import CustomSelect from "@/components/ui/customselect";
 import { Button } from "@/components/ui/button";
 import WilayahSelector from "@/components/ui/customselectwilayah";
@@ -409,7 +409,14 @@ export default function TambahUlokForm({
             className="w-full lg:w-auto p-4 lg:p-5 text-sm lg:text-base font-semibold"
             disabled={isSubmitting}
           >
-            {isSubmitting ? "Menyimpan..." : "Simpan Usulan Lokasi"}
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                Menyimpan...
+              </>
+            ) : (
+              "Simpan Usulan Lokasi"
+            )}
           </Button>
         </div>
       </form>

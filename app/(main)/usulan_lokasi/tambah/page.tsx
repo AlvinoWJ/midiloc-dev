@@ -30,7 +30,6 @@ export default function TambahUlokPage() {
 
       const response = await fetch("/api/ulok", {
         method: "POST",
-
         body: formData,
       });
       invalidate.ulok();
@@ -38,7 +37,6 @@ export default function TambahUlokPage() {
       const resJson = await response.json();
 
       if (!response.ok) {
-        // Jika API mengembalikan error, tampilkan pesannya
         throw new Error(
           resJson.error || "Terjadi kesalahan saat menyimpan data."
         );
@@ -49,7 +47,7 @@ export default function TambahUlokPage() {
         title: "Berhasil",
         message: "Usulan Lokasi baru telah berhasil disimpan!",
       });
-      router.push("/usulan_lokasi");
+      router.back();
     } catch (err: unknown) {
       showToast({
         type: "error",
@@ -63,18 +61,10 @@ export default function TambahUlokPage() {
       setIsSubmitting(false);
     }
   };
-
-  // --- RENDER LOGIC ---
-
-  // 1. Tampilkan skeleton saat deteksi perangkat sedang berjalan
-  // Ini penting untuk mencegah "flicker" atau tampilan layout yang salah sesaat.
-
-  // 2. Siapkan props yang akan diteruskan ke komponen UI
   const formProps = {
     onSubmit: handleFormSubmit,
     isSubmitting: isSubmitting,
   };
 
-  // 3. Render komponen yang sesuai berdasarkan hasil deteksi perangkat
   return <TambahUlokForm {...formProps} />;
 }

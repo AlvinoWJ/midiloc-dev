@@ -56,34 +56,6 @@ export function useDetailUlokForm(
     setEditedData(converted);
   }, [initialData]);
 
-  useEffect(() => {
-    if (!isEditing) {
-      return;
-    }
-    const panjangNum = parseKomaToNumber(editedData.panjang);
-    const lebarNum = parseKomaToNumber(editedData.lebardepan);
-
-    let luasString = "";
-
-    if (panjangNum > 0 && lebarNum > 0) {
-      const luasCalc = panjangNum * lebarNum;
-      luasString = convertkoma(luasCalc.toFixed(2));
-    } else if (panjangNum === 0 || lebarNum === 0) {
-      if (
-        String(editedData.panjang).length > 0 ||
-        String(editedData.lebardepan).length > 0
-      ) {
-        luasString = "0";
-      }
-    }
-    if (editedData.luas !== luasString) {
-      setEditedData((prev: any) => ({
-        ...prev,
-        luas: luasString,
-      }));
-    }
-  }, [editedData.panjang, editedData.lebardepan, isEditing, editedData.luas]);
-
   const handleFileChange = (file: File | null) => {
     setNewFormUlokFile(file);
   };

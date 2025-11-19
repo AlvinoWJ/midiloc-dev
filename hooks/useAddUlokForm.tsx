@@ -61,22 +61,7 @@ export function useAddUlokForm({
 
       setFormData((prev) => {
         const updated = { ...prev, [name]: filtered };
-        if (name === "panjang" || name === "lebardepan") {
-          const panjang = parseFloat(
-            (name === "panjang" ? filtered : prev.panjang).replace(",", ".")
-          );
-          const lebar = parseFloat(
-            (name === "lebardepan" ? filtered : prev.lebardepan).replace(
-              ",",
-              "."
-            )
-          );
 
-          if (!isNaN(panjang) && !isNaN(lebar)) {
-            const luas = (panjang * lebar).toFixed(2).replace(".", ",");
-            updated.luas = luas;
-          }
-        }
         return updated;
       });
       return;
