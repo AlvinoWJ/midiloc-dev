@@ -20,7 +20,6 @@ export default function SWRProvider({
           }
           return res.json();
         },
-        provider: () => new Map(),
         dedupingInterval: 60_000,
         revalidateOnFocus: false,
         revalidateIfStale: false,

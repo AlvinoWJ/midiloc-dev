@@ -75,7 +75,7 @@ function coerceNumbers(raw: Record<string, unknown>) {
 }
 
 // GET /api/ulok?page=1&limit=10
-const BLOCK_SIZE = 90; // BE selalu kirim 90 per blok
+const BLOCK_SIZE = 90;
 const PAGE_SIZE_UI = 9; // referensi untuk FE
 
 export async function GET(request: Request) {
