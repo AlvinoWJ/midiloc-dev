@@ -11,6 +11,7 @@ import {
   X,
   TimerIcon,
   MapPinned,
+  Store,
 } from "lucide-react"; // Tambahkan ikon X
 import Image from "next/image";
 import { LogoutButton } from "../ui/logout-button"; // Sesuaikan path jika perlu
@@ -31,6 +32,11 @@ const menu = [
     name: "Progress KPLT",
     href: "/progress_kplt",
     icon: <TimerIcon size={20} />,
+  },
+  {
+    name: "Toko Existing",
+    href: "/toko_existing",
+    icon: <Store size={20} />,
   },
 ];
 

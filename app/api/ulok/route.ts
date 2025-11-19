@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/supabase/server";
 import { UlokCreateSchema } from "@/lib/validations/ulok";
 import { getCurrentUser, canUlok } from "@/lib/auth/acl";
 import { buildPathByField } from "@/lib/storage/path";
@@ -75,6 +75,9 @@ function coerceNumbers(raw: Record<string, unknown>) {
 }
 
 // GET /api/ulok?page=1&limit=10
+const BLOCK_SIZE = 90; // BE selalu kirim 90 per blok
+const PAGE_SIZE_UI = 9; // referensi untuk FE
+
 export async function GET(request: Request) {
   try {
     const supabase = await createClient();
@@ -100,19 +103,44 @@ export async function GET(request: Request) {
     }
 
     const { searchParams } = new URL(request.url);
-    const page = Number(searchParams.get("page") ?? "1");
-    const limit = Number(searchParams.get("limit") ?? "10");
-    const safePage = Number.isFinite(page) && page > 0 ? page : 1;
-    const safeLimit = Number.isFinite(limit) && limit > 0 ? limit : 10;
 
-    const from = (safePage - 1) * safeLimit;
-    const to = from + safeLimit - 1;
+    // page = nomor blok (1-based)
+    const rawPage = Number(searchParams.get("page") ?? "1");
+    const blockPage = Number.isFinite(rawPage) && rawPage > 0 ? rawPage : 1;
+
+    const scope = (searchParams.get("scope") || "recent").toLowerCase();
+    const isRecent = scope === "recent";
+    const isHistory = scope === "history";
+    const isAll = scope === "all";
+
+    if (!isRecent && !isHistory && !isAll) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Bad Request",
+          error: "scope must be 'recent' or 'history'",
+        },
+        { status: 422 }
+      );
+    }
+
+    // withCount: planned (cepat), exact (mahal), none
+    const withCount = (
+      searchParams.get("withCount") || "planned"
+    ).toLowerCase();
+    const countOption =
+      withCount === "exact"
+        ? "exact"
+        : withCount === "planned"
+        ? "planned"
+        : undefined;
+
     const searchName = (searchParams.get("search") || "").trim();
+    const specialistId = searchParams.get("specialist_id") || "";
 
-    // Filter bulan/tahun (month|bulan, year|tahun)
+    // Filter bulan/tahun
     const monthParam = searchParams.get("month") ?? searchParams.get("bulan");
     const yearParam = searchParams.get("year") ?? searchParams.get("tahun");
-
     const month = monthParam ? Number(monthParam) : undefined;
     const year = yearParam ? Number(yearParam) : undefined;
 
@@ -135,35 +163,31 @@ export async function GET(request: Request) {
       );
     }
 
-    // Hitung rentang waktu UTC untuk filter created_at
-    // Jika hanya month diberikan, default ke tahun UTC saat ini
+    // Rentang waktu UTC (opsional)
     let startISO: string | undefined;
     let endISO: string | undefined;
-
     if (month && year) {
-      const start = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0));
-      const nextMonth = month === 12 ? 1 : month + 1;
-      const nextYear = month === 12 ? year + 1 : year;
-      const end = new Date(Date.UTC(nextYear, nextMonth - 1, 1, 0, 0, 0, 0));
+      const start = new Date(Date.UTC(year, month - 1, 1));
+      const nm = month === 12 ? 1 : month + 1;
+      const ny = month === 12 ? year + 1 : year;
+      const end = new Date(Date.UTC(ny, nm - 1, 1));
       startISO = start.toISOString();
       endISO = end.toISOString();
     } else if (year && !month) {
-      const start = new Date(Date.UTC(year, 0, 1, 0, 0, 0, 0));
-      const end = new Date(Date.UTC(year + 1, 0, 1, 0, 0, 0, 0));
-      startISO = start.toISOString();
-      endISO = end.toISOString();
+      startISO = new Date(Date.UTC(year, 0, 1)).toISOString();
+      endISO = new Date(Date.UTC(year + 1, 0, 1)).toISOString();
     } else if (!year && month) {
       const nowUTC = new Date();
       const y = nowUTC.getUTCFullYear();
-      const start = new Date(Date.UTC(y, month - 1, 1, 0, 0, 0, 0));
-      const nextMonth = month === 12 ? 1 : month + 1;
-      const nextYear = month === 12 ? y + 1 : y;
-      const end = new Date(Date.UTC(nextYear, nextMonth - 1, 1, 0, 0, 0, 0));
+      const start = new Date(Date.UTC(y, month - 1, 1));
+      const nm = month === 12 ? 1 : month + 1;
+      const ny = month === 12 ? y + 1 : y;
+      const end = new Date(Date.UTC(ny, nm - 1, 1));
       startISO = start.toISOString();
       endISO = end.toISOString();
     }
 
-    // Kolom list view — sesuaikan dengan kebutuhan front-end
+    // Kolom list view minimal
     const listColumns = [
       "id",
       "nama_ulok",
@@ -172,37 +196,50 @@ export async function GET(request: Request) {
       "created_at",
       "latitude",
       "longitude",
+      "users_id",
     ].join(",");
 
-    const specialistId = searchParams.get("specialist_id");
+    // Range blok (paksa 90)
+    const from = (blockPage - 1) * BLOCK_SIZE;
+    const to = from + BLOCK_SIZE - 1;
 
     let query = supabase
       .from("ulok")
-      .select(listColumns, { count: "exact" })
+      .select(listColumns, { count: countOption as any })
       .eq("branch_id", user.branch_id);
 
+    // Scope status
+    if (isRecent) {
+      query = query.eq("approval_status", "In Progress");
+    } else if (isHistory) {
+      query = query.in("approval_status", ["OK", "NOK"]);
+    } else if (isAll) {
+      query = query.in("approval_status", ["OK", "NOK", "In Progress"]);
+    }
+
     if (startISO && endISO) {
-      // Filter created_at dalam rentang [start, end)
       query = query.gte("created_at", startISO).lt("created_at", endISO);
     }
 
-    if (user.position_nama === "location specialist") {
+    // Scoping posisi
+    const pos = (user.position_nama || "").toLowerCase();
+    if (pos === "location specialist") {
       query = query.eq("users_id", user.id);
-    } else {
-      if (specialistId && specialistId !== "semua" && specialistId !== "") {
-        query = query.eq("users_id", specialistId);
-      }
+    } else if (specialistId && specialistId !== "semua") {
+      query = query.eq("users_id", specialistId);
     }
 
     if (searchName) {
       query = query.ilike("nama_ulok", `%${searchName}%`);
     }
 
-    // Urutkan + paginasi terakhir
-    query = query.order("created_at", { ascending: false }).range(from, to);
+    // Order stabil + paging per blok
+    query = query
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: false })
+      .range(from, to);
 
     const { data, error, count } = await query;
-
     if (error) {
       return NextResponse.json(
         {
@@ -214,29 +251,31 @@ export async function GET(request: Request) {
       );
     }
 
-    const total = count ?? 0;
-    const pagination = {
-      page: safePage,
-      limit: safeLimit,
-      total,
-      totalPages: total ? Math.ceil(total / safeLimit) : 0,
-    };
+    const total = typeof count === "number" ? count : 0;
+    const totalPagesUi = total ? Math.ceil(total / PAGE_SIZE_UI) : 0;
 
     return NextResponse.json(
       {
         success: true,
-        search: searchName,
-        pagination,
+        scope: isRecent ? "recent" : "history",
+        block: { blockPage, blockSize: BLOCK_SIZE },
+        pagination: {
+          total,
+          totalPagesUi,
+          withCount: countOption ?? "none",
+          pageSizeUi: PAGE_SIZE_UI,
+        },
         filters: {
           month: month ?? null,
           year: year ?? null,
+          search: searchName || null,
+          specialist_id: specialistId || null,
         },
-        data,
+        data: data ?? [],
       },
       { status: 200 }
     );
   } catch (err: any) {
-    // Fallback internal error
     return NextResponse.json(
       {
         success: false,

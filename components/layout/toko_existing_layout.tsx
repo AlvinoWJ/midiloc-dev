@@ -1,76 +1,67 @@
-// components/layout/progress_kplt_layout.tsx
+// components/layout/toko_existing_layout.tsx
 "use client";
 
 import React from "react";
-import { ProgressInfoCard } from "../ui/progress_kplt/progress_info_card";
-import { ProgressKpltSkeleton } from "@/components/ui/skleton";
-import { ProgressItem, ProgressMeta } from "@/hooks/progress_kplt/useProgress";
-import SearchWithFilter from "../ui/searchwithfilter";
+import { TokoExistingItem, TokoExistingMeta } from "@/types/toko_existing";
+import { TokoExistingInfoCard } from "../ui/toko_existing/toko_existing_info_card";
+import TokoExistingFilter from "../ui/toko_existing/toko_existing_filter";
 import {
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
   MoreHorizontal,
-  Loader2,
 } from "lucide-react";
 
-interface ProgressKpltLayoutProps {
+// Mock Skeleton Component (meniru ProgressKpltSkeleton)
+const TokoExistingSkeleton = () => (
+  <div className="space-y-6 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-6 min-h-[23rem] flex-grow">
+    {Array.from({ length: 9 }).map((_, index) => (
+      <div
+        key={index}
+        className="bg-white rounded-xl shadow-lg border border-gray-100 p-5 space-y-4 animate-pulse h-[200px]"
+      >
+        <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+        <div className="h-3 bg-gray-200 rounded w-full"></div>
+        <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+        <div className="h-10 bg-gray-200 rounded-lg w-full mt-auto"></div>
+      </div>
+    ))}
+  </div>
+);
+
+interface TokoExistingLayoutProps {
   isLoading: boolean;
-  isRefreshing: boolean;
   isError: boolean;
-  progressData: ProgressItem[];
-  meta: ProgressMeta | undefined;
+  tokoData: TokoExistingItem[];
+  meta: TokoExistingMeta | undefined;
   onPageChange: (newPage: number) => void;
   searchQuery: string;
-  filterMonth: string;
   filterYear: string;
+  filterRegional: string;
   onSearch: (query: string) => void;
-  onFilterChange: (month: string, year: string) => void;
+  onFilterChange: (year: string, regional: string) => void;
+  // Mock property untuk simulasi pemeriksaan peran pengguna
+  userRole: "Staff" | "Region Manager" | "General Manager";
 }
 
-export default function ProgressKpltLayout(props: ProgressKpltLayoutProps) {
-  const {
-    isLoading,
-    isRefreshing,
-    isError,
-    progressData,
-    meta,
-    onPageChange,
-    searchQuery,
-    filterMonth,
-    filterYear,
-    onSearch,
-    onFilterChange,
-  } = props;
-
-  const isFilterActive = !!searchQuery || !!filterMonth || !!filterYear;
+export default function TokoExistingLayout({
+  isLoading,
+  isError,
+  tokoData,
+  meta,
+  onPageChange,
+  searchQuery,
+  filterYear,
+  filterRegional,
+  onSearch,
+  onFilterChange,
+  userRole,
+}: TokoExistingLayoutProps) {
   const currentPage = meta?.page || 1;
   const totalPages = meta?.totalPages || 1;
-  const isContentLoading = isLoading || isRefreshing;
 
-  const calculateProgress = (item: ProgressItem): number => {
-    type ValidStatus =
-      | "Not Started"
-      | "Mou"
-      | "Perizinan"
-      | "Notaris"
-      | "Renovasi"
-      | "Grand Opening";
-
-    const statusMap: Record<ValidStatus, number> = {
-      "Not Started": 0,
-      Mou: 20,
-      Perizinan: 40,
-      Notaris: 60,
-      Renovasi: 80,
-      "Grand Opening": 100,
-    };
-    const status = item.status as ValidStatus;
-    return statusMap[status] ?? 0;
-  };
-
-  // Function to generate page numbers with ellipsis
+  // Function to generate page numbers with ellipsis (dicopy dari progress_kplt_layout)
   const getPageNumbers = () => {
     const pages = [];
     const showEllipsisStart = currentPage > 3;
@@ -106,8 +97,15 @@ export default function ProgressKpltLayout(props: ProgressKpltLayoutProps) {
     return pages;
   };
 
-  if (isLoading && progressData.length === 0) {
-    return <ProgressKpltSkeleton />;
+  // Tampilkan skeleton saat memuat data awal
+  if (
+    isLoading &&
+    tokoData.length === 0 &&
+    searchQuery === "" &&
+    filterYear === "" &&
+    filterRegional === ""
+  ) {
+    return <TokoExistingSkeleton />;
   }
 
   if (isError) {
@@ -119,7 +117,7 @@ export default function ProgressKpltLayout(props: ProgressKpltLayoutProps) {
             Gagal Memuat Data
           </h3>
           <p className="text-gray-600 text-sm lg:text-base mb-4">
-            Terjadi kesalahan saat mengambil data Progress KPLT. Silakan coba
+            Terjadi kesalahan saat mengambil data Toko Existing. Silakan coba
             lagi.
           </p>
           <button
@@ -139,53 +137,49 @@ export default function ProgressKpltLayout(props: ProgressKpltLayoutProps) {
     <div className="space-y-4 lg:space-y-6 flex flex-col">
       {/* Header Halaman */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-        <h1 className="text-2xl lg:text-4xl font-bold">Progress KPLT</h1>
-        <SearchWithFilter onSearch={onSearch} onFilterChange={onFilterChange} />
+        <h1 className="text-2xl lg:text-4xl font-bold">Toko Existing</h1>
+        <TokoExistingFilter
+          onSearch={onSearch}
+          onFilterChange={onFilterChange}
+          userRole={userRole}
+        />
       </div>
 
       {/* Konten Grid / List */}
-      {isRefreshing ? (
-        <div className="flex items-center justify-center min-h-[23rem]">
-          <Loader2 className="w-8 h-8 text-primary animate-spin" />
-        </div>
-      ) : progressData.length === 0 ? (
+      {tokoData.length === 0 && !isLoading ? (
         <div className="flex flex-col items-center justify-center text-center py-16 px-4 flex-grow">
           <div className="text-gray-300 text-6xl mb-4">📄</div>
           <h3 className="text-lg font-medium text-gray-900 mb-2">
-            Belum ada data progres
+            Tidak ada data toko ditemukan
           </h3>
           <p className="text-gray-500 text-sm lg:text-base max-w-md">
-            Tambahkan data progres baru untuk mulai memantau perkembangan KPLT.
+            Coba sesuaikan pencarian atau filter Anda.
           </p>
         </div>
       ) : (
         <div className="space-y-6 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-6 min-h-[23rem] flex-grow">
-          {progressData.map((item) => {
-            const kpltId = item.id;
-            const kpltName = item.kplt?.nama_kplt;
-            const kpltAlamat = item.kplt?.alamat || "Alamat tidak tersedia";
-            const progressPercentage = calculateProgress(item);
-
-            if (!kpltId) return null;
-
-            return (
+          {isLoading ? (
+            <TokoExistingSkeleton />
+          ) : (
+            tokoData.map((item) => (
               <div key={item.id} className="flex flex-col h-full">
-                <ProgressInfoCard
-                  id={kpltId}
-                  nama={kpltName || "Nama KPLT tidak ditemukan"}
-                  alamat={kpltAlamat}
-                  created_at={item.created_at || new Date().toISOString()}
-                  status={item.status || "N/A"}
-                  progressPercentage={progressPercentage}
-                  detailPath="/progress_kplt/detail/"
+                <TokoExistingInfoCard
+                  id={item.id}
+                  nama={item.nama_toko}
+                  alamat={item.alamat || "Alamat tidak tersedia"}
+                  regional={item.regional || "N/A"}
+                  tahun_beroperasi={item.tahun_beroperasi}
+                  status={item.status}
+                  detailPath="/toko_existing/detail/" // Placeholder path
                 />
               </div>
-            );
-          })}
+            ))
+          )}
         </div>
       )}
+
       {/* Pagination */}
-      {totalPages > 1 && !isContentLoading && (
+      {totalPages > 1 && !isLoading && (
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-auto pt-2">
           <div className="flex items-center gap-1">
             {/* Tombol halaman pertama */}
@@ -223,7 +217,7 @@ export default function ProgressKpltLayout(props: ProgressKpltLayoutProps) {
                     disabled={isLoading}
                     className={`w-10 h-10 rounded-full text-sm font-semibold transition-all ${
                       pageNum === currentPage
-                        ? "bg-primary text-white shadow-lg shadow-red-500/30 scale-105"
+                        ? "bg-red-500 text-white shadow-lg shadow-red-500/30 scale-105"
                         : "text-gray-700 hover:bg-gray-100"
                     } disabled:opacity-40 disabled:cursor-not-allowed`}
                   >
