@@ -91,27 +91,27 @@ export function InfoCard({
           </div>
         )}
 
-        <CardHeader className="flex flex-row justify-between items-start space-y-0">
-          <div className="flex-1 min-w-0">
-            <CardTitle className="text-xl capitalize truncate">
+        <CardHeader className="flex flex-row justify-between items-start space-y-0 pr-12">
+          <div className="flex-1 min-w-0 pr-2">
+            <CardTitle className="text-lg lg:text-xl capitalize line-clamp-1">
               {nama}
             </CardTitle>
-            <CardDescription className="truncate w-[230px] text-gray-700 text-m font-medium">
+            <CardDescription className="line-clamp-1 text-gray-700 text-sm lg:text-base font-medium mt-1">
               {alamat}
             </CardDescription>
           </div>
           <Image
             src="/icons/Edit.png"
             alt="edit Logo"
-            width={27}
-            height={27}
-            className="text-gray-500"
+            width={24}
+            height={24}
+            className="text-gray-500 flex-shrink-0 lg:w-[27px] lg:h-[27px]"
           />
         </CardHeader>
 
-        <CardFooter className="flex justify-between items-center gap-4">
+        <CardFooter className="flex justify-between items-center gap-4 pt-2">
           <StatusBadge status={status} />
-          <span className="text-gray-700 text-m font-medium">
+          <span className="text-gray-700 text-m lg:text-base font-medium">
             {formattedDate}
           </span>
         </CardFooter>
