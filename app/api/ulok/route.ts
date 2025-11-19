@@ -8,7 +8,7 @@ import { buildPathByField } from "@/lib/storage/path";
 const BUCKET = "file_storage";
 const MAX_PDF_SIZE = 15 * 1024 * 1024; // 15MB
 
-const DEFAULT_LIMIT = 9;
+const DEFAULT_LIMIT = 36;
 
 // Base64url helpers
 function b64urlEncode(s: string) {

@@ -47,10 +47,6 @@ export default function UlokPage() {
     setCurrentPage(1);
   };
 
-  // Kita asumsikan meta?.totalPages sekarang berisi total halaman UI di dalam blok yang diambil
-  const totalPagesInBlock = meta?.totalPages ?? 0;
-  // Kita ambil properti hasNextPage baru dari hook
-  const hasNextPage = meta?.hasNextPage ?? false;
   const layoutProps = {
     user,
     isLoading: isInitialLoading,

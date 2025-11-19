@@ -2,6 +2,7 @@
 
 import useSWR from "swr";
 import type { AppUser } from "../useUser";
+import { useState, useEffect } from "react";
 
 export type Ulok = {
   id: string;
@@ -22,17 +23,16 @@ export interface Block {
 }
 
 export interface Pagination {
-  total: number;
-  totalPagesUi: number;
-  withCount: string;
-  pageSizeUi: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+  startCursor: string | null;
+  endCursor: string | null;
 }
 
 interface ApiUlokResponse {
+  success: boolean;
   data: Ulok[];
-  block: Block;
   pagination: Pagination;
-  meta?: { user?: AppUser };
 }
 
 interface UseUlokProps {
@@ -44,32 +44,47 @@ interface UseUlokProps {
   activeTab?: string;
 }
 
-const CLIENT_PAGE_SIZE = 9;
-const SERVER_BLOCK_SIZE = 90;
-const PAGES_PER_BLOCK = SERVER_BLOCK_SIZE / CLIENT_PAGE_SIZE;
+const UI_PAGE_SIZE = 9; // User melihat 9 item per halaman
+const PAGES_PER_BLOCK = 1; // 1 Fetch = 4 Halaman UI
+const FETCH_BLOCK_SIZE = UI_PAGE_SIZE * PAGES_PER_BLOCK;
 
 export function useUlok({
   page = 1,
-  limit = CLIENT_PAGE_SIZE,
   search = "",
   month = "",
   year = "",
   activeTab = "Recent",
 }: UseUlokProps = {}) {
-  const blockPage = Math.ceil(page / PAGES_PER_BLOCK);
-  const currentPageUi = ((page - 1) % PAGES_PER_BLOCK) + 1;
+  const currentBlockIndex = Math.floor((page - 1) / PAGES_PER_BLOCK);
+
+  const [cursorMap, setCursorMap] = useState<Record<number, string>>({ 0: "" });
+
+  useEffect(() => {
+    setCursorMap({ 0: "" });
+  }, [search, month, year, activeTab]);
+
+  const cursorForCurrentBlock = cursorMap[currentBlockIndex];
+
+  const shouldFetch = cursorForCurrentBlock !== undefined;
 
   const createUrl = () => {
+    if (!shouldFetch) return null;
+
     const params = new URLSearchParams();
-    params.set("blockPage", blockPage.toString());
-    params.set("blockSize", SERVER_BLOCK_SIZE.toString());
+
+    params.set("limit", FETCH_BLOCK_SIZE.toString());
+    params.set("scope", activeTab.toLowerCase());
+
+    if (cursorForCurrentBlock) {
+      params.set("after", cursorForCurrentBlock);
+    }
 
     if (search && search.trim() !== "") {
       params.set("search", search.trim());
     }
     if (month) params.set("month", month);
     if (year) params.set("year", year);
-    if (activeTab) params.set("tab", activeTab);
+    if (activeTab) params.set("scope", activeTab);
 
     return `/api/ulok?${params.toString()}`;
   };
@@ -77,46 +92,70 @@ export function useUlok({
   const apiUrl = createUrl();
 
   const { data, error, isLoading, isValidating, mutate } =
-    useSWR<ApiUlokResponse>(apiUrl, {
+    useSWR<ApiUlokResponse>(createUrl(), {
+      revalidateOnFocus: false,
       keepPreviousData: true,
     });
 
-  const hasData = !!data;
-  const isInitialLoading = isLoading && !hasData;
-  const isRefreshing = isValidating && hasData;
+  useEffect(() => {
+    if (data?.pagination?.hasNextPage && data?.pagination?.endCursor) {
+      const nextBlockIndex = currentBlockIndex + 1;
+      setCursorMap((prev) => {
+        // Cek duplikasi agar tidak render loop
+        if (prev[nextBlockIndex] === data.pagination.endCursor) return prev;
+        return { ...prev, [nextBlockIndex]: data.pagination.endCursor! };
+      });
+    }
+  }, [data, currentBlockIndex]);
 
-  const dataBlock = data?.data ?? [];
-  const block = data?.block;
+  const pageIndexInBlock = (page - 1) % PAGES_PER_BLOCK; // 0, 1, 2, atau 3
+  const sliceStart = pageIndexInBlock * UI_PAGE_SIZE;
+  const sliceEnd = sliceStart + UI_PAGE_SIZE;
 
-  const startIndex = (currentPageUi - 1) * CLIENT_PAGE_SIZE;
-  const endIndex = startIndex + CLIENT_PAGE_SIZE;
+  // Pastikan data ada sebelum slice
+  const fullBlockData = data?.data || [];
+  const ulokData = fullBlockData.slice(sliceStart, sliceEnd);
 
-  const ulokData = dataBlock.slice(startIndex, endIndex);
-  const totalPagesUiInBlock = Math.ceil(dataBlock.length / CLIENT_PAGE_SIZE);
+  // 7. Hitung "Total Pages" untuk UI
+  //    User ingin: "double chevron langsung ke page 8".
+  //    Artinya, jika kita di Block 0 dan tahu ada Block 1, total pages harus minimal 8.
 
-  const totalBlocks = block?.blockCount ?? 0;
+  const apiHasNext = data?.pagination?.hasNextPage ?? false;
+  let totalPagesUi = 0;
 
-  let trueTotalVirtualPages = totalBlocks * PAGES_PER_BLOCK;
-
-  if (block?.isLastBlock) {
-    const pagesInPreviousBlocks = (block.blockPage - 1) * PAGES_PER_BLOCK;
-    trueTotalVirtualPages = pagesInPreviousBlocks + totalPagesUiInBlock;
+  if (apiHasNext) {
+    // Jika API bilang masih ada data SETELAH 36 data ini:
+    // Maka setidaknya ada 1 block penuh lagi di depan.
+    // Contoh: Sekarang Block 0 (Page 1-4). Masih ada data. Berarti UI boleh tampilkan sampai Page 8 (Block 1).
+    totalPagesUi = (currentBlockIndex + 2) * PAGES_PER_BLOCK;
+  } else {
+    // Jika API bilang data HABIS di block ini:
+    // Hitung manual sisa datanya jadi berapa halaman.
+    // Contoh: Dapat 10 data. BlockIndex 0.
+    // Page penuh = 0 * 4 = 0.
+    // Sisa halaman = ceil(10 / 9) = 2.
+    // Total = 2 halaman.
+    const pagesInCurrentBlock = Math.ceil(fullBlockData.length / UI_PAGE_SIZE);
+    totalPagesUi = currentBlockIndex * PAGES_PER_BLOCK + pagesInCurrentBlock;
   }
 
-  const hasNextPage = page < trueTotalVirtualPages;
+  // Fallback minimal 1 halaman agar tidak error
+  if (totalPagesUi === 0 && fullBlockData.length > 0) totalPagesUi = 1;
+  if (totalPagesUi === 0 && !isLoading) totalPagesUi = 1;
+
+  // Logic HasNextPage untuk UI (tombol single chevron)
+  const uiHasNextPage = page < totalPagesUi;
 
   return {
-    ulokData: ulokData,
-    isInitialLoading: isInitialLoading,
-    meta: {
-      totalPages: totalPagesUiInBlock,
-
-      hasNextPage: hasNextPage,
-      block: block,
-      uiPagination: data?.pagination,
-    },
-    isRefreshing: isRefreshing,
+    ulokData,
+    isInitialLoading: isLoading && !data,
+    isRefreshing: isValidating,
     ulokError: error,
-    refreshUlok: () => mutate(),
+    refreshUlok: mutate,
+    meta: {
+      totalPages: totalPagesUi,
+      hasNextPage: uiHasNextPage,
+      blockIndex: currentBlockIndex,
+    },
   };
 }
