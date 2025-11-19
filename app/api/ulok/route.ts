@@ -8,6 +8,38 @@ import { buildPathByField } from "@/lib/storage/path";
 const BUCKET = "file_storage";
 const MAX_PDF_SIZE = 15 * 1024 * 1024; // 15MB
 
+const DEFAULT_LIMIT = 9;
+
+// Base64url helpers
+function b64urlEncode(s: string) {
+  return Buffer.from(s)
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+}
+function b64urlDecode(s: string) {
+  s = s.replace(/-/g, "+").replace(/_/g, "/");
+  const pad = s.length % 4;
+  if (pad) s += "=".repeat(4 - pad);
+  return Buffer.from(s, "base64").toString("utf8");
+}
+
+type CursorPayload = { created_at: string; id: string };
+function encodeCursor(p: CursorPayload) {
+  return b64urlEncode(JSON.stringify(p));
+}
+function decodeCursor(c: string): CursorPayload | null {
+  try {
+    const obj = JSON.parse(b64urlDecode(c));
+    if (obj && typeof obj.created_at === "string" && typeof obj.id === "string")
+      return obj;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 async function isPdfFile(
   file: File,
   strictSignature = true
@@ -75,8 +107,6 @@ function coerceNumbers(raw: Record<string, unknown>) {
 }
 
 // GET /api/ulok?page=1&limit=10
-const BLOCK_SIZE = 90; // BE selalu kirim 90 per blok
-const PAGE_SIZE_UI = 9; // referensi untuk FE
 
 export async function GET(request: Request) {
   try {
@@ -104,9 +134,17 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url);
 
-    // page = nomor blok (1-based)
-    const rawPage = Number(searchParams.get("page") ?? "1");
-    const blockPage = Number.isFinite(rawPage) && rawPage > 0 ? rawPage : 1;
+    // Limit
+    const limitRaw = Number(searchParams.get("limit") ?? String(DEFAULT_LIMIT));
+    const limit =
+      Number.isFinite(limitRaw) && limitRaw > 0
+        ? Math.min(limitRaw, 100)
+        : DEFAULT_LIMIT;
+    const pageSize = limit + 1; // ambil 1 ekstra untuk deteksi hasNext/hasPrev
+
+    // Cursor params
+    const after = searchParams.get("after") || ""; // untuk ambil "lebih lama" dari cursor (desc)
+    const before = searchParams.get("before") || ""; // untuk ambil "lebih baru" dari cursor (desc)
 
     const scope = (searchParams.get("scope") || "recent").toLowerCase();
     const isRecent = scope === "recent";
@@ -199,10 +237,6 @@ export async function GET(request: Request) {
       "users_id",
     ].join(",");
 
-    // Range blok (paksa 90)
-    const from = (blockPage - 1) * BLOCK_SIZE;
-    const to = from + BLOCK_SIZE - 1;
-
     let query = supabase
       .from("ulok")
       .select(listColumns, { count: countOption as any })
@@ -217,6 +251,7 @@ export async function GET(request: Request) {
       query = query.in("approval_status", ["OK", "NOK", "In Progress"]);
     }
 
+    //scope date
     if (startISO && endISO) {
       query = query.gte("created_at", startISO).lt("created_at", endISO);
     }
@@ -229,17 +264,54 @@ export async function GET(request: Request) {
       query = query.eq("users_id", specialistId);
     }
 
+    //search
     if (searchName) {
       query = query.ilike("nama_ulok", `%${searchName}%`);
     }
 
-    // Order stabil + paging per blok
+    // Order stabil
     query = query
       .order("created_at", { ascending: false })
-      .order("id", { ascending: false })
-      .range(from, to);
+      .order("id", { ascending: false });
 
-    const { data, error, count } = await query;
+    // Terapkan cursor
+    const afterPayload = after ? decodeCursor(after) : null;
+    const beforePayload = before ? decodeCursor(before) : null;
+
+    if (afterPayload && beforePayload) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Bad Request",
+          error: "Only one of 'after' or 'before' can be provided",
+        },
+        { status: 422 }
+      );
+    }
+
+    if (afterPayload) {
+      // Ambil item LEBIH LAMA dari cursor (karena urutan desc)
+      // Kondisi: created_at < ts OR (created_at = ts AND id < cursor_id)
+      const ts = afterPayload.created_at;
+      const id = afterPayload.id;
+      query = query.or(
+        `created_at.lt.${ts},and(created_at.eq.${ts},id.lt.${id})`
+      );
+    } else if (beforePayload) {
+      // Ambil item LEBIH BARU dari cursor (urutan desc), untuk "previous"
+      // Kondisi: created_at > ts OR (created_at = ts AND id > cursor_id)
+      const ts = beforePayload.created_at;
+      const id = beforePayload.id;
+      query = query.or(
+        `created_at.gt.${ts},and(created_at.eq.${ts},id.gt.${id})`
+      );
+    }
+
+    // Limit + 1 untuk deteksi hasNext/hasPrev
+    query = query.limit(pageSize);
+
+    const { data, error } = await query;
+
     if (error) {
       return NextResponse.json(
         {
@@ -251,37 +323,69 @@ export async function GET(request: Request) {
       );
     }
 
-    const total = typeof count === "number" ? count : 0;
-    const totalPagesUi = total ? Math.ceil(total / PAGE_SIZE_UI) : 0;
+    const rows =
+      Array.isArray(data) &&
+      data.every(
+        (item) =>
+          typeof item === "object" &&
+          item !== null &&
+          "created_at" in item &&
+          "id" in item
+      )
+        ? (data as Array<{ created_at: string; id: string }>)
+        : [];
+    const gotExtra = rows.length > limit;
+    const items = gotExtra ? rows.slice(0, limit) : rows;
 
-    const blockCount = data?.length ?? 0;
-    const isLastBlock = blockPage * BLOCK_SIZE >= total && total > 0;
-    const hasMoreBlocks = !isLastBlock && blockCount === BLOCK_SIZE;
+    const count = items.length;
+
+    // PageInfo
+    const startCursor = items.length
+      ? encodeCursor({ created_at: items[0].created_at, id: items[0].id })
+      : null;
+    const endCursor = items.length
+      ? encodeCursor({
+          created_at: items[items.length - 1].created_at,
+          id: items[items.length - 1].id,
+        })
+      : null;
+
+    // hasNextPage: bila ada ekstra item di sisi "lebih lama" (arah after)
+    // - Untuk initial/after: gotExtra = true → masih ada next
+    // - Untuk before: kita tetap pakai gotExtra, karena order tetap desc, query mengambil "lebih baru"
+    //   sehingga gotExtra menunjukkan masih ada data ke arah yang diminta. Di FE pakai sesuai tombol.
+    const hasNextPage =
+      !beforePayload && gotExtra
+        ? true
+        : beforePayload
+        ? // saat before (previous), "next" arah mundur/maju tergantung interpretasi FE.
+          // Kita sediakan kedua flag berikut; FE akan gunakan sesuai tombol.
+          false
+        : gotExtra;
+
+    // hasPrevPage heuristik:
+    const hasPrevPage = Boolean(afterPayload || beforePayload);
 
     return NextResponse.json(
       {
         success: true,
-        scope: isRecent ? "recent" : "history",
-        block: {
-          blockPage,
-          blockSize: BLOCK_SIZE,
-          blockCount,
-          hasMoreBlocks,
-          isLastBlock,
-        },
-        pagination: {
-          total,
-          totalPagesUi,
-          withCount: countOption ?? "none",
-          pageSizeUi: PAGE_SIZE_UI,
-        },
+        scope,
         filters: {
           month: month ?? null,
           year: year ?? null,
           search: searchName || null,
           specialist_id: specialistId || null,
         },
-        data: data ?? [],
+        data: items,
+        pagination: {
+          count,
+          limit,
+          order: "desc",
+          startCursor,
+          endCursor,
+          hasNextPage,
+          hasPrevPage,
+        },
       },
       { status: 200 }
     );

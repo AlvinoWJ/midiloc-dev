@@ -44,15 +44,13 @@ export default function TambahUlokPage() {
         );
       }
 
-      // Jika berhasil
       showToast({
         type: "success",
         title: "Berhasil",
         message: "Usulan Lokasi baru telah berhasil disimpan!",
       });
-      router.push("/usulan_lokasi"); // Arahkan ke halaman daftar
+      router.push("/usulan_lokasi");
     } catch (err: unknown) {
-      // Tangani semua jenis error (network, API, etc.)
       showToast({
         type: "error",
         title: "Gagal Menyimpan",

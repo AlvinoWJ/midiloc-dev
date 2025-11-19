@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { z } from "zod";
+import { date, z } from "zod";
 
 const emptyToUndefined = (v: unknown) =>
   v === "" || v === null ? undefined : v;
@@ -37,6 +37,8 @@ export const NotarisEditableSchema = z
     status_notaris: detailProgressEnum.optional(),
     status_pembayaran: detailProgressEnum.optional(),
     tanggal_pembayaran: dateString.optional(),
+    start_date: dateString.optional(),
+    end_date: dateString.optional(),
   })
   .strict();
 

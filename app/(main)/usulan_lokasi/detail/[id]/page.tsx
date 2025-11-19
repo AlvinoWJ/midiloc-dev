@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useUlokDetail } from "@/hooks/ulok/useUlokDetail";
 import { useAlert } from "@/components/shared/alertcontext";
 import { UlokUpdateInput } from "@/lib/validations/ulok";
@@ -10,6 +10,7 @@ import { invalidate } from "@/lib/swr-invalidate";
 
 export default function DetailPage() {
   const { id } = useParams<{ id: string }>();
+  const router = useRouter();
   const { ulokData, isLoading, errorMessage, refresh } = useUlokDetail(id);
   const { showToast, showConfirmation } = useAlert();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -96,6 +97,7 @@ export default function DetailPage() {
         message: `Approval status telah diubah menjadi ${status}`,
       });
       await refresh();
+      router.back();
     } catch (e: any) {
       showToast({
         type: "error",
