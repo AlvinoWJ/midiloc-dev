@@ -254,11 +254,21 @@ export async function GET(request: Request) {
     const total = typeof count === "number" ? count : 0;
     const totalPagesUi = total ? Math.ceil(total / PAGE_SIZE_UI) : 0;
 
+    const blockCount = data?.length ?? 0;
+    const isLastBlock = blockPage * BLOCK_SIZE >= total && total > 0;
+    const hasMoreBlocks = !isLastBlock && blockCount === BLOCK_SIZE;
+
     return NextResponse.json(
       {
         success: true,
         scope: isRecent ? "recent" : "history",
-        block: { blockPage, blockSize: BLOCK_SIZE },
+        block: {
+          blockPage,
+          blockSize: BLOCK_SIZE,
+          blockCount,
+          hasMoreBlocks,
+          isLastBlock,
+        },
         pagination: {
           total,
           totalPagesUi,
