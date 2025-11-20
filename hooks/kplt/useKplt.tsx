@@ -1,4 +1,3 @@
-// alvinowj/midiloc-dev/midiloc-dev-f3ec6234046d2cde8d53a52c54de62357e01b6cb/hooks/kplt/useKplt.tsx
 "use client";
 
 import useSWR from "swr";
@@ -155,32 +154,85 @@ export function useKplt({
       keepPreviousData: true,
     });
 
-  const firstLoad = useRef(true);
-  const [showSkeleton, setShowSkeleton] = useState(true);
-
-  useEffect(() => {
-    if (data) {
-      firstLoad.current = false;
-      setShowSkeleton(false);
-    } else if (firstLoad.current && isLoading) {
-      setShowSkeleton(true);
-    }
-  }, [data, isLoading]);
+  const showSkeleton = !data && isLoading;
 
   const isInitialLoading = isLoading && !data;
   const isRefreshing = isValidating;
 
+  // ========== SAFE: buat pagination fallback supaya KPLTPage tidak error ==========
+  // Jika API mengembalikan pagination, pakai itu. Jika tidak, kita buat struktur
+  // pagination "kosong" / dummy supaya kode yang mengakses pagination.* tidak crash.
+  const makeEmptyCursor = (): Cursor => ({
+    startCursor: null,
+    endCursor: null,
+    hasNextPage: false,
+    hasPrevPage: false,
+  });
+
+  const emptyPaginationGroup = (): PaginationGroup => ({
+    limit,
+    cursor: makeEmptyCursor(),
+  });
+
+  // Jika server belum mengirim pagination (atau salah format), gunakan fallback
+  const safePagination = useMemo(() => {
+    if (data?.pagination) {
+      return {
+        needinput: data.pagination.needinput ?? emptyPaginationGroup(),
+        inprogress: data.pagination.inprogress ?? emptyPaginationGroup(),
+        ok: data.pagination.ok ?? emptyPaginationGroup(),
+        nok: data.pagination.nok ?? emptyPaginationGroup(),
+      };
+    }
+
+    // ----------------------------------------------------------
+    // DUMMY PAGINATION SEMENTARA
+    // ----------------------------------------------------------
+    // Tujuan: mencegah error saat kode lain mengakses pagination.ok.cursor dll.
+    // Nanti ketika API mengembalikan `pagination` / `count`, cukup gunakan data.api.
+    // ----------------------------------------------------------
+    const dummyHasNext =
+      // jika scope === history, kita beri kemungkinan next page true jika ingin
+      scope === "history" ? false : false;
+
+    const cursorWithDummyNext: Cursor = {
+      startCursor: null,
+      endCursor: null,
+      hasNextPage: dummyHasNext,
+      hasPrevPage: false,
+    };
+
+    const group: PaginationGroup = {
+      limit,
+      cursor: cursorWithDummyNext,
+    };
+
+    return {
+      needinput: group,
+      inprogress: group,
+      ok: group,
+      nok: group,
+    };
+  }, [data?.pagination, limit, scope]);
+
+  // ========== KEMBALIKAN SEMUA FIELD (compatible dengan KPLTPage) ==========
   return {
+    // data per status - jangan dihapus karena KPLTPage memakainya
     needinput: data?.data.needinput ?? [],
     inprogress: data?.data.inprogress ?? [],
     ok: data?.data.ok ?? [],
     nok: data?.data.nok ?? [],
 
-    pagination: data?.pagination,
+    // pagination (aman) -- KPLTPage mengakses pagination.ok.cursor dsb
+    pagination: safePagination,
+
+    // status loading & error
     isInitialLoading,
     isRefreshing,
     isError: error,
     showSkeleton,
+
+    // fungsi refresh yang dipakai KPLTPage
     refresh: () => mutate(),
   };
 }

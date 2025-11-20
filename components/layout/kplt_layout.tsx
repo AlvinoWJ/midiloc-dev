@@ -91,6 +91,17 @@ export default function KpltLayout(props: KpltPageProps) {
     }
   };
 
+  const pageNumbers = useMemo(() => {
+    if (!totalPages) return [];
+
+    const pages = [];
+    for (let i = 1; i <= totalPages; i++) {
+      pages.push(i);
+    }
+
+    return pages;
+  }, [totalPages]);
+
   const getStatusLabel = (status: string) => {
     switch (status.toLowerCase()) {
       case "need input":
@@ -103,36 +114,6 @@ export default function KpltLayout(props: KpltPageProps) {
         return status;
     }
   };
-
-  const getPageNumbers = () => {
-    const pages = [];
-    const showEllipsisStart = currentPage > 3;
-    const showEllipsisEnd = totalPages && currentPage < totalPages - 2;
-
-    if (!totalPages || totalPages <= 7) {
-      for (let i = 1; i <= totalPages; i++) {
-        pages.push(i);
-      }
-    } else {
-      pages.push(1);
-      if (showEllipsisStart) {
-        pages.push("ellipsis-start");
-      }
-      const start = Math.max(2, currentPage - 1);
-      const end = Math.min(totalPages - 1, currentPage + 1);
-      for (let i = start; i <= end; i++) {
-        pages.push(i);
-      }
-      if (showEllipsisEnd) {
-        pages.push("ellipsis-end");
-      }
-      pages.push(totalPages);
-    }
-
-    return pages;
-  };
-
-  const pageNumbers = getPageNumbers();
 
   return (
     <main className="space-y-4 lg:space-y-6">
@@ -253,7 +234,7 @@ export default function KpltLayout(props: KpltPageProps) {
                   </div>
                 )}
 
-                {activeTab === "History" && (
+                {activeTab === "History" && totalPages && totalPages > 1 && (
                   <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-6">
                     {displayData.map((kplt) => (
                       <InfoCard

@@ -100,7 +100,6 @@ export function useUlok({
     if (data?.pagination?.hasNextPage && data?.pagination?.endCursor) {
       const nextBlockIndex = currentBlockIndex + 1;
       setCursorMap((prev) => {
-        // Cek duplikasi agar tidak render loop
         if (prev[nextBlockIndex] === data.pagination.endCursor) return prev;
         return { ...prev, [nextBlockIndex]: data.pagination.endCursor! };
       });

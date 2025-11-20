@@ -6,11 +6,6 @@ interface TabsProps {
   activeTab: string;
 }
 
-/**
- * Komponen Tabs Responsif (Desktop-First).
- * - Tampilan default adalah untuk desktop.
- * - Menggunakan `max-md:` untuk menerapkan gaya pada perangkat mobile (lebar < 768px).
- */
 export default function Tabs({ tabs, onTabChange, activeTab }: TabsProps) {
   return (
     <div className="inline-flex w-[482px] bg-white rounded-2xl p-1 shadow-[1px_1px_6px_rgba(0,0,0,0.25)] max-md:grid max-md:grid-cols-2 max-md:gap-1 max-md:w-full max-md:shadow-md max-md:border max-md:border-gray-200">

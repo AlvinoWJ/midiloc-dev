@@ -23,19 +23,6 @@ export default function KPLTPage() {
   const [filterYear, setFilterYear] = useState("");
   const [activeTab, setActiveTab] = useState<TabType>("Recent");
 
-  /** Status yang sedang dilihat (needinput / inprogress / ok / nok) */
-  const [activeStatus, setActiveStatus] = useState<StatusKey>("needinput");
-
-  /** Cursor untuk masing-masing status */
-  const [cursors, setCursors] = useState<Record<StatusKey, Cursor | undefined>>(
-    {
-      needinput: undefined,
-      inprogress: undefined,
-      ok: undefined,
-      nok: undefined,
-    }
-  );
-
   const history_per_page = 9;
 
   /** -------------------------
@@ -66,26 +53,7 @@ export default function KPLTPage() {
     month: filterMonth,
     year: filterYear,
     limit: history_per_page,
-
-    cursorNeedinput: cursors.needinput,
-    cursorInprogress: cursors.inprogress,
-    cursorOk: cursors.ok,
-    cursorNok: cursors.nok,
   });
-
-  /** -------------------------
-   *  UPDATE CURSOR SETELAH FETCH
-   *  ------------------------- */
-  useEffect(() => {
-    if (!pagination) return;
-
-    setCursors({
-      needinput: pagination.needinput.cursor,
-      inprogress: pagination.inprogress.cursor,
-      ok: pagination.ok.cursor,
-      nok: pagination.nok.cursor,
-    });
-  }, [pagination]);
 
   /** -------------------------
    *  FINAL LOADING & ERROR STATUS
@@ -93,34 +61,18 @@ export default function KPLTPage() {
   const isLoading = loadingUser || isInitialLoading;
   const isPageError = !!userError || !!kpltError;
 
-  /** -------------------------
-   *  HANDLER SEARCH / FILTER / TAB
-   *  ------------------------- */
-  const resetCursorAndStatus = () => {
-    setActiveStatus("needinput");
-    setCursors({
-      needinput: undefined,
-      inprogress: undefined,
-      ok: undefined,
-      nok: undefined,
-    });
-  };
-
   const onFilterChange = (month: string, year: string) => {
     setFilterMonth(month);
     setFilterYear(year);
-    resetCursorAndStatus();
   };
 
   const onSearchChange = (query: string) => {
     setSearchQuery(query);
-    resetCursorAndStatus();
   };
 
   const onTabChange = (tab: string) => {
     if (tab === "Recent" || tab === "History") {
       setActiveTab(tab); // sudah dianggap sebagai TabType
-      resetCursorAndStatus();
     } else {
       console.warn("Unknown tab:", tab);
     }
@@ -129,7 +81,7 @@ export default function KPLTPage() {
   /** -------------------------
    *  TRANSFORM + FILTER DATA
    *  ------------------------- */
-  const combinedAndTransformedData = useMemo(() => {
+  const displayData = useMemo(() => {
     const raw = [
       ...needinput.map((i) => ({ ...i, statusKey: "needinput" as StatusKey })),
       ...inprogress.map((i) => ({
@@ -140,20 +92,31 @@ export default function KPLTPage() {
       ...nok.map((i) => ({ ...i, statusKey: "nok" as StatusKey })),
     ];
 
-    const filtered = raw.filter((i) => i.statusKey === activeStatus);
+    // FIX: Filter data berdasarkan TAB, bukan activeStatus
+    const tabFiltered = raw.filter((i) => {
+      if (activeTab === "Recent") {
+        return i.statusKey === "needinput" || i.statusKey === "inprogress";
+      }
+      if (activeTab === "History") {
+        return i.statusKey === "ok" || i.statusKey === "nok";
+      }
+      return false;
+    });
 
-    return filtered.map((item) => {
+    return tabFiltered.map((item) => {
       const status =
         item.statusKey === "needinput"
           ? "Need Input"
           : item.kplt_approval || item.statusKey;
 
+      const nama =
+        item.statusKey === "needinput"
+          ? item.nama_ulok || "Unknown ULOK"
+          : item.nama_kplt || "Unknown KPLT";
+
       return {
         id: item.id || item.ulok_id || "",
-        nama:
-          item.statusKey === "needinput"
-            ? item.nama_ulok || "Unknown ULOK"
-            : item.nama_kplt || "Unknown KPLT",
+        nama,
         alamat: item.alamat,
         created_at: item.created_at,
         status,
@@ -161,16 +124,41 @@ export default function KPLTPage() {
         has_form_ukur: false,
       } as UnifiedKpltItem;
     });
-  }, [needinput, inprogress, ok, nok, activeStatus]);
+  }, [needinput, inprogress, ok, nok, activeTab]);
+
+  /** -------------------------
+   *  PAGINATION STATE
+   *  ------------------------- */
+  const [currentPage, setCurrentPage] = useState(1);
 
   /** -------------------------
    *  PAGINATION (Cursor-based)
    *  ------------------------- */
-  const activePagination = pagination?.[activeStatus];
-  const hasNextPage = activePagination?.cursor.hasNextPage ?? false;
+  const okCursor = pagination?.ok.cursor;
+  const nokCursor = pagination?.nok.cursor;
+
+  // Hanya periksa next page jika di tab History
+  const hasNextPage =
+    (activeTab === "History" &&
+      (okCursor?.hasNextPage || nokCursor?.hasNextPage)) ??
+    false;
+
+  const totalPages = hasNextPage ? 2 : 1;
 
   const handleNextPage = () => {
-    if (hasNextPage) refresh();
+    if (!hasNextPage) return;
+    refresh(); // tetap pakai refresh sesuai route Anda
+  };
+
+  const onPageChange = (page: number) => {
+    setCurrentPage(page);
+
+    // Jika nanti API punya total count
+    // TODO: totalPages = Math.ceil(totalCount / history_per_page)
+
+    if (page === 2 && hasNextPage) {
+      handleNextPage();
+    }
   };
 
   const kpltProps: KpltPageProps = {
@@ -179,7 +167,7 @@ export default function KPLTPage() {
     isRefreshing,
     isError: isPageError,
 
-    displayData: combinedAndTransformedData,
+    displayData: displayData,
 
     /** UI State */
     searchQuery,
@@ -194,11 +182,9 @@ export default function KPLTPage() {
     isLocationSpecialist,
 
     /** Pagination */
-    currentPage: 1,
-    totalPages: hasNextPage ? 2 : 1,
-    onPageChange: (page: number) => {
-      if (page === 2) handleNextPage();
-    },
+    currentPage: currentPage,
+    totalPages: totalPages,
+    onPageChange,
   };
 
   return <KpltLayout {...kpltProps} />;
