@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/client";
 import { getCurrentUser, canProgressKplt } from "@/lib/auth/acl";
 
-// GET /api/progress-kplt?q=&status=&kplt_approval=&month=&year=&page=1&limit=10
+// GET /api/progress-kplt?q=&status=&month=&year=&page=1&limit=10&afterAt=&afterId=
 export async function GET(req: NextRequest) {
   const supabase = await createClient();
   const user = await getCurrentUser();
@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
   ).trim();
   const status = (url.searchParams.get("status") || "").trim() || null;
 
-  // Month/Year filters (support alias bulan/tahun)
+  // Month/Year filters
   const mRaw = url.searchParams.get("month") ?? url.searchParams.get("bulan");
   const yRaw = url.searchParams.get("year") ?? url.searchParams.get("tahun");
   const month = mRaw ? Number(mRaw) : undefined;
@@ -57,11 +57,13 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const page = Number(url.searchParams.get("page") ?? "1");
   const limit = Number(url.searchParams.get("limit") ?? "10");
-  const safePage = Number.isFinite(page) && page > 0 ? page : 1;
   const safeLimit =
     Number.isFinite(limit) && limit > 0 ? Math.min(limit, 500) : 10;
+
+  // Cursor params
+  const afterAt = url.searchParams.get("afterAt");
+  const afterId = url.searchParams.get("afterId");
 
   const { data, error } = await supabase.rpc("fn_progress_kplt_dashboard", {
     p_user_id: user.id,
@@ -69,10 +71,12 @@ export async function GET(req: NextRequest) {
     p_position: String((user as any).position_nama ?? "").toLowerCase(),
     p_search: q || null,
     p_status: status,
-    p_page: safePage,
     p_limit: safeLimit,
     p_month: month ?? null,
     p_year: year ?? null,
+    // cursor (baru)
+    p_after_created_at: afterAt ? new Date(afterAt).toISOString() : null,
+    p_after_id: afterId || null,
   });
 
   if (error) {
@@ -88,11 +92,12 @@ export async function GET(req: NextRequest) {
 
   // Ensure 'data' is the last property in the response object
   if (data && typeof data === "object" && !Array.isArray(data)) {
-    const { data: rows, ...rest } = data as any;
+    const { data: rows, pagination: pagination, ...rest } = data as any;
     return NextResponse.json(
-      { success: true, ...rest, data: rows },
+      { success: true, ...rest, data: rows, pagination: pagination },
       { status: 200 }
     );
   }
+
   return NextResponse.json({ success: true, data }, { status: 200 });
 }

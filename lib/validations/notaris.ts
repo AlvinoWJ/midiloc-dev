@@ -37,8 +37,8 @@ export const NotarisEditableSchema = z
     status_notaris: detailProgressEnum.optional(),
     status_pembayaran: detailProgressEnum.optional(),
     tanggal_pembayaran: dateString.optional(),
-    start_date: dateString.optional(),
-    end_date: dateString.optional(),
+    awal_sewa: dateString.optional(),
+    akhir_sewa: dateString.optional(),
   })
   .strict();
 
