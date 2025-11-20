@@ -103,94 +103,108 @@ export interface Ulok {
   longitude?: string;
 }
 
-// --- Tipe untuk KPLT (hasil olahan untuk UI) ---
-export interface Kplt {
-  id: string;
-  nama_kplt: string;
-  alamat: string;
-  created_at: string;
-  approval_status: string;
-}
+// // --- Tipe untuk KPLT (hasil olahan untuk UI) ---
+// export interface Kplt {
+//   id: string;
+//   nama_kplt: string;
+//   alamat: string;
+//   created_at: string;
+//   approval_status: string;
+// }
 
-// Tipe untuk setiap objek di dalam array "kplt_existing"
-export interface KpltExisting {
-  id: string;
-  nama_kplt: string; // ✅ sesuai kebutuhan UI
-  alamat: string; // ✅ sesuai kebutuhan UI
-  created_at: string;
-  kplt_approval: string;
-  latitude: string; // <-- Tambahkan ini
-  longitude: string;
-  ulok_id: string; // ✅ sesuai kebutuhan UI
-  has_file_intip?: boolean;
-  has_form_ukur?: boolean;
-}
+// // Tipe untuk setiap objek di dalam array "kplt_existing"
+// export interface KpltExisting {
+//   id: string;
+//   nama_kplt: string; // ✅ sesuai kebutuhan UI
+//   alamat: string; // ✅ sesuai kebutuhan UI
+//   created_at: string;
+//   kplt_approval: string;
+//   latitude: string; // <-- Tambahkan ini
+//   longitude: string;
+//   ulok_id: string; // ✅ sesuai kebutuhan UI
+//   has_file_intip?: boolean;
+//   has_form_ukur?: boolean;
+// }
 
-// Tipe untuk setiap objek di dalam array "kplt_from_ulok_ok"
-export interface UlokForKplt {
-  id: string;
-  ulok_id: string;
-  nama_ulok: string;
-  alamat: string;
-  created_at: string;
-  ui_status: string;
-  approval_status: string;
-  latitude: string; // <-- Tambahkan ini
-  longitude: string;
-  has_file_intip?: boolean;
-  has_form_ukur?: boolean;
-}
+// // Tipe untuk setiap objek di dalam array "kplt_from_ulok_ok"
+// export interface UlokForKplt {
+//   id: string;
+//   ulok_id: string;
+//   nama_ulok: string;
+//   alamat: string;
+//   created_at: string;
+//   ui_status: string;
+//   approval_status: string;
+//   latitude: string; // <-- Tambahkan ini
+//   longitude: string;
+//   has_file_intip?: boolean;
+//   has_form_ukur?: boolean;
+// }
 
-// Tipe data terpadu untuk ditampilkan di card UI
-export interface UnifiedKpltItem {
-  id: string;
-  nama: string;
-  alamat: string;
-  created_at: string;
-  status: string;
-  has_file_intip: boolean;
-  has_form_ukur: boolean;
-}
+// // Tipe data terpadu untuk ditampilkan di card UI
+// export interface UnifiedKpltItem {
+//   id: string;
+//   nama: string;
+//   alamat: string;
+//   created_at: string;
+//   status: string;
+//   has_file_intip: boolean;
+//   has_form_ukur: boolean;
+// }
 
-// Tipe untuk objek "meta" pada respons KPLT
-export interface KpltMeta {
-  kplt_existing_count: number;
-  kplt_from_ulok_ok_count: number;
-}
+// // Tipe untuk objek "meta" pada respons KPLT
+// export interface KpltMeta {
+//   kplt_existing_count: number;
+//   kplt_from_ulok_ok_count: number;
+// }
 
-// Tipe untuk keseluruhan respons dari API /api/kplt
-export interface ApiKpltResponse {
-  meta: KpltMeta;
-  kplt_existing: KpltExisting[];
-  kplt_from_ulok_ok: UlokForKplt[];
-}
+// // Tipe untuk keseluruhan respons dari API /api/kplt
+// export interface ApiKpltResponse {
+//   success: boolean;
+//   scope: string;
+//   filters: {
+//     year: number | null;
+//     month: number | null;
+//   };
 
-// Tipe untuk KpltPageProps yang sudah sesuai dengan data dari API
-export interface KpltPageProps {
-  isLoading: boolean;
-  isRefreshing: boolean;
-  isError: boolean;
-  user: CurrentUser | null;
+//   meta: {
+//     kplt_existing_count: number;
+//     kplt_from_ulok_ok_count: number;
+//     total_items: number;
+//     current_page: number;
+//     total_pages: number;
+//   };
 
-  // Kirim data yang sudah digabung dan difilter
-  displayData: UnifiedKpltItem[];
+//   kplt_existing: KpltExisting[];
+//   kplt_from_ulok_ok: UlokForKplt[];
+// }
 
-  // State UI
-  searchQuery: string;
-  filterMonth: string;
-  filterYear: string;
-  activeTab: string;
+// // Tipe untuk KpltPageProps yang sudah sesuai dengan data dari API
+// export interface KpltPageProps {
+//   isLoading: boolean;
+//   isRefreshing: boolean;
+//   isError: boolean;
+//   user: CurrentUser | null;
 
-  // Handler
-  onSearch: (query: string) => void;
-  onFilterChange: (month: string, year: string) => void;
-  onTabChange: (tab: string) => void;
-  isLocationSpecialist: () => boolean;
+//   // Kirim data yang sudah digabung dan difilter
+//   displayData: UnifiedKpltItem[];
 
-  currentPage: number;
-  totalPages: number;
-  onPageChange: (page: number) => void;
-}
+//   // State UI
+//   searchQuery: string;
+//   filterMonth: string;
+//   filterYear: string;
+//   activeTab: string;
+
+//   // Handler
+//   onSearch: (query: string) => void;
+//   onFilterChange: (month: string, year: string) => void;
+//   onTabChange: (tab: string) => void;
+//   isLocationSpecialist: () => boolean;
+
+//   currentPage: number;
+//   totalPages: number;
+//   onPageChange: (page: number) => void;
+// }
 
 // ==================================
 // ULOK page props
