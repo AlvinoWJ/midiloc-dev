@@ -21,7 +21,15 @@ export default function UlokEksternalPage() {
     isInitialLoading,
     isRefreshing,
     ulokEksternalError,
-  } = useUlokEksternal(searchQuery, filterMonth, filterYear);
+    meta,
+  } = useUlokEksternal({
+    page: currentPage,
+    limit: ITEMS_PER_PAGE,
+    search: searchQuery,
+    month: filterMonth,
+    year: filterYear,
+    activeTab: activeTab,
+  });
 
   const paginatedData = useMemo(() => {
     const allFilteredUlok = (ulokEksternalData || []).filter((ulok) => {

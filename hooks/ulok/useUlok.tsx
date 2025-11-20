@@ -13,14 +13,6 @@ export type Ulok = {
   longitude: string;
 };
 
-export interface Block {
-  blockPage: number;
-  blockSize: number;
-  blockCount: number;
-  hasMoreBlocks: boolean;
-  isLastBlock: boolean;
-}
-
 export interface Pagination {
   hasNextPage: boolean;
   hasPrevPage: boolean;
@@ -44,7 +36,7 @@ interface UseUlokProps {
 }
 
 const UI_PAGE_SIZE = 9; // User melihat 9 item per halaman
-const PAGES_PER_BLOCK = 1; // 1 Fetch = 4 Halaman UI
+const PAGES_PER_BLOCK = 1; // 1 Fetch = 1 Halaman UI
 const FETCH_BLOCK_SIZE = UI_PAGE_SIZE * PAGES_PER_BLOCK;
 
 export function useUlok({
