@@ -1,6 +1,6 @@
 "use client";
 
-import { KpltPageProps } from "@/types/common";
+import { KpltPageProps } from "@/hooks/kplt/useKplt";
 import Tabs from "@/components/ui/tabs";
 import SearchWithFilter from "@/components/ui/searchwithfilter";
 import { InfoCard } from "@/components/ui/infocard";
@@ -179,10 +179,7 @@ export default function KpltLayout(props: KpltPageProps) {
           <div className="relative flex-grow min-h-[23rem]">
             {isRefreshing ? ( // [!code ++]
               <div className="flex items-center justify-center min-h-[23rem]">
-                {" "}
-                {/* [!code ++] */}
                 <Loader2 className="w-8 h-8 text-primary animate-spin" />{" "}
-                {/* [!code ++] */}
               </div> // [!code ++]
             ) : displayData.length === 0 ? (
               <div className="col-span-full flex flex-col items-center justify-center py-12 md:py-16 text-center">

@@ -2,10 +2,8 @@
 "use client";
 
 import useSWR from "swr";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import type { CurrentUser } from "@/types/common";
-
-// ====== TIPE DATA DARI API RESPONSE BARU ======
 
 export interface KpltItem {
   id: string;
@@ -70,22 +68,15 @@ export interface KpltPageProps {
   isRefreshing: boolean;
   isError: boolean;
   user: CurrentUser | null;
-
-  // Kirim data yang sudah digabung dan difilter
   displayData: UnifiedKpltItem[];
-
-  // State UI
   searchQuery: string;
   filterMonth: string;
   filterYear: string;
   activeTab: string;
-
-  // Handler
   onSearch: (query: string) => void;
   onFilterChange: (month: string, year: string) => void;
   onTabChange: (tab: string) => void;
   isLocationSpecialist: () => boolean;
-
   currentPage: number;
   totalPages: number;
   onPageChange: (page: number) => void;
@@ -118,7 +109,7 @@ export function useKplt({
   cursorOk,
   cursorNok,
 }: UseKpltProps = {}) {
-  const buildUrl = () => {
+  const url = useMemo(() => {
     const params = new URLSearchParams();
 
     params.set("scope", scope);
@@ -128,39 +119,39 @@ export function useKplt({
     if (month) params.set("month", month);
     if (year) params.set("year", year);
 
-    // Cursor Need Input
-    if (cursorNeedinput?.endCursor) {
-      const decoded = JSON.parse(atob(cursorNeedinput.endCursor));
-      params.set("afterNeedInputAt", decoded.created_at);
-      params.set("afterNeedInputId", decoded.id);
-    }
+    const decodeCursor = (cursor: Cursor | undefined, prefix: string) => {
+      if (!cursor?.endCursor) return;
+      try {
+        const decoded = JSON.parse(atob(cursor.endCursor));
+        params.set(`after${prefix}At`, decoded.created_at);
+        params.set(`after${prefix}Id`, decoded.id);
+      } catch (e) {
+        console.error("Failed to decode cursor:", e);
+      }
+    };
 
-    // Cursor In Progress
-    if (cursorInprogress?.endCursor) {
-      const decoded = JSON.parse(atob(cursorInprogress.endCursor));
-      params.set("afterInProgressAt", decoded.created_at);
-      params.set("afterInProgressId", decoded.id);
-    }
-
-    // Cursor OK
-    if (cursorOk?.endCursor) {
-      const decoded = JSON.parse(atob(cursorOk.endCursor));
-      params.set("afterOkAt", decoded.created_at);
-      params.set("afterOkId", decoded.id);
-    }
-
-    // Cursor NOK
-    if (cursorNok?.endCursor) {
-      const decoded = JSON.parse(atob(cursorNok.endCursor));
-      params.set("afterNokAt", decoded.created_at);
-      params.set("afterNokId", decoded.id);
-    }
+    decodeCursor(cursorNeedinput, "NeedInput");
+    decodeCursor(cursorInprogress, "InProgress");
+    decodeCursor(cursorOk, "Ok");
+    decodeCursor(cursorNok, "Nok");
 
     return `/api/kplt?${params.toString()}`;
-  };
+  }, [
+    scope,
+    search,
+    month,
+    year,
+    limit,
+    cursorNeedinput?.endCursor,
+    cursorInprogress?.endCursor,
+    cursorOk?.endCursor,
+    cursorNok?.endCursor,
+  ]);
 
+  // === FETCH SWR ===
   const { data, error, isLoading, isValidating, mutate } =
-    useSWR<ApiKpltResponse>(buildUrl, {
+    useSWR<ApiKpltResponse>(url, {
+      revalidateOnFocus: false,
       keepPreviousData: true,
     });
 
@@ -176,14 +167,8 @@ export function useKplt({
     }
   }, [data, isLoading]);
 
-  const hasData =
-    data &&
-    (data.data.needinput.length > 0 ||
-      data.data.inprogress.length > 0 ||
-      data.data.ok.length > 0 ||
-      data.data.nok.length > 0);
-
-  const isRefreshing = isValidating && hasData && !showSkeleton;
+  const isInitialLoading = isLoading && !data;
+  const isRefreshing = isValidating;
 
   return {
     needinput: data?.data.needinput ?? [],
@@ -192,11 +177,10 @@ export function useKplt({
     nok: data?.data.nok ?? [],
 
     pagination: data?.pagination,
-
-    isLoading,
+    isInitialLoading,
+    isRefreshing,
     isError: error,
     showSkeleton,
-    isRefreshing,
     refresh: () => mutate(),
   };
 }
