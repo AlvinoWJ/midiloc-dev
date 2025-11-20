@@ -4,14 +4,13 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useSWRConfig } from "swr";
 
 export function LogoutButton({ isCollapsed }: { isCollapsed: boolean }) {
-  const router = useRouter();
-
   const logout = async () => {
     const supabase = createClient();
     await supabase.auth.signOut();
-    router.push("/auth/login");
+    window.location.href = "/auth/login";
   };
 
   return (
