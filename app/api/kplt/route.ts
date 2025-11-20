@@ -143,7 +143,7 @@ export async function GET(req: NextRequest) {
     const ordered = {
       success: Boolean(d.success),
       scope: d.scope ?? (url.searchParams.get("scope") || "recent"),
-      filters: d.filters ?? { month: null, year: null },
+      filters: d.filters ?? { month: null, year: null, search: null },
       data: {
         needinput: dataBlock.needinput ?? [],
         inprogress: dataBlock.inprogress ?? [],
