@@ -113,7 +113,8 @@ export async function PATCH(
         .maybeSingle();
       if (posErr)
         return NextResponse.json({ error: posErr.message }, { status: 400 });
-      isLS = pos?.nama?.toLowerCase() === POSITION.LOCATION_SPECIALIST.toLowerCase();
+      isLS =
+        pos?.nama?.toLowerCase() === POSITION.LOCATION_SPECIALIST.toLowerCase();
     }
     if (!isLS) {
       return NextResponse.json(
@@ -140,6 +141,8 @@ export async function PATCH(
       .eq("id", params.id)
       .select("*")
       .single();
+
+    const ulokEKsId = updated.id;
 
     if (updateErr)
       return NextResponse.json({ error: updateErr.message }, { status: 400 });
@@ -186,7 +189,7 @@ export async function PATCH(
       assigned_by: me.id,
       title,
       description: description ?? null,
-      assignment_type: "from_manager",
+      assignment_type: "external_check",
       // status: undefined, // biarkan default
       start_date: startDate,
       end_date: endDate,
@@ -226,7 +229,7 @@ export async function PATCH(
         .from("activity_templates")
         .select("id")
         .eq("is_active", true)
-        .eq("name", "Cek Usulan Lokasi Eksternal")
+        .eq("name", "Cek Usulan Lokasi")
         .maybeSingle();
 
       if (!t1Err && t1) {
@@ -281,7 +284,8 @@ export async function PATCH(
         latitude: ulokEks.latitude ?? null,
         longitude: ulokEks.longitude ?? null,
         check_in_radius: 100,
-        requires_checkin: false,
+        requires_checkin: true,
+        external_location_id: ulokEKsId,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any)
       .select("id")
