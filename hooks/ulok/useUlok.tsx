@@ -1,7 +1,6 @@
 "use client";
 
 import useSWR from "swr";
-import type { AppUser } from "../useUser";
 import { useState, useEffect } from "react";
 
 export type Ulok = {
@@ -18,8 +17,8 @@ export interface Block {
   blockPage: number;
   blockSize: number;
   blockCount: number;
-  hasMoreBlocks: boolean; // Flag untuk blok berikutnya
-  isLastBlock: boolean; // Flag untuk blok terakhir
+  hasMoreBlocks: boolean;
+  isLastBlock: boolean;
 }
 
 export interface Pagination {
@@ -112,38 +111,22 @@ export function useUlok({
   const sliceStart = pageIndexInBlock * UI_PAGE_SIZE;
   const sliceEnd = sliceStart + UI_PAGE_SIZE;
 
-  // Pastikan data ada sebelum slice
   const fullBlockData = data?.data || [];
   const ulokData = fullBlockData.slice(sliceStart, sliceEnd);
-
-  // 7. Hitung "Total Pages" untuk UI
-  //    User ingin: "double chevron langsung ke page 8".
-  //    Artinya, jika kita di Block 0 dan tahu ada Block 1, total pages harus minimal 8.
 
   const apiHasNext = data?.pagination?.hasNextPage ?? false;
   let totalPagesUi = 0;
 
   if (apiHasNext) {
-    // Jika API bilang masih ada data SETELAH 36 data ini:
-    // Maka setidaknya ada 1 block penuh lagi di depan.
-    // Contoh: Sekarang Block 0 (Page 1-4). Masih ada data. Berarti UI boleh tampilkan sampai Page 8 (Block 1).
     totalPagesUi = (currentBlockIndex + 2) * PAGES_PER_BLOCK;
   } else {
-    // Jika API bilang data HABIS di block ini:
-    // Hitung manual sisa datanya jadi berapa halaman.
-    // Contoh: Dapat 10 data. BlockIndex 0.
-    // Page penuh = 0 * 4 = 0.
-    // Sisa halaman = ceil(10 / 9) = 2.
-    // Total = 2 halaman.
     const pagesInCurrentBlock = Math.ceil(fullBlockData.length / UI_PAGE_SIZE);
     totalPagesUi = currentBlockIndex * PAGES_PER_BLOCK + pagesInCurrentBlock;
   }
 
-  // Fallback minimal 1 halaman agar tidak error
   if (totalPagesUi === 0 && fullBlockData.length > 0) totalPagesUi = 1;
   if (totalPagesUi === 0 && !isLoading) totalPagesUi = 1;
 
-  // Logic HasNextPage untuk UI (tombol single chevron)
   const uiHasNextPage = page < totalPagesUi;
 
   return {
