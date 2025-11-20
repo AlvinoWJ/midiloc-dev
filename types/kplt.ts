@@ -1,19 +1,17 @@
 // types/kplt.ts
-import type {
-  KpltCreateInput,
-  KpltCreateWithUlokIdInput,
-  KpltUpdateLsInput,
-  KpltLmApprovalInput,
+import { z } from "zod";
+import {
+  KpltCreatePayloadSchema,
+  KpltUpdatePayloadSchema,
 } from "@/lib/validations/kplt";
 
-export type {
-  KpltCreateInput,
-  KpltCreateWithUlokIdInput,
-  KpltUpdateLsInput,
-  KpltLmApprovalInput,
-};
+export type KpltCreatePayload = z.infer<typeof KpltCreatePayloadSchema>;
+export type KpltUpdatePayload = z.infer<typeof KpltUpdatePayloadSchema>;
+export type KpltCreateInput = KpltCreatePayload;
+export type KpltCreateWithUlokIdInput = KpltCreatePayload & { ulok_id: string };
+export type KpltUpdateLsInput = KpltUpdatePayload;
+export type KpltLmApprovalInput = Partial<KpltCreatePayload>;
 
-// Representasi 1 baris data KPLT di database
 export interface KpltRow {
   id: string;
   ulok_id: string;
@@ -82,7 +80,6 @@ export type KpltBaseData = {
   tanggal_approval_intip: string | null;
 };
 
-// Response dari API prefill
 export type PrefillKpltResponse = {
   base: KpltBaseData;
   ulok_id: string;

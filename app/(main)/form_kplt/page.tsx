@@ -3,9 +3,15 @@
 
 import { useState, useCallback, useMemo } from "react";
 import { useUser } from "@/hooks/useUser";
-import { useKplt } from "@/hooks/kplt/useKplt";
-import { KpltPageProps, UnifiedKpltItem } from "@/types/common";
+import {
+  useKplt,
+  KpltPageProps,
+  UnifiedKpltItem,
+  KpltItem,
+} from "@/hooks/kplt/useKplt";
 import KpltLayout from "@/components/layout/kplt_layout";
+
+type StatusKey = "needinput" | "inprogress" | "ok" | "nok";
 
 export default function KPLTPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -13,9 +19,8 @@ export default function KPLTPage() {
   const [filterYear, setFilterYear] = useState("");
   const [activeTab, setActiveTab] = useState("Recent");
 
-  // pagination
   const [currentPage, setCurrentPage] = useState(1);
-  const history_per_page = 9; // Tentukan limit per halaman
+  const history_per_page = 9;
 
   const { user, loadingUser, userError } = useUser();
 
@@ -24,20 +29,21 @@ export default function KPLTPage() {
   }, [user]);
 
   const {
-    kpltExisting,
-    ulokForKplt,
-    meta,
+    needinput,
+    inprogress,
+    ok,
+    nok,
+    pagination,
     isLoading: loadingKPLT,
     isError: kpltError,
     showSkeleton,
     isRefreshing,
   } = useKplt({
-    searchQuery,
-    activeTab,
-    page: currentPage,
-    limit: history_per_page,
+    scope: activeTab === "Recent" ? "recent" : "history",
+    search: searchQuery,
     month: filterMonth,
     year: filterYear,
+    limit: history_per_page,
   });
 
   const isPageLoading = loadingUser || loadingKPLT;
@@ -46,7 +52,7 @@ export default function KPLTPage() {
   const onFilterChange = (month: string, year: string) => {
     setFilterMonth(month);
     setFilterYear(year);
-    setCurrentPage(1); // Reset ke halaman 1 saat filter
+    setCurrentPage(1);
   };
 
   const onSearchChange = (query: string) => {
@@ -54,33 +60,44 @@ export default function KPLTPage() {
     setCurrentPage(1);
   };
 
-  console.log("Data Mentah dari Hook:", { kpltExisting, ulokForKplt });
-
   const filteredData = useMemo(() => {
-    // Transformasi data tetap diperlukan
-    const existingTransformed: UnifiedKpltItem[] = (kpltExisting || []).map(
-      (item) => ({
-        id: item.id,
-        nama: item.nama_kplt,
+    const allRawData: (KpltItem & { statusKey: StatusKey })[] = [
+      ...needinput.map((item) => ({
+        ...item,
+        statusKey: "needinput" as StatusKey,
+      })),
+      ...inprogress.map((item) => ({
+        ...item,
+        statusKey: "inprogress" as StatusKey,
+      })),
+      ...ok.map((item) => ({ ...item, statusKey: "ok" as StatusKey })),
+      ...nok.map((item) => ({ ...item, statusKey: "nok" as StatusKey })),
+    ];
+
+    // Transformasi data
+    const combinedData: UnifiedKpltItem[] = allRawData.map((item) => {
+      let status: string;
+      let nama: string;
+
+      if (item.statusKey === "needinput") {
+        status = "Need Input";
+        nama = item.nama_ulok || "Unknown ULOK";
+      } else {
+        status = item.kplt_approval || item.statusKey;
+        nama = item.nama_kplt || "Unknown KPLT";
+      }
+
+      return {
+        id: item.id || item.ulok_id || "",
+        nama: nama,
         alamat: item.alamat,
         created_at: item.created_at,
-        status: item.kplt_approval,
-        has_file_intip: item.has_file_intip || false,
-        has_form_ukur: item.has_form_ukur || false,
-      })
-    );
-    const ulokTransformed: UnifiedKpltItem[] = (ulokForKplt || []).map(
-      (item) => ({
-        id: item.ulok_id,
-        nama: item.nama_ulok,
-        alamat: item.alamat,
-        created_at: item.created_at,
-        status: item.ui_status,
-        has_file_intip: item.has_file_intip || false,
-        has_form_ukur: item.has_form_ukur || false,
-      })
-    );
-    const combinedData = [...existingTransformed, ...ulokTransformed];
+        status: status,
+        has_file_intip: false,
+        has_form_ukur: false,
+      };
+    });
+
     const userRole = user?.position_nama?.trim().toLowerCase() || "";
 
     // Filter client-side hanya untuk role dan status tab
@@ -115,9 +132,8 @@ export default function KPLTPage() {
           break;
       }
 
-      // LOGIKA FILTER TAB (RECENT & HISTORY)
       let matchTab = false;
-      if (activeTab === "Recent") {
+      if (activeTab === "recent") {
         const recentStatuses = [
           "need input",
           "in progress",
@@ -131,20 +147,13 @@ export default function KPLTPage() {
 
       return matchRole && matchTab;
     });
-  }, [kpltExisting, ulokForKplt, activeTab, user]);
+  }, [needinput, inprogress, ok, nok, activeTab, user]);
 
   const totalPages = useMemo(() => {
-    if (activeTab !== "History") {
-      return 1;
-    }
-
-    return meta?.total_pages ?? 1;
-  }, [meta, activeTab]);
+    return 1;
+  }, [activeTab]);
 
   const displayData = useMemo(() => {
-    if (activeTab !== "History") {
-      return filteredData;
-    }
     return filteredData;
   }, [filteredData, activeTab]);
 
@@ -162,7 +171,7 @@ export default function KPLTPage() {
   const kpltProps: KpltPageProps = {
     user,
     isLoading: showSkeleton,
-    isRefreshing: isRefreshing,
+    isRefreshing: isRefreshing ?? false,
     isError: isPageError,
     displayData,
     searchQuery,
@@ -173,7 +182,7 @@ export default function KPLTPage() {
     onFilterChange,
     onTabChange: handleTabChange,
     isLocationSpecialist,
-    currentPage: meta?.page ?? currentPage,
+    currentPage: currentPage,
     totalPages: totalPages,
     onPageChange: handlePageChange,
   };
