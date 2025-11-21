@@ -37,9 +37,6 @@ export default function ProgressKpltLayout(props: ProgressKpltLayoutProps) {
     isError,
     progressData,
     onPageChange,
-    searchQuery,
-    filterMonth,
-    filterYear,
     currentPage,
     totalPages,
     onSearch,
@@ -137,50 +134,53 @@ export default function ProgressKpltLayout(props: ProgressKpltLayoutProps) {
         <SearchWithFilter onSearch={onSearch} onFilterChange={onFilterChange} />
       </div>
 
-      {/* Konten Grid / List */}
-      {isRefreshing ? (
-        <div className="flex items-center justify-center min-h-[23rem]">
-          <Loader2 className="w-8 h-8 text-primary animate-spin" />
-        </div>
-      ) : progressData.length === 0 ? (
-        <div className="flex flex-col items-center justify-center text-center py-16 px-4 flex-grow">
-          <div className="text-gray-300 text-6xl mb-4">📄</div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
-            Belum ada data progres
-          </h3>
-          <p className="text-gray-500 text-sm lg:text-base max-w-md">
-            Tambahkan data progres baru untuk mulai memantau perkembangan KPLT.
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-6 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-6 min-h-[23rem] flex-grow">
-          {progressData.map((item) => {
-            const kpltId = item.id;
-            const kpltName = item.kplt?.nama_kplt;
-            const kpltAlamat = item.kplt?.alamat || "Alamat tidak tersedia";
-            const progressPercentage = calculateProgress(item);
+      <div className="flex-grow">
+        {isRefreshing ? (
+          <div className="flex items-center justify-center min-h-[23rem]">
+            <Loader2 className="w-8 h-8 text-primary animate-spin" />
+          </div>
+        ) : progressData.length === 0 ? (
+          <div className="flex flex-col items-center justify-center text-center py-16 px-4 flex-grow">
+            <div className="text-gray-300 text-6xl mb-4">📄</div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              Belum ada data progres
+            </h3>
+            <p className="text-gray-500 text-sm lg:text-base max-w-md">
+              Tambahkan data progres baru untuk mulai memantau perkembangan
+              KPLT.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-6 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-6 min-h-[23rem] flex-grow">
+            {progressData.map((item) => {
+              const kpltId = item.id;
+              const kpltName = item.kplt?.nama_kplt;
+              const kpltAlamat = item.kplt?.alamat || "Alamat tidak tersedia";
+              const progressPercentage = calculateProgress(item);
 
-            if (!kpltId) return null;
+              if (!kpltId) return null;
 
-            return (
-              <div key={item.id} className="flex flex-col h-full">
-                <ProgressInfoCard
-                  id={kpltId}
-                  nama={kpltName || "Nama KPLT tidak ditemukan"}
-                  alamat={kpltAlamat}
-                  created_at={item.created_at || new Date().toISOString()}
-                  status={item.status || "N/A"}
-                  progressPercentage={progressPercentage}
-                  detailPath="/progress_kplt/detail/"
-                />
-              </div>
-            );
-          })}
-        </div>
-      )}
+              return (
+                <div key={item.id} className="flex flex-col h-full">
+                  <ProgressInfoCard
+                    id={kpltId}
+                    nama={kpltName || "Nama KPLT tidak ditemukan"}
+                    alamat={kpltAlamat}
+                    created_at={item.created_at || new Date().toISOString()}
+                    status={item.status || "N/A"}
+                    progressPercentage={progressPercentage}
+                    detailPath="/progress_kplt/detail/"
+                  />
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
       {/* Pagination */}
-      {totalPages > 1 && !isContentLoading && (
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-auto pt-2">
+      {totalPages > 1 && (
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-auto pt-6">
           <div className="flex items-center gap-1">
             {/* Tombol halaman pertama */}
             <button

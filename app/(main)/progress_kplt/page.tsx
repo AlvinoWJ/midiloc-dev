@@ -11,13 +11,19 @@ export default function ProgressKpltPage() {
   const [filterMonth, setFilterMonth] = useState("");
   const [filterYear, setFilterYear] = useState("");
 
-  const { progressData, meta, isInitialLoading, isRefreshing, isError } =
-    useProgress({
-      page: currentPage,
-      search: searchQuery,
-      month: filterMonth,
-      year: filterYear,
-    });
+  const {
+    progressData,
+    totalPages,
+
+    isInitialLoading,
+    isRefreshing,
+    isError,
+  } = useProgress({
+    page: currentPage,
+    search: searchQuery,
+    month: filterMonth,
+    year: filterYear,
+  });
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
@@ -41,7 +47,7 @@ export default function ProgressKpltPage() {
     filterYear,
     onSearch: handleSearch,
     currentPage,
-    totalPages: meta?.totalPages ?? 0,
+    totalPages,
     onFilterChange: handleFilterChange,
   };
 

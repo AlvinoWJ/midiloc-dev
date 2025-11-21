@@ -13,7 +13,6 @@ import {
   VIDEO_FIELDS,
 } from "@/lib/storage/path";
 
-
 const BUCKET = "file_storage";
 const MAX_FILE = 200 * 1024 * 1024; // 200MB video max
 
@@ -62,11 +61,10 @@ function encodeCursor(
     .replace(/=+$/g, "");
 }
 
-// GET /api/kplt?scope=recent&search=&limitNeedInput=9&afterNeedInput=<cursor>&beforeNeedInput=<cursor>
+// GET /api/kplt?scope=recent&limit=100&after=<cursor>&before=<cursor>
 export async function GET(req: NextRequest) {
   const supabase = await createClient();
   const user = await getCurrentUser();
-
   if (!user)
     return NextResponse.json(
       { success: false, error: "Unauthorized" },
@@ -75,11 +73,6 @@ export async function GET(req: NextRequest) {
   if (!canKplt("read", user))
     return NextResponse.json(
       { success: false, error: "Forbidden" },
-      { status: 403 }
-    );
-  if (!user.branch_id)
-    return NextResponse.json(
-      { success: false, error: "Forbidden", message: "User has no branch" },
       { status: 403 }
     );
 
@@ -93,7 +86,6 @@ export async function GET(req: NextRequest) {
     ""
   ).trim();
 
-  // Month/year
   const monthRaw =
     url.searchParams.get("month") ?? url.searchParams.get("bulan");
   const yearRaw = url.searchParams.get("year") ?? url.searchParams.get("tahun");
@@ -114,77 +106,26 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  // Limits per group
-  const limitNeedInput = Number(url.searchParams.get("limitNeedInput") ?? "9");
-  const limitInProgress = Number(
-    url.searchParams.get("limitInProgress") ?? "9"
-  );
-  const limitOk = Number(url.searchParams.get("limitOk") ?? "9");
-  const limitNok = Number(url.searchParams.get("limitNok") ?? "9");
+  const limitRaw = Number(url.searchParams.get("limit") ?? "90");
+  const limit =
+    Number.isFinite(limitRaw) && limitRaw > 0 ? Math.min(limitRaw, 300) : 90;
 
-  const safeNeed =
-    Number.isFinite(limitNeedInput) && limitNeedInput > 0
-      ? Math.min(limitNeedInput, 100)
-      : 9;
-  const safeProg =
-    Number.isFinite(limitInProgress) && limitInProgress > 0
-      ? Math.min(limitInProgress, 100)
-      : 9;
-  const safeOk =
-    Number.isFinite(limitOk) && limitOk > 0 ? Math.min(limitOk, 100) : 9;
-  const safeNok =
-    Number.isFinite(limitNok) && limitNok > 0 ? Math.min(limitNok, 100) : 9;
-
-  // Encoded cursors (per grup)
-  const afterNeedInputDec = decodeCursor(
-    url.searchParams.get("afterNeedInput")
-  );
-  const beforeNeedInputDec = decodeCursor(
-    url.searchParams.get("beforeNeedInput")
-  );
-  const afterInProgressDec = decodeCursor(
-    url.searchParams.get("afterInProgress")
-  );
-  const beforeInProgressDec = decodeCursor(
-    url.searchParams.get("beforeInProgress")
-  );
-  const afterOkDec = decodeCursor(url.searchParams.get("afterOk"));
-  const beforeOkDec = decodeCursor(url.searchParams.get("beforeOk"));
-  const afterNokDec = decodeCursor(url.searchParams.get("afterNok"));
-  const beforeNokDec = decodeCursor(url.searchParams.get("beforeNok"));
+  const afterDecoded = decodeCursor(url.searchParams.get("after"));
+  const beforeDecoded = decodeCursor(url.searchParams.get("before"));
 
   const { data, error } = await supabase.rpc("fn_kplt_dashboard", {
     p_user_id: user.id,
     p_branch_id: user.branch_id,
-    p_position: String((user as { position_nama?: string }).position_nama ?? "").toLowerCase(),
+    p_position: String(
+      (user as { position_nama?: string }).position_nama ?? ""
+    ).toLowerCase(),
     p_scope: scope,
     p_search: search || null,
-
-    p_limit_need_input: safeNeed,
-    p_limit_in_progress: safeProg,
-    p_limit_ok: safeOk,
-    p_limit_nok: safeNok,
-
-    p_after_needinput_created_at: afterNeedInputDec?.created_at ?? null,
-    p_after_needinput_id: afterNeedInputDec?.id ?? null,
-    p_before_needinput_created_at: beforeNeedInputDec?.created_at ?? null,
-    p_before_needinput_id: beforeNeedInputDec?.id ?? null,
-
-    p_after_inprogress_created_at: afterInProgressDec?.created_at ?? null,
-    p_after_inprogress_id: afterInProgressDec?.id ?? null,
-    p_before_inprogress_created_at: beforeInProgressDec?.created_at ?? null,
-    p_before_inprogress_id: beforeInProgressDec?.id ?? null,
-
-    p_after_ok_created_at: afterOkDec?.created_at ?? null,
-    p_after_ok_id: afterOkDec?.id ?? null,
-    p_before_ok_created_at: beforeOkDec?.created_at ?? null,
-    p_before_ok_id: beforeOkDec?.id ?? null,
-
-    p_after_nok_created_at: afterNokDec?.created_at ?? null,
-    p_after_nok_id: afterNokDec?.id ?? null,
-    p_before_nok_created_at: beforeNokDec?.created_at ?? null,
-    p_before_nok_id: beforeNokDec?.id ?? null,
-
+    p_limit: limit,
+    p_after_created_at: afterDecoded?.created_at ?? null,
+    p_after_id: afterDecoded?.id ?? null,
+    p_before_created_at: beforeDecoded?.created_at ?? null,
+    p_before_id: beforeDecoded?.id ?? null,
     p_month: month ?? null,
     p_year: year ?? null,
   });
@@ -194,19 +135,19 @@ export async function GET(req: NextRequest) {
       {
         success: false,
         error: "Failed to fetch data",
-        detail: (error as unknown as { message?: string }).message ?? error,
+        detail: error.message ?? String(error),
       },
       { status: 500 }
     );
   }
 
-  if (!data || typeof data !== "object" || Array.isArray(data)) {
+  if (!data || typeof data !== "object") {
     return NextResponse.json(
       {
         success: true,
         scope,
         filters: { month: month ?? null, year: year ?? null, search },
-        data: { needinput: [], inprogress: [], ok: [], nok: [] },
+        data: {},
         pagination: {},
       },
       { status: 200 }
@@ -215,43 +156,45 @@ export async function GET(req: NextRequest) {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const d: any = data;
-  const paginationRaw = d.pagination || {};
+  const pag = d.pagination || {};
+  const pagination: Record<string, unknown> = {};
 
-  function wrapGroup(groupName: string) {
-    const g = paginationRaw[groupName] || {};
-    return {
-      limit:
-        g.limit ??
-        (groupName === "needinput"
-          ? safeNeed
-          : groupName === "inprogress"
-          ? safeProg
-          : groupName === "ok"
-          ? safeOk
-          : safeNok),
-      count: g.count ?? 0,
-      total: g.total ?? 0,
-      hasNextPage: !!g.hasNextPage,
-      hasPrevPage: !!g.hasPrevPage,
-      startCursor: encodeCursor(g.start_created_at, g.start_id),
-      endCursor: encodeCursor(g.end_created_at, g.end_id),
+  if (scope === "recent" && pag.recent) {
+    const r = pag.recent;
+    pagination.recent = {
+      limit: r.limit,
+      count_needinput: r.count_needinput,
+      count_inprogress: r.count_inprogress,
+      count_waitingforum: r.count_waitingforum,
+      total: r.total,
+      hasNextPage: r.hasNextPage,
+      hasPrevPage: r.hasPrevPage,
+      startCursor: encodeCursor(r.start_created_at, r.start_id),
+      endCursor: encodeCursor(r.end_created_at, r.end_id),
     };
   }
 
-  const finalPagination = {
-    needinput: wrapGroup("needinput"),
-    inprogress: wrapGroup("inprogress"),
-    ok: wrapGroup("ok"),
-    nok: wrapGroup("nok"),
-  };
+  if (scope === "history" && pag.oknok) {
+    const h = pag.oknok;
+    pagination.oknok = {
+      limit: h.limit,
+      count_ok: h.count_ok,
+      count_nok: h.count_nok,
+      total: h.total,
+      hasNextPage: h.hasNextPage,
+      hasPrevPage: h.hasPrevPage,
+      startCursor: encodeCursor(h.start_created_at, h.start_id),
+      endCursor: encodeCursor(h.end_created_at, h.end_id),
+    };
+  }
 
   return NextResponse.json(
     {
-      success: true,
+      success: d.success,
       scope: d.scope,
       filters: d.filters,
       data: d.data,
-      pagination: finalPagination,
+      pagination,
     },
     { status: 200 }
   );

@@ -66,7 +66,7 @@ export function useUlokEksternal({
     params.set("scope", activeTab.toLowerCase());
 
     if (cursorForCurrentBlock) {
-      params.set("afterAt", cursorForCurrentBlock);
+      params.set("after", cursorForCurrentBlock);
     }
 
     if (search && search.trim() !== "") {

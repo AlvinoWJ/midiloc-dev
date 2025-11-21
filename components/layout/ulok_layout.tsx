@@ -117,7 +117,7 @@ export default function UlokLayout(props: UlokPageProps) {
       </div>
 
       {/* Konten Grid / List */}
-      <div className="relative flex-grow">
+      <div className=" flex-grow">
         {isRefreshing ? (
           <div className="flex items-center justify-center min-h-[23rem]">
             <Loader2 className="w-8 h-8 text-primary animate-spin" />
@@ -167,7 +167,7 @@ export default function UlokLayout(props: UlokPageProps) {
         )}
       </div>
 
-      {totalPages > 1 && !isRefreshing && (
+      {totalPages > 1 && (
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-auto pt-6">
           {/* Pagination Controls */}
           <div className="flex items-center gap-1">
@@ -176,7 +176,6 @@ export default function UlokLayout(props: UlokPageProps) {
               onClick={() => onPageChange(1)}
               disabled={currentPage === 1 || isLoading || isRefreshing}
               className="p-2 rounded-full text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
-              aria-label="Halaman pertama"
             >
               <ChevronsLeft className="w-5 h-5" />
             </button>
@@ -186,7 +185,6 @@ export default function UlokLayout(props: UlokPageProps) {
               onClick={() => onPageChange(currentPage - 1)}
               disabled={currentPage <= 1 || isLoading || isRefreshing}
               className="p-2 rounded-full text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
-              aria-label="Halaman sebelumnya"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
