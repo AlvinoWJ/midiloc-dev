@@ -4,7 +4,7 @@
 import React from "react";
 import { ProgressInfoCard } from "../ui/progress_kplt/progress_info_card";
 import { ProgressKpltSkeleton } from "@/components/ui/skleton";
-import { ProgressItem, ProgressMeta } from "@/hooks/progress_kplt/useProgress";
+import { ProgressItem } from "@/hooks/progress_kplt/useProgress";
 import SearchWithFilter from "../ui/searchwithfilter";
 import {
   ChevronLeft,
@@ -20,12 +20,13 @@ interface ProgressKpltLayoutProps {
   isRefreshing: boolean;
   isError: boolean;
   progressData: ProgressItem[];
-  meta: ProgressMeta | undefined;
-  onPageChange: (newPage: number) => void;
+  onPageChange: (page: number) => void;
   searchQuery: string;
   filterMonth: string;
   filterYear: string;
   onSearch: (query: string) => void;
+  currentPage: number;
+  totalPages: number;
   onFilterChange: (month: string, year: string) => void;
 }
 
@@ -35,18 +36,16 @@ export default function ProgressKpltLayout(props: ProgressKpltLayoutProps) {
     isRefreshing,
     isError,
     progressData,
-    meta,
     onPageChange,
     searchQuery,
     filterMonth,
     filterYear,
+    currentPage,
+    totalPages,
     onSearch,
     onFilterChange,
   } = props;
 
-  const isFilterActive = !!searchQuery || !!filterMonth || !!filterYear;
-  const currentPage = meta?.page || 1;
-  const totalPages = meta?.totalPages || 1;
   const isContentLoading = isLoading || isRefreshing;
 
   const calculateProgress = (item: ProgressItem): number => {
@@ -70,25 +69,21 @@ export default function ProgressKpltLayout(props: ProgressKpltLayoutProps) {
     return statusMap[status] ?? 0;
   };
 
-  // Function to generate page numbers with ellipsis
   const getPageNumbers = () => {
     const pages = [];
     const showEllipsisStart = currentPage > 3;
     const showEllipsisEnd = currentPage < totalPages - 2;
 
     if (totalPages <= 7) {
-      // Show all pages if 7 or fewer
       for (let i = 1; i <= totalPages; i++) {
         pages.push(i);
       }
     } else {
-      // Always show first page
       pages.push(1);
 
       if (showEllipsisStart) {
         pages.push("ellipsis-start");
       }
-
       const start = Math.max(2, currentPage - 1);
       const end = Math.min(totalPages - 1, currentPage + 1);
 
@@ -99,7 +94,6 @@ export default function ProgressKpltLayout(props: ProgressKpltLayoutProps) {
       if (showEllipsisEnd) {
         pages.push("ellipsis-end");
       }
-
       pages.push(totalPages);
     }
 
@@ -191,7 +185,7 @@ export default function ProgressKpltLayout(props: ProgressKpltLayoutProps) {
             {/* Tombol halaman pertama */}
             <button
               onClick={() => onPageChange(1)}
-              disabled={currentPage === 1 || isLoading}
+              disabled={currentPage === 1 || isLoading || isRefreshing}
               className="p-2 rounded-full text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
             >
               <ChevronsLeft className="w-5 h-5" />
@@ -200,7 +194,7 @@ export default function ProgressKpltLayout(props: ProgressKpltLayoutProps) {
             {/* Tombol sebelumnya */}
             <button
               onClick={() => onPageChange(currentPage - 1)}
-              disabled={currentPage <= 1 || isLoading}
+              disabled={currentPage <= 1 || isLoading || isRefreshing}
               className="p-2 rounded-full text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
             >
               <ChevronLeft className="w-5 h-5" />
@@ -236,7 +230,7 @@ export default function ProgressKpltLayout(props: ProgressKpltLayoutProps) {
             {/* Tombol berikutnya */}
             <button
               onClick={() => onPageChange(currentPage + 1)}
-              disabled={currentPage >= totalPages || isLoading}
+              disabled={currentPage >= totalPages || isLoading || isRefreshing}
               className="p-2 rounded-full text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
             >
               <ChevronRight className="w-5 h-5" />
@@ -245,7 +239,7 @@ export default function ProgressKpltLayout(props: ProgressKpltLayoutProps) {
             {/* Tombol halaman terakhir */}
             <button
               onClick={() => onPageChange(totalPages)}
-              disabled={currentPage >= totalPages || isLoading}
+              disabled={currentPage >= totalPages || isLoading || isRefreshing}
               className="p-2 rounded-full text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
             >
               <ChevronsRight className="w-5 h-5" />

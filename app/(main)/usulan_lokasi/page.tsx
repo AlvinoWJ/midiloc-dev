@@ -5,7 +5,7 @@ import { useUser } from "@/hooks/useUser";
 import { useUlok } from "@/hooks/ulok/useUlok";
 import UlokLayout from "@/components/layout/ulok_layout";
 
-const ITEMS_PER_PAGE = 9;
+// const ITEMS_PER_PAGE = 9;
 
 export default function UlokPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -19,7 +19,6 @@ export default function UlokPage() {
   const { ulokData, meta, isInitialLoading, isRefreshing, ulokError } = useUlok(
     {
       page: currentPage,
-      limit: ITEMS_PER_PAGE,
       search: searchQuery,
       month: filterMonth,
       year: filterYear,
@@ -50,7 +49,7 @@ export default function UlokPage() {
   const layoutProps = {
     user,
     isLoading: isInitialLoading,
-    isRefreshing: isRefreshing,
+    isRefreshing,
     isError: !!ulokError,
     filteredUlok: ulokData,
     activeTab,
