@@ -34,8 +34,8 @@ interface UseProgressProps {
   year?: string;
 }
 
-const UI_PAGE_SIZE = 1; // item per halaman di UI
-const PAGES_PER_BLOCK = 2; // per-block = 2 halaman UI
+const UI_PAGE_SIZE = 9; // item per halaman di UI
+const PAGES_PER_BLOCK = 1; // per-block = 2 halaman UI
 const FETCH_BLOCK_SIZE = UI_PAGE_SIZE * PAGES_PER_BLOCK;
 
 export function useProgress({
@@ -124,11 +124,9 @@ export function useProgress({
 
   return {
     progressData,
-    meta: {
-      totalPages: totalPagesUi,
-      hasNextPage: uiHasNextPage,
-      blockIndex: currentBlockIndex,
-    },
+    totalPages: totalPagesUi,
+    hasNextPage: uiHasNextPage,
+    blockIndex: currentBlockIndex,
     isInitialLoading,
     isRefreshing: isValidating,
     isError: !!error,
