@@ -36,7 +36,7 @@ interface UseProgressProps {
 
 export function useProgress({
   page = 1,
-  limit = 9,
+  limit = 34,
   search = "",
   month = "",
   year = "",

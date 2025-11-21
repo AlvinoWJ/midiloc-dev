@@ -81,7 +81,7 @@ export default function KpltLayout(props: KpltPageProps) {
     const statusLower = status.toLowerCase();
     switch (statusLower) {
       case "need input":
-        return "bg-gray-300 text-white"; // Merah untuk menandakan butuh tindakan
+        return "bg-gray-400 text-white"; // Merah untuk menandakan butuh tindakan
       case "in progress":
         return "bg-progress text-white"; // Kuning untuk status berjalan
       case "waiting for forum":

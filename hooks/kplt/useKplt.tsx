@@ -1,8 +1,28 @@
 "use client";
 
 import useSWR from "swr";
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import type { CurrentUser } from "@/types/common";
+
+// Tipe untuk props halaman KPLT
+export interface KpltPageProps {
+  isLoading: boolean;
+  isRefreshing: boolean;
+  isError: boolean;
+  user: CurrentUser | null;
+  displayData: UnifiedKpltItem[];
+  searchQuery: string;
+  filterMonth: string;
+  filterYear: string;
+  activeTab: string;
+  onSearch: (query: string) => void;
+  onFilterChange: (month: string, year: string) => void;
+  onTabChange: (tab: string) => void;
+  isLocationSpecialist: () => boolean;
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+}
 
 export interface KpltItem {
   id: string;
@@ -17,6 +37,17 @@ export interface KpltItem {
   longitude: number;
   files_ok?: boolean;
   ulok_id?: string;
+}
+
+export interface UnifiedKpltItem {
+  id: string;
+  nama: string;
+  alamat: string;
+  created_at: string;
+  status: string;
+  statusKey: "needinput" | "inprogress" | "ok" | "nok";
+  has_file_intip: boolean;
+  has_form_ukur: boolean;
 }
 
 export interface Cursor {
@@ -48,191 +79,228 @@ export interface ApiKpltResponse {
   };
 }
 
-// ====== TIPE DATA UNTUK UI (DIPERTAHANKAN) ======
-
-// Tipe data terpadu untuk ditampilkan di card UI
-export interface UnifiedKpltItem {
-  id: string;
-  nama: string;
-  alamat: string;
-  created_at: string;
-  status: string;
-  has_file_intip: boolean;
-  has_form_ukur: boolean;
-}
-
-// Tipe untuk props halaman KPLT
-export interface KpltPageProps {
-  isLoading: boolean;
-  isRefreshing: boolean;
-  isError: boolean;
-  user: CurrentUser | null;
-  displayData: UnifiedKpltItem[];
-  searchQuery: string;
-  filterMonth: string;
-  filterYear: string;
-  activeTab: string;
-  onSearch: (query: string) => void;
-  onFilterChange: (month: string, year: string) => void;
-  onTabChange: (tab: string) => void;
-  isLocationSpecialist: () => boolean;
-  currentPage: number;
-  totalPages: number;
-  onPageChange: (page: number) => void;
-}
-
-// ====== LOGIKA HOOK useKplt (DARI PENGGUNA) ======
-
 interface UseKpltProps {
   scope?: "recent" | "history";
+  page?: number;
   search?: string;
   month?: string;
   year?: string;
-  limit?: number;
-
-  cursorNeedinput?: Cursor;
-  cursorInprogress?: Cursor;
-  cursorOk?: Cursor;
-  cursorNok?: Cursor;
 }
+
+const UI_PAGE_SIZE = 2; // User melihat 9 item per halaman
+const PAGES_PER_BLOCK = 1; // 4 Halaman UI per 1 Fetch API
+const FETCH_BLOCK_SIZE = UI_PAGE_SIZE * PAGES_PER_BLOCK;
 
 export function useKplt({
   scope = "recent",
-  search,
-  month,
-  year,
-  limit = 9,
-
-  cursorNeedinput,
-  cursorInprogress,
-  cursorOk,
-  cursorNok,
+  page = 1,
+  search = "",
+  month = "",
+  year = "",
 }: UseKpltProps = {}) {
-  const url = useMemo(() => {
-    const params = new URLSearchParams();
+  const currentBlockIndex = Math.floor((page - 1) / PAGES_PER_BLOCK);
 
+  const [cursorMap, setCursorMap] = useState<
+    Record<number, { ok: string; nok: string }>
+  >({
+    0: { ok: "", nok: "" },
+  });
+
+  useEffect(() => {
+    setCursorMap({ 0: { ok: "", nok: "" } });
+  }, [scope, search, month, year]);
+
+  const cursorForCurrentBlock = cursorMap[currentBlockIndex];
+
+  const shouldFetch = cursorForCurrentBlock !== undefined;
+
+  const createUrl = () => {
+    if (!shouldFetch) return null;
+
+    const params = new URLSearchParams();
     params.set("scope", scope);
-    params.set("limit", String(limit));
+
+    const limit = scope === "recent" ? "100" : FETCH_BLOCK_SIZE.toString();
+
+    if (scope === "recent") {
+      params.set("limitNeedInput", limit);
+      params.set("limitInProgress", limit);
+    } else {
+      params.set("limitOk", limit);
+      params.set("limitNok", limit);
+
+      params.set("afterOk", cursorForCurrentBlock?.ok ?? "");
+      params.set("afterNok", cursorForCurrentBlock?.nok ?? "");
+    }
 
     if (search && search.trim() !== "") params.set("q", search.trim());
     if (month) params.set("month", month);
     if (year) params.set("year", year);
 
-    const decodeCursor = (cursor: Cursor | undefined, prefix: string) => {
-      if (!cursor?.endCursor) return;
-      try {
-        const decoded = JSON.parse(atob(cursor.endCursor));
-        params.set(`after${prefix}At`, decoded.created_at);
-        params.set(`after${prefix}Id`, decoded.id);
-      } catch (e) {
-        console.error("Failed to decode cursor:", e);
-      }
-    };
-
-    decodeCursor(cursorNeedinput, "NeedInput");
-    decodeCursor(cursorInprogress, "InProgress");
-    decodeCursor(cursorOk, "Ok");
-    decodeCursor(cursorNok, "Nok");
-
     return `/api/kplt?${params.toString()}`;
-  }, [
-    scope,
-    search,
-    month,
-    year,
-    limit,
-    cursorNeedinput?.endCursor,
-    cursorInprogress?.endCursor,
-    cursorOk?.endCursor,
-    cursorNok?.endCursor,
-  ]);
+  };
 
-  // === FETCH SWR ===
   const { data, error, isLoading, isValidating, mutate } =
-    useSWR<ApiKpltResponse>(url, {
+    useSWR<ApiKpltResponse>(createUrl(), {
       revalidateOnFocus: false,
       keepPreviousData: true,
     });
 
-  const showSkeleton = !data && isLoading;
+  useEffect(() => {
+    // Pastikan kita ada di tab History dan data pagination tersedia
+    if (scope === "history" && data?.pagination) {
+      const nextBlockIndex = currentBlockIndex + 1;
 
-  const isInitialLoading = isLoading && !data;
-  const isRefreshing = isValidating;
+      const okPagination = data.pagination.ok;
+      const nokPagination = data.pagination.nok;
 
-  // ========== SAFE: buat pagination fallback supaya KPLTPage tidak error ==========
-  // Jika API mengembalikan pagination, pakai itu. Jika tidak, kita buat struktur
-  // pagination "kosong" / dummy supaya kode yang mengakses pagination.* tidak crash.
-  const makeEmptyCursor = (): Cursor => ({
-    startCursor: null,
-    endCursor: null,
-    hasNextPage: false,
-    hasPrevPage: false,
-  });
+      // Cek apakah ada halaman selanjutnya (Logic dari useUlok)
+      const okHasNext = okPagination?.cursor?.hasNextPage ?? false;
+      const nokHasNext = nokPagination?.cursor?.hasNextPage ?? false;
 
-  const emptyPaginationGroup = (): PaginationGroup => ({
-    limit,
-    cursor: makeEmptyCursor(),
-  });
+      // Jika setidaknya SATU stream masih punya data, kita siapkan cursor untuk blok berikutnya
+      if (okHasNext || nokHasNext) {
+        setCursorMap((prev) => {
+          // Ambil cursor yang kita gunakan untuk memanggil blok saat ini (sebagai cadangan)
+          const currentCursor = prev[currentBlockIndex] || { ok: "", nok: "" };
 
-  // Jika server belum mengirim pagination (atau salah format), gunakan fallback
-  const safePagination = useMemo(() => {
-    if (data?.pagination) {
-      return {
-        needinput: data.pagination.needinput ?? emptyPaginationGroup(),
-        inprogress: data.pagination.inprogress ?? emptyPaginationGroup(),
-        ok: data.pagination.ok ?? emptyPaginationGroup(),
-        nok: data.pagination.nok ?? emptyPaginationGroup(),
-      };
+          // --- LOGIKA PENTING ---
+          // 1. Jika stream masih ada (hasNext = true), pakai endCursor baru dari API.
+          // 2. Jika stream habis (hasNext = false), API mungkin kirim endCursor = null.
+          //    JANGAN ubah jadi "" (string kosong), karena itu akan me-reset ke awal.
+          //    Tetap gunakan 'currentCursor' (cursor terakhir) agar API mencari "setelah data terakhir" (hasilnya kosong, bukan reset).
+
+          const nextOkCursor =
+            okPagination?.cursor?.endCursor ?? currentCursor.ok;
+          const nextNokCursor =
+            nokPagination?.cursor?.endCursor ?? currentCursor.nok;
+
+          // Cek duplikasi state agar tidak re-render berulang (Logic dari useUlok)
+          const existingNext = prev[nextBlockIndex];
+          if (
+            existingNext &&
+            existingNext.ok === nextOkCursor &&
+            existingNext.nok === nextNokCursor
+          ) {
+            return prev;
+          }
+
+          // Update state untuk blok berikutnya
+          return {
+            ...prev,
+            [nextBlockIndex]: {
+              ok: nextOkCursor,
+              nok: nextNokCursor,
+            },
+          };
+        });
+      }
+    }
+  }, [data, currentBlockIndex, scope]);
+
+  const processedData: UnifiedKpltItem[] = useMemo(() => {
+    if (!data?.data) return [];
+
+    let rawItems: Array<
+      KpltItem & { statusKey: "needinput" | "inprogress" | "ok" | "nok" }
+    > = [];
+
+    if (scope === "recent") {
+      rawItems = [
+        ...(data.data.needinput || []).map((i) => ({
+          ...i,
+          statusKey: "needinput" as const,
+        })),
+        ...(data.data.inprogress || []).map((i) => ({
+          ...i,
+          statusKey: "inprogress" as const,
+        })),
+      ];
+    } else {
+      rawItems = [
+        ...(data.data.ok || []).map((i) => ({
+          ...i,
+          statusKey: "ok" as const,
+        })),
+        ...(data.data.nok || []).map((i) => ({
+          ...i,
+          statusKey: "nok" as const,
+        })),
+      ];
     }
 
-    // ----------------------------------------------------------
-    // DUMMY PAGINATION SEMENTARA
-    // ----------------------------------------------------------
-    // Tujuan: mencegah error saat kode lain mengakses pagination.ok.cursor dll.
-    // Nanti ketika API mengembalikan `pagination` / `count`, cukup gunakan data.api.
-    // ----------------------------------------------------------
-    const dummyHasNext =
-      // jika scope === history, kita beri kemungkinan next page true jika ingin
-      scope === "history" ? false : false;
+    const unified = rawItems.map((item) => {
+      const status =
+        item.statusKey === "needinput"
+          ? "Need Input"
+          : item.kplt_approval || item.statusKey;
 
-    const cursorWithDummyNext: Cursor = {
-      startCursor: null,
-      endCursor: null,
-      hasNextPage: dummyHasNext,
-      hasPrevPage: false,
-    };
+      const nama =
+        item.statusKey === "needinput"
+          ? item.nama_ulok || "Unknown ULOK"
+          : item.nama_kplt || "Unknown KPLT";
 
-    const group: PaginationGroup = {
-      limit,
-      cursor: cursorWithDummyNext,
-    };
+      return {
+        id: item.id || item.ulok_id || "",
+        nama,
+        alamat: item.alamat,
+        created_at: item.created_at,
+        status,
+        statusKey: item.statusKey,
+        has_file_intip: item.files_ok ?? false,
+        has_form_ukur: false,
+      } as UnifiedKpltItem;
+    });
 
-    return {
-      needinput: group,
-      inprogress: group,
-      ok: group,
-      nok: group,
-    };
-  }, [data?.pagination, limit, scope]);
+    return unified.sort(
+      (a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+  }, [data, scope]);
 
-  // ========== KEMBALIKAN SEMUA FIELD (compatible dengan KPLTPage) ==========
+  let finalDisplayData = processedData;
+  let totalPagesUi = 1;
+  let uiHasNextPage = false;
+
+  if (scope === "history") {
+    const pageIndexInBlock = (page - 1) % PAGES_PER_BLOCK; // 0, 1, 2, 3
+    const sliceStart = pageIndexInBlock * UI_PAGE_SIZE;
+    const sliceEnd = sliceStart + UI_PAGE_SIZE;
+
+    finalDisplayData = processedData.slice(sliceStart, sliceEnd);
+
+    const apiHasNext =
+      (data?.pagination?.ok?.cursor?.hasNextPage ||
+        data?.pagination?.nok?.cursor?.hasNextPage) ??
+      false;
+
+    if (apiHasNext) {
+      totalPagesUi = (currentBlockIndex + 2) * PAGES_PER_BLOCK;
+    } else {
+      const pagesInCurrentBlock = Math.ceil(
+        processedData.length / UI_PAGE_SIZE
+      );
+      totalPagesUi = currentBlockIndex * PAGES_PER_BLOCK + pagesInCurrentBlock;
+    }
+
+    if (totalPagesUi === 0) totalPagesUi = 1;
+    uiHasNextPage = page < totalPagesUi;
+  } else {
+    totalPagesUi = 1;
+    uiHasNextPage = false;
+  }
+
   return {
-    // data per status - jangan dihapus karena KPLTPage memakainya
-    needinput: data?.data.needinput ?? [],
-    inprogress: data?.data.inprogress ?? [],
-    ok: data?.data.ok ?? [],
-    nok: data?.data.nok ?? [],
-
-    // pagination (aman) -- KPLTPage mengakses pagination.ok.cursor dsb
-    pagination: safePagination,
-
-    // status loading & error
-    isInitialLoading,
-    isRefreshing,
+    kpltData: finalDisplayData,
+    isInitialLoading: isLoading && !data,
+    isRefreshing: isValidating,
     isError: error,
-    showSkeleton,
-
-    // fungsi refresh yang dipakai KPLTPage
-    refresh: () => mutate(),
+    refresh: mutate,
+    meta: {
+      totalPages: totalPagesUi,
+      hasNextPage: uiHasNextPage,
+      blockIndex: currentBlockIndex,
+      totalItemsInBlock: processedData.length,
+    },
   };
 }
