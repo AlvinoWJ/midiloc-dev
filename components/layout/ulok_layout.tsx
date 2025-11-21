@@ -43,19 +43,15 @@ export default function UlokLayout(props: UlokPageProps) {
     const showEllipsisEnd = currentPage < totalPages - 2;
 
     if (totalPages <= 7) {
-      // Show all pages if 7 or fewer
       for (let i = 1; i <= totalPages; i++) {
         pages.push(i);
       }
     } else {
-      // Always show first page
       pages.push(1);
 
       if (showEllipsisStart) {
         pages.push("ellipsis-start");
       }
-
-      // Show current page and surrounding pages
       const start = Math.max(2, currentPage - 1);
       const end = Math.min(totalPages - 1, currentPage + 1);
 
@@ -66,8 +62,6 @@ export default function UlokLayout(props: UlokPageProps) {
       if (showEllipsisEnd) {
         pages.push("ellipsis-end");
       }
-
-      // Always show last page
       pages.push(totalPages);
     }
 
