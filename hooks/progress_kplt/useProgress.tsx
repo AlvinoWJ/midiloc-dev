@@ -35,7 +35,7 @@ interface UseProgressProps {
 }
 
 const UI_PAGE_SIZE = 9; // item per halaman di UI
-const PAGES_PER_BLOCK = 1; // per-block = 2 halaman UI
+const PAGES_PER_BLOCK = 4; // per-block = 2 halaman UI
 const FETCH_BLOCK_SIZE = UI_PAGE_SIZE * PAGES_PER_BLOCK;
 
 export function useProgress({
