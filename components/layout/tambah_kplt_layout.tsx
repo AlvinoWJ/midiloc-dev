@@ -31,23 +31,23 @@ interface FileInputConfig {
   accept: string;
 }
 
-const FileLink = ({ label, url }: { label: string; url: string | null }) => {
-  if (!url) return null;
-  return (
-    <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border">
-      <span className="text-sm text-gray-700">{label}</span>
-      <a
-        href={url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="relative z-10 inline-flex items-center bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-1.5 px-3 rounded-lg"
-      >
-        <LinkIcon className="w-3 h-3 mr-1.5" />
-        Lihat
-      </a>
-    </div>
-  );
-};
+// const FileLink = ({ label, url }: { label: string; url: string | null }) => {
+//   if (!url) return null;
+//   return (
+//     <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border">
+//       <span className="text-sm text-gray-700">{label}</span>
+//       <a
+//         href={url}
+//         target="_blank"
+//         rel="noopener noreferrer"
+//         className="relative z-10 inline-flex items-center bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-1.5 px-3 rounded-lg"
+//       >
+//         <LinkIcon className="w-3 h-3 mr-1.5" />
+//         Lihat
+//       </a>
+//     </div>
+//   );
+// };
 
 export default function TambahKpltLayout({
   prefillData,
@@ -100,6 +100,37 @@ export default function TambahKpltLayout({
       accept: "image/*",
     },
   ];
+
+  const formatNumberDisplay = (value: string) => {
+    if (value === undefined || value === null) return "";
+    return String(value).replace(/[^0-9.,]/g, "");
+  };
+
+  const formatRupiah = (angka: string) => {
+    if (!angka) return "";
+    // Pastikan angka bersih dari separator sebelum diparse
+    const cleanNum = String(angka).replace(/[^0-9]/g, "");
+    const numberValue = Number(cleanNum);
+    if (isNaN(numberValue)) {
+      return "";
+    }
+    return new Intl.NumberFormat("id-ID").format(numberValue);
+  };
+
+  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    const cleanValue = value.replace(/\D/g, "");
+    const syntheticEvent = {
+      ...e,
+      target: {
+        ...e.target,
+        name,
+        value: cleanValue,
+      },
+    };
+
+    handleChange(syntheticEvent as any);
+  };
 
   return (
     <main className="space-y-4 lg:space-y-6">
@@ -158,8 +189,9 @@ export default function TambahKpltLayout({
                     name="skor_fpl"
                     type="number"
                     placeholder="Masukkan skor FPL"
-                    value={formData.skor_fpl}
+                    value={formatNumberDisplay(formData.skor_fpl)}
                     onChange={handleChange}
+                    inputMode="numeric"
                     className={errors.apc ? "border-red-500" : ""}
                   />
                   {errors.skor_fpl && (
@@ -182,7 +214,8 @@ export default function TambahKpltLayout({
                     name="std"
                     type="number"
                     placeholder="Masukkan std"
-                    value={formData.std}
+                    value={formatNumberDisplay(formData.std)}
+                    inputMode="numeric"
                     onChange={handleChange}
                     className={errors.apc ? "border-red-500" : ""}
                   />
@@ -204,7 +237,8 @@ export default function TambahKpltLayout({
                     name="apc"
                     type="number"
                     placeholder="Masukkan apc"
-                    value={formData.apc}
+                    value={formatNumberDisplay(formData.apc)}
+                    inputMode="numeric"
                     onChange={handleChange}
                     className={errors.apc ? "border-red-500" : ""}
                   />
@@ -226,7 +260,8 @@ export default function TambahKpltLayout({
                     name="spd"
                     type="number"
                     placeholder="Masukkan spd"
-                    value={formData.spd}
+                    value={formatNumberDisplay(formData.spd)}
+                    inputMode="numeric"
                     onChange={handleChange}
                     className={errors.spd ? "border-red-500" : ""}
                   />
@@ -261,8 +296,9 @@ export default function TambahKpltLayout({
                     name="pe_rab"
                     type="number"
                     placeholder="Masukkan PE RAB"
-                    value={formData.pe_rab}
-                    onChange={handleChange}
+                    value={formatRupiah(formData.pe_rab)}
+                    inputMode="numeric"
+                    onChange={handlePriceChange}
                     disabled={isSubmitting}
                     className={errors.pe_rab ? "border-red-500" : ""}
                   />

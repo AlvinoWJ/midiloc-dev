@@ -7,7 +7,7 @@ import TambahKpltLayout from "@/components/layout/tambah_kplt_layout";
 import { useAlert } from "@/components/shared/alertcontext";
 import { useKpltPrefill } from "@/hooks/kplt/useKpltPrefill";
 import { useSWRConfig } from "swr";
-import { swrKeys } from "@/lib/swr-keys";
+import { invalidate } from "@/lib/swr-invalidate";
 
 const PageStatus = ({ message }: { message: string }) => (
   <div className="flex items-center justify-center h-screen bg-gray-100">
@@ -69,12 +69,7 @@ export default function TambahKpltPage() {
             message: "Data KPLT berhasil disimpan.",
           });
 
-          await mutate(
-            (key) => typeof key === "string" && key.startsWith(swrKeys.kplt),
-            undefined,
-            { revalidate: true }
-          );
-
+          await invalidate.kplt();
           router.back();
           router.refresh();
         } catch (err) {

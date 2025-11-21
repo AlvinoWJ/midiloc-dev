@@ -7,6 +7,7 @@ import DetailKpltLayout from "@/components/layout/detail_kplt_layout";
 import { useKpltDetail } from "@/hooks/kplt/useKpltDetail";
 import { useAlert } from "@/components/shared/alertcontext";
 import { useUser } from "@/hooks/useUser";
+import { invalidate } from "@/lib/swr-invalidate";
 
 export default function DetailKpltPage() {
   const params = useParams<{ id: string }>();
@@ -117,6 +118,7 @@ export default function DetailKpltPage() {
         });
         setShowIntipModal(false);
         await mutate();
+        invalidate.kplt();
       } catch (err: any) {
         console.error("Gagal submit Intip:", err);
         showToast({
@@ -139,6 +141,7 @@ export default function DetailKpltPage() {
           method: "PATCH",
           body: ukurFormData,
         });
+
         const result = await res.json();
         if (!res.ok) {
           throw new Error(result.error || "Gagal menyimpan data Form Ukur.");
@@ -149,6 +152,7 @@ export default function DetailKpltPage() {
         });
         setShowFormUkurModal(false);
         await mutate();
+        invalidate.kplt();
       } catch (err: any) {
         console.error("Gagal submit Form Ukur:", err);
         showToast({

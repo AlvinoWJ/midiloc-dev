@@ -2,12 +2,7 @@
 
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { useUser } from "@/hooks/useUser";
-import {
-  useKplt,
-  KpltPageProps,
-  UnifiedKpltItem,
-  Cursor,
-} from "@/hooks/kplt/useKplt";
+import { useKplt } from "@/hooks/kplt/useKplt";
 import KpltLayout from "@/components/layout/kplt_layout";
 
 export default function KPLTPage() {

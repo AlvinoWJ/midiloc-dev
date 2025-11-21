@@ -12,7 +12,7 @@ const statusColors: Record<Status, string> = {
   "In Progress": "bg-progress text-primary-foreground",
   OK: "bg-submit text-primary-foreground",
   NOK: "bg-primary text-primary-foreground",
-  "need input": "bg-[#d9d9d9] text-primary-foreground",
+  "Need Input": "bg-gray-400 text-primary-foreground",
   "Waiting for Forum": "bg-progress text-primary-foreground",
 };
 

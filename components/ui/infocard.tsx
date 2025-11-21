@@ -71,7 +71,7 @@ export function InfoCard({
         {/* Badge Notifikasi */}
         {shouldShowBadge && (
           <div
-            className="absolute top-4 right-4 z-10"
+            className="absolute top-3 right-6 z-10"
             onMouseEnter={() => setShowTooltip(true)}
             onMouseLeave={() => setShowTooltip(false)}
           >
