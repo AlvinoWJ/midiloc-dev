@@ -83,7 +83,7 @@ export async function GET(req: NextRequest) {
 
   const limitRaw = Number(url.searchParams.get("limit") ?? "10");
   const limit =
-    Number.isFinite(limitRaw) && limitRaw > 0 ? Math.min(limitRaw, 500) : 10;
+    Number.isFinite(limitRaw) && limitRaw > 0 ? Math.min(limitRaw, 100) : 10;
 
   // Encoded cursors
   const afterDecoded = decodeCursor(url.searchParams.get("after"));
