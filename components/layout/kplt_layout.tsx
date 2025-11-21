@@ -104,11 +104,11 @@ export default function KpltLayout(props: KpltPageProps) {
 
   const getStatusLabel = (status: string) => {
     switch (status.toLowerCase()) {
-      case "need input":
+      case "needinput":
         return "Need Input";
-      case "in progress":
+      case "inprogress":
         return "In Progress";
-      case "waiting for forum":
+      case "waitingforum":
         return "Waiting for Forum";
       default:
         return status;

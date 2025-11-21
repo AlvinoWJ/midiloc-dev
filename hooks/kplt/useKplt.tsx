@@ -35,8 +35,11 @@ export interface KpltItem {
   approval_status?: string;
   latitude: number;
   longitude: number;
-  files_ok?: boolean;
   ulok_id?: string;
+  file_intip?: string | null;
+  form_ukur?: string | null;
+  has_form_ukur?: boolean;
+  has_file_intip?: boolean;
 }
 
 export interface UnifiedKpltItem {
@@ -45,37 +48,39 @@ export interface UnifiedKpltItem {
   alamat: string;
   created_at: string;
   status: string;
-  statusKey: "needinput" | "inprogress" | "ok" | "nok";
+  statusKey: "needinput" | "inprogress" | "waitingforum" | "ok" | "nok";
   has_file_intip: boolean;
   has_form_ukur: boolean;
 }
 
-export interface Cursor {
-  startCursor: string | null;
-  endCursor: string | null;
+export interface Pagination {
+  limit: number;
+  total: number;
   hasNextPage: boolean;
   hasPrevPage: boolean;
-}
-
-export interface PaginationGroup {
-  limit: number;
-  cursor: Cursor;
+  startCursor: string | null;
+  endCursor: string | null;
+  // Count spesifik per scope
+  count_needinput?: number;
+  count_inprogress?: number;
+  count_waitingforum?: number;
+  count_ok?: number;
+  count_nok?: number;
 }
 
 export interface ApiKpltResponse {
   success: boolean;
-  scope: string;
+  scope: "recent" | "history";
   data: {
     needinput: KpltItem[];
     inprogress: KpltItem[];
+    waitingforum: KpltItem[];
     ok: KpltItem[];
     nok: KpltItem[];
   };
   pagination: {
-    needinput: PaginationGroup;
-    inprogress: PaginationGroup;
-    ok: PaginationGroup;
-    nok: PaginationGroup;
+    recent?: Pagination;
+    oknok?: Pagination;
   };
 }
 
@@ -87,7 +92,7 @@ interface UseKpltProps {
   year?: string;
 }
 
-const UI_PAGE_SIZE = 2; // User melihat 9 item per halaman
+const UI_PAGE_SIZE = 9; // User melihat 9 item per halaman
 const PAGES_PER_BLOCK = 1; // 4 Halaman UI per 1 Fetch API
 const FETCH_BLOCK_SIZE = UI_PAGE_SIZE * PAGES_PER_BLOCK;
 
@@ -100,18 +105,13 @@ export function useKplt({
 }: UseKpltProps = {}) {
   const currentBlockIndex = Math.floor((page - 1) / PAGES_PER_BLOCK);
 
-  const [cursorMap, setCursorMap] = useState<
-    Record<number, { ok: string; nok: string }>
-  >({
-    0: { ok: "", nok: "" },
-  });
+  const [cursorMap, setCursorMap] = useState<Record<number, string>>({ 0: "" });
 
   useEffect(() => {
-    setCursorMap({ 0: { ok: "", nok: "" } });
+    setCursorMap({ 0: "" });
   }, [scope, search, month, year]);
 
   const cursorForCurrentBlock = cursorMap[currentBlockIndex];
-
   const shouldFetch = cursorForCurrentBlock !== undefined;
 
   const createUrl = () => {
@@ -119,21 +119,13 @@ export function useKplt({
 
     const params = new URLSearchParams();
     params.set("scope", scope);
+    params.set("limit", FETCH_BLOCK_SIZE.toString());
 
-    const limit = scope === "recent" ? "100" : FETCH_BLOCK_SIZE.toString();
-
-    if (scope === "recent") {
-      params.set("limitNeedInput", limit);
-      params.set("limitInProgress", limit);
-    } else {
-      params.set("limitOk", limit);
-      params.set("limitNok", limit);
-
-      params.set("afterOk", cursorForCurrentBlock?.ok ?? "");
-      params.set("afterNok", cursorForCurrentBlock?.nok ?? "");
+    if (cursorForCurrentBlock) {
+      params.set("after", cursorForCurrentBlock);
     }
 
-    if (search && search.trim() !== "") params.set("q", search.trim());
+    if (search && search.trim() !== "") params.set("search", search.trim());
     if (month) params.set("month", month);
     if (year) params.set("year", year);
 
@@ -146,63 +138,26 @@ export function useKplt({
       keepPreviousData: true,
     });
 
+  const paginationData =
+    scope === "recent" ? data?.pagination?.recent : data?.pagination?.oknok;
+
   useEffect(() => {
-    // Pastikan kita ada di tab History dan data pagination tersedia
-    if (scope === "history" && data?.pagination) {
+    if (paginationData?.hasNextPage && paginationData?.endCursor) {
       const nextBlockIndex = currentBlockIndex + 1;
-
-      const okPagination = data.pagination.ok;
-      const nokPagination = data.pagination.nok;
-
-      // Cek apakah ada halaman selanjutnya (Logic dari useUlok)
-      const okHasNext = okPagination?.cursor?.hasNextPage ?? false;
-      const nokHasNext = nokPagination?.cursor?.hasNextPage ?? false;
-
-      // Jika setidaknya SATU stream masih punya data, kita siapkan cursor untuk blok berikutnya
-      if (okHasNext || nokHasNext) {
-        setCursorMap((prev) => {
-          // Ambil cursor yang kita gunakan untuk memanggil blok saat ini (sebagai cadangan)
-          const currentCursor = prev[currentBlockIndex] || { ok: "", nok: "" };
-
-          // --- LOGIKA PENTING ---
-          // 1. Jika stream masih ada (hasNext = true), pakai endCursor baru dari API.
-          // 2. Jika stream habis (hasNext = false), API mungkin kirim endCursor = null.
-          //    JANGAN ubah jadi "" (string kosong), karena itu akan me-reset ke awal.
-          //    Tetap gunakan 'currentCursor' (cursor terakhir) agar API mencari "setelah data terakhir" (hasilnya kosong, bukan reset).
-
-          const nextOkCursor =
-            okPagination?.cursor?.endCursor ?? currentCursor.ok;
-          const nextNokCursor =
-            nokPagination?.cursor?.endCursor ?? currentCursor.nok;
-
-          // Cek duplikasi state agar tidak re-render berulang (Logic dari useUlok)
-          const existingNext = prev[nextBlockIndex];
-          if (
-            existingNext &&
-            existingNext.ok === nextOkCursor &&
-            existingNext.nok === nextNokCursor
-          ) {
-            return prev;
-          }
-
-          // Update state untuk blok berikutnya
-          return {
-            ...prev,
-            [nextBlockIndex]: {
-              ok: nextOkCursor,
-              nok: nextNokCursor,
-            },
-          };
-        });
-      }
+      setCursorMap((prev) => {
+        if (prev[nextBlockIndex] === paginationData.endCursor) return prev;
+        return { ...prev, [nextBlockIndex]: paginationData.endCursor! };
+      });
     }
-  }, [data, currentBlockIndex, scope]);
+  }, [paginationData, currentBlockIndex]);
 
   const processedData: UnifiedKpltItem[] = useMemo(() => {
     if (!data?.data) return [];
 
     let rawItems: Array<
-      KpltItem & { statusKey: "needinput" | "inprogress" | "ok" | "nok" }
+      KpltItem & {
+        statusKey: "needinput" | "inprogress" | "waitingforum" | "ok" | "nok";
+      }
     > = [];
 
     if (scope === "recent") {
@@ -214,6 +169,10 @@ export function useKplt({
         ...(data.data.inprogress || []).map((i) => ({
           ...i,
           statusKey: "inprogress" as const,
+        })),
+        ...(data.data.waitingforum || []).map((i) => ({
+          ...i,
+          statusKey: "waitingforum" as const,
         })),
       ];
     } else {
@@ -247,8 +206,8 @@ export function useKplt({
         created_at: item.created_at,
         status,
         statusKey: item.statusKey,
-        has_file_intip: item.files_ok ?? false,
-        has_form_ukur: false,
+        has_file_intip: item.has_file_intip ?? false,
+        has_form_ukur: item.has_form_ukur ?? false,
       } as UnifiedKpltItem;
     });
 
@@ -258,37 +217,29 @@ export function useKplt({
     );
   }, [data, scope]);
 
-  let finalDisplayData = processedData;
-  let totalPagesUi = 1;
-  let uiHasNextPage = false;
+  const pageIndexInBlock = (page - 1) % PAGES_PER_BLOCK; // 0, 1, 2, 3
+  const sliceStart = pageIndexInBlock * UI_PAGE_SIZE;
+  const sliceEnd = sliceStart + UI_PAGE_SIZE;
 
-  if (scope === "history") {
-    const pageIndexInBlock = (page - 1) % PAGES_PER_BLOCK; // 0, 1, 2, 3
-    const sliceStart = pageIndexInBlock * UI_PAGE_SIZE;
-    const sliceEnd = sliceStart + UI_PAGE_SIZE;
+  const finalDisplayData = processedData.slice(sliceStart, sliceEnd);
 
-    finalDisplayData = processedData.slice(sliceStart, sliceEnd);
+  const apiHasNext = paginationData?.hasNextPage ?? false;
+  let totalPagesUi = 0;
 
-    const apiHasNext =
-      (data?.pagination?.ok?.cursor?.hasNextPage ||
-        data?.pagination?.nok?.cursor?.hasNextPage) ??
-      false;
-
-    if (apiHasNext) {
-      totalPagesUi = (currentBlockIndex + 2) * PAGES_PER_BLOCK;
-    } else {
-      const pagesInCurrentBlock = Math.ceil(
-        processedData.length / UI_PAGE_SIZE
-      );
-      totalPagesUi = currentBlockIndex * PAGES_PER_BLOCK + pagesInCurrentBlock;
-    }
-
-    if (totalPagesUi === 0) totalPagesUi = 1;
-    uiHasNextPage = page < totalPagesUi;
+  if (apiHasNext) {
+    // Jika API bilang masih ada data setelah block ini, kita asumsikan setidaknya ada 1 block penuh lagi
+    totalPagesUi = (currentBlockIndex + 2) * PAGES_PER_BLOCK;
   } else {
-    totalPagesUi = 1;
-    uiHasNextPage = false;
+    // Jika tidak ada next page dari API, total halaman = halaman yg sudah lewat + sisa halaman di block ini
+    const pagesInCurrentBlock = Math.ceil(processedData.length / UI_PAGE_SIZE);
+    totalPagesUi = currentBlockIndex * PAGES_PER_BLOCK + pagesInCurrentBlock;
   }
+
+  // Fallback minimal 1 halaman
+  if (totalPagesUi === 0 && processedData.length > 0) totalPagesUi = 1;
+  if (totalPagesUi === 0 && !isLoading) totalPagesUi = 1;
+
+  const uiHasNextPage = page < totalPagesUi;
 
   return {
     kpltData: finalDisplayData,

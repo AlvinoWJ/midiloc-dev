@@ -10,8 +10,19 @@ export const invalidate = {
       { revalidate: true }
     ),
   ulokDetail: (id: string) => mutate(swrKeys.ulokDetail(id)),
-  ulokEksternal: () => mutate(swrKeys.ulokEksternal),
+  ulokEksternal: () =>
+    mutate(
+      (key) => typeof key === "string" && key.includes("/api/ulok_eksternal"),
+      undefined,
+      { revalidate: true }
+    ),
+
   ulokEksternalDetail: (id: string) => mutate(swrKeys.ulokEksternalDetail(id)),
-  kplt: () => mutate(swrKeys.kplt),
+  kplt: () =>
+    mutate(
+      (key) => typeof key === "string" && key.includes("/api/kplt"),
+      undefined,
+      { revalidate: true }
+    ),
   kpltDetail: (id: string) => mutate(swrKeys.kpltDetail(id)),
 };
