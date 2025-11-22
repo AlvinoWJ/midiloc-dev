@@ -47,7 +47,7 @@ export default function TambahUlokPage() {
         title: "Berhasil",
         message: "Usulan Lokasi baru telah berhasil disimpan!",
       });
-      router.back();
+      router.push("/usulan_lokasi");
     } catch (err: unknown) {
       showToast({
         type: "error",

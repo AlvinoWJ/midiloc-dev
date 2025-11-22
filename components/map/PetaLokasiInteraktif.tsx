@@ -36,20 +36,20 @@ const createMarkerIcon = (color: string) => {
 const STATUS_COLOR_MAP: Record<string, string> = {
   // Status ULOK/KPLT
   "In Progress": "#F59E0B", // Kuning
-  "OK": "#22C55E", // Hijau
-  "Approve": "#22C55E",
-  "NOK": "#EF4444", // Merah
-  "Reject": "#EF4444",
+  OK: "#22C55E", // Hijau
+  Approve: "#22C55E",
+  NOK: "#EF4444", // Merah
+  Reject: "#EF4444",
   "Waiting for Forum": "#3B82F6", // Biru
   "Need Input": "#6B7280", // Abu-abu
 
   // Status Progress KPLT (warna dibedakan)
   "Not Started": "#6B7280", // Abu-abu
-  "Mou": "#3B82F6", // Biru
+  Mou: "#3B82F6", // Biru
   "Izin Tetangga": "#60A5FA", // Biru muda
-  "Perizinan": "#FBBF24", // Kuning
-  "Notaris": "#8B5CF6", // Ungu
-  "Renovasi": "#EC4899", // Pink
+  Perizinan: "#FBBF24", // Kuning
+  Notaris: "#8B5CF6", // Ungu
+  Renovasi: "#EC4899", // Pink
   "Grand Opening": "#22C55E", // Hijau
 
   // Default
@@ -60,7 +60,8 @@ const STATUS_COLOR_MAP: Record<string, string> = {
 const iconCache: Record<string, L.DivIcon> = {};
 const getMarkerIcon = (status: string): L.DivIcon => {
   const statusNormalized = status || "default";
-  const color = STATUS_COLOR_MAP[statusNormalized] || STATUS_COLOR_MAP["default"];
+  const color =
+    STATUS_COLOR_MAP[statusNormalized] || STATUS_COLOR_MAP["default"];
   if (!iconCache[color]) {
     iconCache[color] = createMarkerIcon(color);
   }
@@ -81,20 +82,20 @@ const StatusBadge = ({ status }: { status: string }) => {
   const badgeStyles: Record<string, string> = {
     // Status Umum
     "In Progress": "bg-yellow-100 text-yellow-800",
-    "OK": "bg-green-100 text-green-800",
-    "Approve": "bg-green-100 text-green-800",
-    "NOK": "bg-red-100 text-red-800",
-    "Reject": "bg-red-100 text-red-800",
+    OK: "bg-green-100 text-green-800",
+    Approve: "bg-green-100 text-green-800",
+    NOK: "bg-red-100 text-red-800",
+    Reject: "bg-red-100 text-red-800",
     "Waiting for Forum": "bg-blue-100 text-blue-800",
     "Need Input": "bg-gray-100 text-gray-800",
 
     // Status Progress KPLT (dibedakan)
     "Not Started": "bg-gray-100 text-gray-800",
-    "Mou": "bg-blue-100 text-blue-800",
+    Mou: "bg-blue-100 text-blue-800",
     "Izin Tetangga": "bg-blue-100 text-blue-800",
-    "Perizinan": "bg-yellow-100 text-yellow-800",
-    "Notaris": "bg-purple-100 text-purple-800",
-    "Renovasi": "bg-pink-100 text-pink-800",
+    Perizinan: "bg-yellow-100 text-yellow-800",
+    Notaris: "bg-purple-100 text-purple-800",
+    Renovasi: "bg-pink-100 text-pink-800",
     "Grand Opening": "bg-green-100 text-green-800",
   };
   const style = badgeStyles[status] || "bg-gray-100 text-gray-800";
@@ -174,8 +175,10 @@ export default function PetaLokasiInteraktif({
         const created_at: string | undefined = row.created_at ?? undefined;
         const alamat: string | undefined = row.alamat ?? undefined;
 
-        const type =
-          (row.type || activeMapFilter) as "ulok" | "kplt" | "progress_kplt";
+        const type = (row.type || activeMapFilter) as
+          | "ulok"
+          | "kplt"
+          | "progress_kplt";
         const id = String(row.id);
 
         return { id, lat, lng, status, name, created_at, alamat, type };
@@ -229,7 +232,8 @@ export default function PetaLokasiInteraktif({
   }
 
   const mapCenter: [number, number] =
-    centerPoint ?? (points[0] ? [points[0].lat, points[0].lng] : [-6.25, 106.65]);
+    centerPoint ??
+    (points[0] ? [points[0].lat, points[0].lng] : [-6.25, 106.65]);
   const zoomLevel = centerPoint ? 15 : 13;
 
   return (
@@ -273,7 +277,11 @@ export default function PetaLokasiInteraktif({
         {points.map((p, index) => {
           const icon = getMarkerIcon(p.status);
           return (
-            <Marker key={`${p.id}-${index}`} position={[p.lat, p.lng]} icon={icon}>
+            <Marker
+              key={`${p.id}-${index}`}
+              position={[p.lat, p.lng]}
+              icon={icon}
+            >
               {showPopup && (
                 <Popup>
                   <div className="w-64 p-2 flex flex-col gap-1">

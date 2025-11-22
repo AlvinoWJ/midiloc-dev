@@ -173,7 +173,7 @@ const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
           disabled={disabled || isLoading}
-          className={`w-full p-2 pr-16 border border-gray-300 text-base text-black font-medium shadow-sm rounded focus:outline-none focus:border-blue-500 ${
+          className={`w-full p-2 pr-16 h-11 border border-gray-300 text-base text-black font-medium shadow-sm rounded focus:outline-none focus:border-blue-500 ${
             disabled || isLoading ? "bg-white cursor-not-allowed" : "bg-white"
           } ${error ? "border-red-500" : ""}`}
           autoComplete="off"

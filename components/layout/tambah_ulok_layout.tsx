@@ -8,7 +8,7 @@ import WilayahSelector from "@/components/ui/customselectwilayah";
 import { UlokCreateInput } from "@/lib/validations/ulok";
 import { Dialog } from "@headlessui/react";
 import dynamic from "next/dynamic";
-import { useAddUlokForm } from "@/hooks/useAddUlokForm";
+import { useAddUlokForm } from "@/hooks/ulok/useAddUlokForm";
 import { useRouter } from "next/navigation";
 import { FileUpload } from "@/components/ui/uploadfile";
 
@@ -42,24 +42,33 @@ export default function TambahUlokForm({
   const bentukObjekOptions = ["Tanah", "Bangunan"];
   const router = useRouter();
 
-  const formatNumberDisplay = (value: string) => {
-    if (value === undefined || value === null) return "";
-    return value.replace(/[^0-9.,]/g, ""); // hanya izinkan angka, koma, titik
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    // Cek jika tombol adalah Enter DAN elemen yang aktif BUKAN textarea
+    // Kita biarkan textarea agar pengguna tetap bisa membuat baris baru di kolom Alamat
+    if (
+      e.key === "Enter" &&
+      e.target instanceof HTMLElement &&
+      e.target.tagName !== "TEXTAREA"
+    ) {
+      e.preventDefault();
+    }
   };
 
-  const formatRupiah = (angka: string) => {
-    if (!angka) return "";
-    const numberValue = Number(angka);
-    if (isNaN(numberValue)) {
-      return "";
-    }
-    return new Intl.NumberFormat("id-ID").format(numberValue);
+  const formatNumber = (value: string) => {
+    if (!value) return "";
+    // Pisahkan bagian integer dan desimal (jika ada)
+    const parts = value.split(",");
+    // Format bagian integer dengan pemisah ribuan titik
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    // Gabungkan kembali dengan koma
+    return parts.join(",");
   };
 
   return (
     <div className="space-y-4 lg:space-y-6">
       <form
         onSubmit={handleFormSubmit}
+        onKeyDown={handleKeyDown}
         className="space-y-8 lg:space-y-10 max-w-7xl mx-auto lg:px-0"
       >
         <div className="flex justify-between items-center mb-4 lg:mb-6">
@@ -133,7 +142,7 @@ export default function TambahUlokForm({
             </div>
 
             {/* LatLong */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4">
               <div>
                 <label
                   htmlFor="latlong"
@@ -222,7 +231,7 @@ export default function TambahUlokForm({
                 id="jumlahlantai"
                 name="jumlahlantai"
                 placeholder="Masukkan Jumlah Lantai"
-                value={formData.jumlahlantai}
+                value={formatNumber(formData.jumlahlantai)}
                 onChange={handleChange}
                 className="h-10 lg:h-11 text-sm lg:text-base"
                 inputMode="numeric"
@@ -244,7 +253,7 @@ export default function TambahUlokForm({
                 id="lebardepan"
                 name="lebardepan"
                 placeholder="Masukkan Lebar Depan"
-                value={formatNumberDisplay(formData.lebardepan)}
+                value={formatNumber(formData.lebardepan)}
                 onChange={handleChange}
                 className="h-10 lg:h-11 text-sm lg:text-base"
                 inputMode="numeric"
@@ -266,7 +275,7 @@ export default function TambahUlokForm({
                 id="Panjang"
                 name="panjang"
                 placeholder="Masukkan Panjang"
-                value={formatNumberDisplay(formData.panjang)}
+                value={formatNumber(formData.panjang)}
                 onChange={handleChange}
                 className="h-10 lg:h-11 text-sm lg:text-base"
                 inputMode="numeric"
@@ -288,7 +297,7 @@ export default function TambahUlokForm({
                 id="luas"
                 name="luas"
                 placeholder="Masukkan Luas"
-                value={formatNumberDisplay(formData.luas)}
+                value={formatNumber(formData.luas)}
                 onChange={handleChange}
                 className="h-10 lg:h-11 text-sm lg:text-base"
                 inputMode="numeric"
@@ -310,7 +319,7 @@ export default function TambahUlokForm({
                 id="hargasewa"
                 name="hargasewa"
                 placeholder="Masukkan Harga Sewa"
-                value={formatRupiah(formData.hargasewa)}
+                value={formatNumber(formData.hargasewa)}
                 onChange={handleChange}
                 className="h-10 lg:h-11 text-sm lg:text-base"
                 type="text"
@@ -330,7 +339,7 @@ export default function TambahUlokForm({
           <div className="absolute -top-3 lg:-top-4 left-4 lg:left-6 bg-red-600 text-white px-3 lg:px-4 py-1 lg:py-1.5 rounded shadow-md font-bold text-base lg:text-xl">
             Data Pemilik
           </div>
-          <div className="bg-white shadow-[1px_1px_6px_rgba(0,0,0,0.25)] rounded px-4 lg:px-8 pt-8 lg:pt-12 pb-4 lg:pb-6 space-y-4 lg:space-y-6">
+          <div className="bg-white shadow-[1px_1px_6px_rgba(0,0,0,0.25)] rounded p-4 lg:p-8 pt-8 lg:pt-12 grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6">
             {/* Nama Pemilik */}
             <div>
               <label
@@ -406,6 +415,7 @@ export default function TambahUlokForm({
           <Button
             type="submit"
             variant="submit"
+            size="lg"
             className="w-full lg:w-auto p-4 lg:p-5 text-sm lg:text-base font-semibold"
             disabled={isSubmitting}
           >
@@ -429,7 +439,7 @@ export default function TambahUlokForm({
         <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
         <div className="fixed inset-0 flex items-center justify-center p-4">
           <Dialog.Panel className="w-full max-w-3xl h-[80vh] bg-white rounded-lg shadow-xl overflow-hidden">
-            <div className="p-4 border-b">
+            <div className="p-4 ">
               <Dialog.Title className="text-base lg:text-lg font-medium">
                 Pilih Lokasi dari Peta
               </Dialog.Title>

@@ -51,33 +51,30 @@ export function useAddUlokForm({
   ) => {
     const { name, value } = e.target;
     if (["lebardepan", "panjang", "luas"].includes(name)) {
-      let filtered = value.replace(/[^0-9.,]/g, "");
-      filtered = filtered.replace(".", ",");
+      // Hapus semua titik (pemisah ribuan) terlebih dahulu
+      let cleanValue = value.replace(/\./g, "");
 
+      // Hanya izinkan angka dan koma
+      let filtered = cleanValue.replace(/[^0-9,]/g, "");
+
+      // Cegah multiple koma
       const parts = filtered.split(",");
       if (parts.length > 2) {
         filtered = parts[0] + "," + parts[1];
       }
 
-      setFormData((prev) => {
-        const updated = { ...prev, [name]: filtered };
-
-        return updated;
-      });
+      setFormData((prev) => ({ ...prev, [name]: filtered }));
       return;
     }
 
-    if (name === "jumlahlantai") {
+    // Handle field integer (jumlahlantai, hargasewa)
+    if (name === "jumlahlantai" || name === "hargasewa") {
+      // Hapus semua karakter non-digit (termasuk titik dan koma)
       const numericOnly = value.replace(/[^0-9]/g, "");
       setFormData((prev) => ({ ...prev, [name]: numericOnly }));
       return;
     }
 
-    if (name === "hargasewa") {
-      const numericValue = value.replace(/[^0-9]/g, "");
-      setFormData((prev) => ({ ...prev, [name]: numericValue }));
-      return;
-    }
     setFormData((prev) => ({ ...prev, [name]: value }));
     if (errors[name]) {
       setErrors((prev) => {
