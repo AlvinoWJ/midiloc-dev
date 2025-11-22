@@ -189,10 +189,15 @@ export function useKplt({
     }
 
     const unified = rawItems.map((item) => {
-      const status =
-        item.statusKey === "needinput"
-          ? "Need Input"
-          : item.kplt_approval || item.statusKey;
+      let status = item.kplt_approval || item.statusKey;
+
+      if (item.statusKey === "needinput") {
+        status = "Need Input";
+      } else if (item.statusKey === "inprogress") {
+        status = "In Progress";
+      } else if (item.statusKey === "waitingforum") {
+        status = "Waiting For Forum";
+      }
 
       const nama =
         item.statusKey === "needinput"

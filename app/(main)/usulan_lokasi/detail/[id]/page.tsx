@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useUlokDetail, MappedUlokData } from "@/hooks/ulok/useUlokDetail";
+import { useUlokDetail } from "@/hooks/ulok/useUlokDetail";
 import { useAlert } from "@/components/shared/alertcontext";
 import { UlokUpdateInput } from "@/lib/validations/ulok";
 import DetailUlokLayout from "@/components/layout/detail_ulok_layout";

@@ -35,7 +35,6 @@ export function InfoCard({
 }: InfoCardProps) {
   const [showTooltip, setShowTooltip] = useState(false);
 
-  // Format tanggal jadi lebih rapi
   const formattedDate = new Date(created_at).toLocaleDateString("id-ID", {
     day: "2-digit",
     month: "long",
@@ -47,13 +46,11 @@ export function InfoCard({
     has_form_ukur === false,
   ].filter(Boolean).length;
 
-  // Tentukan warna badge berdasarkan jumlah data kosong
   const getBadgeColor = () => {
     if (missingDataCount === 0) return "bg-green-500";
     return "bg-red-500";
   };
 
-  // Generate pesan tooltip
   const getTooltipMessage = () => {
     if (missingDataCount === 0) return "Data lengkap";
     const missing = [];
@@ -67,7 +64,7 @@ export function InfoCard({
 
   return (
     <Link href={`${detailPath}/${id}`} className="block">
-      <Card className="w-full min-h-[192px] flex flex-col justify-between shadow-[1px_1px_6px_rgba(0,0,0,0.25)] hover:shadow-lg transition-shadow duration-300 relative">
+      <Card className="w-full min-h-[192px] flex flex-col justify-between shadow-md hover:shadow-[1px_1px_6px_rgba(0,0,0,0.25)] transition-shadow duration-300 relative">
         {/* Badge Notifikasi */}
         {shouldShowBadge && (
           <div

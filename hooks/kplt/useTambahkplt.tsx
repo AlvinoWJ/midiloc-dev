@@ -7,6 +7,13 @@ import {
   KpltCreatePayloadSchema,
 } from "@/lib/validations/kplt";
 import { PrefillKpltResponse } from "@/types/common";
+import {
+  MIME,
+  PDF_FIELDS,
+  EXCEL_FIELDS,
+  VIDEO_FIELDS,
+  IMAGE_FIELDS,
+} from "@/lib/storage/path";
 
 export type KpltFormData = Omit<
   KpltCreatePayload,
@@ -49,14 +56,12 @@ export type KpltFormData = Omit<
   peta_coverage: File | null;
 };
 
-// Definisikan props untuk hook (Tidak Diubah)
 interface UseTambahKpltProps {
   onSubmit: (data: KpltFormData) => Promise<void>;
   isSubmitting: boolean;
   initialData?: PrefillKpltResponse | null;
 }
 
-// Tipe untuk state error (Tidak Diubah)
 type FormErrors = Partial<Record<keyof KpltCreatePayload, string>>;
 
 export function useTambahKplt({
@@ -66,7 +71,6 @@ export function useTambahKplt({
 }: UseTambahKpltProps) {
   const { showConfirmation, showToast } = useAlert();
 
-  // --- 1. State Management Eksplisit (Tidak Diubah) ---
   const [formData, setFormData] = useState<KpltFormData>({
     nama_kplt: "",
     latitude: "",
@@ -95,7 +99,6 @@ export function useTambahKplt({
 
   const [errors, setErrors] = useState<FormErrors>({});
 
-  // --- Efek untuk mengisi form dari initialData (Tidak Diubah) ---
   useEffect(() => {
     if (initialData?.base) {
       setFormData((prev) => ({
@@ -107,13 +110,59 @@ export function useTambahKplt({
     }
   }, [initialData]);
 
-  // --- 2. Handlers (Tidak Diubah) ---
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
     >
   ) => {
     const { name, value } = e.target;
+
+    const numericFields = ["skor_fpl", "std", "apc", "spd", "pe_rab"];
+
+    if (numericFields.includes(name)) {
+      let cleanValue = value.replace(/\./g, "");
+      let filtered = cleanValue.replace(/[^0-9,]/g, "");
+
+      const parts = filtered.split(",");
+      if (parts.length > 2) {
+        filtered = parts[0] + "," + parts[1];
+      }
+
+      const updates: Partial<KpltFormData> = { [name]: filtered };
+
+      if (name === "std" || name === "apc") {
+        const rawStd = name === "std" ? filtered : formData.std;
+        const rawApc = name === "apc" ? filtered : formData.apc;
+
+        const valStd = parseFloat(rawStd.replace(",", ".") || "0");
+        const valApc = parseFloat(rawApc.replace(",", ".") || "0");
+
+        const valSpd = valStd * valApc;
+
+        updates.spd = valSpd === 0 ? "" : String(valSpd).replace(".", ",");
+      }
+
+      setFormData((prev) => ({ ...prev, ...updates }));
+
+      if (errors[name as keyof FormErrors]) {
+        setErrors((prev) => {
+          const newErrors = { ...prev };
+          delete newErrors[name as keyof FormErrors];
+          return newErrors;
+        });
+      }
+
+      if (updates.spd && errors.spd) {
+        setErrors((prev) => {
+          const newErrors = { ...prev };
+          delete newErrors.spd;
+          return newErrors;
+        });
+      }
+
+      return;
+    }
+
     setFormData((prev) => ({ ...prev, [name]: value }));
     if (errors[name as keyof FormErrors]) {
       setErrors((prev) => {
@@ -125,36 +174,58 @@ export function useTambahKplt({
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, files } = e.target; // Ambil 'name' dan 'files' dari event.
+    const { name, files } = e.target;
 
     if (files && files.length > 0) {
       const selectedFile = files[0];
-      // Set state formData dengan file yang baru dipilih
-      setFormData((prev) => ({ ...prev, [name]: selectedFile }));
-    } else {
-      // Jika user membatalkan pilihan file, set state kembali ke null
-      setFormData((prev) => ({ ...prev, [name]: null }));
-    }
+      const fileType = selectedFile.type;
+      let isValid = false;
+      let errorMessage = "";
 
-    // Hapus error untuk field ini jika ada
-    if (errors[name as keyof FormErrors]) {
-      setErrors((prev) => {
-        const newErrors = { ...prev };
-        delete newErrors[name as keyof FormErrors];
-        return newErrors;
-      });
+      if (PDF_FIELDS.includes(name as any)) {
+        isValid = MIME.pdf.includes(fileType);
+        errorMessage = "File harus berupa PDF (.pdf)";
+      } else if (EXCEL_FIELDS.includes(name as any)) {
+        isValid = MIME.excel.includes(fileType);
+        errorMessage = "File harus berupa Excel/CSV (.xlsx, .xls, .csv)";
+      } else if (VIDEO_FIELDS.includes(name as any)) {
+        isValid = MIME.video.includes(fileType);
+        errorMessage = "File harus berupa Video (.mp4, .mov, .avi)";
+      } else if (IMAGE_FIELDS.includes(name as any)) {
+        isValid = MIME.image.includes(fileType);
+        errorMessage = "File harus berupa Gambar (.jpg, .png, .webp)";
+      } else {
+        isValid = true;
+      }
+
+      if (!isValid) {
+        setErrors((prev) => ({
+          ...prev,
+          [name]: errorMessage,
+        }));
+        e.target.value = "";
+        setFormData((prev) => ({ ...prev, [name]: null }));
+        return;
+      }
+
+      setFormData((prev) => ({ ...prev, [name]: selectedFile }));
+
+      if (errors[name as keyof FormErrors]) {
+        setErrors((prev) => {
+          const newErrors = { ...prev };
+          delete newErrors[name as keyof FormErrors];
+          return newErrors;
+        });
+      }
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: null }));
     }
   };
 
-  // --- 3. Submission & Validation (DIREVISI DI SINI) ---
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
 
-    console.log("🚀 [DEBUG] Mulai submit KPLT");
-    console.log("📦 formData awal:", formData);
-
-    // --- VALIDASI MANUAL  ---
     const requiredFields = {
       karakter_lokasi: "Karakter Lokasi wajib diisi",
       sosial_ekonomi: "Sosial Ekonomi wajib diisi",

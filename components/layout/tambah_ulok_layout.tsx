@@ -43,8 +43,6 @@ export default function TambahUlokForm({
   const router = useRouter();
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    // Cek jika tombol adalah Enter DAN elemen yang aktif BUKAN textarea
-    // Kita biarkan textarea agar pengguna tetap bisa membuat baris baru di kolom Alamat
     if (
       e.key === "Enter" &&
       e.target instanceof HTMLElement &&
@@ -56,11 +54,8 @@ export default function TambahUlokForm({
 
   const formatNumber = (value: string) => {
     if (!value) return "";
-    // Pisahkan bagian integer dan desimal (jika ada)
     const parts = value.split(",");
-    // Format bagian integer dengan pemisah ribuan titik
     parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-    // Gabungkan kembali dengan koma
     return parts.join(",");
   };
 
@@ -174,7 +169,7 @@ export default function TambahUlokForm({
         </div>
 
         {/* Bagian Data Store */}
-        <div className="relative">
+        <div className="relative ">
           <div className="absolute -top-3 lg:-top-4 left-4 lg:left-6 bg-red-600 text-white px-3 lg:px-4 py-1 lg:py-1.5 rounded shadow-md font-semibold text-base lg:text-xl">
             Data Store
           </div>
