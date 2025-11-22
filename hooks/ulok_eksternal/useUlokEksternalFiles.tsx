@@ -22,7 +22,8 @@ export function useUlokEksternalFile() {
     if (opts?.download) params.set("download", "1");
     if (opts?.expiresIn) params.set("expiresIn", String(opts.expiresIn));
 
-    return `/api/ulok_eksternal/file/${id}?${params.toString()}`;
+    // PERBAIKAN: Sesuaikan URL dengan route /api/ulok_eksternal/[id]/files
+    return `/api/ulok_eksternal/${id}/files?${params.toString()}`;
   };
 
   /**
@@ -62,9 +63,6 @@ export function useUlokEksternalFile() {
     []
   );
 
-  /**
-   * Helper: Open signed URL in new tab (redirect mode)
-   */
   const openFileInNewTab = (id: string, opts?: useUlokEksternalFileOptions) => {
     const url = getUrl(id, opts);
     window.open(url, "_blank");

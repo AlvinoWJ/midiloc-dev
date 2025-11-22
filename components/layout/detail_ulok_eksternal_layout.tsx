@@ -19,6 +19,8 @@ import {
   Camera,
   Briefcase,
   CheckCircle,
+  X,
+  Maximize2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/statusbadge";
@@ -566,6 +568,9 @@ const FotoLokasiAutoPreview = ({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [objectUrl, setObjectUrl] = useState<string | null>(null);
 
+  // [Baru] State untuk mengontrol modal fullscreen
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
   useEffect(() => {
     return () => {
       if (objectUrl) {
@@ -585,52 +590,24 @@ const FotoLokasiAutoPreview = ({
     if (!fileKey) return;
 
     (async () => {
-      try {
-        let res: unknown = null;
-        try {
-          res = await (fetchFile as any)(ulokId, fileKey, "proxy");
-        } catch (e) {
-          try {
-            res = await (fetchFile as any)(fileKey, { mode: "proxy" });
-          } catch (e2) {
-            res = await (fetchFile as any)(fileKey);
-          }
-        }
+      // Menggunakan perbaikan dari langkah sebelumnya (memanggil dengan mode proxy yang benar)
+      const res = await fetchFile(ulokId, { mode: "proxy" });
 
-        if (!mounted) return;
+      if (!mounted) return;
 
-        if (res instanceof Blob) {
-          const url = URL.createObjectURL(res);
-          setObjectUrl(url);
-          setPreviewUrl(url);
-          return;
-        }
-
-        if (
-          res &&
-          typeof res === "object" &&
-          (("blob" in (res as any) && (res as any).blob instanceof Blob) ||
-            ("data" in (res as any) &&
-              (res as any).data &&
-              (res as any).data instanceof Blob))
-        ) {
-          const b: Blob =
-            (res as any).blob instanceof Blob
-              ? (res as any).blob
-              : (res as any).data;
-          const url = URL.createObjectURL(b);
-          setObjectUrl(url);
-          setPreviewUrl(url);
-          return;
-        }
-        if (typeof res === "string") {
-          setPreviewUrl(res);
-          return;
-        }
-        setPreviewUrl(null);
-      } catch (err) {
-        setPreviewUrl(null);
+      if (res instanceof Blob) {
+        const url = URL.createObjectURL(res);
+        setObjectUrl(url);
+        setPreviewUrl(url);
+        return;
       }
+
+      if (typeof res === "string") {
+        setPreviewUrl(res);
+        return;
+      }
+
+      setPreviewUrl(null);
     })();
 
     return () => {
@@ -638,29 +615,83 @@ const FotoLokasiAutoPreview = ({
     };
   }, [ulokId, fileKey, fetchFile]);
 
+  // Fungsi untuk menutup modal saat tombol Escape ditekan
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsFullscreen(false);
+    };
+    window.addEventListener("keydown", handleEsc);
+    return () => window.removeEventListener("keydown", handleEsc);
+  }, []);
+
   return (
-    <div className="relative aspect-video rounded-lg overflow-hidden border border-gray-200 flex items-center justify-center bg-gray-50">
-      {loading && <p className="text-gray-400 text-sm">Memuat foto...</p>}
+    <>
+      {/* Thumbnail Container */}
+      <div
+        className={`relative aspect-video rounded-lg overflow-hidden border border-gray-200 flex items-center justify-center bg-gray-50 group ${
+          previewUrl ? "cursor-pointer hover:opacity-95 transition-opacity" : ""
+        }`}
+        onClick={() => previewUrl && setIsFullscreen(true)}
+      >
+        {loading && <p className="text-gray-400 text-sm">Memuat foto...</p>}
 
-      {error && (
-        <p className="text-red-500 text-sm">Gagal memuat foto lokasi</p>
-      )}
+        {error && (
+          <p className="text-red-500 text-sm">Gagal memuat foto lokasi</p>
+        )}
 
-      {!loading && !previewUrl && !error && (
-        <p className="text-gray-400 text-sm">Foto tidak tersedia</p>
-      )}
+        {!loading && !previewUrl && !error && (
+          <p className="text-gray-400 text-sm">Foto tidak tersedia</p>
+        )}
 
-      {previewUrl && (
-        <Image
-          src={previewUrl}
-          alt="Foto Lokasi"
-          fill
-          className="object-cover"
-          onError={() => {
-            setPreviewUrl(null);
-          }}
-        />
+        {previewUrl && (
+          <>
+            <Image
+              src={previewUrl}
+              alt="Foto Lokasi"
+              fill
+              className="object-cover"
+              onError={() => {
+                setPreviewUrl(null);
+              }}
+            />
+            {/* [Baru] Overlay icon maximize saat hover */}
+            <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity">
+              <Maximize2 className="text-white w-8 h-8 drop-shadow-md" />
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* [Baru] Fullscreen Modal */}
+      {isFullscreen && previewUrl && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={() => setIsFullscreen(false)} // Klik background untuk tutup
+        >
+          {/* Tombol Close */}
+          <button
+            onClick={() => setIsFullscreen(false)}
+            className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors z-50"
+          >
+            <X size={24} />
+          </button>
+
+          {/* Gambar Fullscreen */}
+          <div
+            className="relative w-full h-full max-w-7xl max-h-[90vh]"
+            onClick={(e) => e.stopPropagation()} // Mencegah tutup saat klik gambar
+          >
+            <Image
+              src={previewUrl}
+              alt="Foto Lokasi Fullscreen"
+              fill
+              className="object-contain"
+              quality={100}
+              priority
+            />
+          </div>
+        </div>
       )}
-    </div>
+    </>
   );
 };
