@@ -45,6 +45,7 @@ export const RenovasiEditableSchema = z
     proses_renov: optionalNumber.optional(),
     deviasi: optionalNumber.optional(),
     tgl_serah_terima: dateString.optional(),
+    nama_store: optionalNonEmptyString.optional()
   })
   .strict();
 
