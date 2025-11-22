@@ -8,6 +8,7 @@ import { useAlert } from "@/components/shared/alertcontext";
 import { useKpltPrefill } from "@/hooks/kplt/useKpltPrefill";
 import { useSWRConfig } from "swr";
 import { invalidate } from "@/lib/swr-invalidate";
+import DetailKpltSkeleton from "@/components/ui/skleton";
 
 const PageStatus = ({ message }: { message: string }) => (
   <div className="flex items-center justify-center h-screen bg-gray-100">
@@ -88,7 +89,9 @@ export default function TambahKpltPage() {
     });
 
   // 4. Handle loading & error
-  if (isPrefillLoading) return <PageStatus message="Memuat data..." />;
+  if (isPrefillLoading) {
+    return <DetailKpltSkeleton />;
+  }
   if (prefillError) return <PageStatus message="Gagal memuat data prefill." />;
 
   // 5. Render layout

@@ -29,7 +29,6 @@ import InputFormUkur from "../ui/inputformukur";
 import { useMemo } from "react";
 import { createPortal } from "react-dom";
 
-// --- Komponen DetailField (Tidak berubah) ---
 const DetailField = ({ label, value }: { label: string; value: any }) => (
   <div>
     <label className="text-gray-600 font-medium text-sm lg:text-base mb-1 block">
@@ -41,7 +40,6 @@ const DetailField = ({ label, value }: { label: string; value: any }) => (
   </div>
 );
 
-// --- Komponen FileLink (Tambahkan jika belum ada atau gunakan struktur serupa) ---
 const FileLink = ({ label, url }: { label: string; url: string | null }) => {
   if (!url) return null;
   return (
@@ -60,7 +58,6 @@ const FileLink = ({ label, url }: { label: string; url: string | null }) => {
   );
 };
 
-// --- Helper Fungsi (Tidak berubah) ---
 const generateLabel = (field: string | null): string => {
   if (!field) return "File Lainnya";
   return field

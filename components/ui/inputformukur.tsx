@@ -41,7 +41,6 @@ const DetailField = ({
         <label className="block text-base font-semibold text-gray-700 mb-3">
           {label} <span className="text-red-500">*</span>
         </label>
-        {/* Kontainer dropzone utama */}
         <div
           className="group border-2 border-dashed border-gray-300 rounded-xl p-8 lg:p-10 text-center hover:border-red-400 transition-all duration-300 cursor-pointer relative"
           onClick={() => !fileValue && document.getElementById(name)?.click()}
@@ -256,7 +255,7 @@ export default function InputFormUkur({
 
     const confirmed = await showConfirmation({
       title: "Konfirmasi Submit Form Ukur",
-      message: `Apakah Anda yakin ingin menyimpan data Form Ukur dengan tanggal "${formData.tanggal_ukur}"? Pastikan semua data sudah benar.`,
+      message: `Apakah Anda yakin ingin menyimpan data Form Ukur? Pastikan semua data sudah benar.`,
       confirmText: "Ya, Simpan Data",
       cancelText: "Periksa Kembali",
       type: "success",

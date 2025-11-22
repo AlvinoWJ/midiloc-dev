@@ -55,15 +55,15 @@ export default function KpltLayout(props: KpltPageProps) {
   const [expandedStatuses, setExpandedStatuses] = useState<{
     [key: string]: boolean;
   }>({
-    "need input": true,
-    "in progress": true,
-    "waiting for forum": true,
+    "Need Input": true,
+    "In Progress": true,
+    "Waiting For Forum": true,
   });
 
   const groupedData = useMemo(() => {
     if (activeTab !== "Recent") return {};
     return displayData.reduce((acc, item) => {
-      const status = item.status.toLowerCase();
+      const status = item.status;
       if (!acc[status]) {
         acc[status] = [];
       }
@@ -72,22 +72,22 @@ export default function KpltLayout(props: KpltPageProps) {
     }, {} as { [key: string]: typeof displayData });
   }, [displayData, activeTab]);
 
-  const statusOrder = ["need input", "in progress", "waiting for forum"];
+  const statusOrder = ["Need Input", "In Progress", "Waiting For Forum"];
+
   const toggleStatus = (status: string) => {
     setExpandedStatuses((prev) => ({ ...prev, [status]: !prev[status] }));
   };
 
   const getStatusBadgeClass = (status: string): string => {
-    const statusLower = status.toLowerCase();
-    switch (statusLower) {
-      case "need input":
-        return "bg-gray-400 text-white"; // Merah untuk menandakan butuh tindakan
-      case "in progress":
-        return "bg-progress text-white"; // Kuning untuk status berjalan
-      case "waiting for forum":
-        return "bg-progress text-white"; // Biru untuk status menunggu
+    switch (status) {
+      case "Need Input": // Pastikan huruf besar sesuai data
+        return "bg-gray-400 text-white";
+      case "In Progress": // Pastikan huruf besar sesuai data
+        return "bg-progress text-white";
+      case "Waiting For Forum": // Pastikan huruf besar sesuai data
+        return "bg-progress text-white";
       default:
-        return "bg-gray-200 text-gray-800"; // Warna default
+        return "bg-gray-200 text-gray-800";
     }
   };
 
@@ -104,12 +104,12 @@ export default function KpltLayout(props: KpltPageProps) {
 
   const getStatusLabel = (status: string) => {
     switch (status.toLowerCase()) {
-      case "needinput":
+      case "need input":
         return "Need Input";
-      case "inprogress":
+      case "in progress":
         return "In Progress";
       case "waitingforum":
-        return "Waiting for Forum";
+        return "Waiting For Forum";
       default:
         return status;
     }

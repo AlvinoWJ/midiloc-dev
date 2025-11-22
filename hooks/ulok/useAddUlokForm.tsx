@@ -40,7 +40,7 @@ export function useAddUlokForm({
 
   const isNumber = (val: string) => {
     if (!val) return false;
-    const normalized = val.replace(",", "."); // ubah koma ke titik agar bisa dibaca JS
+    const normalized = val.replace(",", ".");
     return !isNaN(Number(normalized));
   };
 
@@ -67,7 +67,6 @@ export function useAddUlokForm({
       return;
     }
 
-    // Handle field integer (jumlahlantai, hargasewa)
     if (name === "jumlahlantai" || name === "hargasewa") {
       // Hapus semua karakter non-digit (termasuk titik dan koma)
       const numericOnly = value.replace(/[^0-9]/g, "");

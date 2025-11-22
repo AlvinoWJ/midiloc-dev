@@ -50,9 +50,8 @@ export const ProgressInfoCard: React.FC<ProgressInfoCardProps> = ({
   return (
     <div
       onClick={handleCardClick}
-      className="bg-white rounded-2xl shadow-md border border-gray-100 p-5 lg:p-6 hover:shadow-[1px_1px_6px_rgba(0,0,0,0.25)] transition-all cursor-pointer group flex flex-col"
+      className="bg-white rounded-2xl border border-gray-100 p-5 lg:p-6 shadow-md hover:shadow-[1px_1px_6px_rgba(0,0,0,0.25)] transition-all cursor-pointer group flex flex-col"
     >
-      {/* Header dengan Nama KPLT dan Icon Edit */}
       <div className="flex items-start justify-between">
         <div className="flex-1 min-w-0">
           <h3 className="text-lg lg:text-xl font-bold text-gray-900 transition-colors truncate">

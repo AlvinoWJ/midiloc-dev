@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useMemo, useCallback } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import DetailKpltLayout from "@/components/layout/detail_kplt_layout";
 import { useKpltDetail } from "@/hooks/kplt/useKpltDetail";
 import { useAlert } from "@/components/shared/alertcontext";
@@ -12,28 +12,24 @@ import { invalidate } from "@/lib/swr-invalidate";
 export default function DetailKpltPage() {
   const params = useParams<{ id: string }>();
   const kpltId = params?.id;
+  const router = useRouter();
 
-  const { showToast, showConfirmation } = useAlert(); // Tambahkan showConfirmation
+  const { showToast, showConfirmation } = useAlert();
   const { user } = useUser();
   const [isApproving, setIsApproving] = useState(false);
   const { data, isLoading, isError, error, mutate, rawData } =
     useKpltDetail(kpltId);
 
-  console.log("CEK RAW DATA DARI useKpltDetail:", rawData);
-
-  // State baru untuk modal LM
   const [showIntipModal, setShowIntipModal] = useState(false);
   const [showFormUkurModal, setShowFormUkurModal] = useState(false);
   const [isSubmittingLmInput, setIsSubmittingLmInput] = useState(false);
 
-  // Handler untuk Approval BM/RM/GM (POST/PATCH ke /approvals) - Tidak berubah
   const fetchApprovalPost = async (id: string, is_approved: boolean) => {
     const res = await fetch(`/api/kplt/${id}/approvals`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ is_approved }),
     });
-    // ... (rest of the function remains the same)
     const result = await res.json();
     if (!res.ok) {
       throw new Error(result.error || "Gagal mengirim status approval");
@@ -42,14 +38,11 @@ export default function DetailKpltPage() {
   };
 
   const fetchStatusPatch = async (id: string, newStatus: "OK" | "NOK") => {
-    // Perbaiki tipe newStatus
     const res = await fetch(`/api/kplt/${id}/approvals`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      // Nama field di body harus 'kplt_approval' sesuai schema validasi
       body: JSON.stringify({ kplt_approval: newStatus }),
     });
-    // ... (rest of the function remains the same)
     const result = await res.json();
     if (!res.ok) {
       throw new Error(result.error || "Gagal memperbarui status");
@@ -77,7 +70,7 @@ export default function DetailKpltPage() {
 
     try {
       if (position === "general manager") {
-        await fetchStatusPatch(kpltId, status); // Kirim 'OK' atau 'NOK'
+        await fetchStatusPatch(kpltId, status);
         showToast({
           type: "success",
           message: `Status KPLT berhasil diubah menjadi ${status}!`,
@@ -90,7 +83,8 @@ export default function DetailKpltPage() {
           message: "Status approval berhasil dikirim!",
         });
       }
-      await mutate();
+      router.push("/form_kplt");
+      invalidate.kplt();
     } catch (err: any) {
       console.error("Proses approval/set status gagal:", err);
       showToast({ type: "error", message: err.message || "Terjadi kesalahan" });
@@ -183,7 +177,6 @@ export default function DetailKpltPage() {
       };
     }
 
-    // BM bisa approve jika status "In Progress" dan BM belum approve
     if (position === "branch manager") {
       const alreadyApproved = !!summary?.bm;
       const show = mainStatus === "In Progress" && !alreadyApproved;
@@ -193,7 +186,6 @@ export default function DetailKpltPage() {
       };
     }
 
-    // RM bisa approve jika status "In Progress" dan RM belum approve
     if (position === "regional manager") {
       const AlreadyApproved = !!summary?.rm;
       const show = mainStatus === "In Progress" && !AlreadyApproved;
@@ -206,10 +198,9 @@ export default function DetailKpltPage() {
     return { isAlreadyApproved: false, showApprovalSection: false };
   }, [data, user]);
 
-  // Render
   return (
     <DetailKpltLayout
-      id={kpltId!} // Pastikan ID tidak undefined
+      id={kpltId!}
       data={data}
       isLoading={isLoading}
       isError={isError}

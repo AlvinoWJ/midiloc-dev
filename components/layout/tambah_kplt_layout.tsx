@@ -2,9 +2,9 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input"; // Asumsi path ini benar
-import { Label } from "@/components/ui/label"; // Asumsi path ini benar
-import { ArrowLeft, LinkIcon, Loader2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import CustomSelect from "../ui/customselect";
 import { KpltCreatePayload } from "@/lib/validations/kplt";
@@ -30,24 +30,6 @@ interface FileInputConfig {
   label: string;
   accept: string;
 }
-
-// const FileLink = ({ label, url }: { label: string; url: string | null }) => {
-//   if (!url) return null;
-//   return (
-//     <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border">
-//       <span className="text-sm text-gray-700">{label}</span>
-//       <a
-//         href={url}
-//         target="_blank"
-//         rel="noopener noreferrer"
-//         className="relative z-10 inline-flex items-center bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-1.5 px-3 rounded-lg"
-//       >
-//         <LinkIcon className="w-3 h-3 mr-1.5" />
-//         Lihat
-//       </a>
-//     </div>
-//   );
-// };
 
 export default function TambahKpltLayout({
   prefillData,
@@ -101,41 +83,28 @@ export default function TambahKpltLayout({
     },
   ];
 
-  const formatNumberDisplay = (value: string) => {
-    if (value === undefined || value === null) return "";
-    return String(value).replace(/[^0-9.,]/g, "");
+  const formatNumber = (value: string) => {
+    if (!value) return "";
+    const parts = value.split(",");
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    return parts.join(",");
   };
 
-  const formatRupiah = (angka: string) => {
-    if (!angka) return "";
-    // Pastikan angka bersih dari separator sebelum diparse
-    const cleanNum = String(angka).replace(/[^0-9]/g, "");
-    const numberValue = Number(cleanNum);
-    if (isNaN(numberValue)) {
-      return "";
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (
+      e.key === "Enter" &&
+      e.target instanceof HTMLElement &&
+      e.target.tagName !== "TEXTAREA"
+    ) {
+      e.preventDefault();
     }
-    return new Intl.NumberFormat("id-ID").format(numberValue);
-  };
-
-  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    const cleanValue = value.replace(/\D/g, "");
-    const syntheticEvent = {
-      ...e,
-      target: {
-        ...e.target,
-        name,
-        value: cleanValue,
-      },
-    };
-
-    handleChange(syntheticEvent as any);
   };
 
   return (
     <main className="space-y-4 lg:space-y-6">
       <form
         onSubmit={handleFormSubmit}
+        onKeyDown={handleKeyDown}
         noValidate
         className="max-w-7xl mx-auto"
       >
@@ -187,9 +156,8 @@ export default function TambahKpltLayout({
                   <Input
                     id="skor_fpl"
                     name="skor_fpl"
-                    type="number"
                     placeholder="Masukkan skor FPL"
-                    value={formatNumberDisplay(formData.skor_fpl)}
+                    value={formatNumber(formData.skor_fpl)}
                     onChange={handleChange}
                     inputMode="numeric"
                     className={errors.apc ? "border-red-500" : ""}
@@ -212,9 +180,8 @@ export default function TambahKpltLayout({
                   <Input
                     id="std"
                     name="std"
-                    type="number"
                     placeholder="Masukkan std"
-                    value={formatNumberDisplay(formData.std)}
+                    value={formatNumber(formData.std)}
                     inputMode="numeric"
                     onChange={handleChange}
                     className={errors.apc ? "border-red-500" : ""}
@@ -235,9 +202,8 @@ export default function TambahKpltLayout({
                   <Input
                     id="apc"
                     name="apc"
-                    type="number"
                     placeholder="Masukkan apc"
-                    value={formatNumberDisplay(formData.apc)}
+                    value={formatNumber(formData.apc)}
                     inputMode="numeric"
                     onChange={handleChange}
                     className={errors.apc ? "border-red-500" : ""}
@@ -258,11 +224,12 @@ export default function TambahKpltLayout({
                   <Input
                     id="spd"
                     name="spd"
-                    type="number"
                     placeholder="Masukkan spd"
-                    value={formatNumberDisplay(formData.spd)}
+                    value={formatNumber(formData.spd)}
                     inputMode="numeric"
                     onChange={handleChange}
+                    tabIndex={-1}
+                    readOnly
                     className={errors.spd ? "border-red-500" : ""}
                   />
                   {errors.spd && (
@@ -294,11 +261,10 @@ export default function TambahKpltLayout({
                   <Input
                     id="pe_rab"
                     name="pe_rab"
-                    type="number"
                     placeholder="Masukkan PE RAB"
-                    value={formatRupiah(formData.pe_rab)}
+                    value={formatNumber(formData.pe_rab)}
                     inputMode="numeric"
-                    onChange={handlePriceChange}
+                    onChange={handleChange}
                     disabled={isSubmitting}
                     className={errors.pe_rab ? "border-red-500" : ""}
                   />

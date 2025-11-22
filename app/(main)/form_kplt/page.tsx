@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { useUser } from "@/hooks/useUser";
 import { useKplt } from "@/hooks/kplt/useKplt";
 import KpltLayout from "@/components/layout/kplt_layout";
@@ -24,7 +24,6 @@ export default function KPLTPage() {
     isInitialLoading,
     isRefreshing,
     isError: kpltError,
-    refresh,
   } = useKplt({
     scope: activeTab === "Recent" ? "recent" : "history",
     page: currentPage,
