@@ -8,7 +8,7 @@ import WilayahSelector from "@/components/ui/customselectwilayah";
 import { UlokCreateInput } from "@/lib/validations/ulok";
 import { Dialog } from "@headlessui/react";
 import dynamic from "next/dynamic";
-import { useAddUlokForm } from "@/hooks/useAddUlokForm";
+import { useAddUlokForm } from "@/hooks/ulok/useAddUlokForm";
 import { useRouter } from "next/navigation";
 import { FileUpload } from "@/components/ui/uploadfile";
 

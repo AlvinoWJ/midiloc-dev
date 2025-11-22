@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useUlokDetail } from "@/hooks/ulok/useUlokDetail";
+import { useUlokDetail, MappedUlokData } from "@/hooks/ulok/useUlokDetail";
 import { useAlert } from "@/components/shared/alertcontext";
 import { UlokUpdateInput } from "@/lib/validations/ulok";
 import DetailUlokLayout from "@/components/layout/detail_ulok_layout";
@@ -14,7 +14,6 @@ export default function DetailPage() {
   const { ulokData, isLoading, errorMessage, refresh } = useUlokDetail(id);
   const { showToast, showConfirmation } = useAlert();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const isPageLoading = isLoading;
 
   const handleSaveData = async (
     data: UlokUpdateInput | FormData
@@ -85,19 +84,17 @@ export default function DetailPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      invalidate.ulok();
-      invalidate.ulokDetail(id);
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
         throw new Error(j.error || "Gagal update status.");
       }
+      invalidate.ulok();
       showToast({
         type: "success",
         title: "Status berhasil diubah",
         message: `Approval status telah diubah menjadi ${status}`,
       });
-      await refresh();
-      router.back();
+      router.push("/usulan_lokasi");
     } catch (e: any) {
       showToast({
         type: "error",
@@ -145,7 +142,7 @@ export default function DetailPage() {
   }
 
   const pageProps = {
-    isLoading: isPageLoading,
+    isLoading: isLoading,
     initialData: ulokData!,
     onSave: handleSaveData,
     isSubmitting,
