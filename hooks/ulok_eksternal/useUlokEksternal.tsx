@@ -8,7 +8,7 @@ export type UlokEksternal = {
   status_ulok_eksternal: "In Progress" | "OK" | "NOK" | string;
   created_at: string;
   alamat: string;
-  nama_pemilik: string;
+  nama_ulok: string;
 };
 
 export interface Pagination {

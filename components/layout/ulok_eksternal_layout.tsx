@@ -1,6 +1,6 @@
 "use client";
 
-import { UlokEksternal } from "@/hooks/ulok_eksternal/useUlokEksternal"; // Import tipe baru
+import { UlokEksternal } from "@/hooks/ulok_eksternal/useUlokEksternal";
 import { InfoCard } from "@/components/ui/infocard";
 import Tabs from "@/components/ui/tabs";
 import SearchWithFilter from "@/components/ui/searchwithfilter";
@@ -22,7 +22,7 @@ export type UlokEksternalPageProps = {
   isRefreshing: boolean;
   isError: boolean;
   activeTab: string;
-  filteredUlok: UlokEksternal[]; // Gunakan tipe UlokEksternal
+  filteredUlok: UlokEksternal[];
   searchQuery: string;
   filterMonth: string;
   filterYear: string;
@@ -156,7 +156,7 @@ export default function UlokEksternalLayout(props: UlokEksternalPageProps) {
               <InfoCard
                 key={ulok.id}
                 id={ulok.id}
-                nama={ulok.nama_pemilik || "Data Eksternal"}
+                nama={ulok.nama_ulok || "Data Eksternal"}
                 alamat={ulok.alamat || "Lokasi belum ditentukan"}
                 created_at={ulok.created_at}
                 status={ulok.status_ulok_eksternal}
