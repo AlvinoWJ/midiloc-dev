@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { assignBranchSchema } from "@/lib/validations/ulok_eksternal_workflow";
-import { getCurrentUser,POSITION } from "@/lib/auth/acl";
+import { getCurrentUser, POSITION } from "@/lib/auth/acl";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -34,60 +34,56 @@ export async function PATCH(
     const parsed = assignBranchSchema.safeParse(json);
     if (!parsed.success) {
       const msg = parsed.error.issues
-        .map((e) => `${e.path.join(".")}: ${e.message}`)
+        .map((i) => `${i.path.join(".")}: ${i.message}`)
         .join("; ");
-      return NextResponse.json({ error: msg }, { status: 422 });
+      return NextResponse.json({ success: false, error: msg }, { status: 422 });
+    }
+
+    if (!params.id) {
+      return NextResponse.json(
+        { success: false, error: "Missing ulok_eksternal id in route" },
+        { status: 400 }
+      );
     }
 
     const supabase = await createClient();
 
-    // Pastikan ulok_eksternal ada
-    const { data: ulokEks, error: findErr } = await supabase
-      .from("ulok_eksternal")
-      .select("id")
-      .eq("id", params.id)
-      .maybeSingle();
-    if (findErr)
-      return NextResponse.json({ error: findErr.message }, { status: 400 });
-    if (!ulokEks)
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    // Panggil RPC
+    const { data, error } = await supabase.rpc(
+      "fn_ulok_eksternal_assign_branch",
+      {
+        p_actor_user_id: me.id,
+        p_ulok_eksternal_id: params.id,
+        p_new_branch_id: parsed.data.branch_id,
+      }
+    );
 
-    // Validasi branch ada dan aktif (jika ada kolom is_active)
-    const { data: branch, error: bErr } = await supabase
-      .from("branch")
-      .select("id, is_active")
-      .eq("id", parsed.data.branch_id)
-      .maybeSingle();
-    if (bErr)
-      return NextResponse.json({ error: bErr.message }, { status: 400 });
-    if (!branch)
+    if (error) {
       return NextResponse.json(
-        { error: "Branch tidak ditemukan" },
-        { status: 404 }
+        { success: false, error: error.message ?? String(error) },
+        { status: 400 }
       );
-    if (branch.is_active === false)
+    }
+
+    if (!data || typeof data !== "object") {
       return NextResponse.json(
-        { error: "Branch tidak aktif" },
-        { status: 409 }
+        { success: false, error: "Unexpected RPC response" },
+        { status: 500 }
       );
+    }
 
-    const { data, error } = await supabase
-      .from("ulok_eksternal")
-      .update({
-        branch_id: parsed.data.branch_id,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", params.id)
-      .select("*")
-      .single();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if ((data as any).success === false) {
+      return NextResponse.json(data, { status: 400 });
+    }
 
-    if (error)
-      return NextResponse.json({ error: error.message }, { status: 400 });
-
-    return NextResponse.json({ data });
+    return NextResponse.json(data, { status: 200 });
   } catch (e: unknown) {
     return NextResponse.json(
-      { error: (e instanceof Error ? e.message : "Unknown error") },
+      {
+        success: false,
+        error: e instanceof Error ? e.message : "Internal server error",
+      },
       { status: 500 }
     );
   }
