@@ -11,7 +11,6 @@ export default function DetailUlokEksternalPage() {
   const { ulokEksternalDetail, isLoading, isError, mutate } =
     useUlokEksternalDetail(id);
 
-  // 2. Tampilkan layout dengan data dari hook
   return (
     <DetailUlokEksternalLayout
       ulok={ulokEksternalDetail ?? null}
