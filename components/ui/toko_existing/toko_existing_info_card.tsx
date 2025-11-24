@@ -72,18 +72,14 @@ export function TokoExistingInfoCard({
 
     const parts = [];
 
-    // LOGIC TAMPILAN:
     if (years > 0) {
-      // Jika >= 1 Tahun: Tampilkan TAHUN dan BULAN saja (Hari diabaikan)
       parts.push(`${years} Tahun`);
       if (months > 0) parts.push(`${months} Bulan`);
     } else {
-      // Jika < 1 Tahun: Tampilkan BULAN dan HARI
       if (months > 0) parts.push(`${months} Bulan`);
       if (days > 0) parts.push(`${days} Hari`);
     }
 
-    // Handle jika sisa waktu 0 hari (Hari H) atau sangat sedikit
     if (parts.length === 0) {
       return days === 0 ? "Hari Ini Habis" : "Segera Habis";
     }
@@ -99,7 +95,7 @@ export function TokoExistingInfoCard({
             {nama}
           </CardTitle>
           <span
-            className={`text-xs font-semibold px-3 py-1 rounded-md whitespace-nowrap flex-shrink-0 bg-green-100 text-green-700`}
+            className={`bg-blue-100 text-blue-800 text-xs font-bold px-2.5 py-0.5 rounded border border-blue-400`}
           >
             {kode_toko}
           </span>

@@ -6,4 +6,6 @@ export const swrKeys = {
   ulokEksternalDetail: (id: string) => `/api/ulok_eksternal/${id}`,
   kplt: "/api/kplt",
   kpltDetail: (id: string) => `/api/kplt/${id}`,
+  tokoExisting: "/api/ulok_eksisting",
+  tokoExistingDetail: (id: string) => `/api/ulok_eksisting/${id}`,
 };
