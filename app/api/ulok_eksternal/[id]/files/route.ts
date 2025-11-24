@@ -33,6 +33,13 @@ export async function GET(
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    // Pastikan ini milik user eksternal yang login
+    if (!canUlokEksternal("read", user)) {
+      return NextResponse.json(
+        { error: "Forbidden", message: "Anda tidak berhak mengakses file ini" },
+        { status: 403 }
+      );
+    }
 
     const supabase = await createClient();
 
@@ -48,14 +55,6 @@ export async function GET(
     }
     if (!ulokEks) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
-    }
-
-    // Pastikan ini milik user eksternal yang login
-    if (!canUlokEksternal("read", user)) {
-      return NextResponse.json(
-        { error: "Forbidden", message: "Anda tidak berhak mengakses file ini" },
-        { status: 403 }
-      );
     }
 
     if (!ulokEks.foto_lokasi) {

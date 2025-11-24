@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser, canKplt } from "@/lib/auth/acl";
 
 const BUCKET = "file_storage";
@@ -156,8 +156,12 @@ export async function GET(
   const url = new URL(req.url);
   const mode = url.searchParams.get("mode") || "redirect"; // redirect | proxy
   const forceDownload = url.searchParams.get("download") === "1";
-  const expiresIn = Number(url.searchParams.get("expiresIn") || "300"); // detik (default 5 menit)
-
+  const rawExpires = Number(url.searchParams.get("expiresIn") || "300"); // detik (default 5 menit)
+  const expiresIn =
+    Number.isFinite(rawExpires) && rawExpires > 0
+      ? Math.min(rawExpires, 3600)
+      : 300;
+      
   const pathParam = url.searchParams.get("path"); // full path: "<ulok_id>/<modules>/file.ext"
   const nameParam = url.searchParams.get("name"); // filename di folder
   const fieldParam = url.searchParams.get("field"); // nama "field" (mencari nama file yang mengandung _<field>)

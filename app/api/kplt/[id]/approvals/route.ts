@@ -4,7 +4,7 @@ import {
   KpltApprovalPostSchema,
   KpltStatusPatchSchema,
 } from "@/lib/validations/kplt-approval";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
 //approval kplt BM/RM
