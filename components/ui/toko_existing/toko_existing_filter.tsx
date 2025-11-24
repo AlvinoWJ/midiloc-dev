@@ -9,8 +9,6 @@ import { useMediaQuery } from "@/hooks/use-media-query"; // Asumsi hook ini ada
 interface TokoExistingFilterProps {
   onSearch: (value: string) => void;
   onFilterChange: (year: string, regional: string) => void;
-  // Mock property untuk simulasi pemeriksaan peran pengguna
-  userRole: "Staff" | "Region Manager" | "General Manager";
 }
 
 // Data Regional Mock
@@ -28,17 +26,12 @@ const mockRegionalOptions = [
 export default function TokoExistingFilter({
   onSearch,
   onFilterChange,
-  userRole,
 }: TokoExistingFilterProps) {
   const [search, setSearch] = useState("");
   const [year, setYear] = useState("");
   const [regional, setRegional] = useState("");
   const [showFilter, setShowFilter] = useState(false);
   const isDesktop = useMediaQuery("(min-width: 768px)"); // Asumsi hook ini tersedia
-
-  // Logika untuk menentukan apakah filter regional diizinkan
-  const isRegionalFilterAllowed =
-    userRole === "Region Manager" || userRole === "General Manager";
 
   // --- Search Handlers (diambil dari SearchWithFilter) ---
   const handleSearchChange = (value: string) => {
@@ -117,26 +110,23 @@ export default function TokoExistingFilter({
           </select>
         </div>
 
-        {/* Regional Filter (Conditional) */}
-        {isRegionalFilterAllowed && (
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Regional
-            </label>
-            <select
-              value={regional}
-              onChange={(e) => handleRegionalChange(e.target.value)}
-              className="w-full p-2.5 border border-gray-300 rounded-lg bg-white shadow-sm focus:outline-none focus:ring-1 focus:ring-red-500 transition-all duration-200 text-sm"
-            >
-              <option value="">Semua Regional</option>
-              {mockRegionalOptions.map((r) => (
-                <option key={r.value} value={r.value}>
-                  {r.label}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Regional
+          </label>
+          <select
+            value={regional}
+            onChange={(e) => handleRegionalChange(e.target.value)}
+            className="w-full p-2.5 border border-gray-300 rounded-lg bg-white shadow-sm focus:outline-none focus:ring-1 focus:ring-red-500 transition-all duration-200 text-sm"
+          >
+            <option value="">Semua Regional</option>
+            {mockRegionalOptions.map((r) => (
+              <option key={r.value} value={r.value}>
+                {r.label}
+              </option>
+            ))}
+          </select>
+        </div>
 
         {isFilterActive && (
           <button

@@ -6,42 +6,28 @@ import { useTokoExisting } from "@/hooks/toko_existing/useTokoExisting";
 import TokoExistingLayout from "@/components/layout/toko_existing_layout";
 
 export default function TokoExistingPage() {
-  const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
+  const [filterMonth, setFilterMonth] = useState("");
   const [filterYear, setFilterYear] = useState("");
-  const [filterRegional, setFilterRegional] = useState("");
-  const itemsPerPage = 9;
 
-  // MOCK USER ROLE:
-  // Gunakan 'Staff' untuk menyembunyikan filter Regional
-  // Gunakan 'Region Manager' atau 'General Manager' untuk menampilkan filter Regional
-  const mockUserRole: "Staff" | "Region Manager" | "General Manager" =
-    "Region Manager";
+  const [currentPage, setCurrentPage] = useState(1);
 
   const { tokoData, meta, isLoading, isError } = useTokoExisting({
-    page,
-    limit: itemsPerPage,
+    page: currentPage,
     search: searchQuery,
+    month: filterMonth,
     year: filterYear,
-    regional: filterRegional,
   });
 
-  const handlePageChange = (newPage: number) => {
-    if (newPage > 0 && (!meta || newPage <= meta.totalPages)) {
-      setPage(newPage);
-    }
-  };
-
-  const handleSearch = (query: string) => {
+  const onSearchChange = (query: string) => {
     setSearchQuery(query);
-    setPage(1);
+    setCurrentPage(1);
   };
 
-  // Filter change handler for Year and Regional
-  const handleFilterChange = useCallback((year: string, regional: string) => {
+  const onFilterChange = useCallback((month: string, year: string) => {
+    setFilterMonth(month);
     setFilterYear(year);
-    setFilterRegional(regional);
-    setPage(1);
+    setCurrentPage(1);
   }, []);
 
   const layoutProps = {
@@ -49,13 +35,14 @@ export default function TokoExistingPage() {
     isError,
     tokoData,
     meta,
-    onPageChange: handlePageChange,
     searchQuery,
+    filterMonth,
     filterYear,
-    filterRegional,
-    onSearch: handleSearch,
-    onFilterChange: handleFilterChange,
-    userRole: mockUserRole, // Pass the mocked user role
+    currentPage,
+    totalPages: meta?.totalPages ?? 0,
+    onSearch: onSearchChange,
+    onPageChange: setCurrentPage,
+    onFilterChange,
   };
 
   return <TokoExistingLayout {...layoutProps} />;
