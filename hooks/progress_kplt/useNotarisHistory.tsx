@@ -20,7 +20,7 @@ interface HistoryApiResponse {
 }
 
 const fetcher = (url: string) =>
-  fetch(url).then((res) => {
+  fetch(url, { cache: "no-store" }).then((res) => {
     if (!res.ok) {
       throw new Error("Gagal memuat riwayat notaris");
     }

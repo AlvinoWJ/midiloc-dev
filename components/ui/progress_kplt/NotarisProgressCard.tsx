@@ -1,7 +1,8 @@
 // components/ui/progress_kplt/NotarisProgressCard.tsx
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
+import { useSWRConfig } from "swr"; // [NEW] Import SWR Config
 import { useNotarisProgress } from "@/hooks/progress_kplt/useNotarisProgress";
 import { useFile, ApiFile } from "@/hooks/progress_kplt/useFilesProgress";
 import {
@@ -9,10 +10,9 @@ import {
   Pencil,
   CheckCircle,
   XCircle,
-  FileText,
   Link as LinkIcon,
   History,
-  Briefcase, // Icon baru untuk Notaris
+  Briefcase,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,8 +20,10 @@ import CustomSelect from "@/components/ui/customselect";
 import { NotarisEditableSchema } from "@/lib/validations/notaris";
 import { useAlert } from "@/components/shared/alertcontext";
 import { NotarisHistoryModal } from "./NotarisHistoryModal";
+// Hapus import invalidate jika ingin menggunakan useSWRConfig langsung agar lebih atomic
+// import { invalidate } from "@/lib/swr-invalidate";
 
-// DetailCard (Helper)
+// ... (Bagian DetailCard, FileLink, FormFileInput TETAP SAMA, tidak perlu diubah) ...
 const DetailCard = ({
   title,
   icon,
@@ -49,7 +51,6 @@ const DetailCard = ({
   </div>
 );
 
-// FileLink (Helper)
 const FileLink = ({
   label,
   file,
@@ -85,7 +86,6 @@ const FileLink = ({
   );
 };
 
-// FormFileInput (Helper)
 const FormFileInput: React.FC<{
   label: string;
   name: string;
@@ -121,6 +121,7 @@ interface FormProps {
   onDataUpdate: () => void;
   onCancelEdit?: () => void;
   filesMap: Map<string, ApiFile>;
+  refreshHistory: () => void; // [NEW] Prop baru untuk trigger refresh history
 }
 
 const NotarisForm: React.FC<FormProps> = ({
@@ -130,6 +131,7 @@ const NotarisForm: React.FC<FormProps> = ({
   onCancelEdit,
   onDataUpdate,
   filesMap,
+  refreshHistory,
 }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { showToast } = useAlert();
@@ -159,6 +161,8 @@ const NotarisForm: React.FC<FormProps> = ({
     formData.append("status_pembayaran", statusPembayaran);
 
     const payload = {
+      awal_sewa: formData.get("awal_sewa") || undefined,
+      akhir_sewa: formData.get("akhir_sewa") || undefined,
       tanggal_par: formData.get("tanggal_par") || undefined,
       validasi_legal: validasiLegal || undefined,
       tanggal_validasi_legal:
@@ -189,7 +193,10 @@ const NotarisForm: React.FC<FormProps> = ({
 
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Gagal menyimpan data");
+
       onDataUpdate();
+      refreshHistory(); // [NEW] Panggil refresh history langsung
+
       showToast({
         type: "success",
         message: `Data Notaris berhasil di${
@@ -213,6 +220,37 @@ const NotarisForm: React.FC<FormProps> = ({
         onSubmit={handleSave}
         className="grid grid-cols-1 md:grid-cols-2 gap-4"
       >
+        {/* ... (INPUT FIELD SAMA SEPERTI SEBELUMNYA) ... */}
+        <div>
+          <label
+            htmlFor="awal_sewa"
+            className="block font-semibold text-base lg:text-lg mb-2"
+          >
+            Awal Sewa
+          </label>
+          <Input
+            id="awal_sewa"
+            name="awal_sewa"
+            type="date"
+            defaultValue={initialData?.awal_sewa || ""}
+          />
+        </div>
+
+        <div>
+          <label
+            htmlFor="akhir_sewa"
+            className="block font-semibold text-base lg:text-lg mb-2"
+          >
+            Akhir Sewa
+          </label>
+          <Input
+            id="akhir_sewa"
+            name="akhir_sewa"
+            type="date"
+            defaultValue={initialData?.akhir_sewa || ""}
+          />
+        </div>
+
         <div>
           <label
             htmlFor="tanggal_par"
@@ -378,6 +416,7 @@ const NotarisProgressCard: React.FC<NotarisProgressCardProps> = ({
   progressId,
   onDataUpdate,
 }) => {
+  const { mutate } = useSWRConfig(); // [NEW] Dapatkan fungsi mutate global
   const { data, loading, error, refetch } = useNotarisProgress(progressId);
   const {
     filesMap,
@@ -392,6 +431,12 @@ const NotarisProgressCard: React.FC<NotarisProgressCardProps> = ({
 
   const [isSubmittingApprove, setIsSubmittingApprove] = useState(false);
   const [isSubmittingReject, setIsSubmittingReject] = useState(false);
+
+  // [NEW] Fungsi helper untuk refresh history
+  const refreshHistoryData = () => {
+    // Memaksa SWR untuk re-fetch key history ini
+    mutate(`/api/progress/${progressId}/notaris/history`);
+  };
 
   const formatDate = (dateString?: string | null) =>
     dateString
@@ -451,6 +496,9 @@ const NotarisProgressCard: React.FC<NotarisProgressCardProps> = ({
         return;
       }
       onDataUpdate();
+
+      refreshHistoryData(); // [NEW] Refresh history setelah approval
+
       showToast({
         type: "success",
         message: `Perizinan berhasil di-${actionText}.`,
@@ -495,6 +543,7 @@ const NotarisProgressCard: React.FC<NotarisProgressCardProps> = ({
           onDataUpdate={onDataUpdate}
           onCancelEdit={isEditing ? () => setIsEditing(false) : undefined}
           filesMap={filesMap}
+          refreshHistory={refreshHistoryData} // [NEW] Pass fungsi ke Form
         />
       </div>
     );
@@ -521,6 +570,8 @@ const NotarisProgressCard: React.FC<NotarisProgressCardProps> = ({
         }
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <DetailField label="Awal Sewa" value={formatDate(data.awal_sewa)} />
+          <DetailField label="Akhir Sewa" value={formatDate(data.akhir_sewa)} />
           <DetailField
             label="Tanggal PAR"
             value={formatDate(data.tanggal_par)}
@@ -556,23 +607,21 @@ const NotarisProgressCard: React.FC<NotarisProgressCardProps> = ({
         </div>
         {!isFinalized && (
           <div className="flex gap-3 mt-6">
-            {/* Tombol Edit */}
             <Button
               variant="secondary"
               onClick={() => setIsEditing(true)}
-              disabled={isSubmittingApprove || isSubmittingReject} //
+              disabled={isSubmittingApprove || isSubmittingReject}
               className="mr-auto"
             >
               <Pencil className="mr-2" size={16} /> Edit
             </Button>
 
-            {/* Tombol Batal (Baru) */}
             <Button
               variant="default"
-              onClick={() => handleFinalizeNotaris("Batal")} //
-              disabled={isSubmittingApprove || isSubmittingReject} //
+              onClick={() => handleFinalizeNotaris("Batal")}
+              disabled={isSubmittingApprove || isSubmittingReject}
             >
-              {isSubmittingReject ? ( //
+              {isSubmittingReject ? (
                 <Loader2 className="animate-spin mr-2" size={16} />
               ) : (
                 <XCircle className="mr-2" size={16} />
@@ -580,14 +629,13 @@ const NotarisProgressCard: React.FC<NotarisProgressCardProps> = ({
               Batal
             </Button>
 
-            {/* Tombol Submit (Modifikasi) */}
             <Button
               type="submit"
               variant="submit"
-              onClick={() => handleFinalizeNotaris("Selesai")} //
-              disabled={isSubmittingApprove || isSubmittingReject} //
+              onClick={() => handleFinalizeNotaris("Selesai")}
+              disabled={isSubmittingApprove || isSubmittingReject}
             >
-              {isSubmittingApprove ? ( //
+              {isSubmittingApprove ? (
                 <Loader2 className="animate-spin" size={16} />
               ) : (
                 <CheckCircle className="mr-2" size={16} />
