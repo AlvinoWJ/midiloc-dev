@@ -2,6 +2,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useSWRConfig } from "swr";
 import { usePerizinanProgress } from "@/hooks/progress_kplt/usePerizinanProgreess";
 import { useFile, ApiFile } from "@/hooks/progress_kplt/useFilesProgress";
 import {
@@ -417,6 +418,7 @@ const PerizinanProgressCard: React.FC<PerizinanProgressCardProps> = ({
   progressId,
   onDataUpdate,
 }) => {
+  const { mutate } = useSWRConfig();
   const { data, loading, error, refetch } = usePerizinanProgress(progressId);
   const {
     filesMap,
@@ -428,6 +430,10 @@ const PerizinanProgressCard: React.FC<PerizinanProgressCardProps> = ({
   const [isEditing, setIsEditing] = useState(false);
   const [isSubmittingApprove, setIsSubmittingApprove] = useState(false);
   const [isSubmittingReject, setIsSubmittingReject] = useState(false);
+
+  const refreshHistoryData = () => {
+    mutate(`/api/progress/${progressId}/notaris/perizinan`);
+  };
 
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const { showToast, showConfirmation } = useAlert();
@@ -493,6 +499,7 @@ const PerizinanProgressCard: React.FC<PerizinanProgressCardProps> = ({
         return;
       }
       onDataUpdate();
+      refreshHistoryData();
       showToast({
         type: "success",
         message: `Perizinan berhasil di-${actionText}.`,

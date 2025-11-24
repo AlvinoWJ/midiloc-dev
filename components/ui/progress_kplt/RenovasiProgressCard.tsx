@@ -136,12 +136,25 @@ const RenovasiForm: React.FC<FormProps> = ({
 
   const statusOptions = ["Belum", "Selesai", "Batal"];
   const objekOptions = ["Tanah", "Bangunan"];
+  const tipetokoOptions = [
+    "100 REG",
+    "200 RAK",
+    "60 REG",
+    "60N",
+    "80 REG",
+    "FRESH 10",
+    "FRESH 5",
+    "SPECIFIC 1",
+  ];
 
   const [rekomRenovasi, setRekomRenovasi] = useState<string>(
     initialData?.rekom_renovasi || ""
   );
   const [bentukObjek, setBentukObjek] = useState<string>(
     initialData?.rekom_renovasi || ""
+  );
+  const [tipetoko, setTipeToko] = useState<string>(
+    initialData?.tipe_toko || ""
   );
 
   const [planRenov, setPlanRenov] = useState<string>("");
@@ -171,6 +184,7 @@ const RenovasiForm: React.FC<FormProps> = ({
     if (initialData) {
       setRekomRenovasi(initialData.rekom_renovasi || "");
       setBentukObjek(initialData.bentuk_objek || "");
+      setTipeToko(initialData.tipe_toko || "");
       setPlanRenov(initialData.plan_renov?.toString() || "");
       setProsesRenov(initialData.proses_renov?.toString() || "");
       setDeviasi(initialData.deviasi?.toString() || "");
@@ -199,6 +213,7 @@ const RenovasiForm: React.FC<FormProps> = ({
 
     formData.append("rekom_renovasi", rekomRenovasi);
     formData.append("bentuk_objek", bentukObjek);
+    formData.append("tipe_toko", tipetoko);
 
     const payload = {
       kode_store: formData.get("kode_store") || undefined,
@@ -272,6 +287,7 @@ const RenovasiForm: React.FC<FormProps> = ({
             id="nama_store"
             name="nama_store"
             type="text"
+            placeholder="Masukkan nama store"
             defaultValue={initialData?.nama_store || ""}
           />
         </div>
@@ -287,24 +303,20 @@ const RenovasiForm: React.FC<FormProps> = ({
             id="kode_store"
             name="kode_store"
             type="text"
+            placeholder="Masukkan kode store"
             defaultValue={initialData?.kode_store || ""}
           />
         </div>
 
-        <div>
-          <label
-            htmlFor="tipe_toko"
-            className="block font-semibold text-base lg:text-lg mb-2"
-          >
-            Tipe Toko
-          </label>
-          <Input
-            id="tipe_toko"
-            name="tipe_toko"
-            type="text"
-            defaultValue={initialData?.tipe_toko || ""}
-          />
-        </div>
+        <CustomSelect
+          id="tipe_toko"
+          name="tipe_toko"
+          label="Tipe Toko"
+          placeholder="Pilih Tipe"
+          value={tipetoko}
+          options={tipetokoOptions}
+          onChange={(e) => setTipeToko(e.target.value)}
+        />
 
         <CustomSelect
           id="bentuk_objek"

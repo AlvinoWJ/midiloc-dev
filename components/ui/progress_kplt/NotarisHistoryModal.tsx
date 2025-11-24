@@ -1,16 +1,8 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { createPortal } from "react-dom";
-import {
-  X,
-  History,
-  Loader2,
-  FileText,
-  LinkIcon,
-  ArrowLeft,
-  Gavel,
-} from "lucide-react";
+import { X, History, Loader2, LinkIcon, ArrowLeft, Gavel } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   useNotarisHistory,
@@ -292,10 +284,15 @@ export function NotarisHistoryModal({
   progressId,
   onClose,
 }: HistoryModalProps) {
-  const { history, isLoading, isError } = useNotarisHistory(progressId);
+  const { history, isLoading, isError, refetch } =
+    useNotarisHistory(progressId);
   const [selectedItem, setSelectedItem] = useState<NotarisHistoryItem | null>(
     null
   );
+
+  useEffect(() => {
+    refetch();
+  }, [refetch]);
 
   const sortedHistory = useMemo(() => {
     if (!Array.isArray(history)) return [];
