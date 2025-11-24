@@ -263,6 +263,21 @@ const RenovasiForm: React.FC<FormProps> = ({
       >
         <div>
           <label
+            htmlFor="nama_store"
+            className="block font-semibold text-base lg:text-lg mb-2"
+          >
+            Nama Toko
+          </label>
+          <Input
+            id="nama_store"
+            name="nama_store"
+            type="text"
+            defaultValue={initialData?.nama_store || ""}
+          />
+        </div>
+
+        <div>
+          <label
             htmlFor="kode_store"
             className="block font-semibold text-base lg:text-lg mb-2"
           >
@@ -629,6 +644,7 @@ const RenovasiProgressCard: React.FC<RenovasiProgressCardProps> = ({
         }
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <DetailField label="Nama Store" value={data.nama_store} />
           <DetailField label="Kode Store" value={data.kode_store} />
           <DetailField label="Tipe Toko" value={data.tipe_toko} />
           <DetailField label="Bentuk Objek" value={data.bentuk_objek} />

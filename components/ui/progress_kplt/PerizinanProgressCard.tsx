@@ -488,7 +488,7 @@ const PerizinanProgressCard: React.FC<PerizinanProgressCardProps> = ({
         showToast({
           type: "error",
           title: errorTitle,
-          message: errorMsg,
+          message: "Terdapat kolom yang kosong atau belum selesai",
         });
         return;
       }
