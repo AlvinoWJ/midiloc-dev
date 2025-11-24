@@ -37,9 +37,7 @@ export async function PATCH(
     }
 
     // Role check (mirroring logic but still validated again inside RPC)
-    const isManager =
-      me.position_nama === POSITION.LOCATION_MANAGER ||
-      me.position_nama === POSITION.BRANCH_MANAGER;
+    const isManager = me.position_nama === POSITION.LOCATION_MANAGER;
 
     if (!isManager) {
       return NextResponse.json(
@@ -68,12 +66,15 @@ export async function PATCH(
 
     const { penanggungjawab, description } = parsed.data;
 
-    const { data, error } = await supabase.rpc("fn_ulok_eksternal_assign_penanggungjawab", {
-      p_actor_user_id: me.id,
-      p_ulok_eksternal_id: params.id,
-      p_new_penanggungjawab: penanggungjawab,
-      p_description: description ?? null,
-    });
+    const { data, error } = await supabase.rpc(
+      "fn_ulok_eksternal_assign_penanggungjawab",
+      {
+        p_actor_user_id: me.id,
+        p_ulok_eksternal_id: params.id,
+        p_new_penanggungjawab: penanggungjawab,
+        p_description: description ?? null,
+      }
+    );
 
     if (error) {
       return NextResponse.json(
