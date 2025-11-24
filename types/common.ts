@@ -269,7 +269,6 @@ export interface DashboardPageProps {
   onMapFilterChange: (filter: "ulok" | "kplt" | "progress_kplt") => void;
 }
 
-// Legacy Properti (dipakai komponen peta lama)
 export interface Properti {
   id: string;
   latitude: string | number;

@@ -99,13 +99,11 @@ export function useTokoExisting({
     return `/api/ulok_eksisting?${params.toString()}`;
   };
 
-  const { data, error, isLoading } = useSWR<ApiTokoExistingResponse>(
-    createUrl(),
-    {
+  const { data, error, isLoading, isValidating, mutate } =
+    useSWR<ApiTokoExistingResponse>(createUrl(), {
       revalidateOnFocus: false,
       keepPreviousData: true,
-    }
-  );
+    });
 
   useEffect(() => {
     if (data?.pagination?.hasNextPage && data?.pagination?.endCursor) {
@@ -165,7 +163,8 @@ export function useTokoExisting({
       hasNextPage: uiHasNextPage,
       blockIndex: currentBlockIndex,
     },
-    isLoading,
+    isInitialLoading: isLoading && !data,
+    isRefreshing: isValidating,
     isError: !!error,
   };
 }

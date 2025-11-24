@@ -1,9 +1,10 @@
 // app/(main)/toko_existing/page.tsx
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import { useTokoExisting } from "@/hooks/toko_existing/useTokoExisting";
 import TokoExistingLayout from "@/components/layout/toko_existing_layout";
+import { Properti } from "@/types/common";
 
 export default function TokoExistingPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -12,12 +13,13 @@ export default function TokoExistingPage() {
 
   const [currentPage, setCurrentPage] = useState(1);
 
-  const { tokoData, meta, isLoading, isError } = useTokoExisting({
-    page: currentPage,
-    search: searchQuery,
-    month: filterMonth,
-    year: filterYear,
-  });
+  const { tokoData, meta, isInitialLoading, isRefreshing, isError } =
+    useTokoExisting({
+      page: currentPage,
+      search: searchQuery,
+      month: filterMonth,
+      year: filterYear,
+    });
 
   const onSearchChange = (query: string) => {
     setSearchQuery(query);
@@ -30,10 +32,25 @@ export default function TokoExistingPage() {
     setCurrentPage(1);
   }, []);
 
+  const mapData: Properti[] = useMemo(() => {
+    if (!tokoData) return [];
+
+    return tokoData.map((item) => ({
+      id: item.id,
+      nama: item.nama_toko,
+      alamat: item.alamat,
+      latitude: item.latitude,
+      longitude: item.longitude,
+      type: "kplt" as const,
+    }));
+  }, [tokoData]);
+
   const layoutProps = {
-    isLoading,
+    isLoading: isInitialLoading,
+    isRefreshing,
     isError,
     tokoData,
+    mapData,
     meta,
     searchQuery,
     filterMonth,
