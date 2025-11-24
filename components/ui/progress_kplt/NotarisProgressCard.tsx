@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { useSWRConfig } from "swr"; // [NEW] Import SWR Config
+import { useSWRConfig } from "swr";
 import { useNotarisProgress } from "@/hooks/progress_kplt/useNotarisProgress";
 import { useFile, ApiFile } from "@/hooks/progress_kplt/useFilesProgress";
 import {
@@ -20,10 +20,8 @@ import CustomSelect from "@/components/ui/customselect";
 import { NotarisEditableSchema } from "@/lib/validations/notaris";
 import { useAlert } from "@/components/shared/alertcontext";
 import { NotarisHistoryModal } from "./NotarisHistoryModal";
-// Hapus import invalidate jika ingin menggunakan useSWRConfig langsung agar lebih atomic
-// import { invalidate } from "@/lib/swr-invalidate";
+import { swrKeys } from "@/lib/swr-keys";
 
-// ... (Bagian DetailCard, FileLink, FormFileInput TETAP SAMA, tidak perlu diubah) ...
 const DetailCard = ({
   title,
   icon,
@@ -195,7 +193,7 @@ const NotarisForm: React.FC<FormProps> = ({
       if (!res.ok) throw new Error(json.error || "Gagal menyimpan data");
 
       onDataUpdate();
-      refreshHistory(); // [NEW] Panggil refresh history langsung
+      refreshHistory();
 
       showToast({
         type: "success",
@@ -416,7 +414,7 @@ const NotarisProgressCard: React.FC<NotarisProgressCardProps> = ({
   progressId,
   onDataUpdate,
 }) => {
-  const { mutate } = useSWRConfig(); // [NEW] Dapatkan fungsi mutate global
+  const { mutate } = useSWRConfig();
   const { data, loading, error, refetch } = useNotarisProgress(progressId);
   const {
     filesMap,
@@ -432,9 +430,7 @@ const NotarisProgressCard: React.FC<NotarisProgressCardProps> = ({
   const [isSubmittingApprove, setIsSubmittingApprove] = useState(false);
   const [isSubmittingReject, setIsSubmittingReject] = useState(false);
 
-  // [NEW] Fungsi helper untuk refresh history
   const refreshHistoryData = () => {
-    // Memaksa SWR untuk re-fetch key history ini
     mutate(`/api/progress/${progressId}/notaris/history`);
   };
 
@@ -497,7 +493,7 @@ const NotarisProgressCard: React.FC<NotarisProgressCardProps> = ({
       }
       onDataUpdate();
 
-      refreshHistoryData(); // [NEW] Refresh history setelah approval
+      refreshHistoryData();
 
       showToast({
         type: "success",

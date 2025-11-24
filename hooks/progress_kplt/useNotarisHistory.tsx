@@ -2,6 +2,7 @@
 "use client";
 
 import useSWR from "swr";
+import { swrKeys } from "@/lib/swr-keys";
 
 export interface NotarisHistoryItem {
   id: string; // atau tipe unik lainnya
