@@ -2,7 +2,7 @@
 "use client";
 
 import React from "react";
-import { TokoExistingItem, TokoExistingMeta } from "@/types/toko_existing";
+import { TokoExistingItem } from "@/hooks/toko_existing/useTokoExisting";
 import { TokoExistingInfoCard } from "../ui/toko_existing/toko_existing_info_card";
 import TokoExistingFilter from "../ui/toko_existing/toko_existing_filter";
 import {
@@ -12,6 +12,7 @@ import {
   ChevronsRight,
   MoreHorizontal,
 } from "lucide-react";
+import { useRouter } from "next/router";
 
 // Mock Skeleton Component (meniru ProgressKpltSkeleton)
 const TokoExistingSkeleton = () => (
@@ -34,52 +35,46 @@ interface TokoExistingLayoutProps {
   isLoading: boolean;
   isError: boolean;
   tokoData: TokoExistingItem[];
-  meta: TokoExistingMeta | undefined;
-  onPageChange: (newPage: number) => void;
   searchQuery: string;
+  filterMonth: string;
   filterYear: string;
-  filterRegional: string;
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
   onSearch: (query: string) => void;
-  onFilterChange: (year: string, regional: string) => void;
-  // Mock property untuk simulasi pemeriksaan peran pengguna
-  userRole: "Staff" | "Region Manager" | "General Manager";
+  onFilterChange: (month: string, year: string) => void;
 }
 
-export default function TokoExistingLayout({
-  isLoading,
-  isError,
-  tokoData,
-  meta,
-  onPageChange,
-  searchQuery,
-  filterYear,
-  filterRegional,
-  onSearch,
-  onFilterChange,
-  userRole,
-}: TokoExistingLayoutProps) {
-  const currentPage = meta?.page || 1;
-  const totalPages = meta?.totalPages || 1;
+export default function TokoExistingLayout(props: TokoExistingLayoutProps) {
+  const {
+    isLoading,
+    isError,
+    tokoData,
+    searchQuery,
+    filterYear,
+    filterMonth,
+    onPageChange,
+    onSearch,
+    onFilterChange,
+    currentPage,
+    totalPages,
+  } = props;
 
-  // Function to generate page numbers with ellipsis (dicopy dari progress_kplt_layout)
   const getPageNumbers = () => {
     const pages = [];
     const showEllipsisStart = currentPage > 3;
     const showEllipsisEnd = currentPage < totalPages - 2;
 
     if (totalPages <= 7) {
-      // Show all pages if 7 or fewer
       for (let i = 1; i <= totalPages; i++) {
         pages.push(i);
       }
     } else {
-      // Always show first page
       pages.push(1);
 
       if (showEllipsisStart) {
         pages.push("ellipsis-start");
       }
-
       const start = Math.max(2, currentPage - 1);
       const end = Math.min(totalPages - 1, currentPage + 1);
 
@@ -90,21 +85,12 @@ export default function TokoExistingLayout({
       if (showEllipsisEnd) {
         pages.push("ellipsis-end");
       }
-
       pages.push(totalPages);
     }
-
     return pages;
   };
 
-  // Tampilkan skeleton saat memuat data awal
-  if (
-    isLoading &&
-    tokoData.length === 0 &&
-    searchQuery === "" &&
-    filterYear === "" &&
-    filterRegional === ""
-  ) {
+  if (isLoading) {
     return <TokoExistingSkeleton />;
   }
 
@@ -141,7 +127,6 @@ export default function TokoExistingLayout({
         <TokoExistingFilter
           onSearch={onSearch}
           onFilterChange={onFilterChange}
-          userRole={userRole}
         />
       </div>
 
@@ -167,10 +152,10 @@ export default function TokoExistingLayout({
                   id={item.id}
                   nama={item.nama_toko}
                   alamat={item.alamat || "Alamat tidak tersedia"}
-                  regional={item.regional || "N/A"}
-                  tahun_beroperasi={item.tahun_beroperasi}
-                  status={item.status}
-                  detailPath="/toko_existing/detail/" // Placeholder path
+                  tgl_go={item.tgl_go}
+                  kode_toko={item.kode_store}
+                  habis_sewa={item.akhir_sewa}
+                  detailPath="/toko_existing/detail/"
                 />
               </div>
             ))

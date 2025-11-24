@@ -4,16 +4,16 @@ import Link from "next/link";
 import { MapPin, Calendar, CornerDownRight } from "lucide-react";
 
 interface TokoExistingInfoCardProps {
-  id: number;
+  id: string;
   nama: string;
   alamat: string;
-  regional: string;
-  tahun_beroperasi: number;
-  status: "Active" | "Inactive" | "Pending";
+  tgl_go: string;
+  kode_toko: string;
+  habis_sewa: string;
   detailPath: string;
 }
 
-const statusColorMap: Record<TokoExistingInfoCardProps["status"], string> = {
+const statusColorMap: Record<TokoExistingInfoCardProps["kode_toko"], string> = {
   Active: "bg-green-100 text-green-700",
   Inactive: "bg-red-100 text-red-700",
   Pending: "bg-yellow-100 text-yellow-700",
@@ -23,9 +23,9 @@ export function TokoExistingInfoCard({
   id,
   nama,
   alamat,
-  regional,
-  tahun_beroperasi,
-  status,
+  tgl_go,
+  kode_toko,
+  habis_sewa,
   detailPath,
 }: TokoExistingInfoCardProps) {
   const statusClasses = statusColorMap[status] || "bg-gray-100 text-gray-700";
@@ -42,7 +42,7 @@ export function TokoExistingInfoCard({
             <span
               className={`text-xs font-semibold px-3 py-1.5 rounded-full whitespace-nowrap ${statusClasses}`}
             >
-              {status}
+              {kode_toko}
             </span>
           </div>
 
@@ -54,13 +54,13 @@ export function TokoExistingInfoCard({
             </div>
             <div className="flex items-center gap-2">
               <Calendar className="w-4 h-4 text-red-500 flex-shrink-0" />
-              <p>Tahun Beroperasi: {tahun_beroperasi}</p>
+              <p>Grand Opening: {tgl_go}</p>
             </div>
             <div className="flex items-center gap-2">
               <span className="inline-block w-4 h-4 text-red-500 text-center font-bold flex-shrink-0">
                 #
               </span>
-              <p>Regional: {regional}</p>
+              <p>Habis Sewa: {habis_sewa}</p>
             </div>
           </div>
         </div>

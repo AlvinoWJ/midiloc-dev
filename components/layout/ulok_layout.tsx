@@ -1,12 +1,12 @@
 "use client";
 
-import { UlokPageProps } from "@/types/common";
 import { InfoCard } from "@/components/ui/infocard";
 import AddButton from "@/components/ui/addbutton";
 import Tabs from "@/components/ui/tabs";
 import SearchWithFilter from "@/components/ui/searchwithfilter";
 import { UlokPageSkeleton } from "@/components/ui/skleton";
 import { useRouter } from "next/navigation";
+import { Ulok } from "@/hooks/ulok/useUlok";
 import {
   ChevronLeft,
   ChevronRight,
@@ -15,6 +15,24 @@ import {
   MoreHorizontal,
   Loader2,
 } from "lucide-react";
+
+export interface UlokPageProps {
+  isLoading: boolean;
+  isRefreshing: boolean;
+  isError: boolean;
+  filteredUlok: Ulok[];
+  searchQuery: string;
+  filterMonth: string;
+  filterYear: string;
+  activeTab: string;
+  onSearch: (query: string) => void;
+  onFilterChange: (month: string, year: string) => void;
+  onTabChange: (tab: string) => void;
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+  isLocationSpecialist: () => boolean;
+}
 
 export default function UlokLayout(props: UlokPageProps) {
   const router = useRouter();

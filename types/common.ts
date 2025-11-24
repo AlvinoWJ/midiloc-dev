@@ -209,24 +209,24 @@ export interface Ulok {
 // ==================================
 // ULOK page props
 // ==================================
-export interface UlokPageProps {
-  isLoading: boolean;
-  isRefreshing: boolean;
-  isError: boolean;
-  user: CurrentUser | null;
-  filteredUlok: Ulok[];
-  searchQuery: string;
-  filterMonth: string;
-  filterYear: string;
-  activeTab: string;
-  onSearch: (query: string) => void;
-  onFilterChange: (month: string, year: string) => void;
-  onTabChange: (tab: string) => void;
-  currentPage: number;
-  totalPages: number;
-  onPageChange: (page: number) => void;
-  isLocationSpecialist: () => boolean;
-}
+// export interface UlokPageProps {
+//   isLoading: boolean;
+//   isRefreshing: boolean;
+//   isError: boolean;
+//   user: CurrentUser | null;
+//   filteredUlok: Ulok[];
+//   searchQuery: string;
+//   filterMonth: string;
+//   filterYear: string;
+//   activeTab: string;
+//   onSearch: (query: string) => void;
+//   onFilterChange: (month: string, year: string) => void;
+//   onTabChange: (tab: string) => void;
+//   currentPage: number;
+//   totalPages: number;
+//   onPageChange: (page: number) => void;
+//   isLocationSpecialist: () => boolean;
+// }
 
 // ==================================
 // Map points tipe (response baru)
