@@ -53,12 +53,18 @@ function getChanges(
   const allKeys = new Set([...Object.keys(current), ...Object.keys(previous)]);
 
   const fieldLabels: Record<string, string> = {
+    tgl_oss: "Tgl OSS",
+    oss: "OSS",
     tgl_sph: "Tgl SPH",
-    tgl_st_berkas: "Tgl ST Berkas",
-    tgl_gambar_denah: "Tgl Denah",
-    tgl_spk: "Tgl SPK",
-    tgl_rekom_notaris: "Tgl Rekom Notaris",
     nominal_sph: "Nominal SPH",
+    tgl_st_berkas: "Tgl ST Berkas",
+    status_berkas: "Status Berkas",
+    tgl_gambar_denah: "Tgl Denah",
+    status_gambar_denah: "status Gambar Denah",
+    tgl_spk: "Tgl SPK",
+    status_spk: "Status SPK",
+    tgl_rekom_notaris: "Tgl Rekom Notaris",
+    rekom_notaris_vendor: "Rekom Notaris",
     file_sph: "File SPH",
     file_bukti_st: "File Bukti ST",
     file_denah: "File Denah",
@@ -82,9 +88,9 @@ function getChanges(
     if (currentVal !== previousVal) {
       const label = fieldLabels[key] || key;
       if (!previousVal) {
-        changes.push(`Menambahkan ${label}.`);
+        changes.push(`Menambahkan ${label}`);
       } else {
-        changes.push(`Mengubah ${label}.`);
+        changes.push(`Mengubah ${label}`);
       }
     }
   });

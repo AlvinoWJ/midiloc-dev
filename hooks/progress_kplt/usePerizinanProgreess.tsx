@@ -16,6 +16,10 @@ interface PerizinanData {
   updated_at?: string | null;
   final_status_perizinan?: string | null;
   tgl_selesai_perizinan?: string | null;
+  status_spk?: string | null;
+  status_berkas?: string | null;
+  status_gambar_denah?: string | null;
+  rekom_notaris_vendor?: string | null;
 }
 
 interface UsePerizinanProgressResult {

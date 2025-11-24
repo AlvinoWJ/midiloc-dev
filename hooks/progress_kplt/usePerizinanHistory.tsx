@@ -27,7 +27,6 @@ const fetcher = (url: string) =>
   });
 
 export function usePerizinanHistory(progressId: string | undefined) {
-  // Gunakan endpoint API history yang sudah ada
   const key = progressId
     ? `/api/progress/${progressId}/perizinan/history`
     : null;
