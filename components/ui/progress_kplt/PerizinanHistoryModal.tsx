@@ -104,7 +104,6 @@ interface HistoryItemProps {
   onSelect: () => void;
 }
 
-// Komponen kecil untuk menampilkan satu item riwayat
 const HistoryItem: React.FC<HistoryItemProps> = ({
   item,
   previousItem,
@@ -159,7 +158,6 @@ const DetailField: React.FC<{ label: string; value: React.ReactNode }> = ({
   </div>
 );
 
-// Komponen read-only untuk file
 const FileLink: React.FC<{
   label: string;
   fileKey: string | null | undefined;
@@ -245,26 +243,34 @@ const HistoryDetailView: React.FC<{
             label="Tanggal SPH"
             value={formatDateOnly(data.tgl_sph)}
           />
+          <DetailField label="Nominal SPH" value={data.nominal_sph} />
           <DetailField
             label="Tanggal ST"
             value={formatDateOnly(data.tgl_st_berkas)}
           />
+          <DetailField label="Status Berkas" value={data.status_berkas} />
           <DetailField
             label="Tanggal Denah"
             value={formatDateOnly(data.tgl_gambar_denah)}
           />
           <DetailField
+            label="Status Gambar Denah"
+            value={data.status_gambar_denah}
+          />
+          <DetailField
             label="Tanggal SPK"
             value={formatDateOnly(data.tgl_spk)}
           />
+          <DetailField label="Status SPK" value={data.status_spk} />
           <DetailField
             label="Tanggal Rekom Notaris"
             value={formatDateOnly(data.tgl_rekom_notaris)}
           />
           <DetailField
-            label="Nominal SPH (Rp)"
-            value={data.nominal_sph?.toLocaleString("id-ID") || "-"}
+            label="Rekom Notaris Vendor"
+            value={data.rekom_notaris_vendor}
           />
+
           <DetailField
             label="Status Final"
             value={data.final_status_perizinan}

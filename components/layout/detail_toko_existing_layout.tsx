@@ -91,15 +91,6 @@ export default function DetailTokoExistingLayout({
       <div className="bg-white rounded-xl p-6 mb-8 shadow-[1px_1px_6px_rgba(0,0,0,0.25)] border-l-4 border-blue-600">
         <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
           <div className="flex-1 pr-4 min-w-0">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="bg-blue-100 text-blue-800 text-xs font-bold px-2.5 py-0.5 rounded border border-blue-400">
-                {data.kode_store || "NO CODE"}
-              </span>
-              <span className="bg-gray-100 text-gray-800 text-xs font-bold px-2.5 py-0.5 rounded border border-gray-400">
-                {data.tipe_toko || "Tipe -"}
-              </span>
-            </div>
-
             <h1 className="text-2xl font-bold text-gray-900 mb-3 uppercase">
               {data.nama || "-"}
             </h1>
@@ -120,6 +111,15 @@ export default function DetailTokoExistingLayout({
                 </span>
               </div>
             </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 flex-shrink-0">
+            <span className="bg-blue-100 text-blue-800 text-base font-bold px-3 py-1 rounded border border-blue-400">
+              {data.kode_store || "NO CODE"}
+            </span>
+            <span className="bg-gray-100 text-gray-800 text-base font-bold px-3 py-1 rounded border border-gray-400">
+              {data.tipe_toko || "Tipe -"}
+            </span>
           </div>
         </div>
       </div>
