@@ -20,7 +20,6 @@ import CustomSelect from "@/components/ui/customselect";
 import { NotarisEditableSchema } from "@/lib/validations/notaris";
 import { useAlert } from "@/components/shared/alertcontext";
 import { NotarisHistoryModal } from "./NotarisHistoryModal";
-import { swrKeys } from "@/lib/swr-keys";
 
 const DetailCard = ({
   title,
