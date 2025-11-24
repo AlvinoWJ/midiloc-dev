@@ -224,7 +224,7 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
         </div>
 
         {/* --- KARTU JUDUL --- */}
-        <div className="bg-white rounded-xl p-6 mb-8 shadow-[1px_1px_6px_rgba(0,0,0,0.25)]">
+        <div className="bg-white rounded-xl p-6 mb-8 shadow-[1px_1px_6px_rgba(0,0,0,0.25)] border-l-4 border-blue-600">
           <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
             <div className="flex-1 pr-4 min-w-0">
               <h1 className="text-2xl font-bold text-gray-900 mb-3">
