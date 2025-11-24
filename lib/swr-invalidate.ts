@@ -25,4 +25,11 @@ export const invalidate = {
       { revalidate: true }
     ),
   kpltDetail: (id: string) => mutate(swrKeys.kpltDetail(id)),
+  tokoEksisting: () =>
+    mutate(
+      (key) => typeof key === "string" && key.includes("/api/ulok_eksisting"),
+      undefined,
+      { revalidate: true }
+    ),
+  tokoExistingDetail: (id: string) => mutate(swrKeys.tokoExistingDetail(id)),
 };
