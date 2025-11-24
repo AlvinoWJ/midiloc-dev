@@ -141,3 +141,25 @@ export function canUlokEksternal(
       return false;
   }
 }
+
+export function canUlokEksisting(
+  action: "read" | "create" | "update" | "approve" | "final-approve" | "delete",
+  user: CurrentUser
+) {
+  switch (user.position_nama?.toLowerCase()) {
+    case "location specialist":
+      return action === "read";
+    case "location manager":
+      return action === "read";
+    case "branch manager":
+      return action === "read";
+    case "regional manager":
+      return action === "read";
+    case "general manager":
+      return action === "read";
+    case "admin branch":
+      return action === "read"; // membaca untuk konteks progres
+    default:
+      return false;
+  }
+}
