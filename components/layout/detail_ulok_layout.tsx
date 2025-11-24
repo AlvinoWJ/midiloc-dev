@@ -266,7 +266,6 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
                   </span>
                 </div>
 
-                {/* 🆕 Info Edit - Highlighted */}
                 {initialData.updated_at && initialData.updated_by && (
                   <div className="flex items-center text-sm text-amber-700 bg-amber-50 -mx-2 px-2 py-2 rounded-lg mt-3 max-w-fit">
                     <Edit3 size={14} className="mr-2 flex-shrink-0" />

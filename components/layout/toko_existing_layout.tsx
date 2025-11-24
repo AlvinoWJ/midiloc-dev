@@ -12,9 +12,7 @@ import {
   ChevronsRight,
   MoreHorizontal,
 } from "lucide-react";
-import { useRouter } from "next/router";
 
-// Mock Skeleton Component (meniru ProgressKpltSkeleton)
 const TokoExistingSkeleton = () => (
   <div className="space-y-6 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-6 min-h-[23rem] flex-grow">
     {Array.from({ length: 9 }).map((_, index) => (
@@ -121,7 +119,6 @@ export default function TokoExistingLayout(props: TokoExistingLayoutProps) {
 
   return (
     <div className="space-y-4 lg:space-y-6 flex flex-col">
-      {/* Header Halaman */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <h1 className="text-2xl lg:text-4xl font-bold">Toko Existing</h1>
         <TokoExistingFilter
@@ -130,7 +127,6 @@ export default function TokoExistingLayout(props: TokoExistingLayoutProps) {
         />
       </div>
 
-      {/* Konten Grid / List */}
       {tokoData.length === 0 && !isLoading ? (
         <div className="flex flex-col items-center justify-center text-center py-16 px-4 flex-grow">
           <div className="text-gray-300 text-6xl mb-4">📄</div>
@@ -163,11 +159,9 @@ export default function TokoExistingLayout(props: TokoExistingLayoutProps) {
         </div>
       )}
 
-      {/* Pagination */}
       {totalPages > 1 && !isLoading && (
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-auto pt-2">
           <div className="flex items-center gap-1">
-            {/* Tombol halaman pertama */}
             <button
               onClick={() => onPageChange(1)}
               disabled={currentPage === 1 || isLoading}
@@ -176,7 +170,6 @@ export default function TokoExistingLayout(props: TokoExistingLayoutProps) {
               <ChevronsLeft className="w-5 h-5" />
             </button>
 
-            {/* Tombol sebelumnya */}
             <button
               onClick={() => onPageChange(currentPage - 1)}
               disabled={currentPage <= 1 || isLoading}
@@ -185,7 +178,6 @@ export default function TokoExistingLayout(props: TokoExistingLayoutProps) {
               <ChevronLeft className="w-5 h-5" />
             </button>
 
-            {/* Nomor halaman */}
             <div className="flex items-center gap-1 mx-2">
               {pageNumbers.map((pageNum) =>
                 typeof pageNum === "string" ? (
@@ -212,7 +204,6 @@ export default function TokoExistingLayout(props: TokoExistingLayoutProps) {
               )}
             </div>
 
-            {/* Tombol berikutnya */}
             <button
               onClick={() => onPageChange(currentPage + 1)}
               disabled={currentPage >= totalPages || isLoading}
@@ -221,7 +212,6 @@ export default function TokoExistingLayout(props: TokoExistingLayoutProps) {
               <ChevronRight className="w-5 h-5" />
             </button>
 
-            {/* Tombol halaman terakhir */}
             <button
               onClick={() => onPageChange(totalPages)}
               disabled={currentPage >= totalPages || isLoading}
