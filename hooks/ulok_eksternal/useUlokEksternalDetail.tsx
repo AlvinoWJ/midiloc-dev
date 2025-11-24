@@ -25,17 +25,16 @@ export type UlokEksternalDetail = {
   kontak_pemilik: string;
   created_at: string;
   updated_at: string;
-  branch_id: { nama: string };
-  penanggungjawab: { nama: string };
+  branch_id: { nama: string; id: string };
+  penanggungjawab: { nama: string; id: string };
   foto_lokasi: string;
   status_ulok_eksternal: "OK" | "NOK" | "In Progress" | string;
   approved_at: string | null;
 };
 
-// 2. Definisikan tipe respons API
 interface ApiUlokEksternalDetailResponse {
   data: UlokEksternalDetail;
-  meta?: { user?: AppUser }; // Menjaga konsistensi
+  meta?: { user?: AppUser };
 }
 
 export function useUlokEksternalDetail(id: string) {

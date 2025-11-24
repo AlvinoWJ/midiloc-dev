@@ -21,6 +21,7 @@ import {
   CheckCircle,
   X,
   Maximize2,
+  Edit,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/statusbadge";
@@ -85,8 +86,13 @@ export default function DetailUlokEksternalLayout({
   const [selectedBranch, setSelectedBranch] = useState<string>("");
   const [isAssigning, setIsAssigning] = useState<boolean>(false);
 
+  const [isEditingBranch, setIsEditingBranch] = useState<boolean>(false);
+
   const [selectedSpecialist, setSelectedSpecialist] = useState<string>("");
   const [isAssigningSpecialist, setIsAssigningSpecialist] =
+    useState<boolean>(false);
+
+  const [isEditingSpecialist, setIsEditingSpecialist] =
     useState<boolean>(false);
 
   const [approvingStatus, setApprovingStatus] = useState<"OK" | "NOK" | null>(
@@ -95,12 +101,23 @@ export default function DetailUlokEksternalLayout({
 
   const { mutate: globalMutate } = useSWRConfig();
 
+  useEffect(() => {
+    if (ulok) {
+      if (ulok.branch_id?.id) {
+        setSelectedBranch(ulok.branch_id.id);
+      }
+      if (ulok.penanggungjawab?.id) {
+        setSelectedSpecialist(ulok.penanggungjawab.id);
+      }
+    }
+  }, [ulok]);
+
   const handleAssignBranch = async () => {
     if (!selectedBranch || !ulok?.id) return;
     setIsAssigning(true);
     try {
       const response = await fetch(
-        `/api/ulok_eksternal/${ulok.id}/assign-branch`, // Sesuai dengan API route
+        `/api/ulok_eksternal/${ulok.id}/assign-branch`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -124,7 +141,13 @@ export default function DetailUlokEksternalLayout({
         title: "Sukses",
         message: "Branch berhasil ditugaskan!",
       });
-      router.back();
+      await globalMutate(
+        (key) =>
+          typeof key === "string" && key.startsWith(swrKeys.ulokEksternal),
+        undefined,
+        { revalidate: true }
+      );
+      setIsEditingBranch(false);
       router.refresh();
     } catch (error) {
       showToast({
@@ -172,7 +195,7 @@ export default function DetailUlokEksternalLayout({
         undefined,
         { revalidate: true }
       );
-      router.back();
+      setIsEditingSpecialist(false);
       router.refresh();
     } catch (error) {
       showToast({
@@ -344,31 +367,74 @@ export default function DetailUlokEksternalLayout({
                 icon={<Briefcase className="w-5 h-5 text-red-500" />}
               >
                 <div className="space-y-6">
-                  <div>
-                    <label
-                      htmlFor="branch-select"
-                      className="text-base font-medium text-gray-900 mb-2 block"
-                    >
-                      Pilih Branch
-                    </label>
-                    <SelectBranch
-                      id="branch-select"
-                      value={selectedBranch}
-                      onValueChange={setSelectedBranch}
-                      disabled={isAssigning}
-                    />
-                  </div>
+                  {/* [Updated] Logika tampilan Read vs Edit untuk Branch */}
+                  {ulok.branch_id && !isEditingBranch ? (
+                    <div className="flex items-center justify-between bg-gray-50 p-4 rounded-lg border border-gray-200">
+                      <div>
+                        <p className="text-sm text-gray-500 font-medium mb-1">
+                          Branch
+                        </p>
+                        <p className="text-base lg:text-lg font-semibold text-gray-900">
+                          {ulok.branch_id.nama}
+                        </p>
+                      </div>
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={() => setIsEditingBranch(true)}
+                        className="flex items-center gap-2"
+                      >
+                        <Edit size={16} />
+                        Edit
+                      </Button>
+                    </div>
+                  ) : (
+                    <>
+                      <div>
+                        <label
+                          htmlFor="branch-select"
+                          className="text-base font-medium text-gray-900 mb-2 block"
+                        >
+                          Pilih Branch
+                        </label>
+                        <SelectBranch
+                          id="branch-select"
+                          value={selectedBranch}
+                          onValueChange={setSelectedBranch}
+                          disabled={isAssigning}
+                        />
+                      </div>
 
-                  <Button
-                    onClick={handleAssignBranch}
-                    disabled={!selectedBranch || isAssigning}
-                    className="w-full"
-                  >
-                    {isAssigning && (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    )}
-                    {isAssigning ? "Menyimpan..." : "Tugaskan Branch"}
-                  </Button>
+                      <div className="flex gap-3">
+                        {isEditingBranch && (
+                          <Button
+                            variant="default"
+                            onClick={() => {
+                              setIsEditingBranch(false);
+
+                              if (ulok.branch_id?.id) {
+                                setSelectedBranch(ulok.branch_id.id);
+                              }
+                            }}
+                            className="flex-1"
+                            disabled={isAssigning}
+                          >
+                            Batal
+                          </Button>
+                        )}
+                        <Button
+                          variant="secondary"
+                          onClick={handleAssignBranch}
+                          className={isEditingBranch ? "flex-1" : "w-full"}
+                        >
+                          {isAssigning && (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          )}
+                          {isAssigning ? "Menyimpan..." : "Simpan Penugasan"}
+                        </Button>
+                      </div>
+                    </>
+                  )}
                 </div>
               </DetailCard>
             )}
@@ -384,33 +450,72 @@ export default function DetailUlokEksternalLayout({
                 icon={<Briefcase className="w-5 h-5 text-red-500" />}
               >
                 <div className="space-y-6">
-                  <div>
-                    <label
-                      htmlFor="LocationSpecialist-select"
-                      className="text-base font-medium text-gray-900 mb-2 block"
-                    >
-                      Pilih Location Specialist
-                    </label>
-                    <SelectLocationSpecialist
-                      id="LocationSpecialist-select"
-                      value={selectedSpecialist}
-                      onValueChange={setSelectedSpecialist}
-                      disabled={isAssigningSpecialist}
-                    />
-                  </div>
+                  {ulok.penanggungjawab && !isEditingSpecialist ? (
+                    <div className="flex items-center justify-between bg-gray-50 p-4 rounded-lg border border-gray-200">
+                      <div>
+                        <p className="text-sm text-gray-500 font-medium mb-1">
+                          Location Specialist
+                        </p>
+                        <p className="text-base lg:text-lg font-semibold text-gray-900">
+                          {ulok.penanggungjawab.nama}
+                        </p>
+                      </div>
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={() => setIsEditingSpecialist(true)}
+                        className="flex items-center gap-2"
+                      >
+                        <Edit size={16} />
+                        Edit
+                      </Button>
+                    </div>
+                  ) : (
+                    <>
+                      <div>
+                        <label
+                          htmlFor="LocationSpecialist-select"
+                          className="text-base font-medium text-gray-900 mb-2 block"
+                        >
+                          Pilih Location Specialist
+                        </label>
+                        <SelectLocationSpecialist
+                          id="LocationSpecialist-select"
+                          value={selectedSpecialist}
+                          onValueChange={setSelectedSpecialist}
+                          disabled={isAssigningSpecialist}
+                        />
+                      </div>
 
-                  <Button
-                    onClick={handleAssignSpecialist}
-                    disabled={!selectedSpecialist || isAssigningSpecialist}
-                    className="w-full"
-                  >
-                    {isAssigningSpecialist && (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    )}
-                    {isAssigningSpecialist
-                      ? "Menyimpan..."
-                      : "Tugaskan Location Specialist"}
-                  </Button>
+                      <div className="flex gap-3">
+                        {isEditingSpecialist && (
+                          <Button
+                            variant="default"
+                            onClick={() => {
+                              setIsEditingSpecialist(false);
+                              if (ulok.penanggungjawab?.id) {
+                                setSelectedSpecialist(ulok.penanggungjawab.id);
+                              }
+                            }}
+                            className="flex-1"
+                            disabled={isAssigningSpecialist}
+                          >
+                            Batal
+                          </Button>
+                        )}
+                        <Button
+                          variant="secondary"
+                          onClick={handleAssignSpecialist}
+                          className={isEditingSpecialist ? "flex-1" : "w-full"}
+                        >
+                          {isAssigningSpecialist && (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          )}
+                          {isAssigningSpecialist ? "Menyimpan..." : "Simpan"}
+                        </Button>
+                      </div>
+                    </>
+                  )}
                 </div>
               </DetailCard>
             )}
@@ -551,7 +656,7 @@ const InfoItem = ({
     <dt className="text-base lg:text-lg font-semibold text-gray-900 mb-2">
       {label}
     </dt>
-    <dd className="text-sm lg:text-base bg-gray-100 font-medium px-4 py-3 rounded-lg">
+    <dd className="text-sm lg:text-base bg-gray-100 font-medium px-4 py-3 rounded-lg break-words line-clamp-2">
       {value || "-"}
     </dd>
   </div>
