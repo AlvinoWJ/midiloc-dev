@@ -14,14 +14,13 @@ export const POSITION = {
 };
 
 export type CurrentUser = {
-  // Tambahan profil untuk kebutuhan response API
   id: string;
   email: string | null;
   nama: string | null;
   branch_id: string | null;
-  branch_nama: string | null; // users.branch_id -> branch.nama
+  branch_nama: string | null;
   position_id: string | null;
-  position_nama: string | null; // users.position_id -> position.nama
+  position_nama: string | null;
 };
 
 export async function getCurrentUser(): Promise<CurrentUser | null> {
@@ -85,7 +84,7 @@ export function canKplt(
         action === "delete"
       );
     case "location manager":
-      return action === "read" || action === "update"; // data baru
+      return action === "read" || action === "update";
     case "branch manager":
       return action === "read" || action === "update" || action === "create";
     case "regional manager":
@@ -93,7 +92,7 @@ export function canKplt(
     case "general manager":
       return action === "read" || action === "create" || action === "update";
     case "admin branch":
-      return action === "read"; // membaca untuk konteks progres
+      return action === "read";
     default:
       return false;
   }
@@ -136,7 +135,7 @@ export function canUlokEksternal(
     case "general manager":
       return action === "read";
     case "admin branch":
-      return action === "read"; // membaca untuk konteks progres
+      return action === "read";
     default:
       return false;
   }
@@ -158,7 +157,7 @@ export function canUlokEksisting(
     case "general manager":
       return action === "read";
     case "admin branch":
-      return action === "read"; // membaca untuk konteks progres
+      return action === "read";
     default:
       return false;
   }
