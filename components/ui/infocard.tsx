@@ -65,10 +65,9 @@ export function InfoCard({
   return (
     <Link href={`${detailPath}/${id}`} className="block">
       <Card className="w-full min-h-[192px] flex flex-col justify-between shadow-md hover:shadow-[1px_1px_6px_rgba(0,0,0,0.25)] transition-shadow duration-300 relative">
-        {/* Badge Notifikasi */}
         {shouldShowBadge && (
           <div
-            className="absolute top-3 right-6 z-10"
+            className="absolute top-3 right-3 z-10"
             onMouseEnter={() => setShowTooltip(true)}
             onMouseLeave={() => setShowTooltip(false)}
           >
@@ -78,7 +77,6 @@ export function InfoCard({
               {missingDataCount}
             </div>
 
-            {/* Tooltip */}
             {showTooltip && (
               <div className="absolute top-[-40px] right-0 bg-gray-800 text-white text-xs py-2 px-3 rounded-md whitespace-nowrap shadow-lg animate-fade-in">
                 {getTooltipMessage()}
@@ -88,7 +86,7 @@ export function InfoCard({
           </div>
         )}
 
-        <CardHeader className="flex flex-row justify-between items-start space-y-0 pr-12">
+        <CardHeader className="flex flex-row justify-between items-start space-y-0 pr-7">
           <div className="flex-1 min-w-0 pr-2">
             <CardTitle className="text-lg lg:text-xl capitalize line-clamp-1">
               {nama}

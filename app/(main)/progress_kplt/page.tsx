@@ -1,4 +1,3 @@
-// app/(main)/progress_kplt/page.tsx
 "use client";
 
 import React, { useState, useMemo, useCallback } from "react";
