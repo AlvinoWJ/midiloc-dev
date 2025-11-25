@@ -252,17 +252,6 @@ export default function KpltLayout(props: KpltPageProps) {
                   <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-auto pt-6">
                     <div className="flex items-center gap-1">
                       <button
-                        onClick={() => onPageChange && onPageChange(1)}
-                        disabled={
-                          !currentPage || currentPage === 1 || isLoading
-                        }
-                        className="p-2 rounded-full text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
-                        aria-label="Halaman pertama"
-                      >
-                        <ChevronsLeft className="w-5 h-5" />
-                      </button>
-
-                      <button
                         onClick={() =>
                           onPageChange && onPageChange(currentPage - 1)
                         }
@@ -326,20 +315,6 @@ export default function KpltLayout(props: KpltPageProps) {
                         aria-label="Halaman berikutnya"
                       >
                         <ChevronRight className="w-5 h-5" />
-                      </button>
-
-                      <button
-                        onClick={() => onPageChange && onPageChange(totalPages)}
-                        disabled={
-                          !totalPages ||
-                          !currentPage ||
-                          currentPage >= totalPages ||
-                          isLoading
-                        }
-                        className="p-2 rounded-full text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
-                        aria-label="Halaman terakhir"
-                      >
-                        <ChevronsRight className="w-5 h-5" />
                       </button>
                     </div>
                   </div>

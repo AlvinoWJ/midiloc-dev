@@ -35,8 +35,8 @@ interface UseUlokProps {
   activeTab?: string;
 }
 
-const UI_PAGE_SIZE = 9; // User melihat 9 item per halaman
-const PAGES_PER_BLOCK = 4; // 1 Fetch = 1 Halaman UI
+const UI_PAGE_SIZE = 9;
+const PAGES_PER_BLOCK = 1;
 const FETCH_BLOCK_SIZE = UI_PAGE_SIZE * PAGES_PER_BLOCK;
 
 export function useUlok({
@@ -96,7 +96,7 @@ export function useUlok({
     }
   }, [data, currentBlockIndex]);
 
-  const pageIndexInBlock = (page - 1) % PAGES_PER_BLOCK; // 0, 1, 2, atau 3
+  const pageIndexInBlock = (page - 1) % PAGES_PER_BLOCK;
   const sliceStart = pageIndexInBlock * UI_PAGE_SIZE;
   const sliceEnd = sliceStart + UI_PAGE_SIZE;
 
