@@ -4,6 +4,7 @@
 import React, { useState, useEffect } from "react";
 import { useRenovasiProgress } from "@/hooks/progress_kplt/useRenovasiProgress";
 import { useFile, ApiFile } from "@/hooks/progress_kplt/useFilesProgress";
+import { useUser } from "@/hooks/useUser";
 import {
   Loader2,
   Pencil,
@@ -251,7 +252,13 @@ const RenovasiForm: React.FC<FormProps> = ({
       });
 
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Gagal menyimpan data");
+
+      if (!res.ok) {
+        throw new Error(
+          json.message || json.detail || json.error || "Gagal menyimpan data"
+        );
+      }
+
       onDataUpdate();
       showToast({
         type: "success",
@@ -261,7 +268,11 @@ const RenovasiForm: React.FC<FormProps> = ({
       });
       onSuccess();
     } catch (err: any) {
-      showToast({ type: "error", message: err.message });
+      showToast({
+        type: "error",
+        title: "Gagal",
+        message: err.message,
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -528,6 +539,9 @@ const RenovasiProgressCard: React.FC<RenovasiProgressCardProps> = ({
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const { showToast, showConfirmation } = useAlert();
 
+  const { user } = useUser();
+  const isBranchAdmin = user?.position_nama === "admin branch";
+
   const formatDate = (dateString?: string | null) =>
     dateString
       ? new Date(dateString).toLocaleDateString("id-ID", {
@@ -691,7 +705,7 @@ const RenovasiProgressCard: React.FC<RenovasiProgressCardProps> = ({
             </div>
           </div>
         </div>
-        {!isFinalized && (
+        {!isFinalized && isBranchAdmin && (
           <div className="flex gap-3 mt-6">
             {/* Tombol Edit */}
             <Button
@@ -717,7 +731,6 @@ const RenovasiProgressCard: React.FC<RenovasiProgressCardProps> = ({
               Batal
             </Button>
 
-            {/* Tombol Submit (Modifikasi) */}
             <Button
               type="submit"
               variant="submit"

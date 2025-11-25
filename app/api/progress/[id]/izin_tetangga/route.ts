@@ -103,7 +103,14 @@ export async function GET(
   if (!user)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!canProgressKplt("read", user))
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Forbidden",
+        message: "Anda tidak berhak melakukan aksi ini",
+      },
+      { status: 403 }
+    );
   if (!user.branch_id)
     return NextResponse.json(
       { error: "Forbidden", message: "User has no branch" },
@@ -145,7 +152,14 @@ export async function POST(
   if (!user)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!canProgressKplt("create", user) && !canProgressKplt("update", user))
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Forbidden",
+        message: "Anda tidak berhak melakukan aksi ini",
+      },
+      { status: 403 }
+    );
   if (!user.branch_id)
     return NextResponse.json(
       { error: "Forbidden", message: "User has no branch" },
@@ -249,7 +263,14 @@ export async function PATCH(
   if (!user)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!canProgressKplt("update", user))
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Forbidden",
+        message: "Anda tidak berhak melakukan aksi ini",
+      },
+      { status: 403 }
+    );
   if (!user.branch_id)
     return NextResponse.json(
       { error: "Forbidden", message: "User has no branch" },

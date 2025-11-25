@@ -20,6 +20,7 @@ import CustomSelect from "@/components/ui/customselect";
 import { NotarisEditableSchema } from "@/lib/validations/notaris";
 import { useAlert } from "@/components/shared/alertcontext";
 import { NotarisHistoryModal } from "./NotarisHistoryModal";
+import { useUser } from "@/hooks/useUser";
 
 const DetailCard = ({
   title,
@@ -189,20 +190,30 @@ const NotarisForm: React.FC<FormProps> = ({
       });
 
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Gagal menyimpan data");
+
+      if (!res.ok) {
+        throw new Error(
+          json.message || json.detail || json.error || "Gagal menyimpan data"
+        );
+      }
 
       onDataUpdate();
       refreshHistory();
 
       showToast({
         type: "success",
+        title: "Berhasil",
         message: `Data Notaris berhasil di${
           initialData ? "update" : "simpan"
         }.`,
       });
       onSuccess();
     } catch (err: any) {
-      showToast({ type: "error", message: err.message });
+      showToast({
+        type: "error",
+        title: "Gagal",
+        message: err.message,
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -425,9 +436,11 @@ const NotarisProgressCard: React.FC<NotarisProgressCardProps> = ({
   const [isEditing, setIsEditing] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const { showToast, showConfirmation } = useAlert();
-
   const [isSubmittingApprove, setIsSubmittingApprove] = useState(false);
   const [isSubmittingReject, setIsSubmittingReject] = useState(false);
+
+  const { user } = useUser();
+  const isBranchAdmin = user?.position_nama === "admin branch";
 
   const refreshHistoryData = () => {
     mutate(`/api/progress/${progressId}/notaris/history`);
@@ -600,7 +613,7 @@ const NotarisProgressCard: React.FC<NotarisProgressCardProps> = ({
             </div>
           </div>
         </div>
-        {!isFinalized && (
+        {!isFinalized && isBranchAdmin && (
           <div className="flex gap-3 mt-6">
             <Button
               variant="secondary"

@@ -8,7 +8,6 @@ import {
   stripServerControlledFieldsGO,
 } from "@/lib/validations/grand_opening";
 
-// GET /api/progress/[id]/grand-opening
 export async function GET(
   _req: Request,
   { params }: { params: { id: string } }
@@ -16,7 +15,14 @@ export async function GET(
   const supabase = await createClient();
   const user = await getCurrentUser();
   if (!user)
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Forbidden",
+        message: "Anda tidak berhak melakukan aksi ini",
+      },
+      { status: 401 }
+    );
   if (!canProgressKplt("read", user))
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   if (!user.branch_id)
@@ -50,7 +56,6 @@ export async function GET(
   return NextResponse.json({ data }, { status: 200 });
 }
 
-// POST /api/progress/[id]/grand-opening
 export async function POST(
   req: Request,
   { params }: { params: { id: string } }
@@ -60,7 +65,14 @@ export async function POST(
   if (!user)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!canProgressKplt("create", user) && !canProgressKplt("update", user))
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Forbidden",
+        message: "Anda tidak berhak melakukan aksi ini",
+      },
+      { status: 403 }
+    );
   if (!user.branch_id)
     return NextResponse.json(
       { error: "Forbidden", message: "User has no branch" },
@@ -135,7 +147,14 @@ export async function PATCH(
   if (!user)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!canProgressKplt("update", user))
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Forbidden",
+        message: "Anda tidak berhak melakukan aksi ini",
+      },
+      { status: 403 }
+    );
   if (!user.branch_id)
     return NextResponse.json(
       { error: "Forbidden", message: "User has no branch" },
