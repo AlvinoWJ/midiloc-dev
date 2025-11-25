@@ -44,7 +44,11 @@ export async function GET(req: NextRequest) {
     );
   if (!canProgressKplt("read", user))
     return NextResponse.json(
-      { success: false, error: "Forbidden" },
+      {
+        success: false,
+        error: "Forbidden",
+        message: "Anda tidak berhak melakukan aksi ini",
+      },
       { status: 403 }
     );
   if (!user.branch_id)

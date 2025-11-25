@@ -1,4 +1,3 @@
-// components/layout/progress_kplt_layout.tsx
 "use client";
 
 import React from "react";

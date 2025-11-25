@@ -80,11 +80,11 @@ export default function KpltLayout(props: KpltPageProps) {
 
   const getStatusBadgeClass = (status: string): string => {
     switch (status) {
-      case "Need Input": // Pastikan huruf besar sesuai data
+      case "Need Input":
         return "bg-gray-400 text-white";
-      case "In Progress": // Pastikan huruf besar sesuai data
+      case "In Progress":
         return "bg-progress text-white";
-      case "Waiting For Forum": // Pastikan huruf besar sesuai data
+      case "Waiting For Forum":
         return "bg-progress text-white";
       default:
         return "bg-gray-200 text-gray-800";
@@ -158,10 +158,10 @@ export default function KpltLayout(props: KpltPageProps) {
           </div>
 
           <div className="relative flex-grow min-h-[23rem]">
-            {isRefreshing ? ( // [!code ++]
+            {isRefreshing ? (
               <div className="flex items-center justify-center min-h-[23rem]">
                 <Loader2 className="w-8 h-8 text-primary animate-spin" />{" "}
-              </div> // [!code ++]
+              </div>
             ) : displayData.length === 0 ? (
               <div className="col-span-full flex flex-col items-center justify-center py-12 md:py-16 text-center">
                 <div className="text-gray-300 text-5xl md:text-6xl mb-4">

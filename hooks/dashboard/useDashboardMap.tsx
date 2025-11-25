@@ -37,10 +37,10 @@ const fetcher = (url: string) =>
 
 type UseMapParams = {
   year: number | null;
-  lsId: string | null; // filter LS (LM/BM), biarkan null untuk semua LS
-  branchId?: string | null; // kalau mau filter per branch (RM/GM)
-  ulokOnlyOk?: boolean; // default true
-  ulokWithoutKplt?: boolean; // default false (kandidat KPLT jika true)
+  lsId: string | null;
+  branchId?: string | null;
+  ulokOnlyOk?: boolean;
+  ulokWithoutKplt?: boolean;
   search?: string | null;
 };
 

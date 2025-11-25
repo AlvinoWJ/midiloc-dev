@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { ITEditableSchema } from "@/lib/validations/izin_tetangga";
 import { useAlert } from "@/components/shared/alertcontext";
 import { useFile, ApiFile } from "@/hooks/progress_kplt/useFilesProgress";
+import { useUser } from "@/hooks/useUser";
 
 const formatnumeric = (value: string | number | undefined | null) => {
   if (value === undefined || value === null || value === "") return "";
@@ -177,9 +178,10 @@ const IzinTetanggaForm: React.FC<FormProps> = ({
       });
 
       const json = await res.json();
+
       if (!res.ok) {
         throw new Error(
-          json.detail?.[0]?.message || json.error || "Gagal menyimpan data"
+          json.message || json.detail || json.error || "Gagal menyimpan data"
         );
       }
       onDataUpdate();
@@ -192,7 +194,11 @@ const IzinTetanggaForm: React.FC<FormProps> = ({
 
       onSuccess();
     } catch (err: any) {
-      showToast({ type: "error", message: err.message });
+      showToast({
+        type: "error",
+        title: "Gagal",
+        message: err.message,
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -311,6 +317,9 @@ const IzinTetanggaProgressCard: React.FC<IzinTetanggaProgressCardProps> = ({
   const [isSubmittingApprove, setIsSubmittingApprove] = useState(false);
   const [isSubmittingReject, setIsSubmittingReject] = useState(false);
   const { showToast, showConfirmation } = useAlert();
+
+  const { user } = useUser();
+  const isBranchAdmin = user?.position_nama === "admin branch";
 
   const fileIzinTetangga = filesMap.get("file_izin_tetangga");
   const fileBuktiPembayaran = filesMap.get("file_bukti_pembayaran");
@@ -473,7 +482,7 @@ const IzinTetanggaProgressCard: React.FC<IzinTetanggaProgressCardProps> = ({
           </div>
         </div>
 
-        {!isFinalized && (
+        {!isFinalized && isBranchAdmin && (
           <div className="flex gap-3 mt-6">
             {/* Tombol Edit */}
             <Button

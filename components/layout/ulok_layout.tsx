@@ -116,13 +116,11 @@ export default function UlokLayout(props: UlokPageProps) {
 
   return (
     <div className="space-y-4 lg:space-y-6 flex flex-col flex-grow">
-      {/* Header: Judul dan Search/Filter */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <h1 className="text-2xl lg:text-4xl font-bold">Usulan Lokasi</h1>
         <SearchWithFilter onSearch={onSearch} onFilterChange={onFilterChange} />
       </div>
 
-      {/* Kontrol: Tabs dan Tombol Tambah */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <Tabs
           tabs={["Recent", "History"]}
@@ -134,7 +132,6 @@ export default function UlokLayout(props: UlokPageProps) {
         )}
       </div>
 
-      {/* Konten Grid / List */}
       <div className=" flex-grow">
         {isRefreshing ? (
           <div className="flex items-center justify-center min-h-[23rem]">
@@ -185,11 +182,9 @@ export default function UlokLayout(props: UlokPageProps) {
         )}
       </div>
 
-      {totalPages > 1 && (
+      {totalPages > 1 && !isRefreshing && (
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-auto pt-6">
-          {/* Pagination Controls */}
           <div className="flex items-center gap-1">
-            {/* First Page Button */}
             <button
               onClick={() => onPageChange(1)}
               disabled={currentPage === 1 || isLoading || isRefreshing}
@@ -198,7 +193,6 @@ export default function UlokLayout(props: UlokPageProps) {
               <ChevronsLeft className="w-5 h-5" />
             </button>
 
-            {/* Previous Button */}
             <button
               onClick={() => onPageChange(currentPage - 1)}
               disabled={currentPage <= 1 || isLoading || isRefreshing}
@@ -207,11 +201,9 @@ export default function UlokLayout(props: UlokPageProps) {
               <ChevronLeft className="w-5 h-5" />
             </button>
 
-            {/* Page Numbers */}
             <div className="flex items-center gap-1 mx-2">
               {pageNumbers.map((pageNum) => {
                 if (typeof pageNum === "string") {
-                  // Ellipsis
                   return (
                     <div
                       key={pageNum}

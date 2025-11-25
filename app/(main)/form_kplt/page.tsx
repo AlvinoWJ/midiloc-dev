@@ -32,6 +32,13 @@ export default function KPLTPage() {
     year: filterYear,
   });
 
+  const filteredDisplayData = kpltData.filter((item) => {
+    if (item.status === "Need Input" && !isLocationSpecialist()) {
+      return false;
+    }
+    return true;
+  });
+
   const onFilterChange = (month: string, year: string) => {
     setFilterMonth(month);
     setFilterYear(year);
@@ -58,7 +65,7 @@ export default function KPLTPage() {
     isRefreshing,
     isError: !!userError || !!kpltError,
 
-    displayData: kpltData,
+    displayData: filteredDisplayData,
 
     searchQuery,
     filterMonth,

@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input";
 import { PerizinanEditableSchema } from "@/lib/validations/perizinan";
 import { useAlert } from "@/components/shared/alertcontext";
 import { PerizinanHistoryModal } from "./PerizinanHistoryModal";
+import { useUser } from "@/hooks/useUser";
 
 const formatnumeric = (value: string | number | undefined | null) => {
   if (value === undefined || value === null || value === "") return "";
@@ -246,7 +247,13 @@ const PerizinanForm: React.FC<FormProps> = ({
       });
 
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Gagal menyimpan data");
+
+      if (!res.ok) {
+        throw new Error(
+          json.message || json.detail || json.error || "Gagal menyimpan data"
+        );
+      }
+
       onDataUpdate();
       showToast({
         type: "success",
@@ -256,7 +263,11 @@ const PerizinanForm: React.FC<FormProps> = ({
       });
       onSuccess();
     } catch (err: any) {
-      showToast({ type: "error", message: err.message });
+      showToast({
+        type: "error",
+        title: "Gagal",
+        message: err.message,
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -522,9 +533,11 @@ const PerizinanProgressCard: React.FC<PerizinanProgressCardProps> = ({
   const [isEditing, setIsEditing] = useState(false);
   const [isSubmittingApprove, setIsSubmittingApprove] = useState(false);
   const [isSubmittingReject, setIsSubmittingReject] = useState(false);
-
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const { showToast, showConfirmation } = useAlert();
+
+  const { user } = useUser();
+  const isBranchAdmin = user?.position_nama === "admin branch";
 
   const formatDate = (dateString?: string | null) =>
     dateString
@@ -812,7 +825,7 @@ const PerizinanProgressCard: React.FC<PerizinanProgressCardProps> = ({
           </div>
         </div>
 
-        {!isFinalized && (
+        {!isFinalized && isBranchAdmin && (
           <div className="flex gap-3 mt-6">
             {/* Tombol Edit */}
             <Button
