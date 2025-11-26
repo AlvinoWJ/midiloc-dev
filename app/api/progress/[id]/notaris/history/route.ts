@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser, canProgressKplt } from "@/lib/auth/acl";
 
 // GET /api/progress/[id]/notaris/history

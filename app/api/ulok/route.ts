@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { UlokCreateSchema } from "@/lib/validations/ulok";
 import { getCurrentUser, canUlok } from "@/lib/auth/acl";
 import { buildPathByField } from "@/lib/storage/path";
+import { isPdfFile } from "@/utils/fileChecker";
 
 const BUCKET = "file_storage";
 const MAX_PDF_SIZE = 15 * 1024 * 1024; // 15MB
@@ -38,26 +39,6 @@ function decodeCursor(c: string): CursorPayload | null {
   } catch {
     return null;
   }
-}
-
-async function isPdfFile(
-  file: File,
-  strictSignature = true
-): Promise<{ ok: boolean; reason?: string }> {
-  const nameOk = file.name.toLowerCase().endsWith(".pdf");
-  if (!nameOk) return { ok: false, reason: "Ekstensi harus .pdf" };
-  if (file.type && file.type !== "application/pdf") {
-    return {
-      ok: false,
-      reason: `MIME bukan application/pdf (detected: ${file.type})`,
-    };
-  }
-  if (!strictSignature) return { ok: true };
-  const header = new Uint8Array(await file.slice(0, 5).arrayBuffer());
-  const sig = new TextDecoder().decode(header);
-  if (!sig.startsWith("%PDF-"))
-    return { ok: false, reason: "Header file bukan signature PDF (%PDF-)" };
-  return { ok: true };
 }
 
 function dropForbiddenFields<T extends Record<string, unknown>>(obj: T) {
@@ -469,7 +450,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const pdfCheck = await isPdfFile(file, true);
+    const pdfCheck = await isPdfFile(file);
     if (!pdfCheck.ok) {
       return NextResponse.json(
         {

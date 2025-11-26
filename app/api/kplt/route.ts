@@ -12,6 +12,12 @@ import {
   PDF_FIELDS,
   VIDEO_FIELDS,
 } from "@/lib/storage/path";
+import {
+  isPdfFile,
+  isExcelFile,
+  isVideoFile,
+  isImageFile,
+} from "@/utils/fileChecker";
 
 const BUCKET = "file_storage";
 const MAX_FILE = 200 * 1024 * 1024; // 200MB video max
@@ -247,7 +253,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           );
       };
 
-      // PDFs
+      // PDFs (.pdf)
       for (const field of PDF_FIELDS) {
         const entry = form.get(field);
         if (entry && entry instanceof File) {
@@ -261,6 +267,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
               { status: 400 }
             );
           }
+
+          const pdfCheck = await isPdfFile(entry);
+          if (!pdfCheck.ok) {
+            return NextResponse.json(
+              { error: `File ${field} tidak valid: ${pdfCheck.reason}` },
+              { status: 400 }
+            );
+          }
+
           const path = buildPathByField(
             ulokId,
             "kplt",
@@ -274,7 +289,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         }
       }
 
-      // Excel
+      // Excel (.xlsx, .xls)
       for (const field of EXCEL_FIELDS) {
         const entry = form.get(field);
         if (entry && entry instanceof File) {
@@ -288,6 +303,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
               { status: 400 }
             );
           }
+
+          const excelCheck = await isExcelFile(entry);
+          if (!excelCheck.ok) {
+            return NextResponse.json(
+              { error: `File ${field} tidak valid: ${excelCheck.reason}` },
+              { status: 400 }
+            );
+          }
+
           const path = buildPathByField(
             ulokId,
             "kplt",
@@ -307,7 +331,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         }
       }
 
-      // Videos
+      // Videos (.png, .jpg, .jpeg, .webp)
       for (const field of VIDEO_FIELDS) {
         const entry = form.get(field);
         if (entry && entry instanceof File) {
@@ -321,6 +345,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
               { status: 400 }
             );
           }
+
+          const videoCheck = await isVideoFile(entry);
+          if (!videoCheck.ok) {
+            return NextResponse.json(
+              { error: `File ${field} tidak valid: ${videoCheck.reason}` },
+              { status: 400 }
+            );
+          }
+
           const path = buildPathByField(
             ulokId,
             "kplt",
@@ -334,7 +367,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         }
       }
 
-      // Images
+      // Images (.mp4, .mov, .avi, .webm)
       for (const field of IMAGE_FIELDS) {
         const entry = form.get(field);
         if (entry && entry instanceof File) {
@@ -348,6 +381,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
               { status: 400 }
             );
           }
+
+          const imageCheck = await isImageFile(entry);
+          if (!imageCheck.ok) {
+            return NextResponse.json(
+              { error: `File ${field} tidak valid: ${imageCheck.reason}` },
+              { status: 400 }
+            );
+          }
+
           const path = buildPathByField(
             ulokId,
             "kplt",

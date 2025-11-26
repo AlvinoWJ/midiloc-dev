@@ -7,6 +7,16 @@ export const dynamic = "force-dynamic";
 
 const BUCKET = "file_storage_eksternal";
 
+function roleFromPositionName(name?: string | null) {
+  if (!name) return undefined;
+  const key = name.trim().toLowerCase();
+  if (key === "regional manager") return "rm";
+  if (key === "branch manager") return "bm";
+  if (key === "location manager") return "lm";
+  if (key === "location specialist") return "ls";
+  return undefined;
+}
+
 function mimeFromExt(ext: string) {
   const e = ext.toLowerCase();
   if (e === ".pdf") return "application/pdf";
@@ -33,28 +43,53 @@ export async function GET(
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
-    const supabase = await createClient();
-
-    // Ambil ulok_eksternal milik user eksternal ini
-    const { data: ulokEks, error: ulokErr } = await supabase
-      .from("ulok_eksternal")
-      .select("id, users_eksternal_id, foto_lokasi")
-      .eq("id", params.id)
-      .maybeSingle();
-
-    if (ulokErr) {
-      return NextResponse.json({ error: ulokErr.message }, { status: 400 });
-    }
-    if (!ulokEks) {
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
-    }
-
     // Pastikan ini milik user eksternal yang login
     if (!canUlokEksternal("read", user)) {
       return NextResponse.json(
         { error: "Forbidden", message: "Anda tidak berhak mengakses file ini" },
         { status: 403 }
+      );
+    }
+
+    const supabase = await createClient();
+
+    let query = supabase
+      .from("ulok_eksternal")
+      .select("id, foto_lokasi, penanggungjawab, branch_id") // Ambil field untuk validasi
+      .eq("id", params.id)
+      .limit(1);
+
+    // Terapkan Logic "Role Filter" yang sama dengan endpoint data!
+    const role = roleFromPositionName(user.position_nama);
+
+    if (role === "ls") {
+      // LS hanya boleh lihat file miliknya sendiri
+      query = query.eq("penanggungjawab", user.id);
+    } else if (role === "bm" || role === "lm") {
+      // BM/LM hanya boleh lihat file di cabangnya
+      if (user.branch_id) {
+        query = query.eq("branch_id", user.branch_id);
+      } else {
+        return NextResponse.json(
+          { error: "User branch invalid" },
+          { status: 403 }
+        );
+      }
+    }
+    // RM boleh akses semua (tidak perlu filter tambahan selain ID)
+
+    const { data: ulokEks, error: ulokErr } = await query.maybeSingle();
+
+    if (ulokErr) {
+      return NextResponse.json({ error: ulokErr.message }, { status: 400 });
+    }
+    if (!ulokEks) {
+      return NextResponse.json(
+        {
+          error: "Not found or Forbidden",
+          message: "File tidak ditemukan atau Anda tidak memiliki akses",
+        },
+        { status: 404 }
       );
     }
 
