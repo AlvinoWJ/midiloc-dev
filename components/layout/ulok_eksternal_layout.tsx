@@ -8,8 +8,6 @@ import { UlokPageSkeleton } from "@/components/ui/skleton";
 import {
   ChevronLeft,
   ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
   MoreHorizontal,
   Loader2,
   Building,
@@ -162,14 +160,14 @@ export default function UlokEksternalLayout(props: UlokEksternalPageProps) {
       {totalPages > 1 && !isRefreshing && (
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-auto pt-6">
           <div className="flex items-center gap-1">
-            <button
+            {/* <button
               onClick={() => onPageChange(1)}
               disabled={currentPage === 1 || isLoading || isRefreshing}
               className="p-2 rounded-full text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
               aria-label="Halaman pertama"
             >
               <ChevronsLeft className="w-5 h-5" />
-            </button>
+            </button> */}
             <button
               onClick={() => onPageChange(currentPage - 1)}
               disabled={currentPage <= 1 || isLoading || isRefreshing}
@@ -221,14 +219,14 @@ export default function UlokEksternalLayout(props: UlokEksternalPageProps) {
             >
               <ChevronRight className="w-5 h-5" />
             </button>
-            <button
+            {/* <button
               onClick={() => onPageChange(totalPages)}
               disabled={currentPage >= totalPages || isLoading || isRefreshing}
               className="p-2 rounded-full text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
               aria-label="Halaman terakhir"
             >
               <ChevronsRight className="w-5 h-5" />
-            </button>
+            </button> */}
           </div>
         </div>
       )}
