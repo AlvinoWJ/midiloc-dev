@@ -3,8 +3,6 @@
 import useSWR from "swr";
 import { UlokRow } from "@/types/ulok";
 
-// Definisikan tipe untuk respons API mentah
-// Ini mencerminkan struktur `data.data[0]`
 type UlokApiResponse = {
   data: UlokRow[];
 };
@@ -15,10 +13,8 @@ const fetcher = async (url: string): Promise<UlokApiResponse> => {
   return r.json();
 };
 
-// 👇 2. Definisikan tipe untuk data yang sudah bersih/ter-mapping
-//    Ini adalah struktur yang akan digunakan oleh komponen UI Anda
 export type MappedUlokData = {
-  id: any; // Sebaiknya ganti 'any' dengan tipe ID Anda, misal: number atau string
+  id: any;
   namaUlok: string;
   provinsi: string;
   kabupaten: string;
@@ -39,7 +35,7 @@ export type MappedUlokData = {
   kontakpemilik: string;
   approval_status: string;
   file_intip: string | null;
-  tanggal_approval_intip: string | null; // atau Date
+  tanggal_approval_intip: string | null;
   approval_intip: string | null;
 
   latitude: number | null;
@@ -66,17 +62,13 @@ type UseUlokDetailReturn = {
 };
 
 export function useUlokDetail(id: string | undefined): UseUlokDetailReturn {
-  // 👇 4. Beri tahu SWR tentang tipe data API mentah
   const { data, error, isLoading, mutate } = useSWR<UlokApiResponse>(
     id ? `/api/ulok/${id}` : null,
     fetcher
   );
 
-  // TypeScript sekarang tahu bahwa `data` adalah UlokApiResponse | undefined
   const raw = data?.data?.[0];
 
-  // Map data mentah ke format yang bersih.
-  // Pastikan `mapped` sesuai dengan tipe `MappedUlokData`
   const mapped: MappedUlokData | null = raw
     ? {
         id: raw.id,

@@ -1,12 +1,14 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, ChangeEvent } from "react";
+import { useState, useEffect } from "react";
 import { useUser } from "@/hooks/useUser";
 import { useAlert } from "@/components/shared/alertcontext";
-import { useBranchList } from "@/hooks/ulok_eksternal/useBranchList";
 import { UlokEksternalDetail } from "@/hooks/ulok_eksternal/useUlokEksternalDetail";
+import { useUlokEksternalFile } from "@/hooks/ulok_eksternal/useUlokEksternalFiles";
 import DetailUlokEksternalSkeleton from "@/components/ui/skleton";
+import { useSWRConfig } from "swr";
+import { swrKeys } from "@/lib/swr-keys";
 import {
   ArrowLeft,
   Loader2,
@@ -16,14 +18,19 @@ import {
   ClipboardList,
   Camera,
   Briefcase,
+  CheckCircle,
+  X,
+  Maximize2,
+  Edit,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/statusbadge";
-import DetailMapCard from "@/components/map/DetailMapCard";
+import DetailMapCard from "@/components/map/DetailMapCardUlokEksternal";
 import Image from "next/image";
 import { format } from "date-fns";
 import { id as inLocale } from "date-fns/locale";
 import SelectBranch from "../ui/SelectBranch";
+import SelectLocationSpecialist from "../ui/SelectLocationSpecialist";
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat("id-ID", {
@@ -31,12 +38,6 @@ const formatCurrency = (value: number) => {
     currency: "IDR",
     minimumFractionDigits: 0,
   }).format(value);
-};
-
-// Helper untuk mendapatkan URL gambar (asumsi bucket 'midiloc')
-const getStorageUrl = (path: string) => {
-  if (!path) return "/bg_alfamidi.png"; // Gambar default
-  return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/midiloc/${path}`;
 };
 
 const DetailCard = ({
@@ -69,26 +70,54 @@ type DetailUlokEksternalLayoutProps = {
   ulok: UlokEksternalDetail | null;
   isLoading: boolean;
   isError: boolean;
+  mutate: () => void;
 };
 
 export default function DetailUlokEksternalLayout({
   ulok,
   isLoading,
   isError,
+  mutate,
 }: DetailUlokEksternalLayoutProps) {
   const router = useRouter();
   const { user, loadingUser } = useUser();
-  const { showToast } = useAlert();
+  const { showToast, showConfirmation } = useAlert();
 
   const [selectedBranch, setSelectedBranch] = useState<string>("");
   const [isAssigning, setIsAssigning] = useState<boolean>(false);
+
+  const [isEditingBranch, setIsEditingBranch] = useState<boolean>(false);
+
+  const [selectedSpecialist, setSelectedSpecialist] = useState<string>("");
+  const [isAssigningSpecialist, setIsAssigningSpecialist] =
+    useState<boolean>(false);
+
+  const [isEditingSpecialist, setIsEditingSpecialist] =
+    useState<boolean>(false);
+
+  const [approvingStatus, setApprovingStatus] = useState<"OK" | "NOK" | null>(
+    null
+  );
+
+  const { mutate: globalMutate } = useSWRConfig();
+
+  useEffect(() => {
+    if (ulok) {
+      if (ulok.branch_id?.id) {
+        setSelectedBranch(ulok.branch_id.id);
+      }
+      if (ulok.penanggungjawab?.id) {
+        setSelectedSpecialist(ulok.penanggungjawab.id);
+      }
+    }
+  }, [ulok]);
 
   const handleAssignBranch = async () => {
     if (!selectedBranch || !ulok?.id) return;
     setIsAssigning(true);
     try {
       const response = await fetch(
-        `/api/ulok_eksternal/${ulok.id}/assign-branch`, // Sesuai dengan API route
+        `/api/ulok_eksternal/${ulok.id}/assign-branch`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -106,11 +135,19 @@ export default function DetailUlokEksternalLayout({
         });
         throw new Error(errorMessage);
       }
+      mutate();
       showToast({
         type: "success",
         title: "Sukses",
         message: "Branch berhasil ditugaskan!",
       });
+      await globalMutate(
+        (key) =>
+          typeof key === "string" && key.startsWith(swrKeys.ulokEksternal),
+        undefined,
+        { revalidate: true }
+      );
+      setIsEditingBranch(false);
       router.refresh();
     } catch (error) {
       showToast({
@@ -123,8 +160,115 @@ export default function DetailUlokEksternalLayout({
     }
   };
 
+  const handleAssignSpecialist = async () => {
+    if (!selectedSpecialist || !ulok?.id) return;
+    setIsAssigningSpecialist(true);
+    try {
+      const response = await fetch(
+        `/api/ulok_eksternal/${ulok.id}/assign-penanggungjawab`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ penanggungjawab: selectedSpecialist }),
+        }
+      );
+
+      if (!response.ok) {
+        const err = await response.json();
+        const errorMessage = err.error || "Gagal melakukan penugasan";
+        showToast({
+          type: "error",
+          title: "Gagal",
+          message: errorMessage,
+        });
+        throw new Error(errorMessage);
+      }
+      mutate();
+      showToast({
+        type: "success",
+        title: "Sukses",
+        message: "Location Specialist berhasil ditugaskan!",
+      });
+      await globalMutate(
+        (key) =>
+          typeof key === "string" && key.startsWith(swrKeys.ulokEksternal),
+        undefined,
+        { revalidate: true }
+      );
+      setIsEditingSpecialist(false);
+      router.refresh();
+    } catch (error) {
+      showToast({
+        type: "error",
+        title: "Gagal",
+        message: error instanceof Error ? error.message : "Terjadi kesalahan",
+      });
+    } finally {
+      setIsAssigningSpecialist(false);
+    }
+  };
+
+  const handleApproval = async (status: "OK" | "NOK") => {
+    if (!ulok?.id) return;
+
+    const actionText = status === "OK" ? "menyetujui" : "menolak";
+
+    const confirmation = await showConfirmation({
+      title: `Anda yakin ingin ${actionText} usulan ini?`,
+      message: `Status akan diubah menjadi "${status}".`,
+      confirmText: `Ya, ${actionText}`,
+      cancelText: "Batal",
+      type: "info",
+    });
+
+    if (!confirmation) return;
+
+    setApprovingStatus(status);
+
+    try {
+      const response = await fetch(`/api/ulok_eksternal/${ulok.id}/approval`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status_ulok_eksternal: status }),
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        const errorMessage = err.error || "Gagal memperbarui status";
+        showToast({
+          type: "error",
+          title: "Gagal",
+          message: errorMessage,
+        });
+        throw new Error(errorMessage);
+      }
+      mutate();
+      showToast({
+        type: "success",
+        title: "Sukses",
+        message: `Status usulan berhasil diubah menjadi ${status}!`,
+      });
+      await globalMutate(
+        (key) =>
+          typeof key === "string" && key.startsWith(swrKeys.ulokEksternal),
+        undefined,
+        { revalidate: true }
+      );
+      router.back();
+      router.refresh();
+    } catch (error) {
+      showToast({
+        type: "error",
+        title: "Gagal",
+        message: error instanceof Error ? error.message : "Terjadi kesalahan",
+      });
+    } finally {
+      setApprovingStatus(null);
+    }
+  };
+
   if (isLoading) {
-    return <DetailUlokEksternalSkeleton />; // Pakai skeleton yang ada
+    return <DetailUlokEksternalSkeleton />;
   }
 
   if (isError || !ulok) {
@@ -215,36 +359,203 @@ export default function DetailUlokEksternalLayout({
           {/* Penugasan */}
           {!loadingUser &&
             user &&
-            user.position_nama === "regional manager" && (
+            user.position_nama === "regional manager" &&
+            ulok.status_ulok_eksternal !== "OK" &&
+            ulok.status_ulok_eksternal !== "NOK" && (
               <DetailCard
                 title="Penugasan"
                 icon={<Briefcase className="w-5 h-5 text-red-500" />}
               >
-                <div className="space-y-4">
-                  <div>
-                    <label
-                      htmlFor="branch-select"
-                      className="text-base font-medium text-gray-700 mb-1 block"
-                    >
-                      Pilih Branch
-                    </label>
-                    <SelectBranch
-                      id="branch-select"
-                      value={selectedBranch} // Berikan ID
-                      onValueChange={setSelectedBranch} // Terima ID
-                      disabled={isAssigning} // Nonaktifkan saat mengirim
-                    />
-                  </div>
+                <div className="space-y-6">
+                  {/* [Updated] Logika tampilan Read vs Edit untuk Branch */}
+                  {ulok.branch_id && !isEditingBranch ? (
+                    <div className="flex items-center justify-between bg-gray-50 p-4 rounded-lg border border-gray-200">
+                      <div>
+                        <p className="text-sm text-gray-500 font-medium mb-1">
+                          Branch
+                        </p>
+                        <p className="text-base lg:text-lg font-semibold text-gray-900">
+                          {ulok.branch_id.nama}
+                        </p>
+                      </div>
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={() => setIsEditingBranch(true)}
+                        className="flex items-center gap-2"
+                      >
+                        <Edit size={16} />
+                        Edit
+                      </Button>
+                    </div>
+                  ) : (
+                    <>
+                      <div>
+                        <label
+                          htmlFor="branch-select"
+                          className="text-base font-medium text-gray-900 mb-2 block"
+                        >
+                          Pilih Branch
+                        </label>
+                        <SelectBranch
+                          id="branch-select"
+                          value={selectedBranch}
+                          onValueChange={setSelectedBranch}
+                          disabled={isAssigning}
+                        />
+                      </div>
 
+                      <div className="flex gap-3">
+                        {isEditingBranch && (
+                          <Button
+                            variant="default"
+                            onClick={() => {
+                              setIsEditingBranch(false);
+
+                              if (ulok.branch_id?.id) {
+                                setSelectedBranch(ulok.branch_id.id);
+                              }
+                            }}
+                            className="flex-1"
+                            disabled={isAssigning}
+                          >
+                            Batal
+                          </Button>
+                        )}
+                        <Button
+                          variant="secondary"
+                          onClick={handleAssignBranch}
+                          className={isEditingBranch ? "flex-1" : "w-full"}
+                        >
+                          {isAssigning && (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          )}
+                          {isAssigning ? "Menyimpan..." : "Simpan Penugasan"}
+                        </Button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </DetailCard>
+            )}
+
+          {!loadingUser &&
+            user &&
+            (user.position_nama === "branch manager" ||
+              user.position_nama === "location manager") &&
+            ulok.status_ulok_eksternal !== "OK" &&
+            ulok.status_ulok_eksternal !== "NOK" && (
+              <DetailCard
+                title="Penugasan"
+                icon={<Briefcase className="w-5 h-5 text-red-500" />}
+              >
+                <div className="space-y-6">
+                  {ulok.penanggungjawab && !isEditingSpecialist ? (
+                    <div className="flex items-center justify-between bg-gray-50 p-4 rounded-lg border border-gray-200">
+                      <div>
+                        <p className="text-sm text-gray-500 font-medium mb-1">
+                          Location Specialist
+                        </p>
+                        <p className="text-base lg:text-lg font-semibold text-gray-900">
+                          {ulok.penanggungjawab.nama}
+                        </p>
+                      </div>
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={() => setIsEditingSpecialist(true)}
+                        className="flex items-center gap-2"
+                      >
+                        <Edit size={16} />
+                        Edit
+                      </Button>
+                    </div>
+                  ) : (
+                    <>
+                      <div>
+                        <label
+                          htmlFor="LocationSpecialist-select"
+                          className="text-base font-medium text-gray-900 mb-2 block"
+                        >
+                          Pilih Location Specialist
+                        </label>
+                        <SelectLocationSpecialist
+                          id="LocationSpecialist-select"
+                          value={selectedSpecialist}
+                          onValueChange={setSelectedSpecialist}
+                          disabled={isAssigningSpecialist}
+                        />
+                      </div>
+
+                      <div className="flex gap-3">
+                        {isEditingSpecialist && (
+                          <Button
+                            variant="default"
+                            onClick={() => {
+                              setIsEditingSpecialist(false);
+                              if (ulok.penanggungjawab?.id) {
+                                setSelectedSpecialist(ulok.penanggungjawab.id);
+                              }
+                            }}
+                            className="flex-1"
+                            disabled={isAssigningSpecialist}
+                          >
+                            Batal
+                          </Button>
+                        )}
+                        <Button
+                          variant="secondary"
+                          onClick={handleAssignSpecialist}
+                          className={isEditingSpecialist ? "flex-1" : "w-full"}
+                        >
+                          {isAssigningSpecialist && (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          )}
+                          {isAssigningSpecialist ? "Menyimpan..." : "Simpan"}
+                        </Button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </DetailCard>
+            )}
+
+          {!loadingUser &&
+            user &&
+            user.position_nama === "location specialist" &&
+            ulok.penanggungjawab?.nama === user.nama &&
+            ulok.status_ulok_eksternal !== "OK" &&
+            ulok.status_ulok_eksternal !== "NOK" && (
+              <DetailCard
+                title="Tindakan Persetujuan"
+                icon={<CheckCircle className="w-5 h-5 text-red-500" />}
+              >
+                <p className="text-sm text-gray-600 mb-4">
+                  Anda ditugaskan sebagai penanggungjawab untuk usulan lokasi
+                  ini. Silakan berikan persetujuan Anda.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-4">
                   <Button
-                    onClick={handleAssignBranch}
-                    disabled={!selectedBranch || isAssigning}
-                    className="w-full"
+                    onClick={() => handleApproval("NOK")}
+                    disabled={approvingStatus !== null}
+                    variant="default"
+                    className="flex-1"
                   >
-                    {isAssigning && (
+                    {approvingStatus === "NOK" && (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     )}
-                    {isAssigning ? "Menyimpan..." : "Tugaskan Branch"}
+                    Tolak (NOK)
+                  </Button>
+                  <Button
+                    onClick={() => handleApproval("OK")}
+                    disabled={approvingStatus !== null}
+                    variant="submit"
+                    className="flex-1"
+                  >
+                    {approvingStatus === "OK" && (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )}
+                    Setujui (OK)
                   </Button>
                 </div>
               </DetailCard>
@@ -256,6 +567,7 @@ export default function DetailUlokEksternalLayout({
           {/* Peta */}
           <div className="bg-white rounded-xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)] ">
             <DetailMapCard
+              id={ulok.id}
               latitude={ulok.latitude}
               longitude={ulok.longitude}
             />
@@ -267,15 +579,10 @@ export default function DetailUlokEksternalLayout({
             icon={<Camera className="w-5 h-5 text-red-500" />}
           >
             <div className="relative aspect-video rounded-lg overflow-hidden border border-gray-200">
-              {/* <Image
-                src={getStorageUrl(ulok.foto_lokasi)}
-                alt="Foto Lokasi"
-                layout="fill"
-                objectFit="cover"
-                onError={(e: any) =>
-                  (e.currentTarget.src = "/bg_alfamidi2.png")
-                }
-              /> */}
+              <FotoLokasiAutoPreview
+                ulokId={ulok.id}
+                fileKey={ulok.foto_lokasi}
+              />
             </div>
           </DetailCard>
           <DetailCard
@@ -295,7 +602,7 @@ export default function DetailUlokEksternalLayout({
                   )}
                 />
               )}
-              {ulok.updated_at && (
+              {ulok.updated_at && !ulok.approved_at && (
                 <InfoItem
                   label="Diperbarui Pada"
                   value={format(
@@ -319,6 +626,15 @@ export default function DetailUlokEksternalLayout({
                   )}
                 />
               )}
+              {ulok.branch_id?.nama && (
+                <InfoItem label="Branch" value={ulok.branch_id.nama} />
+              )}
+              {ulok.penanggungjawab?.nama && (
+                <InfoItem
+                  label="PenanggungJawab"
+                  value={ulok.penanggungjawab.nama}
+                />
+              )}
             </div>
           </DetailCard>
         </div>
@@ -340,8 +656,147 @@ const InfoItem = ({
     <dt className="text-base lg:text-lg font-semibold text-gray-900 mb-2">
       {label}
     </dt>
-    <dd className="text-base bg-gray-100 font-medium px-4 py-3 rounded-lg">
+    <dd className="text-sm lg:text-base bg-gray-100 font-medium px-4 py-3 rounded-lg break-words line-clamp-2">
       {value || "-"}
     </dd>
   </div>
 );
+
+const FotoLokasiAutoPreview = ({
+  ulokId,
+  fileKey,
+}: {
+  ulokId: string;
+  fileKey: string | null | undefined;
+}) => {
+  const { fetchFile, loading, error } = useUlokEksternalFile();
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [objectUrl, setObjectUrl] = useState<string | null>(null);
+
+  // [Baru] State untuk mengontrol modal fullscreen
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+      }
+    };
+  }, [objectUrl]);
+
+  useEffect(() => {
+    let mounted = true;
+    setPreviewUrl(null);
+    if (objectUrl) {
+      URL.revokeObjectURL(objectUrl);
+      setObjectUrl(null);
+    }
+
+    if (!fileKey) return;
+
+    (async () => {
+      // Menggunakan perbaikan dari langkah sebelumnya (memanggil dengan mode proxy yang benar)
+      const res = await fetchFile(ulokId, { mode: "proxy" });
+
+      if (!mounted) return;
+
+      if (res instanceof Blob) {
+        const url = URL.createObjectURL(res);
+        setObjectUrl(url);
+        setPreviewUrl(url);
+        return;
+      }
+
+      if (typeof res === "string") {
+        setPreviewUrl(res);
+        return;
+      }
+
+      setPreviewUrl(null);
+    })();
+
+    return () => {
+      mounted = false;
+    };
+  }, [ulokId, fileKey, fetchFile]);
+
+  // Fungsi untuk menutup modal saat tombol Escape ditekan
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsFullscreen(false);
+    };
+    window.addEventListener("keydown", handleEsc);
+    return () => window.removeEventListener("keydown", handleEsc);
+  }, []);
+
+  return (
+    <>
+      {/* Thumbnail Container */}
+      <div
+        className={`relative aspect-video rounded-lg overflow-hidden border border-gray-200 flex items-center justify-center bg-gray-50 group ${
+          previewUrl ? "cursor-pointer hover:opacity-95 transition-opacity" : ""
+        }`}
+        onClick={() => previewUrl && setIsFullscreen(true)}
+      >
+        {loading && <p className="text-gray-400 text-sm">Memuat foto...</p>}
+
+        {error && (
+          <p className="text-red-500 text-sm">Gagal memuat foto lokasi</p>
+        )}
+
+        {!loading && !previewUrl && !error && (
+          <p className="text-gray-400 text-sm">Foto tidak tersedia</p>
+        )}
+
+        {previewUrl && (
+          <>
+            <Image
+              src={previewUrl}
+              alt="Foto Lokasi"
+              fill
+              className="object-cover"
+              onError={() => {
+                setPreviewUrl(null);
+              }}
+            />
+            {/* [Baru] Overlay icon maximize saat hover */}
+            <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity">
+              <Maximize2 className="text-white w-8 h-8 drop-shadow-md" />
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* [Baru] Fullscreen Modal */}
+      {isFullscreen && previewUrl && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={() => setIsFullscreen(false)} // Klik background untuk tutup
+        >
+          {/* Tombol Close */}
+          <button
+            onClick={() => setIsFullscreen(false)}
+            className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors z-50"
+          >
+            <X size={24} />
+          </button>
+
+          {/* Gambar Fullscreen */}
+          <div
+            className="relative w-full h-full max-w-7xl max-h-[90vh]"
+            onClick={(e) => e.stopPropagation()} // Mencegah tutup saat klik gambar
+          >
+            <Image
+              src={previewUrl}
+              alt="Foto Lokasi Fullscreen"
+              fill
+              className="object-contain"
+              quality={100}
+              priority
+            />
+          </div>
+        </div>
+      )}
+    </>
+  );
+};

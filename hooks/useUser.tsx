@@ -17,7 +17,6 @@ interface ApiMeResponse {
 }
 
 export function useUser() {
-  // Pakai global fetcher dari SWRProvider, dan revalidate saat mount
   const { data, error, isLoading, mutate } = useSWR<ApiMeResponse>(
     "/api/me",
     (url: string) => fetch(url).then((res) => res.json()),
@@ -29,16 +28,13 @@ export function useUser() {
     loadingUser: isLoading,
     userError: error,
 
-    // Revalidate sekarang
     refreshUser: () => mutate(),
 
     setUserCache: (user: NonNullable<AppUser>) =>
       globalMutate("/api/me", { user }, false),
 
-    // Clear cache user (gunakan saat logout)
     clearUserCache: () => globalMutate("/api/me", { user: null }, false),
 
-    // Optimistic local update
     updateUserLocal: (partial: Partial<NonNullable<AppUser>>) =>
       mutate((current) => {
         const prevUser = current?.user;

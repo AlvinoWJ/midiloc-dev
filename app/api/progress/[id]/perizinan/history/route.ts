@@ -3,7 +3,6 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser, canProgressKplt } from "@/lib/auth/acl";
 
-// GET /api/progress/[id]/perizinan/history
 export async function GET(
   _req: Request,
   { params }: { params: { id: string } }

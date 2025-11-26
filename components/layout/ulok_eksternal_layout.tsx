@@ -1,11 +1,10 @@
 "use client";
 
-import { UlokEksternal } from "@/hooks/ulok_eksternal/useUlokEksternal"; // Import tipe baru
+import { UlokEksternal } from "@/hooks/ulok_eksternal/useUlokEksternal";
 import { InfoCard } from "@/components/ui/infocard";
 import Tabs from "@/components/ui/tabs";
 import SearchWithFilter from "@/components/ui/searchwithfilter";
 import { UlokPageSkeleton } from "@/components/ui/skleton";
-import { useRouter } from "next/navigation";
 import {
   ChevronLeft,
   ChevronRight,
@@ -16,13 +15,12 @@ import {
   Building,
 } from "lucide-react";
 
-// Definisikan props untuk layout baru
 export type UlokEksternalPageProps = {
   isLoading: boolean;
   isRefreshing: boolean;
   isError: boolean;
   activeTab: string;
-  filteredUlok: UlokEksternal[]; // Gunakan tipe UlokEksternal
+  filteredUlok: UlokEksternal[];
   searchQuery: string;
   filterMonth: string;
   filterYear: string;
@@ -35,8 +33,6 @@ export type UlokEksternalPageProps = {
 };
 
 export default function UlokEksternalLayout(props: UlokEksternalPageProps) {
-  const router = useRouter();
-
   const {
     isLoading,
     isRefreshing,
@@ -89,7 +85,6 @@ export default function UlokEksternalLayout(props: UlokEksternalPageProps) {
   if (isError) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[70vh] text-center p-4">
-        {/* ... (Error UI, tidak berubah) ... */}
         <div className="bg-white rounded-lg shadow-sm border p-6 lg:p-8 max-w-md">
           <div className="text-red-500 text-5xl lg:text-4xl mb-4">⚠️</div>
           <h3 className="text-lg font-semibold text-gray-900 mb-2">
@@ -113,13 +108,11 @@ export default function UlokEksternalLayout(props: UlokEksternalPageProps) {
 
   return (
     <div className="space-y-4 lg:space-y-6 flex flex-col flex-grow">
-      {/* Header: Judul dan Search/Filter */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <h1 className="text-2xl lg:text-4xl font-bold">Ulok Eksternal</h1>
         <SearchWithFilter onSearch={onSearch} onFilterChange={onFilterChange} />
       </div>
 
-      {/* Kontrol: Tabs (Tanpa Tombol Tambah) */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <Tabs
           tabs={["Recent", "History"]}
@@ -128,7 +121,6 @@ export default function UlokEksternalLayout(props: UlokEksternalPageProps) {
         />
       </div>
 
-      {/* Konten Grid / List */}
       <div className="relative flex-grow">
         {isRefreshing ? (
           <div className="flex items-center justify-center min-h-[23rem]">
@@ -156,7 +148,7 @@ export default function UlokEksternalLayout(props: UlokEksternalPageProps) {
               <InfoCard
                 key={ulok.id}
                 id={ulok.id}
-                nama={ulok.nama_pemilik || "Data Eksternal"}
+                nama={ulok.nama_ulok || "Data Eksternal"}
                 alamat={ulok.alamat || "Lokasi belum ditentukan"}
                 created_at={ulok.created_at}
                 status={ulok.status_ulok_eksternal}
@@ -167,10 +159,8 @@ export default function UlokEksternalLayout(props: UlokEksternalPageProps) {
         )}
       </div>
 
-      {/* Paginasi (Sama) */}
       {totalPages > 1 && !isRefreshing && (
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-auto pt-6">
-          {/* ... (Paginator UI, tidak berubah) ... */}
           <div className="flex items-center gap-1">
             <button
               onClick={() => onPageChange(1)}

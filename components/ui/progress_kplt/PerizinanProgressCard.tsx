@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input";
 import { PerizinanEditableSchema } from "@/lib/validations/perizinan";
 import { useAlert } from "@/components/shared/alertcontext";
 import { PerizinanHistoryModal } from "./PerizinanHistoryModal";
+import { useUser } from "@/hooks/useUser";
 
 const formatnumeric = (value: string | number | undefined | null) => {
   if (value === undefined || value === null || value === "") return "";
@@ -73,13 +74,13 @@ const FileLink = ({
 }) => {
   if (!file) {
     return (
-      <div className="flex items-center border justify-between bg-white px-3 py-2 rounded text-sm">
+      <div className="flex items-center border justify-between bg-white px-3 py-2 rounded text-sm mb-2">
         <span className="text-gray-400 italic">{label} (Kosong)</span>
       </div>
     );
   }
   return (
-    <div className="flex items-center border justify-between bg-white px-3 py-1 rounded text-sm gap-2">
+    <div className="flex items-center border justify-between bg-white px-3 py-1 rounded text-sm gap-2 mb-2">
       <span className="text-gray-900 truncate flex-1 min-w-0" title={file.name}>
         {file.name}
       </span>
@@ -103,8 +104,11 @@ const FormFileInput: React.FC<{
   isFileSelected: boolean;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }> = ({ label, name, currentFile, isFileSelected, onChange }) => (
-  <div>
-    <label htmlFor={name} className="block font-semibold text-base mb-2">
+  <div className="mb-4">
+    <label
+      htmlFor={name}
+      className="block font-semibold text-base lg:text-lg mb-2"
+    >
       {label}
     </label>
     {currentFile && !isFileSelected && (
@@ -149,18 +153,31 @@ const PerizinanForm: React.FC<FormProps> = ({
   const [displayNominalSph, setDisplayNominalSph] = useState<string>("");
 
   const [oss, setoss] = useState<string>(initialData?.oss || "");
-  const OssOptions = ["Belum", "Selesai", "Batal"];
+  const [statusBerkas, setStatusBerkas] = useState<string>(
+    initialData?.status_berkas || ""
+  );
+  const [statusGambarDenah, setStatusGambarDenah] = useState<string>(
+    initialData?.status_gambar_denah || ""
+  );
+  const [statusSpk, setStatusSpk] = useState<string>(
+    initialData?.status_spk || ""
+  );
+  const [rekomNotarisVendor, setRekomNotarisVendor] = useState<string>(
+    initialData?.rekom_notaris_vendor || ""
+  );
+
+  const StatusOptions = ["Belum", "Selesai", "Batal"];
 
   useEffect(() => {
     if (initialData) {
       setDisplayNominalSph(formatnumeric(initialData.nominal_sph));
       setoss(initialData?.oss || "");
+      setStatusBerkas(initialData?.status_berkas || "");
+      setStatusGambarDenah(initialData?.status_gambar_denah || "");
+      setStatusSpk(initialData?.status_spk || "");
+      setRekomNotarisVendor(initialData?.rekom_notaris_vendor || "");
     }
   }, [initialData]);
-
-  const handleOssChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setoss(e.target.value);
-  };
 
   const handleNumericInputChange = (
     e: React.ChangeEvent<HTMLInputElement>,
@@ -186,6 +203,10 @@ const PerizinanForm: React.FC<FormProps> = ({
     if (fileNotaris) formData.append("file_rekom_notaris", fileNotaris);
 
     formData.append("oss", oss);
+    formData.append("status_berkas", statusBerkas);
+    formData.append("status_gambar_denah", statusGambarDenah);
+    formData.append("status_spk", statusSpk);
+    formData.append("rekom_notaris_vendor", rekomNotarisVendor);
 
     const nominalSphUnformatted = unformatnumeric(displayNominalSph);
     formData.set(
@@ -197,11 +218,15 @@ const PerizinanForm: React.FC<FormProps> = ({
       oss: oss || undefined,
       tgl_oss: formData.get("tgl_oss"),
       tgl_sph: formData.get("tgl_sph") || undefined,
-      tgl_st_berkas: formData.get("tgl_st_berkas") || undefined,
-      tgl_gambar_denah: formData.get("tgl_gambar_denah") || undefined,
-      tgl_spk: formData.get("tgl_spk") || undefined,
-      tgl_rekom_notaris: formData.get("tgl_rekom_notaris") || undefined,
       nominal_sph: nominalSphUnformatted,
+      status_berkas: statusBerkas || undefined,
+      tgl_st_berkas: formData.get("tgl_st_berkas") || undefined,
+      status_gambar_denah: statusGambarDenah || undefined,
+      tgl_gambar_denah: formData.get("tgl_gambar_denah") || undefined,
+      status_spk: statusSpk || undefined,
+      tgl_spk: formData.get("tgl_spk") || undefined,
+      rekom_notaris_vendor: rekomNotarisVendor || undefined,
+      tgl_rekom_notaris: formData.get("tgl_rekom_notaris") || undefined,
     };
     const parsed = PerizinanEditableSchema.partial().safeParse(payload);
 
@@ -222,7 +247,13 @@ const PerizinanForm: React.FC<FormProps> = ({
       });
 
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Gagal menyimpan data");
+
+      if (!res.ok) {
+        throw new Error(
+          json.message || json.detail || json.error || "Gagal menyimpan data"
+        );
+      }
+
       onDataUpdate();
       showToast({
         type: "success",
@@ -232,7 +263,11 @@ const PerizinanForm: React.FC<FormProps> = ({
       });
       onSuccess();
     } catch (err: any) {
-      showToast({ type: "error", message: err.message });
+      showToast({
+        type: "error",
+        title: "Gagal",
+        message: err.message,
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -245,8 +280,12 @@ const PerizinanForm: React.FC<FormProps> = ({
     >
       <form onSubmit={handleSave} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* OSS */}
           <div>
-            <label htmlFor="tgl_oss" className="block font-semibold mb-2">
+            <label
+              htmlFor="tgl_oss"
+              className="block font-semibold text-base lg:text-lg mb-2"
+            >
               Tanggal OSS
             </label>
             <Input
@@ -263,11 +302,16 @@ const PerizinanForm: React.FC<FormProps> = ({
             label="OSS"
             placeholder="Pilih Status"
             value={oss}
-            options={OssOptions}
-            onChange={handleOssChange}
+            options={StatusOptions}
+            onChange={(e) => setoss(e.target.value)}
           />
+
+          {/* 1. Tanggal SPH - Nominal SPH */}
           <div>
-            <label htmlFor="tgl_sph" className="block font-semibold mb-2">
+            <label
+              htmlFor="tgl_sph"
+              className="block font-semibold text-base lg:text-lg mb-2"
+            >
               Tanggal SPH
             </label>
             <Input
@@ -277,15 +321,31 @@ const PerizinanForm: React.FC<FormProps> = ({
               defaultValue={initialData?.tgl_sph || ""}
             />
           </div>
-          <FormFileInput
-            label="File SPH"
-            name="file_sph"
-            currentFile={filesMap.get("file_sph")}
-            isFileSelected={!!fileSph}
-            onChange={(e) => setFileSph(e.target.files?.[0] || null)}
-          />
           <div>
-            <label htmlFor="tgl_st_berkas" className="block font-semibold mb-2">
+            <label
+              htmlFor="nominal_sph"
+              className="block font-semibold text-base lg:text-lg mb-2"
+            >
+              Nominal SPH (Rp)
+            </label>
+            <Input
+              id="nominal_sph"
+              name="nominal_sph"
+              inputMode="numeric"
+              value={displayNominalSph}
+              onChange={(e) =>
+                handleNumericInputChange(e, setDisplayNominalSph)
+              }
+              placeholder="Masukkan nominal sph"
+            />
+          </div>
+
+          {/* 2. Tanggal ST - Status Berkas */}
+          <div>
+            <label
+              htmlFor="tgl_st_berkas"
+              className="block font-semibold text-base lg:text-lg mb-2"
+            >
               Tanggal ST
             </label>
             <Input
@@ -295,17 +355,21 @@ const PerizinanForm: React.FC<FormProps> = ({
               defaultValue={initialData?.tgl_st_berkas || ""}
             />
           </div>
-          <FormFileInput
-            label="File Bukti ST"
-            name="file_bukti_st"
-            currentFile={filesMap.get("file_bukti_st")}
-            isFileSelected={!!fileSt}
-            onChange={(e) => setFileSt(e.target.files?.[0] || null)}
+          <CustomSelect
+            id="status_berkas"
+            name="status_berkas"
+            label="Status Berkas"
+            placeholder="Pilih Status"
+            value={statusBerkas}
+            options={StatusOptions}
+            onChange={(e) => setStatusBerkas(e.target.value)}
           />
+
+          {/* 3. Tanggal Denah - Status Gambar Denah */}
           <div>
             <label
               htmlFor="tgl_gambar_denah"
-              className="block font-semibold mb-2"
+              className="block font-semibold text-base lg:text-lg mb-2"
             >
               Tanggal Denah
             </label>
@@ -316,15 +380,22 @@ const PerizinanForm: React.FC<FormProps> = ({
               defaultValue={initialData?.tgl_gambar_denah || ""}
             />
           </div>
-          <FormFileInput
-            label="File Denah"
-            name="file_denah"
-            currentFile={filesMap.get("file_denah")}
-            isFileSelected={!!fileDenah}
-            onChange={(e) => setFileDenah(e.target.files?.[0] || null)}
+          <CustomSelect
+            id="status_gambar_denah"
+            name="status_gambar_denah"
+            label="Status Gambar Denah"
+            placeholder="Pilih Status"
+            value={statusGambarDenah}
+            options={StatusOptions}
+            onChange={(e) => setStatusGambarDenah(e.target.value)}
           />
+
+          {/* 4. Tanggal SPK - Status SPK */}
           <div>
-            <label htmlFor="tgl_spk" className="block font-semibold mb-2">
+            <label
+              htmlFor="tgl_spk"
+              className="block font-semibold text-base lg:text-lg mb-2"
+            >
               Tanggal SPK
             </label>
             <Input
@@ -334,17 +405,21 @@ const PerizinanForm: React.FC<FormProps> = ({
               defaultValue={initialData?.tgl_spk || ""}
             />
           </div>
-          <FormFileInput
-            label="File SPK"
-            name="file_spk"
-            currentFile={filesMap.get("file_spk")}
-            isFileSelected={!!fileSpk}
-            onChange={(e) => setFileSpk(e.target.files?.[0] || null)}
+          <CustomSelect
+            id="status_spk"
+            name="status_spk"
+            label="Status SPK"
+            placeholder="Pilih Status"
+            value={statusSpk}
+            options={StatusOptions}
+            onChange={(e) => setStatusSpk(e.target.value)}
           />
+
+          {/* 5. Tanggal Rekom Notaris - Rekom Notaris Vendor */}
           <div>
             <label
               htmlFor="tgl_rekom_notaris"
-              className="block font-semibold mb-2"
+              className="block font-semibold text-base lg:text-lg mb-2"
             >
               Tanggal Rekom Notaris
             </label>
@@ -355,26 +430,56 @@ const PerizinanForm: React.FC<FormProps> = ({
               defaultValue={initialData?.tgl_rekom_notaris || ""}
             />
           </div>
-          <FormFileInput
-            label="File Rekom Notaris"
-            name="file_rekom_notaris"
-            currentFile={filesMap.get("file_rekom_notaris")}
-            isFileSelected={!!fileNotaris}
-            onChange={(e) => setFileNotaris(e.target.files?.[0] || null)}
+          <CustomSelect
+            id="rekom_notaris_vendor"
+            name="rekom_notaris_vendor"
+            label="Rekom Notaris Vendor"
+            placeholder="Pilih Status"
+            value={rekomNotarisVendor}
+            options={StatusOptions}
+            onChange={(e) => setRekomNotarisVendor(e.target.value)}
           />
         </div>
-        <div>
-          <label htmlFor="nominal_sph" className="block font-semibold mb-2">
-            Nominal SPH (Rp)
-          </label>
-          <Input
-            id="nominal_sph"
-            name="nominal_sph"
-            inputMode="numeric"
-            value={displayNominalSph}
-            onChange={(e) => handleNumericInputChange(e, setDisplayNominalSph)}
-            placeholder="Masukkan nominal sph"
-          />
+
+        {/* File Inputs Moved to Bottom */}
+        <div className="space-y-4 pt-4 border-t border-gray-100">
+          <div className="space-y-4">
+            <FormFileInput
+              label="File SPH"
+              name="file_sph"
+              currentFile={filesMap.get("file_sph")}
+              isFileSelected={!!fileSph}
+              onChange={(e) => setFileSph(e.target.files?.[0] || null)}
+            />
+            <FormFileInput
+              label="File Bukti ST"
+              name="file_bukti_st"
+              currentFile={filesMap.get("file_bukti_st")}
+              isFileSelected={!!fileSt}
+              onChange={(e) => setFileSt(e.target.files?.[0] || null)}
+            />
+            <FormFileInput
+              label="File Denah"
+              name="file_denah"
+              currentFile={filesMap.get("file_denah")}
+              isFileSelected={!!fileDenah}
+              onChange={(e) => setFileDenah(e.target.files?.[0] || null)}
+            />
+            <FormFileInput
+              label="File SPK"
+              name="file_spk"
+              currentFile={filesMap.get("file_spk")}
+              isFileSelected={!!fileSpk}
+              onChange={(e) => setFileSpk(e.target.files?.[0] || null)}
+            />
+            <FormFileInput
+              label="File Rekom Notaris"
+              name="file_rekom_notaris"
+              currentFile={filesMap.get("file_rekom_notaris")}
+              isFileSelected={!!fileNotaris}
+              onChange={(e) => setFileNotaris(e.target.files?.[0] || null)}
+            />
+          </div>
         </div>
 
         <div className="flex justify-end gap-3 mt-6">
@@ -428,9 +533,11 @@ const PerizinanProgressCard: React.FC<PerizinanProgressCardProps> = ({
   const [isEditing, setIsEditing] = useState(false);
   const [isSubmittingApprove, setIsSubmittingApprove] = useState(false);
   const [isSubmittingReject, setIsSubmittingReject] = useState(false);
-
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const { showToast, showConfirmation } = useAlert();
+
+  const { user } = useUser();
+  const isBranchAdmin = user?.position_nama === "admin branch";
 
   const formatDate = (dateString?: string | null) =>
     dateString
@@ -488,7 +595,7 @@ const PerizinanProgressCard: React.FC<PerizinanProgressCardProps> = ({
         showToast({
           type: "error",
           title: errorTitle,
-          message: errorMsg,
+          message: "Terdapat kolom yang kosong atau belum selesai",
         });
         return;
       }
@@ -564,86 +671,161 @@ const PerizinanProgressCard: React.FC<PerizinanProgressCardProps> = ({
       >
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* OSS */}
             <div>
-              <h3 className="font-semibold mb-2">Tanggal OSS</h3>
+              <h3 className="block font-semibold text-base lg:text-lg mb-2">
+                Tanggal OSS
+              </h3>
               <div className="bg-gray-100 px-4 py-2 rounded-md">
                 {formatDate(data.tgl_oss)}
               </div>
             </div>
             <div>
-              <h3 className="font-semibold mb-2">OSS</h3>
+              <h3 className="block font-semibold text-base lg:text-lg mb-2">
+                OSS
+              </h3>
               <div className="bg-gray-100 px-4 py-2 rounded-md">
                 {data.oss || "-"}
               </div>
             </div>
+
+            {/* SPH - Nominal */}
             <div>
-              <h3 className="font-semibold mb-2">Tanggal SPH</h3>
+              <h3 className="block font-semibold text-base lg:text-lg mb-2">
+                Tanggal SPH
+              </h3>
               <div className="bg-gray-100 px-4 py-2 rounded-md">
                 {formatDate(data.tgl_sph)}
               </div>
             </div>
             <div>
-              <h3 className="font-semibold mb-2">File SPH</h3>
-              <FileLink label="File SPH" file={filesMap.get("file_sph")} />
+              <h3 className="block font-semibold text-base lg:text-lg mb-2">
+                Nominal SPH
+              </h3>
+              <div className="bg-gray-100 px-4 py-2 rounded-md">
+                Rp {data.nominal_sph?.toLocaleString("id-ID") || "-"}
+              </div>
             </div>
+
+            {/* ST - Status Berkas */}
             <div>
-              <h3 className="font-semibold mb-2">Tanggal ST</h3>
+              <h3 className="block font-semibold text-base lg:text-lg mb-2">
+                Tanggal ST
+              </h3>
               <div className="bg-gray-100 px-4 py-2 rounded-md">
                 {formatDate(data.tgl_st_berkas)}
               </div>
             </div>
             <div>
-              <h3 className="font-semibold mb-2">File Bukti ST</h3>
-              <FileLink
-                label="File Bukti ST"
-                file={filesMap.get("file_bukti_st")}
-              />
+              <h3 className="block font-semibold text-base lg:text-lg mb-2">
+                Status Berkas
+              </h3>
+              <div className="bg-gray-100 px-4 py-2 rounded-md">
+                {data.status_berkas || "-"}
+              </div>
             </div>
+
+            {/* Denah - Status Denah */}
             <div>
-              <h3 className="font-semibold mb-2">Tanggal Denah</h3>
+              <h3 className="font-semibold  mb-2">Tanggal Denah</h3>
               <div className="bg-gray-100 px-4 py-2 rounded-md">
                 {formatDate(data.tgl_gambar_denah)}
               </div>
             </div>
             <div>
-              <h3 className="font-semibold mb-2">File Denah</h3>
-              <FileLink label="File Denah" file={filesMap.get("file_denah")} />
+              <h3 className="block font-semibold text-base lg:text-lg mb-2">
+                Status Gambar Denah
+              </h3>
+              <div className="bg-gray-100 px-4 py-2 rounded-md">
+                {data.status_gambar_denah || "-"}
+              </div>
             </div>
+
             <div>
-              <h3 className="font-semibold mb-2">Tanggal SPK</h3>
+              <h3 className="block font-semibold text-base lg:text-lg mb-2">
+                Tanggal SPK
+              </h3>
               <div className="bg-gray-100 px-4 py-2 rounded-md">
                 {formatDate(data.tgl_spk)}
               </div>
             </div>
             <div>
-              <h3 className="font-semibold mb-2">File SPK</h3>
-              <FileLink label="File SPK" file={filesMap.get("file_spk")} />
+              <h3 className="block font-semibold text-base lg:text-lg mb-2">
+                Status SPK
+              </h3>
+              <div className="bg-gray-100 px-4 py-2 rounded-md">
+                {data.status_spk || "-"}
+              </div>
             </div>
+
             <div>
-              <h3 className="font-semibold mb-2">Tanggal Rekom Notaris</h3>
+              <h3 className="block font-semibold text-base lg:text-lg mb-2">
+                Tanggal Rekom Notaris
+              </h3>
               <div className="bg-gray-100 px-4 py-2 rounded-md">
                 {formatDate(data.tgl_rekom_notaris)}
               </div>
             </div>
             <div>
-              <h3 className="font-semibold mb-2">File Rekom Notaris</h3>
-              <FileLink
-                label="File Rekom Notaris"
-                file={filesMap.get("file_rekom_notaris")}
-              />
+              <h3 className="block font-semibold text-base lg:text-lg mb-2">
+                Rekom Notaris Vendor
+              </h3>
+              <div className="bg-gray-100 px-4 py-2 rounded-md">
+                {data.rekom_notaris_vendor || "-"}
+              </div>
             </div>
           </div>
 
-          {/* Row 6: Nominal SPH (Full Width) */}
-          <div>
-            <h3 className="font-semibold mb-2">Nominal SPH</h3>
-            <div className="bg-gray-100 px-4 py-2 rounded-md">
-              Rp {data.nominal_sph?.toLocaleString("id-ID") || "-"}
+          {/* Files List Moved to Bottom */}
+          <div className="pt-4 border-t border-gray-100">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Dokumen Pendukung
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <h3 className="block font-semibold text-base lg:text-lg mb-2">
+                  File SPH
+                </h3>
+                <FileLink label="File SPH" file={filesMap.get("file_sph")} />
+              </div>
+              <div>
+                <h3 className="block font-semibold text-base lg:text-lg mb-2">
+                  File Bukti ST
+                </h3>
+                <FileLink
+                  label="File Bukti ST"
+                  file={filesMap.get("file_bukti_st")}
+                />
+              </div>
+              <div>
+                <h3 className="block font-semibold text-base lg:text-lg mb-2">
+                  File Denah
+                </h3>
+                <FileLink
+                  label="File Denah"
+                  file={filesMap.get("file_denah")}
+                />
+              </div>
+              <div>
+                <h3 className="block font-semibold text-base lg:text-lg mb-2">
+                  File SPK
+                </h3>
+                <FileLink label="File SPK" file={filesMap.get("file_spk")} />
+              </div>
+              <div>
+                <h3 className="block font-semibold text-base lg:text-lg mb-2">
+                  File Rekom Notaris
+                </h3>
+                <FileLink
+                  label="File Rekom Notaris"
+                  file={filesMap.get("file_rekom_notaris")}
+                />
+              </div>
             </div>
           </div>
         </div>
 
-        {!isFinalized && (
+        {!isFinalized && isBranchAdmin && (
           <div className="flex gap-3 mt-6">
             {/* Tombol Edit */}
             <Button

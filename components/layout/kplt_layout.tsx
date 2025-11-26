@@ -1,6 +1,6 @@
 "use client";
 
-import { KpltPageProps } from "@/types/common";
+import { KpltPageProps } from "@/hooks/kplt/useKplt";
 import Tabs from "@/components/ui/tabs";
 import SearchWithFilter from "@/components/ui/searchwithfilter";
 import { InfoCard } from "@/components/ui/infocard";
@@ -55,15 +55,15 @@ export default function KpltLayout(props: KpltPageProps) {
   const [expandedStatuses, setExpandedStatuses] = useState<{
     [key: string]: boolean;
   }>({
-    "need input": true,
-    "in progress": true,
-    "waiting for forum": true,
+    "Need Input": true,
+    "In Progress": true,
+    "Waiting For Forum": true,
   });
 
   const groupedData = useMemo(() => {
     if (activeTab !== "Recent") return {};
     return displayData.reduce((acc, item) => {
-      const status = item.status.toLowerCase();
+      const status = item.status;
       if (!acc[status]) {
         acc[status] = [];
       }
@@ -72,24 +72,35 @@ export default function KpltLayout(props: KpltPageProps) {
     }, {} as { [key: string]: typeof displayData });
   }, [displayData, activeTab]);
 
-  const statusOrder = ["need input", "in progress", "waiting for forum"];
+  const statusOrder = ["Need Input", "In Progress", "Waiting For Forum"];
+
   const toggleStatus = (status: string) => {
     setExpandedStatuses((prev) => ({ ...prev, [status]: !prev[status] }));
   };
 
   const getStatusBadgeClass = (status: string): string => {
-    const statusLower = status.toLowerCase();
-    switch (statusLower) {
-      case "need input":
-        return "bg-gray-300 text-white"; // Merah untuk menandakan butuh tindakan
-      case "in progress":
-        return "bg-progress text-white"; // Kuning untuk status berjalan
-      case "waiting for forum":
-        return "bg-progress text-white"; // Biru untuk status menunggu
+    switch (status) {
+      case "Need Input":
+        return "bg-gray-400 text-white";
+      case "In Progress":
+        return "bg-progress text-white";
+      case "Waiting For Forum":
+        return "bg-progress text-white";
       default:
-        return "bg-gray-200 text-gray-800"; // Warna default
+        return "bg-gray-200 text-gray-800";
     }
   };
+
+  const pageNumbers = useMemo(() => {
+    if (!totalPages) return [];
+
+    const pages = [];
+    for (let i = 1; i <= totalPages; i++) {
+      pages.push(i);
+    }
+
+    return pages;
+  }, [totalPages]);
 
   const getStatusLabel = (status: string) => {
     switch (status.toLowerCase()) {
@@ -97,45 +108,15 @@ export default function KpltLayout(props: KpltPageProps) {
         return "Need Input";
       case "in progress":
         return "In Progress";
-      case "waiting for forum":
-        return "Waiting for Forum";
+      case "waitingforum":
+        return "Waiting For Forum";
       default:
         return status;
     }
   };
 
-  const getPageNumbers = () => {
-    const pages = [];
-    const showEllipsisStart = currentPage > 3;
-    const showEllipsisEnd = totalPages && currentPage < totalPages - 2;
-
-    if (!totalPages || totalPages <= 7) {
-      for (let i = 1; i <= totalPages; i++) {
-        pages.push(i);
-      }
-    } else {
-      pages.push(1);
-      if (showEllipsisStart) {
-        pages.push("ellipsis-start");
-      }
-      const start = Math.max(2, currentPage - 1);
-      const end = Math.min(totalPages - 1, currentPage + 1);
-      for (let i = start; i <= end; i++) {
-        pages.push(i);
-      }
-      if (showEllipsisEnd) {
-        pages.push("ellipsis-end");
-      }
-      pages.push(totalPages);
-    }
-
-    return pages;
-  };
-
-  const pageNumbers = getPageNumbers();
-
   return (
-    <main className="space-y-4 lg:space-y-6">
+    <main className="space-y-4 lg:space-y-6 flex flex-col flex-grow min-h-[85vh]">
       {isLoading ? (
         <KpltSkeleton accordionCount={3} cardsPerAccordion={3} />
       ) : isError ? (
@@ -158,7 +139,6 @@ export default function KpltLayout(props: KpltPageProps) {
         </div>
       ) : (
         <>
-          {/* Header */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <h1 className="text-3xl md:text-4xl font-bold">KPLT</h1>
             <SearchWithFilter
@@ -167,7 +147,6 @@ export default function KpltLayout(props: KpltPageProps) {
             />
           </div>
 
-          {/* Tabs */}
           <div className="flex items-center justify-between">
             <Tabs
               tabs={["Recent", "History"]}
@@ -176,14 +155,11 @@ export default function KpltLayout(props: KpltPageProps) {
             />
           </div>
 
-          <div className="relative flex-grow min-h-[23rem]">
-            {isRefreshing ? ( // [!code ++]
+          <div className="relative flex-grow flex flex-col min-h-[23rem]">
+            {isRefreshing ? (
               <div className="flex items-center justify-center min-h-[23rem]">
-                {" "}
-                {/* [!code ++] */}
                 <Loader2 className="w-8 h-8 text-primary animate-spin" />{" "}
-                {/* [!code ++] */}
-              </div> // [!code ++]
+              </div>
             ) : displayData.length === 0 ? (
               <div className="col-span-full flex flex-col items-center justify-center py-12 md:py-16 text-center">
                 <div className="text-gray-300 text-5xl md:text-6xl mb-4">
@@ -203,7 +179,7 @@ export default function KpltLayout(props: KpltPageProps) {
                 </p>
               </div>
             ) : (
-              <div className="space-y-6">
+              <div className="space-y-6 flex flex-col flex-grow">
                 {activeTab === "Recent" && (
                   <div className="space-y-6">
                     {statusOrder.map((status) => {
@@ -256,8 +232,8 @@ export default function KpltLayout(props: KpltPageProps) {
                   </div>
                 )}
 
-                {activeTab === "History" && (
-                  <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-6">
+                {activeTab === "History" && totalPages && totalPages > 1 && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-6 min-h-[24rem]">
                     {displayData.map((kplt) => (
                       <InfoCard
                         key={kplt.id}
@@ -274,21 +250,7 @@ export default function KpltLayout(props: KpltPageProps) {
 
                 {activeTab === "History" && totalPages && totalPages > 1 && (
                   <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-auto pt-6">
-                    {/* ... (Seluruh JSX pagination Anda) ... */}
                     <div className="flex items-center gap-1">
-                      {/* First Page Button */}
-                      <button
-                        onClick={() => onPageChange && onPageChange(1)}
-                        disabled={
-                          !currentPage || currentPage === 1 || isLoading
-                        }
-                        className="p-2 rounded-full text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
-                        aria-label="Halaman pertama"
-                      >
-                        <ChevronsLeft className="w-5 h-5" />
-                      </button>
-
-                      {/* Previous Button */}
                       <button
                         onClick={() =>
                           onPageChange && onPageChange(currentPage - 1)
@@ -300,11 +262,9 @@ export default function KpltLayout(props: KpltPageProps) {
                         <ChevronLeft className="w-5 h-5" />
                       </button>
 
-                      {/* Page Numbers */}
                       <div className="flex items-center gap-1 mx-2">
                         {pageNumbers.map((pageNum) => {
                           if (typeof pageNum === "string") {
-                            // Ellipsis
                             return (
                               <div
                                 key={pageNum}
@@ -327,7 +287,7 @@ export default function KpltLayout(props: KpltPageProps) {
                             w-10 h-10 rounded-full text-sm font-semibold transition-all
                             ${
                               isActive
-                                ? "bg-red-500 text-white shadow-lg shadow-red-500/30 scale-105" // Ganti 'bg-primary' menjadi 'bg-red-500' agar konsisten
+                                ? "bg-red-500 text-white shadow-lg shadow-red-500/30 scale-105"
                                 : "text-gray-700 hover:bg-gray-100"
                             }
                               disabled:opacity-40 disabled:cursor-not-allowed
@@ -355,20 +315,6 @@ export default function KpltLayout(props: KpltPageProps) {
                         aria-label="Halaman berikutnya"
                       >
                         <ChevronRight className="w-5 h-5" />
-                      </button>
-
-                      <button
-                        onClick={() => onPageChange && onPageChange(totalPages)}
-                        disabled={
-                          !totalPages ||
-                          !currentPage ||
-                          currentPage >= totalPages ||
-                          isLoading
-                        }
-                        className="p-2 rounded-full text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
-                        aria-label="Halaman terakhir"
-                      >
-                        <ChevronsRight className="w-5 h-5" />
                       </button>
                     </div>
                   </div>

@@ -21,37 +21,14 @@ export default function UlokEksternalPage() {
     isInitialLoading,
     isRefreshing,
     ulokEksternalError,
-  } = useUlokEksternal(searchQuery);
-
-  const paginatedData = useMemo(() => {
-    const allFilteredUlok = (ulokEksternalData || [])
-      .filter((ulok) => {
-        const date = new Date(ulok.created_at);
-        const ulokMonth = (date.getMonth() + 1).toString().padStart(2, "0");
-        const ulokYear = date.getFullYear().toString();
-        const matchMonth = filterMonth ? ulokMonth === filterMonth : true;
-        const matchYear = filterYear ? ulokYear === filterYear : true;
-        return matchMonth && matchYear;
-      })
-      .filter((ulok) => {
-        // ===== 3. PERUBAHAN DI SINI =====
-        // Menggunakan 'status_ulok_eksternal'
-        if (activeTab === "Recent")
-          return ulok.status_ulok_eksternal === "In Progress";
-        if (activeTab === "History")
-          return ["OK", "NOK"].includes(ulok.status_ulok_eksternal);
-        // =================================
-        return true;
-      });
-
-    const totalPages = Math.ceil(allFilteredUlok.length / ITEMS_PER_PAGE);
-    const paginatedUlok = allFilteredUlok.slice(
-      (currentPage - 1) * ITEMS_PER_PAGE,
-      currentPage * ITEMS_PER_PAGE
-    );
-
-    return { paginatedUlok, totalPages };
-  }, [ulokEksternalData, filterMonth, filterYear, activeTab, currentPage]);
+    meta,
+  } = useUlokEksternal({
+    page: currentPage,
+    search: searchQuery,
+    month: filterMonth,
+    year: filterYear,
+    activeTab: activeTab,
+  });
 
   const onFilterChange = useCallback((month: string, year: string) => {
     setFilterMonth(month);
@@ -74,7 +51,7 @@ export default function UlokEksternalPage() {
     isLoading: isInitialLoading,
     isRefreshing: isRefreshing,
     isError: !!ulokEksternalError,
-    filteredUlok: paginatedData.paginatedUlok,
+    filteredUlok: ulokEksternalData,
     activeTab,
     searchQuery,
     filterMonth,
@@ -83,7 +60,7 @@ export default function UlokEksternalPage() {
     onSearch: onSearchChange,
     onFilterChange,
     currentPage,
-    totalPages: paginatedData.totalPages,
+    totalPages: meta?.totalPages ?? 0,
     onPageChange: setCurrentPage,
   };
 

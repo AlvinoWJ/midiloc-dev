@@ -139,7 +139,14 @@ export async function GET(
   if (!user)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!canProgressKplt("read", user))
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Forbidden",
+        message: "Anda tidak berhak melakukan aksi ini",
+      },
+      { status: 403 }
+    );
   if (!user.branch_id)
     return NextResponse.json(
       { error: "Forbidden", message: "User has no branch" },
@@ -181,7 +188,14 @@ export async function POST(
   if (!user)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!canProgressKplt("create", user) && !canProgressKplt("update", user))
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Forbidden",
+        message: "Anda tidak berhak melakukan aksi ini",
+      },
+      { status: 403 }
+    );
   if (!user.branch_id)
     return NextResponse.json(
       { error: "Forbidden", message: "User has no branch" },
@@ -192,7 +206,6 @@ export async function POST(
   if (!progressId)
     return NextResponse.json({ error: "Invalid id" }, { status: 422 });
 
-  // Ambil ulok_id (sekalian cek scope branch)
   let ulokId: string;
   try {
     ulokId = await fetchUlokIdWithinScope(supabase, progressId, user.branch_id);
@@ -285,11 +298,6 @@ export async function POST(
   }
 }
 
-// PATCH /api/progress/[id]/perizinan
-// - Terima multipart/form-data atau JSON.
-// - Jika multipart: upload file_* baru ke folder diawali ulok_id, lalu update via RPC.
-// - Jika update sukses dan ada penggantian file_*, hapus file lama (best-effort).
-// - Jika update gagal, hapus file yang baru diupload (cleanup).
 export async function PATCH(
   req: Request,
   { params }: { params: { id: string } }
@@ -299,7 +307,14 @@ export async function PATCH(
   if (!user)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!canProgressKplt("update", user))
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Forbidden",
+        message: "Anda tidak berhak melakukan aksi ini",
+      },
+      { status: 403 }
+    );
   if (!user.branch_id)
     return NextResponse.json(
       { error: "Forbidden", message: "User has no branch" },

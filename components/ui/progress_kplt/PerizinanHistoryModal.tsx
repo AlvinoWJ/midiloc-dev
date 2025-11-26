@@ -1,7 +1,6 @@
-// components/ui/progress_kplt/PerizinanHistoryModal.tsx
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { createPortal } from "react-dom";
 import {
   X,
@@ -54,12 +53,18 @@ function getChanges(
   const allKeys = new Set([...Object.keys(current), ...Object.keys(previous)]);
 
   const fieldLabels: Record<string, string> = {
+    tgl_oss: "Tgl OSS",
+    oss: "OSS",
     tgl_sph: "Tgl SPH",
-    tgl_st_berkas: "Tgl ST Berkas",
-    tgl_gambar_denah: "Tgl Denah",
-    tgl_spk: "Tgl SPK",
-    tgl_rekom_notaris: "Tgl Rekom Notaris",
     nominal_sph: "Nominal SPH",
+    tgl_st_berkas: "Tgl ST Berkas",
+    status_berkas: "Status Berkas",
+    tgl_gambar_denah: "Tgl Denah",
+    status_gambar_denah: "status Gambar Denah",
+    tgl_spk: "Tgl SPK",
+    status_spk: "Status SPK",
+    tgl_rekom_notaris: "Tgl Rekom Notaris",
+    rekom_notaris_vendor: "Rekom Notaris",
     file_sph: "File SPH",
     file_bukti_st: "File Bukti ST",
     file_denah: "File Denah",
@@ -83,9 +88,9 @@ function getChanges(
     if (currentVal !== previousVal) {
       const label = fieldLabels[key] || key;
       if (!previousVal) {
-        changes.push(`Menambahkan ${label}.`);
+        changes.push(`Menambahkan ${label}`);
       } else {
-        changes.push(`Mengubah ${label}.`);
+        changes.push(`Mengubah ${label}`);
       }
     }
   });
@@ -99,7 +104,6 @@ interface HistoryItemProps {
   onSelect: () => void;
 }
 
-// Komponen kecil untuk menampilkan satu item riwayat
 const HistoryItem: React.FC<HistoryItemProps> = ({
   item,
   previousItem,
@@ -154,7 +158,6 @@ const DetailField: React.FC<{ label: string; value: React.ReactNode }> = ({
   </div>
 );
 
-// Komponen read-only untuk file
 const FileLink: React.FC<{
   label: string;
   fileKey: string | null | undefined;
@@ -204,7 +207,6 @@ const HistoryDetailView: React.FC<{
 
   return (
     <>
-      {/* Header Detail */}
       <div className="relative border-b border-gray-300 bg-gradient-to-r from-red-50 via-white to-red-50 px-6 py-5 flex justify-between items-center">
         <h2 className="text-xl font-bold text-gray-800 z-10 flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center shadow-lg shadow-red-500/30">
@@ -223,7 +225,6 @@ const HistoryDetailView: React.FC<{
         </Button>
       </div>
 
-      {/* Konten Detail */}
       <div className="p-6 lg:p-8 space-y-6 overflow-y-auto">
         <div className="text-center mb-4">
           <p className="text-sm text-gray-500">Snapshot data pada:</p>
@@ -232,7 +233,6 @@ const HistoryDetailView: React.FC<{
           </p>
         </div>
 
-        {/* Data Fields */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <DetailField
             label="Tanggal OSS"
@@ -243,26 +243,34 @@ const HistoryDetailView: React.FC<{
             label="Tanggal SPH"
             value={formatDateOnly(data.tgl_sph)}
           />
+          <DetailField label="Nominal SPH" value={data.nominal_sph} />
           <DetailField
             label="Tanggal ST"
             value={formatDateOnly(data.tgl_st_berkas)}
           />
+          <DetailField label="Status Berkas" value={data.status_berkas} />
           <DetailField
             label="Tanggal Denah"
             value={formatDateOnly(data.tgl_gambar_denah)}
           />
           <DetailField
+            label="Status Gambar Denah"
+            value={data.status_gambar_denah}
+          />
+          <DetailField
             label="Tanggal SPK"
             value={formatDateOnly(data.tgl_spk)}
           />
+          <DetailField label="Status SPK" value={data.status_spk} />
           <DetailField
             label="Tanggal Rekom Notaris"
             value={formatDateOnly(data.tgl_rekom_notaris)}
           />
           <DetailField
-            label="Nominal SPH (Rp)"
-            value={data.nominal_sph?.toLocaleString("id-ID") || "-"}
+            label="Rekom Notaris Vendor"
+            value={data.rekom_notaris_vendor}
           />
+
           <DetailField
             label="Status Final"
             value={data.final_status_perizinan}
@@ -273,7 +281,6 @@ const HistoryDetailView: React.FC<{
           />
         </div>
 
-        {/* Dokumen */}
         <div className="space-y-3">
           <h3 className="font-semibold text-gray-600 text-sm mb-2">Dokumen</h3>
           <FileLink
@@ -316,10 +323,15 @@ export function PerizinanHistoryModal({
   progressId,
   onClose,
 }: HistoryModalProps) {
-  const { history, isLoading, isError } = usePerizinanHistory(progressId);
+  const { history, isLoading, isError, refetch } =
+    usePerizinanHistory(progressId);
   const [selectedItem, setSelectedItem] = useState<PerizinanHistoryItem | null>(
     null
   );
+
+  useEffect(() => {
+    refetch();
+  }, [refetch]);
 
   const sortedHistory = useMemo(() => {
     if (!Array.isArray(history)) return [];
@@ -331,7 +343,6 @@ export function PerizinanHistoryModal({
 
   const renderContent = () => {
     if (selectedItem) {
-      // Tampilan 2: Detail Item
       return (
         <HistoryDetailView
           item={selectedItem}
@@ -341,10 +352,8 @@ export function PerizinanHistoryModal({
       );
     }
 
-    // Tampilan 1: Daftar Riwayat
     return (
       <>
-        {/* Header Modal */}
         <div className="relative border-b border-gray-300 bg-gradient-to-r from-red-50 via-white to-red-50 px-6 py-5 flex justify-between items-center">
           <h2 className="text-xl font-bold text-gray-800 z-10 flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center shadow-lg shadow-red-500/30">
@@ -363,7 +372,6 @@ export function PerizinanHistoryModal({
           </Button>
         </div>
 
-        {/* Konten List Riwayat */}
         <div className="p-6 lg:p-8 space-y-4 overflow-y-auto">
           {isLoading ? (
             <div className="flex justify-center items-center h-40">

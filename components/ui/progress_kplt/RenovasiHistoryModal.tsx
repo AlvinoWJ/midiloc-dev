@@ -1,7 +1,7 @@
 // components/ui/progress_kplt/RenovasiHistoryModal.tsx
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { createPortal } from "react-dom";
 import {
   X,
@@ -18,7 +18,6 @@ import {
   RenovasiHistoryItem,
 } from "@/hooks/progress_kplt/useRenovasiHistory";
 
-// Helper untuk format tanggal
 const formatDate = (dateString: string) => {
   if (!dateString) return "-";
   try {
@@ -161,7 +160,6 @@ const FileLink: React.FC<{
   fileKey: string | null | undefined;
   progressId: string;
 }> = ({ label, fileKey, progressId }) => {
-  // Ganti modul ke 'notaris'
   const href = fileKey
     ? `/api/files/renovasi/${progressId}?path=${encodeURIComponent(
         fileKey
@@ -289,10 +287,15 @@ export function RenovasiHistoryModal({
   progressId,
   onClose,
 }: HistoryModalProps) {
-  const { history, isLoading, isError } = useRenovasiHistory(progressId);
+  const { history, isLoading, isError, refetch } =
+    useRenovasiHistory(progressId);
   const [selectedItem, setSelectedItem] = useState<RenovasiHistoryItem | null>(
     null
   );
+
+  useEffect(() => {
+    refetch();
+  }, [refetch]);
 
   const sortedHistory = useMemo(() => {
     if (!Array.isArray(history)) return [];

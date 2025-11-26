@@ -3,8 +3,8 @@
 
 import { useEffect, useState } from "react";
 
-// Interface berdasarkan lib/validations/renovasi.ts
 interface RenovasiData {
+  nama_store?: string | null;
   kode_store?: string | null;
   tipe_toko?: string | null;
   bentuk_objek?: string | null;

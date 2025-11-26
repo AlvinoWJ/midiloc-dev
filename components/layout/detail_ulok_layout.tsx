@@ -17,6 +17,7 @@ import {
   LinkIcon,
   Paperclip,
   FileText,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
@@ -27,8 +28,8 @@ import DetailMapCard from "@/components/map/DetailMapCard";
 import WilayahSelector from "@/components/ui/customselectwilayah";
 import { DetailUlokSkeleton } from "../ui/skleton";
 import { useUser } from "@/hooks/useUser";
-import { useDetailUlokForm } from "@/hooks/useDetailUlokForm";
-import { MappedUlokData } from "@/hooks/useUlokDetail";
+import { useDetailUlokForm } from "@/hooks/ulok/useDetailUlokForm";
+import { MappedUlokData } from "@/hooks/ulok/useUlokDetail";
 import { UlokUpdateInput } from "@/lib/validations/ulok";
 import { FileUpload } from "../ui/uploadfile";
 
@@ -55,7 +56,7 @@ const DetailField = ({
   onChange,
 }: any) => (
   <div>
-    <label className="block font-bold mb-1">
+    <label className="block font-semibold text-base lg:text-lg mb-2">
       {label}
       <span className="text-red-500">*</span>
     </label>
@@ -65,7 +66,7 @@ const DetailField = ({
           name={name}
           value={value}
           onChange={onChange}
-          className="w-full text-sm"
+          className="w-full"
           rows={3}
         />
       ) : (
@@ -74,11 +75,11 @@ const DetailField = ({
           type={type}
           value={value}
           onChange={onChange}
-          className="w-full text-sm"
+          className="w-full"
         />
       )
     ) : (
-      <div className="text-gray-900 py-2 text-sm bg-gray-100 rounded-lg px-3 min-h-[40px] flex items-start w-full break-words">
+      <div className="text-gray-900 py-2 text-base text-black font-medium bg-gray-100 rounded-lg px-3 min-h-[40px] flex items-start w-full break-words">
         {value || "-"}
       </div>
     )}
@@ -164,7 +165,7 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
           <Button
             variant="back"
             size="default"
-            className="rounded-full flex-1"
+            className="rounded-full flex-1 lg:w-32 lg:flex-none"
             onClick={handleCancel}
             disabled={isSubmitting}
           >
@@ -173,11 +174,18 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
           <Button
             variant="submit"
             size="default"
-            className="rounded-full flex-1" // Dibuat flex-1 agar memenuhi ruang
+            className="rounded-full flex-1 lg:w-32 lg:flex-none"
             onClick={handleSaveWrapper}
             disabled={isSubmitting}
           >
-            {isSubmitting ? "Menyimpan..." : "Simpan"}
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+              </>
+            ) : (
+              "Simpan"
+            )}
+            {/* {isSubmitting ? "Menyimpan..." : "Simpan"} */}
           </Button>
         </>
       ) : (
@@ -186,7 +194,7 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
           <Button
             variant="default"
             size="default"
-            className="rounded-full w-full"
+            className="rounded-full w-full lg:w-32"
             onClick={() => setIsEditing(true)}
             // Nonaktifkan tombol Edit jika LM sedang dalam proses approval
             disabled={isApproving}
@@ -201,7 +209,7 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
 
   return (
     <>
-      <main className="space-y-4 lg:space-y-6 pb-2 lg:pb-6">
+      <main className="space-y-4 lg:space-y-6 pb-16 lg:pb-2">
         <div className="flex justify-between items-center mb-6">
           <Button onClick={() => router.back()} variant="back">
             <ArrowLeft size={20} className="mr-1" />
@@ -216,7 +224,7 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
         </div>
 
         {/* --- KARTU JUDUL --- */}
-        <div className="bg-white rounded-xl p-6 mb-8 shadow-[1px_1px_6px_rgba(0,0,0,0.25)]">
+        <div className="bg-white rounded-xl p-6 mb-8 shadow-[1px_1px_6px_rgba(0,0,0,0.25)] border-l-4 border-blue-600">
           <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
             <div className="flex-1 pr-4 min-w-0">
               <h1 className="text-2xl font-bold text-gray-900 mb-3">
@@ -258,7 +266,6 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
                   </span>
                 </div>
 
-                {/* 🆕 Info Edit - Highlighted */}
                 {initialData.updated_at && initialData.updated_by && (
                   <div className="flex items-center text-sm text-amber-700 bg-amber-50 -mx-2 px-2 py-2 rounded-lg mt-3 max-w-fit">
                     <Edit3 size={14} className="mr-2 flex-shrink-0" />
@@ -328,7 +335,7 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
                   })()}
               </div>
             </div>
-            <div className="flex-shrink-0">
+            <div className="flex-shrink-0  ">
               <StatusBadge status={initialData.approval_status} />
             </div>
           </div>
@@ -427,9 +434,7 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
                       label="Kelurahan/Desa"
                       value={editedData?.kelurahan}
                     />
-                    <div className="md:col-span-2">
-                      <DetailField label="Alamat" value={editedData?.alamat} />
-                    </div>
+                    <DetailField label="Alamat" value={editedData?.alamat} />
                     <DetailField
                       label="LatLong"
                       value={`${editedData.latitude ?? ""}, ${
@@ -683,7 +688,7 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
 
       {isLocationSpecialist && isPendingApproval && (
         <div
-          className={` lg:hidden fixed bottom-0 left-0 right-0 z-40 p-4 transition-all duration-300 ease-in-out
+          className={` lg:hidden fixed bottom-0 left-0 right-0 z-40 p-4 transition-all duration-300 ease-in-out 
                         ${
                           isAtBottom
                             ? "bg-transparent shadow-none border-transparent"

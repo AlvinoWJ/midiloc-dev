@@ -8,16 +8,15 @@ export default function DetailUlokEksternalPage() {
   const params = useParams();
   const id = typeof params.id === "string" ? params.id : "";
 
-  // 1. Panggil hook dengan ID dari URL
-  const { ulokEksternalDetail, isLoading, isError } =
+  const { ulokEksternalDetail, isLoading, isError, mutate } =
     useUlokEksternalDetail(id);
 
-  // 2. Tampilkan layout dengan data dari hook
   return (
     <DetailUlokEksternalLayout
       ulok={ulokEksternalDetail ?? null}
       isLoading={isLoading}
       isError={!!isError}
+      mutate={mutate}
     />
   );
 }

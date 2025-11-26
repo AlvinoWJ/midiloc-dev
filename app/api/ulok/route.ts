@@ -9,7 +9,7 @@ import { isPdfFile } from "@/utils/fileChecker";
 const BUCKET = "file_storage";
 const MAX_PDF_SIZE = 15 * 1024 * 1024; // 15MB
 
-const DEFAULT_LIMIT = 9;
+const DEFAULT_LIMIT = 36;
 
 // Base64url helpers
 function b64urlEncode(s: string) {
@@ -124,8 +124,8 @@ export async function GET(request: Request) {
     const pageSize = limit + 1; // ambil 1 ekstra untuk deteksi hasNext/hasPrev
 
     // Cursor params
-    const after = searchParams.get("after") || ""; // untuk ambil "lebih lama" dari cursor (desc)
-    const before = searchParams.get("before") || ""; // untuk ambil "lebih baru" dari cursor (desc)
+    const after = searchParams.get("after") || "";
+    const before = searchParams.get("before") || "";
 
     const scope = (searchParams.get("scope") || "recent").toLowerCase();
     const isRecent = scope === "recent";

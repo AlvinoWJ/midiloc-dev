@@ -4,6 +4,8 @@
 import { useEffect, useState } from "react";
 
 interface NotarisData {
+  awal_sewa?: string | null;
+  akhir_sewa?: string | null;
   par_online?: string | null;
   tanggal_par?: string | null;
   validasi_legal?: string | null;

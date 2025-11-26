@@ -11,6 +11,7 @@ import CustomSelect from "@/components/ui/customselect";
 import { MouEditableSchema } from "@/lib/validations/mou";
 import { useAlert } from "@/components/shared/alertcontext";
 import { useRouter } from "next/navigation";
+import { useUser } from "@/hooks/useUser";
 
 const formatnumeric = (value: string | number | undefined | null) => {
   if (value === undefined || value === null || value === "") return "";
@@ -191,10 +192,11 @@ const MouForm: React.FC<MouFormProps> = ({
       const json = await res.json();
 
       if (!res.ok) {
-        const errMsg =
-          json.detail?.[0]?.message || json.error || "Gagal menyimpan data";
-        throw new Error(errMsg);
+        throw new Error(
+          json.message || json.detail || json.error || "Gagal menyimpan data"
+        );
       }
+
       onDataUpdate();
       showToast({
         type: "success",
@@ -204,7 +206,11 @@ const MouForm: React.FC<MouFormProps> = ({
       router.refresh();
     } catch (err: any) {
       console.error(err);
-      showToast({ type: "error", message: err.message });
+      showToast({
+        type: "error",
+        title: "Gagal",
+        message: err.message,
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -405,11 +411,12 @@ const MouProgressCard: React.FC<MouProgressCardProps> = ({
 
   const { data, loading, error, refetch } = useMouProgress(progressId);
   const [isEditing, setIsEditing] = useState(false);
-
   const [isSubmittingApprove, setIsSubmittingApprove] = useState(false);
   const [isSubmittingReject, setIsSubmittingReject] = useState(false);
-
   const { showToast, showConfirmation } = useAlert();
+
+  const { user } = useUser();
+  const isBranchAdmin = user?.position_nama === "admin branch";
 
   const handleFinalizeMou = async (status: "Selesai" | "Batal") => {
     const actionText = status === "Selesai" ? "submit" : "batalkan";
@@ -637,7 +644,7 @@ const MouProgressCard: React.FC<MouProgressCardProps> = ({
           </div>
         </div>
 
-        {!isFinalized && (
+        {!isFinalized && isBranchAdmin && (
           <div className="flex gap-3 mt-8">
             <Button
               variant="secondary"

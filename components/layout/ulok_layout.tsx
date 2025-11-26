@@ -1,12 +1,12 @@
 "use client";
 
-import { UlokPageProps } from "@/types/common";
 import { InfoCard } from "@/components/ui/infocard";
 import AddButton from "@/components/ui/addbutton";
 import Tabs from "@/components/ui/tabs";
 import SearchWithFilter from "@/components/ui/searchwithfilter";
 import { UlokPageSkeleton } from "@/components/ui/skleton";
 import { useRouter } from "next/navigation";
+import { Ulok } from "@/hooks/ulok/useUlok";
 import {
   ChevronLeft,
   ChevronRight,
@@ -15,6 +15,24 @@ import {
   MoreHorizontal,
   Loader2,
 } from "lucide-react";
+
+export interface UlokPageProps {
+  isLoading: boolean;
+  isRefreshing: boolean;
+  isError: boolean;
+  filteredUlok: Ulok[];
+  searchQuery: string;
+  filterMonth: string;
+  filterYear: string;
+  activeTab: string;
+  onSearch: (query: string) => void;
+  onFilterChange: (month: string, year: string) => void;
+  onTabChange: (tab: string) => void;
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+  isLocationSpecialist: () => boolean;
+}
 
 export default function UlokLayout(props: UlokPageProps) {
   const router = useRouter();
@@ -37,26 +55,21 @@ export default function UlokLayout(props: UlokPageProps) {
     onPageChange,
   } = props;
 
-  // Function to generate page numbers with ellipsis
   const getPageNumbers = () => {
     const pages = [];
     const showEllipsisStart = currentPage > 3;
     const showEllipsisEnd = currentPage < totalPages - 2;
 
     if (totalPages <= 7) {
-      // Show all pages if 7 or fewer
       for (let i = 1; i <= totalPages; i++) {
         pages.push(i);
       }
     } else {
-      // Always show first page
       pages.push(1);
 
       if (showEllipsisStart) {
         pages.push("ellipsis-start");
       }
-
-      // Show current page and surrounding pages
       const start = Math.max(2, currentPage - 1);
       const end = Math.min(totalPages - 1, currentPage + 1);
 
@@ -67,8 +80,6 @@ export default function UlokLayout(props: UlokPageProps) {
       if (showEllipsisEnd) {
         pages.push("ellipsis-end");
       }
-
-      // Always show last page
       pages.push(totalPages);
     }
 
@@ -105,13 +116,11 @@ export default function UlokLayout(props: UlokPageProps) {
 
   return (
     <div className="space-y-4 lg:space-y-6 flex flex-col flex-grow">
-      {/* Header: Judul dan Search/Filter */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <h1 className="text-2xl lg:text-4xl font-bold">Usulan Lokasi</h1>
         <SearchWithFilter onSearch={onSearch} onFilterChange={onFilterChange} />
       </div>
 
-      {/* Kontrol: Tabs dan Tombol Tambah */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <Tabs
           tabs={["Recent", "History"]}
@@ -123,8 +132,7 @@ export default function UlokLayout(props: UlokPageProps) {
         )}
       </div>
 
-      {/* Konten Grid / List */}
-      <div className="relative flex-grow">
+      <div className=" flex-grow">
         {isRefreshing ? (
           <div className="flex items-center justify-center min-h-[23rem]">
             <Loader2 className="w-8 h-8 text-primary animate-spin" />
@@ -176,33 +184,18 @@ export default function UlokLayout(props: UlokPageProps) {
 
       {totalPages > 1 && !isRefreshing && (
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-auto pt-6">
-          {/* Pagination Controls */}
           <div className="flex items-center gap-1">
-            {/* First Page Button */}
-            <button
-              onClick={() => onPageChange(1)}
-              disabled={currentPage === 1 || isLoading || isRefreshing}
-              className="p-2 rounded-full text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
-              aria-label="Halaman pertama"
-            >
-              <ChevronsLeft className="w-5 h-5" />
-            </button>
-
-            {/* Previous Button */}
             <button
               onClick={() => onPageChange(currentPage - 1)}
               disabled={currentPage <= 1 || isLoading || isRefreshing}
               className="p-2 rounded-full text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
-              aria-label="Halaman sebelumnya"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
 
-            {/* Page Numbers */}
             <div className="flex items-center gap-1 mx-2">
               {pageNumbers.map((pageNum) => {
                 if (typeof pageNum === "string") {
-                  // Ellipsis
                   return (
                     <div
                       key={pageNum}
@@ -244,15 +237,6 @@ export default function UlokLayout(props: UlokPageProps) {
               aria-label="Halaman berikutnya"
             >
               <ChevronRight className="w-5 h-5" />
-            </button>
-
-            <button
-              onClick={() => onPageChange(totalPages)}
-              disabled={currentPage >= totalPages || isLoading || isRefreshing}
-              className="p-2 rounded-full text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
-              aria-label="Halaman terakhir"
-            >
-              <ChevronsRight className="w-5 h-5" />
             </button>
           </div>
         </div>

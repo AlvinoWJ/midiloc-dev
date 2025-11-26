@@ -581,15 +581,12 @@ export default function DetailProgressKpltLayout({
                 Dokumen KPLT Terkait
               </h4>
 
-              {/* Pesan error HANYA untuk file */}
               {isFilesError && (
                 <p className="text-sm text-red-600 bg-red-50 p-4 rounded-lg">
                   Gagal memuat dokumen.
                 </p>
               )}
 
-              {/* Grid dokumen */}
-              {/* Kita tidak perlu 'isLoading' di sini karena sudah ditangani 'isCardLoading' */}
               {files && files.length > 0 && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {files.map((file) => (
@@ -621,7 +618,6 @@ export default function DetailProgressKpltLayout({
                 </div>
               )}
 
-              {/* Tampilkan pesan jika tidak ada file */}
               {files && files.length === 0 && (
                 <p className="text-sm text-gray-500 text-center py-8 bg-gray-50 rounded-lg">
                   Tidak ada dokumen terkait untuk KPLT ini.
@@ -631,7 +627,6 @@ export default function DetailProgressKpltLayout({
           </div>
         </div>
 
-        {/* Tombol Toggle Expand/Collapse */}
         <button
           type="button"
           onClick={() => setIsExpanded(!isExpanded)}

@@ -1,19 +1,18 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input"; // Asumsi path ini benar
-import { Label } from "@/components/ui/label"; // Asumsi path ini benar
-import { ArrowLeft, LinkIcon } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import CustomSelect from "../ui/customselect";
 import { KpltCreatePayload } from "@/lib/validations/kplt";
 import PrefillKpltCard from "../ui/prefillkpltcard";
 import { KpltBaseUIMapped } from "@/types/common";
 
-// --- 1. PROPS DISESUAIKAN UNTUK MENERIMA LOGIKA DARI PARENT ---
 interface TambahKpltLayoutProps {
-  prefillData: KpltBaseUIMapped | undefined; // Menggantikan 'data'
+  prefillData: KpltBaseUIMapped | undefined;
   formData: any;
   errors: any;
   isSubmitting: boolean;
@@ -22,37 +21,16 @@ interface TambahKpltLayoutProps {
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
     >
   ) => void;
-  handleFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void; // <-- Tipe standar React
+  handleFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleFormSubmit: (e: React.FormEvent) => void;
 }
 
-// --- TIPE UNTUK ARRAY FILE INPUT (MEMPERBAIKI ERROR TYPESCRIPT) ---
 interface FileInputConfig {
   name: keyof KpltCreatePayload;
   label: string;
   accept: string;
 }
 
-// --- Komponen FileLink untuk menampilkan link file ---
-const FileLink = ({ label, url }: { label: string; url: string | null }) => {
-  if (!url) return null;
-  return (
-    <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border">
-      <span className="text-sm text-gray-700">{label}</span>
-      <a
-        href={url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="relative z-10 inline-flex items-center bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-1.5 px-3 rounded-lg"
-      >
-        <LinkIcon className="w-3 h-3 mr-1.5" />
-        Lihat
-      </a>
-    </div>
-  );
-};
-
-// --- Komponen UTAMA YANG SUDAH DIINTEGRASIKAN ---
 export default function TambahKpltLayout({
   prefillData,
   formData,
@@ -105,16 +83,33 @@ export default function TambahKpltLayout({
     },
   ];
 
+  const formatNumber = (value: string) => {
+    if (!value) return "";
+    const parts = value.split(",");
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    return parts.join(",");
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (
+      e.key === "Enter" &&
+      e.target instanceof HTMLElement &&
+      e.target.tagName !== "TEXTAREA"
+    ) {
+      e.preventDefault();
+    }
+  };
+
   return (
     <main className="space-y-4 lg:space-y-6">
-      {/* Form akan membungkus semua konten input */}
       <form
         onSubmit={handleFormSubmit}
+        onKeyDown={handleKeyDown}
         noValidate
         className="max-w-7xl mx-auto"
       >
         <Button
-          type="button" // Type button agar tidak submit form
+          type="button"
           onClick={() => router.back()}
           variant="back"
           className="mb-6 bg-white"
@@ -123,20 +118,13 @@ export default function TambahKpltLayout({
           Kembali
         </Button>
 
-        {/* Bagian ini sekarang menampilkan prefillData */}
         {prefillData && <PrefillKpltCard baseData={prefillData} />}
-
-        {/* --- MULAI AREA FORM INPUT KPLT --- */}
         <div className="relative mt-10 mx-auto max-w-7xl">
-          {/* Header */}
           <div className="absolute -top-4 left-6 bg-red-600 text-white px-4 py-1 rounded shadow font-semibold text-base lg:text-lg">
             Analisis Kelayakan Lokasi
           </div>
-
-          {/* Card */}
-          <div className="bg-white shadow-[1px_1px_6px_rgba(0,0,0,0.25)] rounded-xl p-6 space-y-6">
+          <div className="bg-white shadow-[1px_1px_6px_rgba(0,0,0,0.25)] rounded-xl px-6 py-10 space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Karakter Lokasi */}
               <CustomSelect
                 id="karakter_lokasi"
                 name="karakter_lokasi"
@@ -147,8 +135,6 @@ export default function TambahKpltLayout({
                 onChange={handleChange}
                 error={errors.karakter_lokasi}
               />
-
-              {/* Sosial Ekonomi */}
               <CustomSelect
                 id="sosial_ekonomi"
                 name="sosial_ekonomi"
@@ -159,8 +145,6 @@ export default function TambahKpltLayout({
                 onChange={handleChange}
                 error={errors.sosial_ekonomi}
               />
-
-              {/* Skor FPL */}
               <div className="flex-1">
                 <div className="space-y-2">
                   <Label
@@ -172,10 +156,10 @@ export default function TambahKpltLayout({
                   <Input
                     id="skor_fpl"
                     name="skor_fpl"
-                    type="number"
                     placeholder="Masukkan skor FPL"
-                    value={formData.skor_fpl}
+                    value={formatNumber(formData.skor_fpl)}
                     onChange={handleChange}
+                    inputMode="numeric"
                     className={errors.apc ? "border-red-500" : ""}
                   />
                   {errors.skor_fpl && (
@@ -185,8 +169,6 @@ export default function TambahKpltLayout({
                   )}
                 </div>
               </div>
-
-              {/* STD */}
               <div className="flex-1">
                 <div className="space-y-2">
                   <Label
@@ -198,9 +180,9 @@ export default function TambahKpltLayout({
                   <Input
                     id="std"
                     name="std"
-                    type="number"
                     placeholder="Masukkan std"
-                    value={formData.std}
+                    value={formatNumber(formData.std)}
+                    inputMode="numeric"
                     onChange={handleChange}
                     className={errors.apc ? "border-red-500" : ""}
                   />
@@ -209,8 +191,6 @@ export default function TambahKpltLayout({
                   )}
                 </div>
               </div>
-
-              {/* APC */}
               <div className="flex-1">
                 <div className="space-y-2">
                   <Label
@@ -222,9 +202,9 @@ export default function TambahKpltLayout({
                   <Input
                     id="apc"
                     name="apc"
-                    type="number"
                     placeholder="Masukkan apc"
-                    value={formData.apc}
+                    value={formatNumber(formData.apc)}
+                    inputMode="numeric"
                     onChange={handleChange}
                     className={errors.apc ? "border-red-500" : ""}
                   />
@@ -233,8 +213,6 @@ export default function TambahKpltLayout({
                   )}
                 </div>
               </div>
-
-              {/* SPD */}
               <div className="flex-1">
                 <div className="space-y-2">
                   <Label
@@ -246,10 +224,12 @@ export default function TambahKpltLayout({
                   <Input
                     id="spd"
                     name="spd"
-                    type="number"
                     placeholder="Masukkan spd"
-                    value={formData.spd}
+                    value={formatNumber(formData.spd)}
+                    inputMode="numeric"
                     onChange={handleChange}
+                    tabIndex={-1}
+                    readOnly
                     className={errors.spd ? "border-red-500" : ""}
                   />
                   {errors.spd && (
@@ -259,7 +239,6 @@ export default function TambahKpltLayout({
               </div>
 
               <div className="flex-1">
-                {/* PE Status */}
                 <CustomSelect
                   id="pe_status"
                   name="pe_status"
@@ -271,8 +250,6 @@ export default function TambahKpltLayout({
                   error={errors.pe_status}
                 />
               </div>
-
-              {/* PE RAB */}
               <div className="flex-1">
                 <div className="space-y-2">
                   <Label
@@ -284,9 +261,9 @@ export default function TambahKpltLayout({
                   <Input
                     id="pe_rab"
                     name="pe_rab"
-                    type="number"
                     placeholder="Masukkan PE RAB"
-                    value={formData.pe_rab}
+                    value={formatNumber(formData.pe_rab)}
+                    inputMode="numeric"
                     onChange={handleChange}
                     disabled={isSubmitting}
                     className={errors.pe_rab ? "border-red-500" : ""}
@@ -300,12 +277,11 @@ export default function TambahKpltLayout({
           </div>
         </div>
 
-        {/* Seksi: Kelengkapan Dokumen (File Inputs) */}
         <div className="relative mt-10">
           <div className="absolute -top-4 left-6 bg-red-600 text-white px-4 py-1 rounded shadow font-semibold text-base lg:text-lg">
             Evaluasi Lokasi Potensial
           </div>
-          <div className="bg-white shadow-[1px_1px_6px_rgba(0,0,0,0.25)] rounded-xl p-6 pt-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="bg-white shadow-[1px_1px_6px_rgba(0,0,0,0.25)] rounded-xl px-6 py-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {fileInputList.map((file) => (
               <div className="space-y-2" key={file.name}>
                 <Label
@@ -333,7 +309,6 @@ export default function TambahKpltLayout({
           </div>
         </div>
 
-        {/* Tombol Aksi Submit */}
         <div className="flex justify-end mt-6 mb-2">
           <Button
             type="submit"
@@ -342,7 +317,8 @@ export default function TambahKpltLayout({
             className="w-full lg:w-auto"
             disabled={isSubmitting}
           >
-            {isSubmitting ? "Menyimpan..." : "Simpan Data KPLT"}
+            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Simpan Data KPLT
           </Button>
         </div>
       </form>
