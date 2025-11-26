@@ -33,50 +33,49 @@ function isUuid(v: string) {
   );
 }
 
-function mimeFromExt(ext: string) {
-  const e = ext.toLowerCase();
-  if (e === ".pdf") return "application/pdf";
-  if (e === ".xlsx")
-    return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-  if (e === ".xls") return "application/vnd.ms-excel";
-  if (e === ".csv") return "text/csv";
-  if (e === ".mp4") return "video/mp4";
-  if (e === ".mov") return "video/quicktime";
-  if (e === ".webm") return "video/webm";
-  if (e === ".avi") return "video/x-msvideo";
-  if (e === ".png") return "image/png";
-  if (e === ".jpg" || e === ".jpeg") return "image/jpeg";
-  if (e === ".webp") return "image/webp";
-  return "application/octet-stream";
-}
-
 // Resolve ulok_id dan branch scope berdasarkan modules + id
 async function resolveUlokAndBranch(
   supabase: any,
   modules: AllowedModule,
   id: string
-): Promise<{ ulokId: string; branchId: string | null }> {
+): Promise<{
+  ulokId: string;
+  branchId: string | null;
+  ownerId: string | null;
+}> {
+  // 1. ULOK
   if (modules === "ulok") {
     const { data, error } = await supabase
       .from("ulok")
-      .select("id, branch_id")
+      .select("id, branch_id, users_id") // [FIX] Ambil users_id
       .eq("id", id)
       .single();
     if (error || !data) throw new Error("ULOK not found");
-    return { ulokId: String(data.id), branchId: data.branch_id ?? null };
+    return {
+      ulokId: String(data.id),
+      branchId: data.branch_id ?? null,
+      ownerId: data.users_id ?? null,
+    };
   }
 
+  // 2. KPLT
   if (modules === "kplt") {
     const { data, error } = await supabase
       .from("kplt")
-      .select("ulok_id, branch_id")
+      .select("ulok_id, ulok:ulok_id ( branch_id, users_id )") // [FIX] Join ke ulok ambil users_id
       .eq("id", id)
       .single();
     if (error || !data?.ulok_id) throw new Error("KPLT not found");
-    return { ulokId: String(data.ulok_id), branchId: data.branch_id ?? null };
+
+    const ulok = data.ulok as any;
+    return {
+      ulokId: String(data.ulok_id),
+      branchId: ulok?.branch_id ?? null,
+      ownerId: ulok?.users_id ?? null,
+    };
   }
 
-  // modules === "mou" | "perizinan" -> id dianggap progress_kplt_id
+  // 3. PROGRESS (MOU, dll)
   const { data, error } = await supabase
     .from("progress_kplt")
     .select(
@@ -85,7 +84,7 @@ async function resolveUlokAndBranch(
       kplt:kplt!progress_kplt_kplt_id_fkey!inner (
         id,
         ulok_id,
-        branch_id
+        ulok:ulok_id ( branch_id, users_id )
       )
     `
     )
@@ -93,9 +92,14 @@ async function resolveUlokAndBranch(
     .maybeSingle();
 
   if (error || !data?.kplt?.ulok_id) throw new Error("Progress not found");
+
+  const kplt = (data as any).kplt;
+  const ulok = kplt?.ulok;
+
   return {
-    ulokId: String((data as any).kplt.ulok_id),
-    branchId: (data as any).kplt.branch_id ?? null,
+    ulokId: String(kplt.ulok_id),
+    branchId: ulok?.branch_id ?? null,
+    ownerId: ulok?.users_id ?? null,
   };
 }
 
@@ -136,39 +140,56 @@ export async function GET(
   // Resolve ulok_id + branch scope sesuai modules
   let ulokId: string;
   let branchId: string | null = null;
+  let ownerId: string | null = null;
+
   try {
     const ctx = await resolveUlokAndBranch(supabase, modulesFile, rawId);
     ulokId = ctx.ulokId;
     branchId = ctx.branchId;
+    ownerId = ctx.ownerId;
   } catch (e: any) {
     const msg = e?.message || "Not found";
     return NextResponse.json({ error: msg }, { status: 404 });
   }
 
-  // Validasi branch akses
-  if (branchId && user.branch_id && branchId !== user.branch_id) {
-    return NextResponse.json(
-      { error: "Forbidden", message: "Cross-branch access" },
-      { status: 403 }
-    );
+  const position = user.position_nama?.toLowerCase() || "";
+  const isSuperUser =
+    position === "regional manager" || position === "general manager";
+
+  // 1. Cek Kepemilikan untuk LS (Anti-Intip)
+  if (position === "location specialist") {
+    if (ownerId && ownerId !== user.id) {
+      return NextResponse.json(
+        { error: "Forbidden", message: "Dokumen ini bukan milik Anda" },
+        { status: 403 }
+      );
+    }
+  }
+
+  // 2. Cek Cabang (Kecuali RM/GM)
+  if (!isSuperUser) {
+    if (branchId && user.branch_id && branchId !== user.branch_id) {
+      return NextResponse.json(
+        { error: "Forbidden", message: "Cross-branch access" },
+        { status: 403 }
+      );
+    }
   }
 
   const url = new URL(req.url);
-  const mode = url.searchParams.get("mode") || "redirect"; // redirect | proxy
   const forceDownload = url.searchParams.get("download") === "1";
-  const rawExpires = Number(url.searchParams.get("expiresIn") || "300"); // detik (default 5 menit)
+  const rawExpires = Number(url.searchParams.get("expiresIn") || "300");
   const expiresIn =
     Number.isFinite(rawExpires) && rawExpires > 0
       ? Math.min(rawExpires, 3600)
       : 300;
-      
-  const pathParam = url.searchParams.get("path"); // full path: "<ulok_id>/<modules>/file.ext"
-  const nameParam = url.searchParams.get("name"); // filename di folder
-  const fieldParam = url.searchParams.get("field"); // nama "field" (mencari nama file yang mengandung _<field>)
+
+  const pathParam = url.searchParams.get("path");
+  const nameParam = url.searchParams.get("name");
+  const fieldParam = url.searchParams.get("field");
 
   const folder = `${ulokId}/${modulesFile}`;
 
-  // 1) Prioritas: path penuh jika diberikan
   let resolvedPath: string | null = null;
   if (pathParam) {
     if (!pathParam.startsWith(`${ulokId}/${modulesFile}/`)) {
@@ -182,10 +203,8 @@ export async function GET(
     }
     resolvedPath = pathParam;
   } else if (nameParam) {
-    // 2) name -> langsung konstruksi path
     resolvedPath = `${folder}/${nameParam}`;
   } else if (fieldParam) {
-    // 3) field -> list, cari file terbaru yang match _<field>
     const slug = slugify(fieldParam);
     const { data: list, error: listErr } = await supabase.storage
       .from(BUCKET)
@@ -214,7 +233,7 @@ export async function GET(
     }
     resolvedPath = `${folder}/${found.name}`;
   } else {
-    // 4) Tanpa seleksi -> listing
+    // Listing Mode (Tetap dipertahankan)
     const page = Number(url.searchParams.get("page") || "1");
     const limit = Number(url.searchParams.get("limit") || "100");
     const safePage = Number.isFinite(page) && page > 0 ? page : 1;
@@ -238,7 +257,6 @@ export async function GET(
 
     const files = (list ?? []).map((o) => {
       const filename = o.name;
-      // Pola nama: 1761021305744_file_intip.png => coba tebak "field" dari bagian setelah underscore pertama (opsional)
       const m = filename.match(/^\d+_([a-z0-9_.-]+)\.[a-z0-9]+$/i);
       const guessedField = m ? m[1] : null;
       return {
@@ -274,36 +292,7 @@ export async function GET(
     );
   }
 
-  // Sajikan file
-  if (mode === "proxy") {
-    const { data: fileData, error: dlErr } = await supabase.storage
-      .from(BUCKET)
-      .download(resolvedPath);
-
-    if (dlErr || !fileData) {
-      return NextResponse.json(
-        { error: "Download failed", message: dlErr?.message || "Not found" },
-        { status: 404 }
-      );
-    }
-
-    const filename = resolvedPath.split("/").pop() || "file";
-    const extMatch = filename.match(/\.[a-z0-9]+$/i);
-    const ct = mimeFromExt(extMatch ? extMatch[0] : "");
-
-    return new Response(fileData, {
-      status: 200,
-      headers: {
-        "Content-Type": ct,
-        "Cache-Control": "private, max-age=60",
-        "Content-Disposition": `${
-          forceDownload ? "attachment" : "inline"
-        }; filename="${encodeURIComponent(filename)}"`,
-      },
-    });
-  }
-
-  // redirect (default signed URL)
+  // Redirect Mode (Standard Signed URL)
   const downloadName = forceDownload
     ? resolvedPath.split("/").pop() || "file"
     : undefined;
