@@ -8,8 +8,8 @@ import SearchWithFilter from "../ui/searchwithfilter";
 import {
   ChevronLeft,
   ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
+  // ChevronsLeft,
+  // ChevronsRight,
   MoreHorizontal,
   Loader2,
 } from "lucide-react";
@@ -181,14 +181,14 @@ export default function ProgressKpltLayout(props: ProgressKpltLayoutProps) {
       {totalPages > 1 && (
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-auto pt-6">
           <div className="flex items-center gap-1">
-            {/* Tombol halaman pertama */}
+            {/* Tombol halaman pertama
             <button
               onClick={() => onPageChange(1)}
               disabled={currentPage === 1 || isLoading || isRefreshing}
               className="p-2 rounded-full text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
             >
               <ChevronsLeft className="w-5 h-5" />
-            </button>
+            </button> */}
 
             {/* Tombol sebelumnya */}
             <button
@@ -235,14 +235,14 @@ export default function ProgressKpltLayout(props: ProgressKpltLayoutProps) {
               <ChevronRight className="w-5 h-5" />
             </button>
 
-            {/* Tombol halaman terakhir */}
+            {/* Tombol halaman terakhir
             <button
               onClick={() => onPageChange(totalPages)}
               disabled={currentPage >= totalPages || isLoading || isRefreshing}
               className="p-2 rounded-full text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
             >
               <ChevronsRight className="w-5 h-5" />
-            </button>
+            </button> */}
           </div>
         </div>
       )}
