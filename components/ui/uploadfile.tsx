@@ -127,7 +127,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
             </div>
 
             {/* Nama file dan info */}
-            <p className="text-sm text-gray-700 break-words pt-2 max-w-full">
+            <p className="text-sm text-gray-700 break-words max-w-full">
               {value.name}
             </p>
             <p

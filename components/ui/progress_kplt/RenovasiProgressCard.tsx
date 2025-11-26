@@ -4,6 +4,7 @@
 import React, { useState, useEffect } from "react";
 import { useRenovasiProgress } from "@/hooks/progress_kplt/useRenovasiProgress";
 import { useFile, ApiFile } from "@/hooks/progress_kplt/useFilesProgress";
+import { useUser } from "@/hooks/useUser";
 import {
   Loader2,
   Pencil,
@@ -136,12 +137,25 @@ const RenovasiForm: React.FC<FormProps> = ({
 
   const statusOptions = ["Belum", "Selesai", "Batal"];
   const objekOptions = ["Tanah", "Bangunan"];
+  const tipetokoOptions = [
+    "100 REG",
+    "200 RAK",
+    "60 REG",
+    "60N",
+    "80 REG",
+    "FRESH 10",
+    "FRESH 5",
+    "SPECIFIC 1",
+  ];
 
   const [rekomRenovasi, setRekomRenovasi] = useState<string>(
     initialData?.rekom_renovasi || ""
   );
   const [bentukObjek, setBentukObjek] = useState<string>(
     initialData?.rekom_renovasi || ""
+  );
+  const [tipetoko, setTipeToko] = useState<string>(
+    initialData?.tipe_toko || ""
   );
 
   const [planRenov, setPlanRenov] = useState<string>("");
@@ -171,6 +185,7 @@ const RenovasiForm: React.FC<FormProps> = ({
     if (initialData) {
       setRekomRenovasi(initialData.rekom_renovasi || "");
       setBentukObjek(initialData.bentuk_objek || "");
+      setTipeToko(initialData.tipe_toko || "");
       setPlanRenov(initialData.plan_renov?.toString() || "");
       setProsesRenov(initialData.proses_renov?.toString() || "");
       setDeviasi(initialData.deviasi?.toString() || "");
@@ -199,6 +214,7 @@ const RenovasiForm: React.FC<FormProps> = ({
 
     formData.append("rekom_renovasi", rekomRenovasi);
     formData.append("bentuk_objek", bentukObjek);
+    formData.append("tipe_toko", tipetoko);
 
     const payload = {
       kode_store: formData.get("kode_store") || undefined,
@@ -236,7 +252,13 @@ const RenovasiForm: React.FC<FormProps> = ({
       });
 
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Gagal menyimpan data");
+
+      if (!res.ok) {
+        throw new Error(
+          json.message || json.detail || json.error || "Gagal menyimpan data"
+        );
+      }
+
       onDataUpdate();
       showToast({
         type: "success",
@@ -246,7 +268,11 @@ const RenovasiForm: React.FC<FormProps> = ({
       });
       onSuccess();
     } catch (err: any) {
-      showToast({ type: "error", message: err.message });
+      showToast({
+        type: "error",
+        title: "Gagal",
+        message: err.message,
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -263,6 +289,22 @@ const RenovasiForm: React.FC<FormProps> = ({
       >
         <div>
           <label
+            htmlFor="nama_store"
+            className="block font-semibold text-base lg:text-lg mb-2"
+          >
+            Nama Toko
+          </label>
+          <Input
+            id="nama_store"
+            name="nama_store"
+            type="text"
+            placeholder="Masukkan nama store"
+            defaultValue={initialData?.nama_store || ""}
+          />
+        </div>
+
+        <div>
+          <label
             htmlFor="kode_store"
             className="block font-semibold text-base lg:text-lg mb-2"
           >
@@ -272,24 +314,20 @@ const RenovasiForm: React.FC<FormProps> = ({
             id="kode_store"
             name="kode_store"
             type="text"
+            placeholder="Masukkan kode store"
             defaultValue={initialData?.kode_store || ""}
           />
         </div>
 
-        <div>
-          <label
-            htmlFor="tipe_toko"
-            className="block font-semibold text-base lg:text-lg mb-2"
-          >
-            Tipe Toko
-          </label>
-          <Input
-            id="tipe_toko"
-            name="tipe_toko"
-            type="text"
-            defaultValue={initialData?.tipe_toko || ""}
-          />
-        </div>
+        <CustomSelect
+          id="tipe_toko"
+          name="tipe_toko"
+          label="Tipe Toko"
+          placeholder="Pilih Tipe"
+          value={tipetoko}
+          options={tipetokoOptions}
+          onChange={(e) => setTipeToko(e.target.value)}
+        />
 
         <CustomSelect
           id="bentuk_objek"
@@ -501,6 +539,9 @@ const RenovasiProgressCard: React.FC<RenovasiProgressCardProps> = ({
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const { showToast, showConfirmation } = useAlert();
 
+  const { user } = useUser();
+  const isBranchAdmin = user?.position_nama === "admin branch";
+
   const formatDate = (dateString?: string | null) =>
     dateString
       ? new Date(dateString).toLocaleDateString("id-ID", {
@@ -629,6 +670,7 @@ const RenovasiProgressCard: React.FC<RenovasiProgressCardProps> = ({
         }
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <DetailField label="Nama Store" value={data.nama_store} />
           <DetailField label="Kode Store" value={data.kode_store} />
           <DetailField label="Tipe Toko" value={data.tipe_toko} />
           <DetailField label="Bentuk Objek" value={data.bentuk_objek} />
@@ -663,7 +705,7 @@ const RenovasiProgressCard: React.FC<RenovasiProgressCardProps> = ({
             </div>
           </div>
         </div>
-        {!isFinalized && (
+        {!isFinalized && isBranchAdmin && (
           <div className="flex gap-3 mt-6">
             {/* Tombol Edit */}
             <Button
@@ -689,7 +731,6 @@ const RenovasiProgressCard: React.FC<RenovasiProgressCardProps> = ({
               Batal
             </Button>
 
-            {/* Tombol Submit (Modifikasi) */}
             <Button
               type="submit"
               variant="submit"

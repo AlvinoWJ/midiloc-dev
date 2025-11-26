@@ -11,6 +11,7 @@ import {
   X,
   TimerIcon,
   MapPinned,
+  Store,
 } from "lucide-react"; // Tambahkan ikon X
 import Image from "next/image";
 import { LogoutButton } from "../ui/logout-button"; // Sesuaikan path jika perlu
@@ -20,17 +21,22 @@ import { useUser } from "@/hooks/useUser";
 // Definisikan menu sekali saja
 const menu = [
   { name: "Dashboard", href: "/dashboard", icon: <Home size={20} /> },
-  { name: "Usulan Lokasi", href: "/usulan_lokasi", icon: <MapPin size={20} /> },
   {
     name: "Usulan Lokasi Eksternal",
     href: "/ulok_eksternal",
     icon: <MapPinned size={20} />,
   },
+  { name: "Usulan Lokasi", href: "/usulan_lokasi", icon: <MapPin size={20} /> },
   { name: "Form KPLT", href: "/form_kplt", icon: <FileText size={20} /> },
   {
     name: "Progress KPLT",
     href: "/progress_kplt",
     icon: <TimerIcon size={20} />,
+  },
+  {
+    name: "Toko Existing",
+    href: "/toko_existing",
+    icon: <Store size={20} />,
   },
 ];
 

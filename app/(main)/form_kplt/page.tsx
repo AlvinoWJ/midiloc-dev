@@ -1,10 +1,8 @@
-// app/kplt/page.tsx
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback } from "react";
 import { useUser } from "@/hooks/useUser";
-import { useKplt } from "@/hooks/useKplt";
-import { KpltPageProps, UnifiedKpltItem } from "@/types/common";
+import { useKplt } from "@/hooks/kplt/useKplt";
 import KpltLayout from "@/components/layout/kplt_layout";
 
 export default function KPLTPage() {
@@ -12,10 +10,7 @@ export default function KPLTPage() {
   const [filterMonth, setFilterMonth] = useState("");
   const [filterYear, setFilterYear] = useState("");
   const [activeTab, setActiveTab] = useState("Recent");
-
-  // pagination
   const [currentPage, setCurrentPage] = useState(1);
-  const history_per_page = 9;
 
   const { user, loadingUser, userError } = useUser();
 
@@ -24,159 +19,67 @@ export default function KPLTPage() {
   }, [user]);
 
   const {
-    kpltExisting,
-    ulokForKplt,
-    isLoading: loadingKPLT,
-    isError: kpltError,
-    showSkeleton,
+    kpltData,
+    meta,
+    isInitialLoading,
     isRefreshing,
-  } = useKplt(searchQuery, activeTab);
+    isError: kpltError,
+  } = useKplt({
+    scope: activeTab === "Recent" ? "recent" : "history",
+    page: currentPage,
+    search: searchQuery,
+    month: filterMonth,
+    year: filterYear,
+  });
 
-  const isPageLoading = loadingUser || loadingKPLT;
-  const isPageError = !!userError || !!kpltError;
+  const filteredDisplayData = kpltData.filter((item) => {
+    if (item.status === "Need Input" && !isLocationSpecialist()) {
+      return false;
+    }
+    return true;
+  });
 
   const onFilterChange = (month: string, year: string) => {
     setFilterMonth(month);
     setFilterYear(year);
-  };
-  console.log("Data Mentah dari Hook:", { kpltExisting, ulokForKplt });
-
-  const filteredData = useMemo(() => {
-    const existingTransformed: UnifiedKpltItem[] = (kpltExisting || []).map(
-      (item) => ({
-        id: item.id,
-        nama: item.nama_kplt,
-        alamat: item.alamat,
-        created_at: item.created_at,
-        status: item.kplt_approval,
-        has_file_intip: item.has_file_intip || false,
-        has_form_ukur: item.has_form_ukur || false,
-      })
-    );
-    const ulokTransformed: UnifiedKpltItem[] = (ulokForKplt || []).map(
-      (item) => ({
-        id: item.ulok_id,
-        nama: item.nama_ulok,
-        alamat: item.alamat,
-        created_at: item.created_at,
-        status: item.ui_status,
-        has_file_intip: item.has_file_intip || false,
-        has_form_ukur: item.has_form_ukur || false,
-      })
-    );
-    const combinedData = [...existingTransformed, ...ulokTransformed];
-    const userRole = user?.position_nama?.trim().toLowerCase() || "";
-
-    return combinedData.filter((item) => {
-      const lowerCaseStatus = item.status.trim().toLowerCase();
-
-      let matchRole = true;
-      switch (lowerCaseStatus) {
-        case "need input":
-          const allowedForNeedInput = ["location specialist"];
-          matchRole = allowedForNeedInput.includes(userRole);
-          break;
-        case "in progress":
-          const allowedForInProgress = [
-            "location specialist",
-            "location manager",
-            "branch manager",
-            "regional manager",
-          ];
-          matchRole = allowedForInProgress.includes(userRole);
-          break;
-        case "waiting for forum":
-          const allowedForProgress = [
-            "branch manager",
-            "regional manager",
-            "general manager",
-          ];
-          matchRole = allowedForProgress.includes(userRole);
-          break;
-        default:
-          break;
-      }
-
-      // LOGIKA FILTER TAB (RECENT & HISTORY)
-      let matchTab = false;
-      if (activeTab === "Recent") {
-        const recentStatuses = [
-          "need input",
-          "in progress",
-          "waiting for forum",
-        ];
-        matchTab = recentStatuses.includes(lowerCaseStatus);
-      } else if (activeTab === "History") {
-        const historyStatuses = ["ok", "nok"];
-        matchTab = historyStatuses.includes(lowerCaseStatus);
-      }
-
-      const itemDate = new Date(item.created_at);
-
-      const matchMonth = filterMonth
-        ? (itemDate.getMonth() + 1).toString() === filterMonth
-        : true;
-
-      const matchYear = filterYear
-        ? itemDate.getFullYear().toString() === filterYear
-        : true;
-
-      const matchSearch = searchQuery
-        ? item.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          item.alamat.toLowerCase().includes(searchQuery.toLowerCase())
-        : true;
-
-      return matchRole && matchTab && matchMonth && matchYear && matchSearch;
-    });
-  }, [kpltExisting, ulokForKplt, filterMonth, filterYear, activeTab, user]);
-
-  const totalPages = useMemo(() => {
-    if (activeTab !== "History") {
-      return 1;
-    }
-    return Math.ceil(filteredData.length / history_per_page) || 1;
-  }, [filteredData, activeTab]);
-
-  const displayData = useMemo(() => {
-    if (activeTab !== "History") {
-      return filteredData; // Tampilkan semua data "Recent"
-    }
-
-    const startIndex = (currentPage - 1) * history_per_page;
-    const endIndex = startIndex + history_per_page;
-    return filteredData.slice(startIndex, endIndex);
-  }, [filteredData, activeTab, currentPage]);
-
-  const handlePageChange = (newPage: number) => {
-    if (newPage > 0 && newPage <= totalPages) {
-      setCurrentPage(newPage);
-    }
+    setCurrentPage(1);
   };
 
-  // Bungkus onTabChange agar me-reset halaman
-  const handleTabChange = (tab: string) => {
+  const onSearchChange = (query: string) => {
+    setSearchQuery(query);
+    setCurrentPage(1);
+  };
+
+  const onTabChange = (tab: string) => {
     setActiveTab(tab);
-    // setCurrentPage(1); // Sudah ditangani oleh useEffect [activeTab]
+    setCurrentPage(1);
   };
 
-  const kpltProps: KpltPageProps = {
+  const onPageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const layoutProps = {
     user,
-    isLoading: showSkeleton,
-    isRefreshing: isRefreshing,
-    isError: isPageError,
-    displayData,
+    isLoading: loadingUser || isInitialLoading,
+    isRefreshing,
+    isError: !!userError || !!kpltError,
+
+    displayData: filteredDisplayData,
+
     searchQuery,
     filterMonth,
     filterYear,
     activeTab,
-    onSearch: setSearchQuery,
-    onFilterChange,
-    onTabChange: handleTabChange,
     isLocationSpecialist,
-    currentPage: currentPage,
-    totalPages: totalPages,
-    onPageChange: handlePageChange,
+    onTabChange,
+    onSearch: onSearchChange,
+    onFilterChange,
+
+    currentPage,
+    totalPages: meta.totalPages,
+    onPageChange,
   };
 
-  return <KpltLayout {...kpltProps} />;
+  return <KpltLayout {...layoutProps} />;
 }

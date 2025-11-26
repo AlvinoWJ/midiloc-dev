@@ -1,24 +1,14 @@
-// components/ui/progress_kplt/NotarisHistoryModal.tsx
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { createPortal } from "react-dom";
-import {
-  X,
-  History,
-  Loader2,
-  FileText,
-  LinkIcon,
-  ArrowLeft,
-  Gavel, // Ganti ikon
-} from "lucide-react";
+import { X, History, Loader2, LinkIcon, ArrowLeft, Gavel } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   useNotarisHistory,
   NotarisHistoryItem,
 } from "@/hooks/progress_kplt/useNotarisHistory";
 
-// Helper untuk format tanggal
 const formatDate = (dateString: string) => {
   if (!dateString) return "-";
   try {
@@ -55,6 +45,8 @@ function getChanges(
   const allKeys = new Set([...Object.keys(current), ...Object.keys(previous)]);
 
   const fieldLabels: Record<string, string> = {
+    awal_sewa: "Awal Sewa",
+    akhir_sewa: "Akhir Sewa",
     tanggal_par: "Tgl PAR",
     validasi_legal: "Validasi Legal",
     tanggal_validasi_legal: "Tgl Validasi Legal",
@@ -153,13 +145,11 @@ const DetailField: React.FC<{ label: string; value: React.ReactNode }> = ({
   </div>
 );
 
-// Komponen read-only untuk file
 const FileLink: React.FC<{
   label: string;
   fileKey: string | null | undefined;
   progressId: string;
 }> = ({ label, fileKey, progressId }) => {
-  // Ganti modul ke 'notaris'
   const href = fileKey
     ? `/api/files/notaris/${progressId}?path=${encodeURIComponent(
         fileKey
@@ -204,7 +194,6 @@ const HistoryDetailView: React.FC<{
 
   return (
     <>
-      {/* Header Detail */}
       <div className="relative border-b border-gray-300 bg-gradient-to-r from-red-50 via-white to-red-50 px-6 py-5 flex justify-between items-center">
         <h2 className="text-xl font-bold text-gray-800 z-10 flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center shadow-lg shadow-red-500/30">
@@ -223,7 +212,6 @@ const HistoryDetailView: React.FC<{
         </Button>
       </div>
 
-      {/* Konten Detail */}
       <div className="p-6 lg:p-8 space-y-6 overflow-y-auto">
         <div className="text-center mb-4">
           <p className="text-sm text-gray-500">Snapshot data pada:</p>
@@ -232,8 +220,15 @@ const HistoryDetailView: React.FC<{
           </p>
         </div>
 
-        {/* Data Fields */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <DetailField
+            label="Awal Sewa"
+            value={formatDateOnly(data.awal_sewa)}
+          />
+          <DetailField
+            label="Akhir Sewa"
+            value={formatDateOnly(data.akhir_sewa)}
+          />
           <DetailField
             label="Tanggal PAR"
             value={formatDateOnly(data.tanggal_par)}
@@ -267,7 +262,6 @@ const HistoryDetailView: React.FC<{
           />
         </div>
 
-        {/* Dokumen */}
         <div className="space-y-3">
           <h3 className="font-semibold text-gray-600 text-sm mb-2">Dokumen</h3>
           <FileLink
@@ -290,10 +284,15 @@ export function NotarisHistoryModal({
   progressId,
   onClose,
 }: HistoryModalProps) {
-  const { history, isLoading, isError } = useNotarisHistory(progressId);
+  const { history, isLoading, isError, refetch } =
+    useNotarisHistory(progressId);
   const [selectedItem, setSelectedItem] = useState<NotarisHistoryItem | null>(
     null
   );
+
+  useEffect(() => {
+    refetch();
+  }, [refetch]);
 
   const sortedHistory = useMemo(() => {
     if (!Array.isArray(history)) return [];
@@ -305,7 +304,6 @@ export function NotarisHistoryModal({
 
   const renderContent = () => {
     if (selectedItem) {
-      // Tampilan 2: Detail Item
       return (
         <HistoryDetailView
           item={selectedItem}
@@ -315,10 +313,8 @@ export function NotarisHistoryModal({
       );
     }
 
-    // Tampilan 1: Daftar Riwayat
     return (
       <>
-        {/* Header Modal */}
         <div className="relative border-b border-gray-300 bg-gradient-to-r from-red-50 via-white to-red-50 px-6 py-5 flex justify-between items-center">
           <h2 className="text-xl font-bold text-gray-800 z-10 flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center shadow-lg shadow-red-500/30">
@@ -337,7 +333,6 @@ export function NotarisHistoryModal({
           </Button>
         </div>
 
-        {/* Konten List Riwayat */}
         <div className="p-6 lg:p-8 space-y-4 overflow-y-auto">
           {isLoading ? (
             <div className="flex justify-center items-center h-40">

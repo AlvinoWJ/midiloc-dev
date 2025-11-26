@@ -1,6 +1,7 @@
 "use client";
 
 import useSWR from "swr";
+import { useEffect, useState } from "react";
 
 export type ProgressItem = {
   id: string;
@@ -14,51 +15,120 @@ export type ProgressItem = {
   } | null;
 };
 
-export type ProgressMeta = {
-  page: number;
-  limit: number;
-  total: number;
-  total_pages: number;
-};
+export interface Pagination {
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+  startCursor: string | null;
+  endCursor: string | null;
+}
 
 export type ApiProgressResponse = {
   data: ProgressItem[];
-  pagination: ProgressMeta;
+  pagination: Pagination;
 };
 
 interface UseProgressProps {
   page?: number;
-  limit?: number;
   search?: string;
   month?: string;
   year?: string;
 }
 
+const UI_PAGE_SIZE = 9; // item per halaman di UI
+const PAGES_PER_BLOCK = 4; // per-block = 2 halaman UI
+const FETCH_BLOCK_SIZE = UI_PAGE_SIZE * PAGES_PER_BLOCK;
+
 export function useProgress({
   page = 1,
-  limit = 9,
   search = "",
   month = "",
   year = "",
 }: UseProgressProps = {}) {
-  const params = new URLSearchParams();
-  params.append("page", page.toString());
-  params.append("limit", limit.toString());
+  // Hitung block
+  const currentBlockIndex = Math.floor((page - 1) / PAGES_PER_BLOCK);
 
-  if (search) params.append("search", search);
-  if (month) params.append("month", month);
-  if (year) params.append("year", year);
+  // Map block -> cursor AFTER
+  const [cursorMap, setCursorMap] = useState<Record<number, string>>({ 0: "" });
 
-  const key = `/api/progress?${params.toString()}`;
+  // Reset cursor saat filter berubah
+  useEffect(() => {
+    setCursorMap({ 0: "" });
+  }, [search, month, year]);
 
-  const { data, error, isLoading, mutate } = useSWR<ApiProgressResponse>(key, {
-    keepPreviousData: true,
-  });
+  const cursorForCurrentBlock = cursorMap[currentBlockIndex];
+  const shouldFetch = cursorForCurrentBlock !== undefined;
+
+  const createUrl = () => {
+    if (!shouldFetch) return null;
+
+    const params = new URLSearchParams();
+    params.set("limit", FETCH_BLOCK_SIZE.toString());
+
+    if (cursorForCurrentBlock) {
+      params.set("after", cursorForCurrentBlock);
+    }
+
+    if (search.trim() !== "") params.set("search", search.trim());
+    if (month) params.set("month", month);
+    if (year) params.set("year", year);
+
+    return `/api/progress?${params.toString()}`;
+  };
+
+  const { data, error, isLoading, isValidating, mutate } =
+    useSWR<ApiProgressResponse>(createUrl(), {
+      revalidateOnFocus: false,
+      keepPreviousData: true,
+    });
+
+  // Simpan cursor untuk block berikutnya
+  useEffect(() => {
+    if (data?.pagination?.hasNextPage && data.pagination.endCursor) {
+      const nextBlockIndex = currentBlockIndex + 1;
+
+      setCursorMap((prev) => {
+        if (prev[nextBlockIndex] === data.pagination.endCursor) return prev;
+        return {
+          ...prev,
+          [nextBlockIndex]: data.pagination.endCursor!,
+        };
+      });
+    }
+  }, [data, currentBlockIndex]);
+
+  // Hitung slice UI
+  const pageIndexInBlock = (page - 1) % PAGES_PER_BLOCK;
+  const sliceStart = pageIndexInBlock * UI_PAGE_SIZE;
+  const sliceEnd = sliceStart + UI_PAGE_SIZE;
+
+  const fullBlockData = data?.data ?? [];
+  const progressData = fullBlockData.slice(sliceStart, sliceEnd);
+
+  // Hitung total pages UI
+  const apiHasNext = data?.pagination?.hasNextPage ?? false;
+  let totalPagesUi = 0;
+
+  if (apiHasNext) {
+    totalPagesUi = (currentBlockIndex + 2) * PAGES_PER_BLOCK;
+  } else {
+    const pagesInCurrentBlock = Math.ceil(fullBlockData.length / UI_PAGE_SIZE);
+    totalPagesUi = currentBlockIndex * PAGES_PER_BLOCK + pagesInCurrentBlock;
+  }
+
+  if (totalPagesUi === 0 && fullBlockData.length > 0) totalPagesUi = 1;
+  if (totalPagesUi === 0 && !isLoading) totalPagesUi = 1;
+
+  const uiHasNextPage = page < totalPagesUi;
+
+  const isInitialLoading = isLoading && !data;
 
   return {
-    progressData: data?.data ?? [],
-    meta: data?.pagination,
-    isLoading,
+    progressData,
+    totalPages: totalPagesUi,
+    hasNextPage: uiHasNextPage,
+    blockIndex: currentBlockIndex,
+    isInitialLoading,
+    isRefreshing: isValidating,
     isError: !!error,
     error,
     refreshProgress: () => mutate(),

@@ -40,7 +40,7 @@ export function useAddUlokForm({
 
   const isNumber = (val: string) => {
     if (!val) return false;
-    const normalized = val.replace(",", "."); // ubah koma ke titik agar bisa dibaca JS
+    const normalized = val.replace(",", ".");
     return !isNaN(Number(normalized));
   };
 
@@ -51,48 +51,29 @@ export function useAddUlokForm({
   ) => {
     const { name, value } = e.target;
     if (["lebardepan", "panjang", "luas"].includes(name)) {
-      let filtered = value.replace(/[^0-9.,]/g, "");
-      filtered = filtered.replace(".", ",");
+      // Hapus semua titik (pemisah ribuan) terlebih dahulu
+      let cleanValue = value.replace(/\./g, "");
 
+      // Hanya izinkan angka dan koma
+      let filtered = cleanValue.replace(/[^0-9,]/g, "");
+
+      // Cegah multiple koma
       const parts = filtered.split(",");
       if (parts.length > 2) {
         filtered = parts[0] + "," + parts[1];
       }
 
-      setFormData((prev) => {
-        const updated = { ...prev, [name]: filtered };
-        if (name === "panjang" || name === "lebardepan") {
-          const panjang = parseFloat(
-            (name === "panjang" ? filtered : prev.panjang).replace(",", ".")
-          );
-          const lebar = parseFloat(
-            (name === "lebardepan" ? filtered : prev.lebardepan).replace(
-              ",",
-              "."
-            )
-          );
-
-          if (!isNaN(panjang) && !isNaN(lebar)) {
-            const luas = (panjang * lebar).toFixed(2).replace(".", ",");
-            updated.luas = luas;
-          }
-        }
-        return updated;
-      });
+      setFormData((prev) => ({ ...prev, [name]: filtered }));
       return;
     }
 
-    if (name === "jumlahlantai") {
+    if (name === "jumlahlantai" || name === "hargasewa") {
+      // Hapus semua karakter non-digit (termasuk titik dan koma)
       const numericOnly = value.replace(/[^0-9]/g, "");
       setFormData((prev) => ({ ...prev, [name]: numericOnly }));
       return;
     }
 
-    if (name === "hargasewa") {
-      const numericValue = value.replace(/[^0-9]/g, "");
-      setFormData((prev) => ({ ...prev, [name]: numericValue }));
-      return;
-    }
     setFormData((prev) => ({ ...prev, [name]: value }));
     if (errors[name]) {
       setErrors((prev) => {

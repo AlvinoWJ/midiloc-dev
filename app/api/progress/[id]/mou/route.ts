@@ -17,7 +17,11 @@ export async function GET(
     );
   if (!canProgressKplt("read", user))
     return NextResponse.json(
-      { success: false, error: "Forbidden" },
+      {
+        success: false,
+        error: "Forbidden",
+        message: "Anda tidak berhak melakukan aksi ini",
+      },
       { status: 403 }
     );
 
@@ -50,7 +54,11 @@ export async function POST(
     );
   if (!canProgressKplt("create", user))
     return NextResponse.json(
-      { success: false, error: "Forbidden" },
+      {
+        success: false,
+        error: "Forbidden",
+        message: "Anda tidak berhak melakukan aksi ini",
+      },
       { status: 403 }
     );
   if (!user.branch_id)
@@ -117,7 +125,11 @@ export async function PATCH(
     );
   if (!canProgressKplt("update", user))
     return NextResponse.json(
-      { success: false, error: "Forbidden" },
+      {
+        success: false,
+        error: "Forbidden",
+        message: "Anda tidak berhak melakukan aksi ini",
+      },
       { status: 403 }
     );
   if (!user.branch_id)
@@ -133,8 +145,6 @@ export async function PATCH(
       { success: false, error: "Bad Request" },
       { status: 400 }
     );
-
-
 
   const parsed = MouUpdateSchema.safeParse(body);
   if (!parsed.success)

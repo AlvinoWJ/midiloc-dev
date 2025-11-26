@@ -61,7 +61,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
       </label>
       <div
         tabIndex={0}
-        className={`flex h-9 w-full rounded border border-gray-300 bg-transparent px-3 py-1 text-base shadow-sm transition-colors justify-between items-center cursor-pointer placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary
+        className={`flex h-11 w-full rounded border border-gray-300 bg-transparent px-3 py-1 text-base font-sm shadow-sm transition-colors justify-between items-center cursor-pointer placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary
           ${error ? "border-red-500" : "border-gray-300"}
           ${value === "" ? "text-muted-foreground" : "text-black"}`}
         onClick={() => setIsOpen(!isOpen)}

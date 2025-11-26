@@ -35,7 +35,6 @@ export function InfoCard({
 }: InfoCardProps) {
   const [showTooltip, setShowTooltip] = useState(false);
 
-  // Format tanggal jadi lebih rapi
   const formattedDate = new Date(created_at).toLocaleDateString("id-ID", {
     day: "2-digit",
     month: "long",
@@ -47,13 +46,11 @@ export function InfoCard({
     has_form_ukur === false,
   ].filter(Boolean).length;
 
-  // Tentukan warna badge berdasarkan jumlah data kosong
   const getBadgeColor = () => {
     if (missingDataCount === 0) return "bg-green-500";
     return "bg-red-500";
   };
 
-  // Generate pesan tooltip
   const getTooltipMessage = () => {
     if (missingDataCount === 0) return "Data lengkap";
     const missing = [];
@@ -67,11 +64,10 @@ export function InfoCard({
 
   return (
     <Link href={`${detailPath}/${id}`} className="block">
-      <Card className="w-full min-h-[192px] flex flex-col justify-between shadow-[1px_1px_6px_rgba(0,0,0,0.25)] hover:shadow-lg transition-shadow duration-300 relative">
-        {/* Badge Notifikasi */}
+      <Card className="w-full min-h-[192px] flex flex-col justify-between shadow-md hover:shadow-[1px_1px_6px_rgba(0,0,0,0.25)] transition-shadow duration-300 relative">
         {shouldShowBadge && (
           <div
-            className="absolute top-4 right-4 z-10"
+            className="absolute top-3 right-3 z-10"
             onMouseEnter={() => setShowTooltip(true)}
             onMouseLeave={() => setShowTooltip(false)}
           >
@@ -81,7 +77,6 @@ export function InfoCard({
               {missingDataCount}
             </div>
 
-            {/* Tooltip */}
             {showTooltip && (
               <div className="absolute top-[-40px] right-0 bg-gray-800 text-white text-xs py-2 px-3 rounded-md whitespace-nowrap shadow-lg animate-fade-in">
                 {getTooltipMessage()}
@@ -91,27 +86,27 @@ export function InfoCard({
           </div>
         )}
 
-        <CardHeader className="flex flex-row justify-between items-start space-y-0">
-          <div className="flex-1 min-w-0">
-            <CardTitle className="text-xl capitalize truncate">
+        <CardHeader className="flex flex-row justify-between items-start space-y-0 pr-7">
+          <div className="flex-1 min-w-0 pr-2">
+            <CardTitle className="text-lg lg:text-xl capitalize line-clamp-1">
               {nama}
             </CardTitle>
-            <CardDescription className="truncate w-[230px] text-gray-700 text-m font-medium">
+            <CardDescription className="line-clamp-1 text-gray-700 text-sm lg:text-base font-medium mt-1">
               {alamat}
             </CardDescription>
           </div>
           <Image
             src="/icons/Edit.png"
             alt="edit Logo"
-            width={27}
-            height={27}
-            className="text-gray-500"
+            width={24}
+            height={24}
+            className="text-gray-500 flex-shrink-0 lg:w-[27px] lg:h-[27px]"
           />
         </CardHeader>
 
-        <CardFooter className="flex justify-between items-center gap-4">
+        <CardFooter className="flex justify-between items-center gap-4 pt-2">
           <StatusBadge status={status} />
-          <span className="text-gray-700 text-m font-medium">
+          <span className="text-gray-700 text-m lg:text-base font-medium">
             {formattedDate}
           </span>
         </CardFooter>

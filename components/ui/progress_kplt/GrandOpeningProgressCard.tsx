@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import CustomSelect from "@/components/ui/customselect";
 import { GOEditableSchema } from "@/lib/validations/grand_opening";
 import { useAlert } from "@/components/shared/alertcontext";
+import { useUser } from "@/hooks/useUser";
 
 // DetailCard (Helper)
 const DetailCard = ({
@@ -102,7 +103,12 @@ const GrandOpeningForm: React.FC<FormProps> = ({
 
       const json = await res.json();
 
-      if (!res.ok) throw new Error(json.error || "Gagal menyimpan data");
+      if (!res.ok) {
+        throw new Error(
+          json.message || json.detail || json.error || "Gagal menyimpan data"
+        );
+      }
+
       onDataUpdate();
       showToast({
         type: "success",
@@ -112,7 +118,11 @@ const GrandOpeningForm: React.FC<FormProps> = ({
       });
       onSuccess();
     } catch (err: any) {
-      showToast({ type: "error", message: err.message });
+      showToast({
+        type: "error",
+        title: "Gagal",
+        message: err.message,
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -225,6 +235,9 @@ const GrandOpeningProgressCard: React.FC<GrandOpeningProgressCardProps> = ({
   const [isSubmittingApproval, setIsSubmittingApproval] = useState(false);
   const { showToast, showConfirmation } = useAlert();
 
+  const { user } = useUser();
+  const isBranchAdmin = user?.position_nama === "admin branch";
+
   const formatDate = (dateString?: string | null) =>
     dateString
       ? new Date(dateString).toLocaleDateString("id-ID", {
@@ -332,7 +345,7 @@ const GrandOpeningProgressCard: React.FC<GrandOpeningProgressCardProps> = ({
             />
           </div>
         </div>
-        {!isFinalized && (
+        {!isFinalized && isBranchAdmin && (
           <div className="flex justify-between items-center mt-8">
             <Button variant="secondary" onClick={() => setIsEditing(true)}>
               <Pencil className="mr-2" size={16} /> Edit

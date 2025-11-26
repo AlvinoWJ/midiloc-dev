@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import PetaLoader from "@/components/map/PetaLoader";
-import { MapPin } from "lucide-react";
+import { Map } from "lucide-react";
 import { Properti } from "@/types/common";
 
 interface DetailMapCardProps {
@@ -82,7 +82,7 @@ export default function DetailMapCard({
     <div className="bg-white rounded-xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)] mb-8">
       <div className="border-b border-gray-200 px-6 py-4">
         <div className="flex items-center">
-          <MapPin className="text-red-500 mr-3" size={20} />
+          <Map className="text-red-500 mr-3" size={20} />
           <h2 className="text-lg font-semibold text-gray-900">Peta Lokasi</h2>
         </div>
       </div>

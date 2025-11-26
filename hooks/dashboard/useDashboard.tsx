@@ -1,6 +1,6 @@
 import useSWR from "swr";
 import { DashboardData } from "@/types/common";
-import { useUser } from "./useUser";
+import { useUser } from "../useUser";
 
 interface UseDashboardProps {
   year?: number | null;

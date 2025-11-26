@@ -181,7 +181,6 @@ export default function DashboardLayout(props: DashboardPageProps) {
         }>) ?? []
       : [];
 
-  // KPI
   const dynamicStatsData = useMemo(() => {
     if (!propertiData) return [];
     let kpis = propertiData.kpis;
@@ -249,7 +248,6 @@ export default function DashboardLayout(props: DashboardPageProps) {
     ];
   }, [propertiData, selectedSpecialistId]);
 
-  // Donut & Bar
   const { ulokDonut, kpltDonut, ulokBar, kpltBar } = useMemo(() => {
     if (!propertiData)
       return { ulokDonut: [], kpltDonut: [], ulokBar: [], kpltBar: [] };
@@ -315,7 +313,6 @@ export default function DashboardLayout(props: DashboardPageProps) {
     return { ulokDonut, kpltDonut, ulokBar, kpltBar };
   }, [propertiData, selectedSpecialistId]);
 
-  // Filter peta berdasar tahun (FE)
   const filteredProperti = useMemo(() => {
     const dataToFilter = Array.isArray(propertiUntukPeta)
       ? propertiUntukPeta
@@ -337,7 +334,6 @@ export default function DashboardLayout(props: DashboardPageProps) {
     return new Date(yearToUse, 0, 1);
   };
 
-  // Bentuk statusFilter untuk komponen peta
   const currentStatusOptions =
     activeMapFilter === "ulok" ? STATUS_OPTIONS.ulok : STATUS_OPTIONS.kplt;
   activeMapFilter === "ulok" ? STATUS_OPTIONS.ulok : STATUS_OPTIONS.kplt;
@@ -387,7 +383,6 @@ export default function DashboardLayout(props: DashboardPageProps) {
             </h1>
           </div>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
-            {/* --- FILTER BRANCH (untuk RM / GM) --- */}
             {(isRegionalManager || isGeneralManager) &&
               branchOptions.length > 0 && (
                 <div className="relative group">
@@ -425,7 +420,6 @@ export default function DashboardLayout(props: DashboardPageProps) {
                 </div>
               )}
 
-            {/* --- FILTER SPECIALIST (untuk LM & BM) --- */}
             {(isLocationManager || isBranchManager) &&
               propertiData.breakdown?.type === "user" && (
                 <div className="relative group">
@@ -477,7 +471,6 @@ export default function DashboardLayout(props: DashboardPageProps) {
                 </div>
               )}
 
-            {/* --- FILTER TAHUN --- */}
             <div className="relative group">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
                 <svg
@@ -507,7 +500,6 @@ export default function DashboardLayout(props: DashboardPageProps) {
         </div>
 
         <div className="space-y-6">
-          {/* KPI */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
             {dynamicStatsData.map((stat, index) => (
               <StatsCard
@@ -520,7 +512,6 @@ export default function DashboardLayout(props: DashboardPageProps) {
             ))}
           </div>
 
-          {/* Charts */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <DonutChart
               data={ulokDonut || []}
@@ -544,33 +535,25 @@ export default function DashboardLayout(props: DashboardPageProps) {
             />
           </div>
 
-          {/* Map */}
           <div className="bg-white p-4 rounded-lg shadow-[1px_1px_6px_rgba(0,0,0,0.25)]">
-            {/* */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-2">
               <h3 className="text-lg font-semibold flex-shrink-0">
                 Peta Sebaran
               </h3>
 
-              {/* */}
               <div className="flex flex-col sm:flex-row items-stretch gap-3 w-full sm:w-auto">
-                {/* Dropdown ULOK/KPLT */}
                 <div className="relative">
-                  {" "}
-                  {/* DIBUNGKUS DIV RELATIVE */}
                   <select
                     value={activeMapFilter}
                     onChange={(e) =>
                       onMapFilterChange(e.target.value as ActiveMapFilter)
                     }
-                    // --- pl-10 diubah menjadi pl-4 ---
                     className="appearance-none w-full sm:w-auto bg-white border border-gray-300 rounded pl-4 pr-10 py-2.5 text-sm font-medium text-gray-700 hover:border-red-400 hover:shadow-md focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500 transition-all cursor-pointer min-w-[140px]"
                   >
                     <option value="ulok">ULOK</option>
                     <option value="kplt">KPLT</option>
                     <option value="progress_kplt">Progress KPLT</option>
                   </select>
-                  {/* --- PANAH BAWAH BARU --- */}
                   <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                     <svg
                       className="w-4 h-4 text-gray-400"
@@ -588,10 +571,7 @@ export default function DashboardLayout(props: DashboardPageProps) {
                   </div>
                 </div>
 
-                {/* Dropdown Status (sejajar dengan ULOK/KPLT) */}
                 <div className="relative">
-                  {" "}
-                  {/* DIBUNGKUS DIV RELATIVE */}
                   <select
                     value={statusValue}
                     onChange={(e) => setStatusValue(e.target.value as any)}
@@ -610,7 +590,6 @@ export default function DashboardLayout(props: DashboardPageProps) {
                       )
                     )}
                   </select>
-                  {/* --- PANAH BAWAH BARU --- */}
                   <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                     <svg
                       className="w-4 h-4 text-gray-400"

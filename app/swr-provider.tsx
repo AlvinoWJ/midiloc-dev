@@ -10,8 +10,6 @@ export default function SWRProvider({
   return (
     <SWRConfig
       value={{
-        // Biarkan browser pakai HTTP cache normal (hapus no-store),
-        // agar conditional GET (ETag) bisa 304 dan hemat.
         fetcher: async (url: string) => {
           const res = await fetch(url, { credentials: "include" });
           if (!res.ok) {
@@ -20,7 +18,6 @@ export default function SWRProvider({
           }
           return res.json();
         },
-        provider: () => new Map(),
         dedupingInterval: 60_000,
         revalidateOnFocus: false,
         revalidateIfStale: false,

@@ -2,10 +2,13 @@
 
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useTambahKplt, KpltFormData } from "@/hooks/useTambahkplt";
+import { useTambahKplt, KpltFormData } from "@/hooks/kplt/useTambahkplt";
 import TambahKpltLayout from "@/components/layout/tambah_kplt_layout";
 import { useAlert } from "@/components/shared/alertcontext";
-import { useKpltPrefill } from "@/hooks/useKpltPrefill";
+import { useKpltPrefill } from "@/hooks/kplt/useKpltPrefill";
+import { useSWRConfig } from "swr";
+import { invalidate } from "@/lib/swr-invalidate";
+import DetailKpltSkeleton from "@/components/ui/skleton";
 
 const PageStatus = ({ message }: { message: string }) => (
   <div className="flex items-center justify-center h-screen bg-gray-100">
@@ -19,6 +22,7 @@ export default function TambahKpltPage() {
   const { showToast } = useAlert();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const ulokId = params?.id;
+  const { mutate } = useSWRConfig();
 
   if (!ulokId) {
     return <PageStatus message="ID ULOK tidak ditemukan di URL." />;
@@ -65,6 +69,8 @@ export default function TambahKpltPage() {
             title: "Berhasil",
             message: "Data KPLT berhasil disimpan.",
           });
+
+          await invalidate.kplt();
           router.back();
           router.refresh();
         } catch (err) {
@@ -83,7 +89,9 @@ export default function TambahKpltPage() {
     });
 
   // 4. Handle loading & error
-  if (isPrefillLoading) return <PageStatus message="Memuat data..." />;
+  if (isPrefillLoading) {
+    return <DetailKpltSkeleton />;
+  }
   if (prefillError) return <PageStatus message="Gagal memuat data prefill." />;
 
   // 5. Render layout

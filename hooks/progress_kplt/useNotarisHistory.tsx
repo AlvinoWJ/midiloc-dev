@@ -2,6 +2,7 @@
 "use client";
 
 import useSWR from "swr";
+import { swrKeys } from "@/lib/swr-keys";
 
 export interface NotarisHistoryItem {
   id: string; // atau tipe unik lainnya
@@ -20,7 +21,7 @@ interface HistoryApiResponse {
 }
 
 const fetcher = (url: string) =>
-  fetch(url).then((res) => {
+  fetch(url, { cache: "no-store" }).then((res) => {
     if (!res.ok) {
       throw new Error("Gagal memuat riwayat notaris");
     }
