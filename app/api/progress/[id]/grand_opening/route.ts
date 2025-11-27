@@ -7,6 +7,7 @@ import {
   GOUpdateSchema,
   stripServerControlledFieldsGO,
 } from "@/lib/validations/grand_opening";
+import { validateProgressAccess } from "@/utils/kpltProgressBranchChecker";
 
 export async function GET(
   _req: Request,
@@ -30,6 +31,9 @@ export async function GET(
       { error: "Forbidden", message: "User has no branch" },
       { status: 403 }
     );
+  const check = await validateProgressAccess(supabase, user, params.id);
+  if (!check.allowed)
+    return NextResponse.json({ error: check.error }, { status: check.status });
 
   const progressId = params?.id;
   if (!progressId)
