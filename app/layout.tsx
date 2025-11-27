@@ -19,7 +19,10 @@ const defaultUrl = process.env.VERCEL_URL
 export const metadata: Metadata = {
   metadataBase: new URL(defaultUrl),
   title: "Midiloc",
-  description: "The fastest way to build apps with Next.js and Supabase",
+  description: "The best location management app in the universe",
+  icons: {
+    icon: "/Midiloc_logo.png",
+  },
 };
 
 export default async function RootLayout({

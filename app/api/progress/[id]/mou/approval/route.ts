@@ -2,7 +2,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser, canProgressKplt } from "@/lib/auth/acl";
-import { MouApprovalSchema} from "@/lib/validations/mou"
+import { MouApprovalSchema } from "@/lib/validations/mou";
+import { validateProgressAccess } from "@/utils/kpltProgressBranchChecker";
 
 export async function PATCH(
   req: NextRequest,
@@ -25,6 +26,9 @@ export async function PATCH(
       { success: false, error: "Forbidden", message: "No branch" },
       { status: 403 }
     );
+  const check = await validateProgressAccess(supabase, user, params.id);
+  if (!check.allowed)
+    return NextResponse.json({ error: check.error }, { status: check.status });
 
   const progressId = params.id;
   const body = await req.json().catch(() => null);
@@ -44,7 +48,6 @@ export async function PATCH(
       },
       { status: 422 }
     );
-
 
   const { final_status_mou } = parsed.data;
 

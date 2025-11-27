@@ -60,6 +60,12 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
     role_nama: roleName ?? null,
   };
 }
+
+export function isRegionalOrAbove(user: CurrentUser): boolean {
+  const pos = user.position_nama;
+  return pos === "regional manager" || pos === "general manager";
+}
+
 export function canUlok(
   action: "read" | "create" | "update" | "delete",
   user: CurrentUser

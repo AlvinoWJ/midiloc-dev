@@ -58,13 +58,11 @@ body {
   }
 }
 
-/* Custom styles untuk input date - Letakkan di sini */
 input[type="date"] {
   position: relative;
   padding-right: 2.5rem;
 }
 
-/* Untuk browser berbasis Webkit (Chrome, Safari, Edge) */
 input[type="date"]::-webkit-calendar-picker-indicator {
   position: absolute;
   right: 0.75rem;
@@ -77,12 +75,10 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   opacity: 1;
 }
 
-/* Untuk memastikan text input tidak tertimpa ikon */
 input[type="date"]::-webkit-datetime-edit {
   padding-right: 0.5rem;
 }
 
-/* Style untuk placeholder di browser yang support */
 input[type="date"]::-webkit-datetime-edit-text,
 input[type="date"]::-webkit-datetime-edit-month-field,
 input[type="date"]::-webkit-datetime-edit-day-field,
@@ -90,7 +86,6 @@ input[type="date"]::-webkit-datetime-edit-year-field {
   color: #374151;
 }
 
-/* Untuk Firefox */
 input[type="date"]::-moz-calendar-picker-indicator {
   position: absolute;
   right: 0.75rem;

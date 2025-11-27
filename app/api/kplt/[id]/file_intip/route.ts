@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser, canKplt } from "@/lib/auth/acl";
-import { buildPathByField, MIME, isUuid } from "@/lib/storage/path";
+import { buildPathByField, isUuid } from "@/lib/storage/path";
 import { KpltCreatePayloadSchema } from "@/lib/validations/kplt";
+import { isImageFile, isPdfFile } from "@/utils/fileChecker";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -116,13 +117,26 @@ export async function PATCH(
         { status: 400 }
       );
     }
-    const allowed = [...MIME.pdf, ...MIME.image];
-    if (file.type && !allowed.includes(file.type)) {
+
+    let isFileValid = false;
+    let errorReason = "Format file tidak dikenali";
+    // Cek apakah PDF?
+    const pdfCheck = await isPdfFile(file);
+    if (pdfCheck.ok) {
+      isFileValid = true;
+    } else {
+      // Jika bukan PDF, Cek apakah Image?
+      const imgCheck = await isImageFile(file);
+      if (imgCheck.ok) {
+        isFileValid = true;
+      } else {
+        errorReason = "File bukan PDF atau Gambar valid (Signature mismatch)";
+      }
+    }
+
+    if (!isFileValid) {
       return NextResponse.json(
-        {
-          error: "File harus PDF atau gambar (PNG/JPEG/WEBP)",
-          detail: `Tipe: ${file.type}`,
-        },
+        { error: "Invalid File", detail: errorReason },
         { status: 422 }
       );
     }

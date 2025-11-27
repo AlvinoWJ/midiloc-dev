@@ -1,7 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentUser, canProgressKplt } from "@/lib/auth/acl";
+import {
+  getCurrentUser,
+  canProgressKplt,
+  isRegionalOrAbove,
+} from "@/lib/auth/acl";
 
 export async function GET(
   _req: Request,
@@ -73,22 +77,29 @@ export async function GET(
 
   // Scope branch oleh kplt.branch_id
   const branchId = (progress as any)?.kplt?.branch_id;
-  if (branchId && branchId !== user.branch_id) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Forbidden",
-        message: "Progress out of branch scope",
-      },
-      { status: 403 }
-    );
+  const isSuperUser = isRegionalOrAbove(user);
+  if (!isSuperUser) {
+    {
+      if (branchId && user.branch_id && branchId !== user.branch_id) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "Forbidden",
+            message: "Progress out of branch scope",
+          },
+          { status: 403 }
+        );
+      }
+    }
   }
+
+  const targetBranchId = branchId || user.branch_id;
 
   // Panggil RPC timeline
   const { data: timelineResp, error: tlErr } = await supabase.rpc(
     "fn_progress_timeline",
     {
-      p_branch_id: user.branch_id,
+      p_branch_id: targetBranchId,
       p_progress_kplt_id: progressId,
     }
   );
