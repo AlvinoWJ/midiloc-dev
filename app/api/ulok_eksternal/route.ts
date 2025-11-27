@@ -92,23 +92,20 @@ export async function GET(req: NextRequest) {
     const afterDecoded = decodeCursor(url.searchParams.get("after"));
     const beforeDecoded = decodeCursor(url.searchParams.get("before"));
 
-    const { data, error } = await supabase.rpc(
-      "fn_ulok_eksternal_dashboard",
-      {
-        p_user_id: user.id,
-        p_branch_id: user.branch_id,
-        p_position: String((user as any).position_nama ?? "").toLowerCase(),
-        p_scope: scope,
-        p_search: search || null,
-        p_limit: limit,
-        p_month: month ?? null,
-        p_year: year ?? null,
-        p_after_created_at: afterDecoded?.created_at ?? null,
-        p_after_id: afterDecoded?.id ?? null,
-        p_before_created_at: beforeDecoded?.created_at ?? null,
-        p_before_id: beforeDecoded?.id ?? null,
-      }
-    );
+    const { data, error } = await supabase.rpc("fn_ulok_eksternal_dashboard", {
+      p_user_id: user.id,
+      p_branch_id: user.branch_id,
+      p_position: String((user as any).position_nama ?? "").toLowerCase(),
+      p_scope: scope,
+      p_search: search || null,
+      p_limit: limit,
+      p_month: month ?? null,
+      p_year: year ?? null,
+      p_after_created_at: afterDecoded?.created_at ?? null,
+      p_after_id: afterDecoded?.id ?? null,
+      p_before_created_at: beforeDecoded?.created_at ?? null,
+      p_before_id: beforeDecoded?.id ?? null,
+    });
 
     if (error) {
       return NextResponse.json(

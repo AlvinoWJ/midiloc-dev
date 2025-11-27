@@ -8,6 +8,7 @@ import {
   stripServerControlledFieldsIT,
 } from "@/lib/validations/izin_tetangga";
 import { makeFieldKey, isValidPrefixKey } from "@/lib/storage/naming";
+import { validateProgressAccess } from "@/utils/kpltProgressBranchChecker";
 
 const BUCKET = "file_storage";
 const FILE_FIELDS = ["file_izin_tetangga", "file_bukti_pembayaran"] as const;
@@ -116,6 +117,9 @@ export async function GET(
       { error: "Forbidden", message: "User has no branch" },
       { status: 403 }
     );
+  const check = await validateProgressAccess(supabase, user, params.id);
+  if (!check.allowed)
+    return NextResponse.json({ error: check.error }, { status: check.status });
 
   const progressId = params?.id;
   if (!progressId)
@@ -165,6 +169,9 @@ export async function POST(
       { error: "Forbidden", message: "User has no branch" },
       { status: 403 }
     );
+  const check = await validateProgressAccess(supabase, user, params.id);
+  if (!check.allowed)
+    return NextResponse.json({ error: check.error }, { status: check.status });
 
   const progressId = params?.id;
   if (!progressId)
@@ -276,6 +283,9 @@ export async function PATCH(
       { error: "Forbidden", message: "User has no branch" },
       { status: 403 }
     );
+  const check = await validateProgressAccess(supabase, user, params.id);
+  if (!check.allowed)
+    return NextResponse.json({ error: check.error }, { status: check.status });
 
   const progressId = params?.id;
   if (!progressId)
@@ -410,6 +420,9 @@ export async function DELETE(
       { error: "Forbidden", message: "User has no branch" },
       { status: 403 }
     );
+  const check = await validateProgressAccess(supabase, user, params.id);
+  if (!check.allowed)
+    return NextResponse.json({ error: check.error }, { status: check.status });
 
   const progressId = params?.id;
   if (!progressId)

@@ -46,6 +46,25 @@ export async function PATCH(
       );
     }
 
+    // Sebelum assign LS, pastikan Ulok Eksternal ini milik cabang Manager yang login
+    const { data: ulokMeta, error: metaErr } = await supabase
+      .from("ulok_eksternal")
+      .select("branch_id")
+      .eq("id", params.id)
+      .single();
+
+    if (metaErr || !ulokMeta) {
+      return NextResponse.json({ error: "Ulok not found" }, { status: 404 });
+    }
+
+    // Jika user terikat cabang (LM), wajib match
+    if (me.branch_id && ulokMeta.branch_id !== me.branch_id) {
+      return NextResponse.json(
+        { error: "Forbidden: Anda tidak dapat mengubah data cabang lain" },
+        { status: 403 }
+      );
+    }
+
     let body: unknown;
     try {
       body = await req.json();

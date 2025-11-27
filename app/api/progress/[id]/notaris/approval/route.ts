@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/client";
 import { getCurrentUser, canProgressKplt } from "@/lib/auth/acl";
 import { NotarisApprovalSchema } from "@/lib/validations/notaris";
+import { validateProgressAccess } from "@/utils/kpltProgressBranchChecker";
 
 // PATCH /api/progress/[id]/notaris/approval
 export async function PATCH(
@@ -19,6 +20,9 @@ export async function PATCH(
       { error: "Forbidden", message: "User has no branch" },
       { status: 403 }
     );
+  const check = await validateProgressAccess(supabase, user, params.id);
+  if (!check.allowed)
+    return NextResponse.json({ error: check.error }, { status: check.status });
 
   const progressId = params?.id;
   if (!progressId)

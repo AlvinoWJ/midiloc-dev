@@ -5,11 +5,10 @@ import { getCurrentUser, canUlokEksternal } from "@/lib/auth/acl";
 
 function roleFromPositionName(
   name?: string | null
-): "rm" | "bm" | "lm" | "ls" | undefined {
+): "rm" | "lm" | "ls" | undefined {
   if (!name) return undefined;
   const key = name.trim().toLowerCase();
   if (key === "regional manager") return "rm";
-  if (key === "branch manager") return "bm";
   if (key === "location manager") return "lm";
   if (key === "location specialist") return "ls";
   return undefined;
@@ -55,8 +54,8 @@ export async function GET(
     if (role === "ls") {
       // LS: hanya boleh akses jika dia penanggungjawab-nya
       query = query.eq("penanggungjawab", user.id);
-    } else if (role === "bm" || role === "lm") {
-      // BM/LM: hanya boleh akses data di branch-nya
+    } else if (role === "lm") {
+      // LM: hanya boleh akses data di branch-nya
       if (!(user as any)?.branch_id) {
         return NextResponse.json(
           { error: "Forbidden: user has no branch" },
@@ -64,10 +63,8 @@ export async function GET(
         );
       }
       query = query.eq("branch_id", user.branch_id);
-    } else {
-      // RM: boleh akses semua
     }
-
+    
     const { data, error } = await query;
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 404 });
