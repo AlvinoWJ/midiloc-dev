@@ -5,7 +5,7 @@ import { KpltIdParamSchema } from "@/lib/validations/kplt-approval";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
-
+  
 // detail kplt
 export async function GET(
   _req: Request,
