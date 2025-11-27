@@ -78,6 +78,14 @@ export default function Sidebar() {
         return false;
       }
     }
+    if (item.href === "/ulok_eksternal") {
+      if (loadingUser) return false;
+
+      const position = user?.position_nama?.toLowerCase();
+      if (position === "branch manager" || position === "general manager") {
+        return false;
+      }
+    }
     return true;
   });
 

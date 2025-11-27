@@ -240,9 +240,6 @@ function mapKpltDetailResponse(
   };
 }
 
-// =========================================================================
-// CUSTOM HOOK DENGAN SWR
-// =========================================================================
 export function useKpltDetail(id: string | undefined) {
   const key = id ? `/api/kplt/${id}` : null;
 
