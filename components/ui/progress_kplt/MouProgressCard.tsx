@@ -75,6 +75,7 @@ const MouForm: React.FC<MouFormProps> = ({
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { showToast } = useAlert();
+  const { user } = useUser();
 
   const [statusPajak, setStatusPajak] = useState<string>(
     initialData?.status_pajak || ""
