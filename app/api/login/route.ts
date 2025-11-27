@@ -22,7 +22,10 @@ export async function POST(request: NextRequest) {
     });
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 401 });
+      return NextResponse.json(
+        { error: "Email atau password salah" },
+        { status: 401 }
+      );
     }
 
     // Return success response
@@ -32,11 +35,6 @@ export async function POST(request: NextRequest) {
       user: {
         id: data.user?.id,
         email: data.user?.email,
-      },
-      session: {
-        access_token: data.session?.access_token,
-        refresh_token: data.session?.refresh_token,
-        expires_at: data.session?.expires_at,
       },
     });
   } catch (error) {

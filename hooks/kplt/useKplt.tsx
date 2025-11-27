@@ -4,7 +4,6 @@ import useSWR from "swr";
 import { useState, useEffect, useMemo } from "react";
 import type { CurrentUser } from "@/types/common";
 
-// Tipe untuk props halaman KPLT
 export interface KpltPageProps {
   isLoading: boolean;
   isRefreshing: boolean;
@@ -60,7 +59,6 @@ export interface Pagination {
   hasPrevPage: boolean;
   startCursor: string | null;
   endCursor: string | null;
-  // Count spesifik per scope
   count_needinput?: number;
   count_inprogress?: number;
   count_waitingforum?: number;
@@ -92,8 +90,8 @@ interface UseKpltProps {
   year?: string;
 }
 
-const UI_PAGE_SIZE = 9; // User melihat 9 item per halaman
-const PAGES_PER_BLOCK = 1; // 4 Halaman UI per 1 Fetch API
+const UI_PAGE_SIZE = 9;
+const PAGES_PER_BLOCK = 1;
 const FETCH_BLOCK_SIZE = UI_PAGE_SIZE * PAGES_PER_BLOCK;
 
 export function useKplt({
@@ -222,7 +220,7 @@ export function useKplt({
     );
   }, [data, scope]);
 
-  const pageIndexInBlock = (page - 1) % PAGES_PER_BLOCK; // 0, 1, 2, 3
+  const pageIndexInBlock = (page - 1) % PAGES_PER_BLOCK;
   const sliceStart = pageIndexInBlock * UI_PAGE_SIZE;
   const sliceEnd = sliceStart + UI_PAGE_SIZE;
 
@@ -232,15 +230,12 @@ export function useKplt({
   let totalPagesUi = 0;
 
   if (apiHasNext) {
-    // Jika API bilang masih ada data setelah block ini, kita asumsikan setidaknya ada 1 block penuh lagi
     totalPagesUi = (currentBlockIndex + 2) * PAGES_PER_BLOCK;
   } else {
-    // Jika tidak ada next page dari API, total halaman = halaman yg sudah lewat + sisa halaman di block ini
     const pagesInCurrentBlock = Math.ceil(processedData.length / UI_PAGE_SIZE);
     totalPagesUi = currentBlockIndex * PAGES_PER_BLOCK + pagesInCurrentBlock;
   }
 
-  // Fallback minimal 1 halaman
   if (totalPagesUi === 0 && processedData.length > 0) totalPagesUi = 1;
   if (totalPagesUi === 0 && !isLoading) totalPagesUi = 1;
 

@@ -1,0 +1,15 @@
+version: "3"
+services:
+  midiloc:
+    container_name: midiloc-app
+    image: alvinowj/midiloc:v1.0
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "3001:3000"
+    environment:
+      - NEXT_PUBLIC_SUPABASE_URL=https://mzesggyldskxocrjihty.supabase.co
+      - NEXT_PUBLIC_SUPABASE_PUBLISHABLE_OR_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im16ZXNnZ3lsZHNreG9jcmppaHR5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU2NTA5ODMsImV4cCI6MjA3MTIyNjk4M30.5sbGY8vtOyfteJBz3lwNOLcOQ8QUPeR-dwHwHGc79wM
+      - SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_keyeyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im16ZXNnZ3lsZHNreG9jcmppaHR5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTY1MDk4MywiZXhwIjoyMDcxMjI2OTgzfQ.4QCrawslF4LbTJTAqOG-KWV5W3kQHgSQZLEZyNRYmXc

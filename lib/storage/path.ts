@@ -5,7 +5,7 @@ export function slugify(name: string) {
     .replace(/-+/g, "-")
     .replace(/^-|-$/g, "")
     .slice(0, 80);
-} 
+}
 
 export function extFromNameOrType(name: string, type?: string, fallback = "") {
   const m = name.toLowerCase().match(/\.[a-z0-9]+$/);
@@ -49,7 +49,11 @@ export const PDF_FIELDS = [
   "pdf_kks",
   "pdf_form_ukur",
 ] as const;
-export const EXCEL_FIELDS = ["counting_kompetitor", "excel_fpl", "excel_pe"] as const;
+export const EXCEL_FIELDS = [
+  "counting_kompetitor",
+  "excel_fpl",
+  "excel_pe",
+] as const;
 export const VIDEO_FIELDS = [
   "video_traffic_siang",
   "video_traffic_malam",

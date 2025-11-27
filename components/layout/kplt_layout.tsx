@@ -116,7 +116,7 @@ export default function KpltLayout(props: KpltPageProps) {
   };
 
   return (
-    <main className="space-y-4 lg:space-y-6">
+    <main className="space-y-4 lg:space-y-6 flex flex-col flex-grow min-h-[85vh]">
       {isLoading ? (
         <KpltSkeleton accordionCount={3} cardsPerAccordion={3} />
       ) : isError ? (
@@ -139,7 +139,6 @@ export default function KpltLayout(props: KpltPageProps) {
         </div>
       ) : (
         <>
-          {/* Header */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <h1 className="text-3xl md:text-4xl font-bold">KPLT</h1>
             <SearchWithFilter
@@ -148,7 +147,6 @@ export default function KpltLayout(props: KpltPageProps) {
             />
           </div>
 
-          {/* Tabs */}
           <div className="flex items-center justify-between">
             <Tabs
               tabs={["Recent", "History"]}
@@ -157,7 +155,7 @@ export default function KpltLayout(props: KpltPageProps) {
             />
           </div>
 
-          <div className="relative flex-grow min-h-[23rem]">
+          <div className="relative flex-grow flex flex-col min-h-[23rem]">
             {isRefreshing ? (
               <div className="flex items-center justify-center min-h-[23rem]">
                 <Loader2 className="w-8 h-8 text-primary animate-spin" />{" "}
@@ -181,7 +179,7 @@ export default function KpltLayout(props: KpltPageProps) {
                 </p>
               </div>
             ) : (
-              <div className="space-y-6">
+              <div className="space-y-6 flex flex-col flex-grow">
                 {activeTab === "Recent" && (
                   <div className="space-y-6">
                     {statusOrder.map((status) => {
@@ -235,7 +233,7 @@ export default function KpltLayout(props: KpltPageProps) {
                 )}
 
                 {activeTab === "History" && totalPages && totalPages > 1 && (
-                  <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-6 min-h-[24rem]">
                     {displayData.map((kplt) => (
                       <InfoCard
                         key={kplt.id}
@@ -252,21 +250,7 @@ export default function KpltLayout(props: KpltPageProps) {
 
                 {activeTab === "History" && totalPages && totalPages > 1 && (
                   <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-auto pt-6">
-                    {/* ... (Seluruh JSX pagination Anda) ... */}
                     <div className="flex items-center gap-1">
-                      {/* First Page Button */}
-                      <button
-                        onClick={() => onPageChange && onPageChange(1)}
-                        disabled={
-                          !currentPage || currentPage === 1 || isLoading
-                        }
-                        className="p-2 rounded-full text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
-                        aria-label="Halaman pertama"
-                      >
-                        <ChevronsLeft className="w-5 h-5" />
-                      </button>
-
-                      {/* Previous Button */}
                       <button
                         onClick={() =>
                           onPageChange && onPageChange(currentPage - 1)
@@ -278,11 +262,9 @@ export default function KpltLayout(props: KpltPageProps) {
                         <ChevronLeft className="w-5 h-5" />
                       </button>
 
-                      {/* Page Numbers */}
                       <div className="flex items-center gap-1 mx-2">
                         {pageNumbers.map((pageNum) => {
                           if (typeof pageNum === "string") {
-                            // Ellipsis
                             return (
                               <div
                                 key={pageNum}
@@ -305,7 +287,7 @@ export default function KpltLayout(props: KpltPageProps) {
                             w-10 h-10 rounded-full text-sm font-semibold transition-all
                             ${
                               isActive
-                                ? "bg-red-500 text-white shadow-lg shadow-red-500/30 scale-105" // Ganti 'bg-primary' menjadi 'bg-red-500' agar konsisten
+                                ? "bg-red-500 text-white shadow-lg shadow-red-500/30 scale-105"
                                 : "text-gray-700 hover:bg-gray-100"
                             }
                               disabled:opacity-40 disabled:cursor-not-allowed
@@ -333,20 +315,6 @@ export default function KpltLayout(props: KpltPageProps) {
                         aria-label="Halaman berikutnya"
                       >
                         <ChevronRight className="w-5 h-5" />
-                      </button>
-
-                      <button
-                        onClick={() => onPageChange && onPageChange(totalPages)}
-                        disabled={
-                          !totalPages ||
-                          !currentPage ||
-                          currentPage >= totalPages ||
-                          isLoading
-                        }
-                        className="p-2 rounded-full text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
-                        aria-label="Halaman terakhir"
-                      >
-                        <ChevronsRight className="w-5 h-5" />
                       </button>
                     </div>
                   </div>

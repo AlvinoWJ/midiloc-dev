@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser, canUlok } from "@/lib/auth/acl";
 import { UlokUpdateSchema } from "@/lib/validations/ulok";
 import { buildPathByField } from "@/lib/storage/path";

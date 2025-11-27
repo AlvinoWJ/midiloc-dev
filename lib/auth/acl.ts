@@ -14,14 +14,14 @@ export const POSITION = {
 };
 
 export type CurrentUser = {
-  // Tambahan profil untuk kebutuhan response API
   id: string;
   email: string | null;
   nama: string | null;
   branch_id: string | null;
-  branch_nama: string | null; // users.branch_id -> branch.nama
+  branch_nama: string | null;
   position_id: string | null;
   position_nama: string | null; // users.position_id -> position.nama
+  role_nama: string | null;
 };
 
 export async function getCurrentUser(): Promise<CurrentUser | null> {
@@ -33,7 +33,7 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
   const { data: user, error } = await supabase
     .from("users")
     .select(
-      "id, email, nama, branch_id, branch: branch_id (nama),position_id, position: position_id (nama)"
+      "id, email, nama, branch_id, branch: branch_id (nama),position_id, position: position_id (nama), role_id, role: role_id (nama)"
     )
     .eq("id", uid)
     .maybeSingle();
@@ -43,6 +43,9 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
 
   const userBranch = user?.branch as { nama: string } | undefined;
   const branchName = userBranch?.nama?.toLowerCase();
+
+  const userRole = user?.role as { nama: string } | undefined;
+  const roleName = userRole?.nama?.toLowerCase();
 
   if (error || !user || !positionName || !branchName) return null;
 
@@ -54,6 +57,7 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
     branch_nama: branchName ?? null,
     position_id: user.position_id ?? null,
     position_nama: positionName ?? null,
+    role_nama: roleName ?? null,
   };
 }
 export function canUlok(
@@ -85,7 +89,7 @@ export function canKplt(
         action === "delete"
       );
     case "location manager":
-      return action === "read" || action === "update"; // data baru
+      return action === "read" || action === "update";
     case "branch manager":
       return action === "read" || action === "update" || action === "create";
     case "regional manager":
@@ -93,7 +97,7 @@ export function canKplt(
     case "general manager":
       return action === "read" || action === "create" || action === "update";
     case "admin branch":
-      return action === "read"; // membaca untuk konteks progres
+      return action === "read";
     default:
       return false;
   }
@@ -136,7 +140,7 @@ export function canUlokEksternal(
     case "general manager":
       return action === "read";
     case "admin branch":
-      return action === "read"; // membaca untuk konteks progres
+      return action === "read";
     default:
       return false;
   }
@@ -158,7 +162,7 @@ export function canUlokEksisting(
     case "general manager":
       return action === "read";
     case "admin branch":
-      return action === "read"; // membaca untuk konteks progres
+      return action === "read";
     default:
       return false;
   }

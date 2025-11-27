@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser, canKplt } from "@/lib/auth/acl";
 import { buildPathByField, MIME, isUuid } from "@/lib/storage/path";
 import { KpltCreatePayloadSchema } from "@/lib/validations/kplt";

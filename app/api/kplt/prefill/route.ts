@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser, canUlok } from "@/lib/auth/acl";
 
 const UlokIdSchema = z.string().trim().uuid();

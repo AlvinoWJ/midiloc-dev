@@ -1,12 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { signUpSchema } from "@/lib/validations/auth";
 import type { SignUpResponse } from "@/types/auth";
+import { getCurrentUser } from "@/lib/auth/acl";
 
 // GET function (tidak ada perubahan)...
 export async function GET() {
   try {
     const supabase = await createClient();
+    const currentUser = await getCurrentUser();
+    if (!currentUser || currentUser.role_nama !== "superadmin") {
+      // Sesuaikan rule Anda
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Forbidden: Hanya Super Admin yang boleh membuat user baru.",
+        },
+        { status: 403 }
+      );
+    }
     const [branchesResult, positionsResult, rolesResult] = await Promise.all([
       supabase
         .from("branch")
@@ -54,6 +67,18 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
+    const currentUser = await getCurrentUser();
+    if (!currentUser || currentUser.role_nama !== "superadmin") {
+      // Sesuaikan rule Anda
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Forbidden: Hanya Super Admin yang boleh membuat user baru.",
+        },
+        { status: 403 }
+      );
+    }
+
     const body = await request.json();
 
     const validationResult = signUpSchema.safeParse(body);
@@ -71,9 +96,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { email, password, nama, nik, branch_id, position_id, role_id } = validationResult.data;
+    const { email, password, nama, nik, branch_id, position_id, role_id } =
+      validationResult.data;
 
-    const { data: existingUser } = await supabase
+    const supabaseAdmin = createAdminClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!, // Pastikan variabel ini ada di .env.local
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
+      }
+    );
+
+    const { data: existingUser } = await supabaseAdmin
       .from("users")
       .select("email")
       .eq("email", email)
@@ -89,10 +126,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email,
-      password,
-    });
+    const { data: authData, error: authError } =
+      await supabaseAdmin.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true, // Langsung confirm agar user bisa login
+        user_metadata: { nama }, // Opsional
+      });
     if (authError)
       return NextResponse.json<SignUpResponse>(
         { success: false, message: authError.message },
@@ -114,7 +154,7 @@ export async function POST(request: NextRequest) {
         nama,
         nik,
         email,
-        created_by: authData.user.id,
+        created_by: currentUser.id,
       })
       .select(
         `id, branch_id, position_id, role_id, nama,nik, email, is_active, created_at`
@@ -122,7 +162,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (userError) {
-      await supabase.auth.admin.deleteUser(authData.user.id);
+      await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
       return NextResponse.json<SignUpResponse>(
         {
           success: false,
