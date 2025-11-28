@@ -17,7 +17,7 @@ export async function POST(
 
   if (!user)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!canKplt("update", user))
+  if (!canKplt("approve", user))
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   if (!user.branch_id)
     return NextResponse.json(
@@ -68,7 +68,7 @@ export async function PATCH(
 
   if (!user)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!canKplt("update", user))
+  if (!canKplt("final-approve", user))
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   if (!user.branch_id)
     return NextResponse.json(

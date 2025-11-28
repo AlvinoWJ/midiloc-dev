@@ -6,9 +6,8 @@ export type InternalPositionName =
   | "location manager"
   | "branch manager"
   | "location specialist"
-  | "general manager" // Tambahkan yang sebelumnya terlewat di type tapi ada di logic
-  | "admin branch"
-  | "senior manager";
+  | "general manager"
+  | "admin branch";
 
 // Single Source of Truth
 export const POSITION = {
@@ -20,6 +19,76 @@ export const POSITION = {
   ADMIN_BRANCH: "admin branch" as InternalPositionName,
 } as const;
 
+// Tipe Aksi yang mungkin dilakukan
+type Action =
+  | "read"
+  | "create"
+  | "update"
+  | "delete"
+  | "approve"
+  | "final-approve"
+  | "assign";
+
+// Struktur Config Permissions
+type RolePermissionConfig = {
+  canUlok: Action[];
+  canKplt: Action[];
+  canUlokEksternal: Action[];
+  canUlokEksisting: Action[];
+  canProgressKplt: Action[];
+};
+
+// ==============================================================================
+// CONFIGURATION OBJECT (Editable role access)
+// ==============================================================================
+const ROLE_CONFIG: Record<string, RolePermissionConfig> = {
+  [POSITION.LOCATION_SPECIALIST]: {
+    canUlok: ["read", "create", "update", "delete"],
+    canKplt: ["read", "create", "update", "delete"],
+    canUlokEksternal: ["read", "approve"],
+    canUlokEksisting: ["read"],
+    canProgressKplt: ["read"],
+  },
+  [POSITION.LOCATION_MANAGER]: {
+    canUlok: ["read", "approve"],
+    canKplt: ["read", "update"],
+    canUlokEksternal: ["read", "assign"],
+    canUlokEksisting: ["read"],
+    canProgressKplt: ["read"],
+  },
+  [POSITION.BRANCH_MANAGER]: {
+    canUlok: ["read"],
+    canKplt: ["read", "approve"],
+    canUlokEksternal: ["read"],
+    canUlokEksisting: ["read"],
+    canProgressKplt: ["read"],
+  },
+  [POSITION.REGIONAL_MANAGER]: {
+    canUlok: ["read"],
+    canKplt: ["read", "approve"],
+    canUlokEksternal: ["read", "assign"],
+    canUlokEksisting: ["read"],
+    canProgressKplt: ["read"],
+  },
+  [POSITION.GENERAL_MANAGER]: {
+    canUlok: ["read"],
+    canKplt: ["read", "final-approve"],
+    canUlokEksternal: ["read"],
+    canUlokEksisting: ["read"],
+    canProgressKplt: ["read"],
+  },
+  [POSITION.ADMIN_BRANCH]: {
+    canUlok: ["read"],
+    canKplt: ["read"],
+    canUlokEksternal: ["read"],
+    canUlokEksisting: ["read"],
+    canProgressKplt: ["read", "update", "create"],
+  },
+};
+
+// ==============================================================================
+// LOGIC (Generic Functions - Closed for Modification)
+// ==============================================================================
 export type CurrentUser = {
   id: string;
   email: string | null;
@@ -31,6 +100,51 @@ export type CurrentUser = {
   role_nama: string | null;
 };
 
+// Mengambil permissions user saat ini
+function getPermissions(user: CurrentUser): RolePermissionConfig | null {
+  if (!user.position_nama) return null;
+  return ROLE_CONFIG[user.position_nama.toLowerCase()] || null;
+}
+
+export function canUlok(action: Action, user: CurrentUser) {
+  const perms = getPermissions(user);
+  return perms ? perms.canUlok.includes(action) : false;
+}
+
+export function canKplt(action: Action, user: CurrentUser) {
+  const perms = getPermissions(user);
+  return perms ? perms.canKplt.includes(action) : false;
+}
+
+export function canUlokEksternal(action: Action, user: CurrentUser) {
+  const perms = getPermissions(user);
+  return perms ? perms.canUlokEksternal.includes(action) : false;
+}
+
+export function canUlokEksisting(action: Action, user: CurrentUser) {
+  const perms = getPermissions(user);
+  return perms ? perms.canUlokEksisting.includes(action) : false;
+}
+
+export function canProgressKplt(action: Action, user: CurrentUser) {
+  // Logic khusus: Admin Branch selalu TRUE (bypass config)
+  if (user.position_nama === POSITION.ADMIN_BRANCH) return true;
+
+  const perms = getPermissions(user);
+  return perms ? perms.canProgressKplt.includes(action) : false;
+}
+
+// Helper khusus non-CRUD
+export function isRegionalOrAbove(user: CurrentUser): boolean {
+  return (
+    user.position_nama === POSITION.REGIONAL_MANAGER ||
+    user.position_nama === POSITION.GENERAL_MANAGER
+  );
+}
+
+// ==============================================================================
+// AUTH FUNCTION
+// ==============================================================================
 export async function getCurrentUser(): Promise<CurrentUser | null> {
   const supabase = await createClient();
 
@@ -44,10 +158,8 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
   // ---------------------------------------------------------------------------
   // 🚀 FAST PATH: Cek Custom Claims (Metadata Token)
   // ---------------------------------------------------------------------------
-  // Kita cek apakah data kunci tersedia di tiket (token) user
   const md = user.app_metadata || {};
 
-  // Minimal data yang wajib ada untuk dianggap valid
   // (Sesuaikan dengan field yang Anda simpan di SQL Trigger)
   if (md.role_nama && md.position_nama) {
     // Casting type aman untuk data dari metadata
@@ -60,7 +172,7 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
     return {
       id: uid,
       email: user.email ?? null,
-      nama: user.user_metadata?.nama ?? null, // Nama user (profil) ada di user_metadata
+      nama: user.user_metadata?.nama ?? null,
 
       // Data Cabang
       branch_id: branchId,
@@ -135,138 +247,4 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
     position_nama: (positionName as InternalPositionName) ?? null,
     role_nama: roleName ?? null,
   };
-}
-
-// Helper sederhana untuk mempersingkat logic (Optional)
-const matches = (user: CurrentUser, ...positions: InternalPositionName[]) => {
-  return user.position_nama ? positions.includes(user.position_nama) : false;
-};
-
-export function isRegionalOrAbove(user: CurrentUser): boolean {
-  return matches(user, POSITION.REGIONAL_MANAGER, POSITION.GENERAL_MANAGER);
-}
-
-// 2. Refactoring Function Logic
-export function canUlok(
-  action: "read" | "create" | "update" | "delete",
-  user: CurrentUser
-) {
-  const { position_nama } = user;
-
-  // Logic spesifik per role
-  if (position_nama === POSITION.LOCATION_SPECIALIST) {
-    return true; // Full access (sesuai kode lama)
-  }
-
-  if (position_nama === POSITION.LOCATION_MANAGER) {
-    return action === "read" || action === "update";
-  }
-
-  // Grouping roles yang hanya boleh READ
-  if (
-    matches(
-      user,
-      POSITION.BRANCH_MANAGER,
-      POSITION.REGIONAL_MANAGER,
-      POSITION.ADMIN_BRANCH
-    )
-  ) {
-    return action === "read";
-  }
-
-  return false;
-}
-
-export function canKplt(
-  action: "read" | "create" | "update" | "approve" | "final-approve" | "delete",
-  user: CurrentUser
-) {
-  const { position_nama } = user;
-
-  // Menggunakan switch case dengan CONSTANT
-  switch (position_nama) {
-    case POSITION.LOCATION_SPECIALIST:
-      return ["read", "create", "update", "delete"].includes(action);
-
-    case POSITION.LOCATION_MANAGER:
-      return action === "read" || action === "update";
-
-    case POSITION.BRANCH_MANAGER:
-    case POSITION.REGIONAL_MANAGER:
-      return ["read", "update", "create"].includes(action);
-
-    case POSITION.GENERAL_MANAGER:
-      return ["read", "create", "update"].includes(action);
-
-    case POSITION.ADMIN_BRANCH:
-      return action === "read";
-
-    default:
-      return false;
-  }
-}
-
-export function canProgressKplt(
-  action: "read" | "create" | "update" | "delete",
-  user: CurrentUser
-) {
-  if (user.position_nama === POSITION.ADMIN_BRANCH) return true;
-
-  // Daftar role yang punya akses READ
-  const readOnlyRoles: InternalPositionName[] = [
-    POSITION.LOCATION_SPECIALIST,
-    POSITION.LOCATION_MANAGER,
-    POSITION.BRANCH_MANAGER,
-    POSITION.REGIONAL_MANAGER,
-    POSITION.GENERAL_MANAGER,
-  ];
-
-  if (matches(user, ...readOnlyRoles)) {
-    return action === "read";
-  }
-
-  return false;
-}
-
-export function canUlokEksternal(
-  action: "read" | "create" | "update" | "approve" | "final-approve" | "delete",
-  user: CurrentUser
-) {
-  const { position_nama } = user;
-
-  switch (position_nama) {
-    case POSITION.LOCATION_SPECIALIST:
-    case POSITION.LOCATION_MANAGER:
-    case POSITION.BRANCH_MANAGER:
-    case POSITION.REGIONAL_MANAGER:
-      return action === "read" || action === "update";
-
-    case POSITION.GENERAL_MANAGER:
-    case POSITION.ADMIN_BRANCH:
-      return action === "read";
-
-    default:
-      return false;
-  }
-}
-
-export function canUlokEksisting(
-  action: "read" | "create" | "update" | "approve" | "final-approve" | "delete",
-  user: CurrentUser
-) {
-  // Semua role di bawah ini hanya boleh READ
-  const readOnlyRoles: InternalPositionName[] = [
-    POSITION.LOCATION_SPECIALIST,
-    POSITION.LOCATION_MANAGER,
-    POSITION.BRANCH_MANAGER,
-    POSITION.REGIONAL_MANAGER,
-    POSITION.GENERAL_MANAGER,
-    POSITION.ADMIN_BRANCH,
-  ];
-
-  if (matches(user, ...readOnlyRoles)) {
-    return action === "read";
-  }
-
-  return false;
 }

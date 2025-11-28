@@ -33,7 +33,7 @@ const REQUIRED_FIELDS_BEFORE_APPROVAL: (keyof any)[] = [
   "harga_sewa",
   "nama_pemilik",
   "kontak_pemilik",
-  "form_ulok"
+  "form_ulok",
   // tambahkan fields lain yang menurut Anda wajib sebelum di-approve
 ];
 
@@ -144,9 +144,6 @@ export async function PATCH(
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  if (!canUlok("update", user)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
 
   const { id } = params;
   if (!isUuid(id)) {
@@ -155,10 +152,14 @@ export async function PATCH(
 
   const contentType = req.headers.get("content-type") || "";
 
-  if (user.position_nama === "location manager") {
+  // ========= LOGIC LOCATION MANAGER (APPROVE) =========
+  if (canUlok("approve", user)) {
     if (!contentType.startsWith("application/json")) {
       return NextResponse.json(
-        { error: "Use application/json for ULOK approval update" },
+        {
+          error:
+            "Use application/json for ULOK approval update (you're using LM)",
+        },
         { status: 400 }
       );
     }
@@ -297,11 +298,11 @@ export async function PATCH(
       return NextResponse.json({ error: updateError.message }, { status: 500 });
     }
 
-    return NextResponse.json({ data: updated });
+    return NextResponse.json({ success: true, data: updated });
   }
 
   // ========= LOCATION SPECIALIST: SATU METODE multipart/form-data =========
-  if (user.position_nama === "location specialist") {
+  if (canUlok("update", user)) {
     if (!contentType.startsWith("multipart/form-data")) {
       return NextResponse.json(
         {
