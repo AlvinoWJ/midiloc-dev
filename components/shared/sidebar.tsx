@@ -71,10 +71,16 @@ export default function Sidebar() {
 
   const filteredMenu = menu.filter((item) => {
     if (item.href === "/usulan_lokasi") {
-      // 1. Jika masih loading, SEMBUNYIKAN menu ini (Default Safe)
       if (loadingUser) return false;
 
-      // 2. Jika sudah load, baru cek role-nya
+      const position = user?.position_nama?.toLowerCase();
+      if (position === "branch manager" || position === "general manager") {
+        return false;
+      }
+    }
+    if (item.href === "/ulok_eksternal") {
+      if (loadingUser) return false;
+
       const position = user?.position_nama?.toLowerCase();
       if (position === "branch manager" || position === "general manager") {
         return false;
