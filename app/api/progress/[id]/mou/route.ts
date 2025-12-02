@@ -4,249 +4,226 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser, canProgressKplt } from "@/lib/auth/acl";
 import { MouCreateSchema, MouUpdateSchema } from "@/lib/validations/mou";
 import { validateProgressAccess } from "@/utils/kpltProgressBranchChecker";
+import { isDbError } from "@/lib/storage/path";
 
+export const dynamic = "force-dynamic";
+
+/**
+ * Helper: Validasi User, Permission, Branch, dan Akses Progress ID.
+ * Mengembalikan objek error response jika gagal, atau null jika sukses.
+ */
+async function checkAuthAndAccess(
+  supabase: any,
+  user: any,
+  progressId: string,
+  action: "read" | "create" | "update" | "delete"
+) {
+  if (!user) return { error: "Unauthorized", status: 401 };
+  if (!canProgressKplt(action, user))
+    return { error: "Forbidden", status: 403 };
+  if (!user.branch_id) return { error: "Forbidden: No branch", status: 403 };
+
+  const check = await validateProgressAccess(supabase, user, progressId);
+  if (!check.allowed) return { error: check.error, status: check.status };
+
+  return null; // All checks passed
+}
+
+// GET: Ambil data MOU
 export async function GET(
   _req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   const supabase = await createClient();
   const user = await getCurrentUser();
-  if (!user)
+
+  const authErr = await checkAuthAndAccess(supabase, user, params.id, "read");
+  if (authErr)
     return NextResponse.json(
-      { success: false, error: "Unauthorized" },
-      { status: 401 }
-    );
-  if (!canProgressKplt("read", user))
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Forbidden",
-        message: "Anda tidak berhak melakukan aksi ini",
-      },
-      { status: 403 }
+      { error: authErr.error },
+      { status: authErr.status }
     );
 
-  const check = await validateProgressAccess(supabase, user, params.id);
-  if (!check.allowed)
-    return NextResponse.json({ error: check.error }, { status: check.status });
-
-  const progressId = params.id;
   const { data, error } = await supabase
     .from("mou")
     .select("*")
-    .eq("progress_kplt_id", progressId)
+    .eq("progress_kplt_id", params.id)
     .maybeSingle();
 
-  if (error)
-    return NextResponse.json(
-      { success: false, error: error.message },
-      { status: 500 }
-    );
+  if (error) {
+    console.error("[MOU_GET]", error);
+    return NextResponse.json({ error: "Failed to fetch MOU" }, { status: 500 });
+  }
 
   return NextResponse.json({ success: true, data }, { status: 200 });
 }
 
+// POST: Buat MOU Baru
 export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const supabase = await createClient();
-  const user = await getCurrentUser();
-  if (!user)
-    return NextResponse.json(
-      { success: false, error: "Unauthorized" },
-      { status: 401 }
-    );
-  if (!canProgressKplt("create", user))
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Forbidden",
-        message: "Anda tidak berhak melakukan aksi ini",
-      },
-      { status: 403 }
-    );
-  if (!user.branch_id)
-    return NextResponse.json(
-      { success: false, error: "Forbidden", message: "No branch" },
-      { status: 403 }
-    );
-  const check = await validateProgressAccess(supabase, user, params.id);
-  if (!check.allowed)
-    return NextResponse.json({ error: check.error }, { status: check.status });
+  try {
+    const supabase = await createClient();
+    const user = await getCurrentUser();
 
-  const progressId = params.id;
-  const body = await req.json().catch(() => null);
-  if (!body || typeof body !== "object")
-    return NextResponse.json(
-      { success: false, error: "Bad Request" },
-      { status: 400 }
+    const authErr = await checkAuthAndAccess(
+      supabase,
+      user,
+      params.id,
+      "create"
     );
-
-  const parsed = MouCreateSchema.safeParse(body);
-  if (!parsed.success)
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Validation failed",
-        detail: parsed.error.issues,
-      },
-      { status: 422 }
-    );
-
-  const { data, error } = await supabase.rpc("fn_mou_create", {
-    p_user_id: user.id,
-    p_branch_id: user.branch_id,
-    p_progress_kplt_id: progressId,
-    p_payload: parsed.data,
-  });
-
-  if (error) {
-    const code = (error as any).code;
-    if (code === "23505")
+    if (authErr)
       return NextResponse.json(
-        { success: false, error: "Conflict", message: "MOU already exists" },
-        { status: 409 }
+        { error: authErr.error },
+        { status: authErr.status }
       );
-    return NextResponse.json(
-      { success: false, error: "RPC Error", detail: error.message },
-      { status: 500 }
-    );
-  }
 
-  return NextResponse.json(
-    { success: true, ...(data as any) },
-    { status: 201 }
-  );
+    const body = await req.json().catch(() => null);
+    const parsed = MouCreateSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Validation failed", detail: parsed.error.issues },
+        { status: 422 }
+      );
+    }
+
+    const { data, error } = await supabase.rpc("fn_mou_create", {
+      p_user_id: user!.id,
+      p_branch_id: user!.branch_id,
+      p_progress_kplt_id: params.id,
+      p_payload: parsed.data,
+    });
+
+    if (error) {
+      const code = isDbError(error) ? error.code : null;
+      if (code === "23505")
+        return NextResponse.json(
+          { error: "Conflict: MOU already exists" },
+          { status: 409 }
+        );
+
+      console.error("[MOU_CREATE_RPC]", error);
+      return NextResponse.json(
+        { error: "Internal Server Error" },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ success: true, ...data }, { status: 201 });
+  } catch (e) {
+    console.error("[MOU_POST] Unhandled:", e);
+    return NextResponse.json({ error: "Server Error" }, { status: 500 });
+  }
 }
 
+// PATCH: Update MOU
 export async function PATCH(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const supabase = await createClient();
-  const user = await getCurrentUser();
-  if (!user)
-    return NextResponse.json(
-      { success: false, error: "Unauthorized" },
-      { status: 401 }
-    );
-  if (!canProgressKplt("update", user))
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Forbidden",
-        message: "Anda tidak berhak melakukan aksi ini",
-      },
-      { status: 403 }
-    );
-  if (!user.branch_id)
-    return NextResponse.json(
-      { success: false, error: "Forbidden", message: "No branch" },
-      { status: 403 }
-    );
-  const check = await validateProgressAccess(supabase, user, params.id);
-  if (!check.allowed)
-    return NextResponse.json({ error: check.error }, { status: check.status });
+  try {
+    const supabase = await createClient();
+    const user = await getCurrentUser();
 
-  const progressId = params.id;
-  const body = await req.json().catch(() => null);
-  if (!body || typeof body !== "object")
-    return NextResponse.json(
-      { success: false, error: "Bad Request" },
-      { status: 400 }
+    const authErr = await checkAuthAndAccess(
+      supabase,
+      user,
+      params.id,
+      "update"
     );
-
-  const parsed = MouUpdateSchema.safeParse(body);
-  if (!parsed.success)
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Validation failed",
-        detail: parsed.error.issues,
-      },
-      { status: 422 }
-    );
-
-  const { data, error } = await supabase.rpc("fn_mou_update", {
-    p_user_id: user.id,
-    p_branch_id: user.branch_id,
-    p_progress_kplt_id: progressId,
-    p_payload: parsed.data,
-  });
-
-  if (error) {
-    const msg = error.message;
-    if (msg?.includes("finalized"))
+    if (authErr)
       return NextResponse.json(
-        { success: false, error: "Conflict", message: msg },
-        { status: 409 }
+        { error: authErr.error },
+        { status: authErr.status }
       );
-    return NextResponse.json(
-      { success: false, error: "RPC Error", detail: msg },
-      { status: 500 }
-    );
-  }
 
-  return NextResponse.json(
-    { success: true, ...(data as any) },
-    { status: 200 }
-  );
+    const body = await req.json().catch(() => null);
+    const parsed = MouUpdateSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Validation failed", detail: parsed.error.issues },
+        { status: 422 }
+      );
+    }
+
+    const { data, error } = await supabase.rpc("fn_mou_update", {
+      p_user_id: user!.id,
+      p_branch_id: user!.branch_id,
+      p_progress_kplt_id: params.id,
+      p_payload: parsed.data,
+    });
+
+    if (error) {
+      const msg = error.message || "";
+      if (msg.toLowerCase().includes("finalized")) {
+        return NextResponse.json(
+          { error: "Conflict: Progress finalized", message: msg },
+          { status: 409 }
+        );
+      }
+      console.error("[MOU_UPDATE_RPC]", error);
+      return NextResponse.json(
+        { error: "Internal Server Error" },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ success: true, ...data }, { status: 200 });
+  } catch (e) {
+    console.error("[MOU_PATCH] Unhandled:", e);
+    return NextResponse.json({ error: "Server Error" }, { status: 500 });
+  }
 }
 
+// DELETE: Hapus MOU
 export async function DELETE(
   _req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const supabase = await createClient();
-  const user = await getCurrentUser();
-  if (!user)
-    return NextResponse.json(
-      { success: false, error: "Unauthorized" },
-      { status: 401 }
-    );
-  if (!canProgressKplt("delete", user))
-    return NextResponse.json(
-      { success: false, error: "Forbidden" },
-      { status: 403 }
-    );
-  if (!user.branch_id)
-    return NextResponse.json(
-      { success: false, error: "Forbidden", message: "No branch" },
-      { status: 403 }
-    );
-  const check = await validateProgressAccess(supabase, user, params.id);
-  if (!check.allowed)
-    return NextResponse.json({ error: check.error }, { status: check.status });
+  try {
+    const supabase = await createClient();
+    const user = await getCurrentUser();
 
-  const progressId = params.id;
-
-  const { data, error } = await supabase.rpc("fn_mou_delete", {
-    p_user_id: user.id,
-    p_branch_id: user.branch_id,
-    p_progress_kplt_id: progressId,
-  });
-
-  if (error) {
-    const msg = error.message;
-    if (msg?.includes("finalized"))
+    const authErr = await checkAuthAndAccess(
+      supabase,
+      user,
+      params.id,
+      "delete"
+    );
+    if (authErr)
       return NextResponse.json(
-        { success: false, error: "Conflict", message: msg },
-        { status: 409 }
+        { error: authErr.error },
+        { status: authErr.status }
       );
-    if (msg?.includes("not found"))
+
+    const { data, error } = await supabase.rpc("fn_mou_delete", {
+      p_user_id: user!.id,
+      p_branch_id: user!.branch_id,
+      p_progress_kplt_id: params.id,
+    });
+
+    if (error) {
+      const msg = error.message || "";
+      if (msg.toLowerCase().includes("finalized")) {
+        return NextResponse.json(
+          { error: "Conflict: Progress finalized", message: msg },
+          { status: 409 }
+        );
+      }
+      if (msg.toLowerCase().includes("not found")) {
+        return NextResponse.json({ error: "Not Found" }, { status: 404 });
+      }
+      console.error("[MOU_DELETE_RPC]", error);
       return NextResponse.json(
-        { success: false, error: "Not Found", message: msg },
-        { status: 404 }
+        { error: "Internal Server Error" },
+        { status: 500 }
       );
-    return NextResponse.json(
-      { success: false, error: "RPC Error", detail: msg },
-      { status: 500 }
-    );
+    }
+
+    return NextResponse.json({ success: true, ...data }, { status: 200 });
+  } catch (e) {
+    console.error("[MOU_DELETE] Unhandled:", e);
+    return NextResponse.json({ error: "Server Error" }, { status: 500 });
   }
-
-  return NextResponse.json(
-    { success: true, ...(data as any) },
-    { status: 200 }
-  );
 }
