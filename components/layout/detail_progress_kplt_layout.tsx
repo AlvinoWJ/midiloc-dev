@@ -31,6 +31,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { CalendarIcon } from "@heroicons/react/24/solid";
+import { useUser } from "@/hooks/useUser";
 
 interface LayoutProps {
   progressData: ProgressData;
@@ -118,6 +119,7 @@ export default function DetailProgressKpltLayout({
   const router = useRouter();
   const { kplt } = progressData;
   const [isExpanded, setIsExpanded] = useState(false);
+  const { user } = useUser();
 
   const [activeStep, setActiveStep] = useState<number | null>(null);
   const progressId = progressData.id;
@@ -127,23 +129,57 @@ export default function DetailProgressKpltLayout({
       const timelineData = timeline.find((t) => t.step === stepKey);
 
       return {
-        id: (index + 1).toString(), // ID unik sederhana
+        id: (index + 1).toString(),
         progress_id: progressId,
-        nama_tahap: STEP_NAME_MAP[stepKey] || "Tahap Tidak Dikenali", // Gunakan Peta Nama
-        status: mapUiStatusToProgressStatus(timelineData?.ui_status), // Gunakan Status dari API
-        start_date: timelineData?.created_at || null, // Gunakan Tanggal dari API
-        end_date: timelineData?.finalized_at || null, // Gunakan Tanggal dari API
+        nama_tahap: STEP_NAME_MAP[stepKey] || "Tahap Tidak Dikenali",
+        status: mapUiStatusToProgressStatus(timelineData?.ui_status),
+        start_date: timelineData?.created_at || null,
+        end_date: timelineData?.finalized_at || null,
         urutan: index + 1,
       };
     });
   }, [progressId, timeline]);
 
   const renderActiveStepForm = () => {
+    const isNotAdminBranch =
+      user?.position_nama?.toLowerCase() !== "admin branch";
+
+    const RenderDataBelumAda = () => (
+      <div className="bg-white rounded-2xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)] p-8 h-full flex items-center justify-center min-h-[400px]">
+        <div className="w-full max-w-xl text-center">
+          <div className="flex items-center justify-center mb-6">
+            <div className="w-20 h-20 bg-gradient-to-br from-gray-50 to-gray-100 rounded-full flex items-center justify-center shadow-md">
+              <FileQuestion className="w-10 h-10 text-gray-400" />
+            </div>
+          </div>
+          <div>
+            <h3 className="text-2xl font-bold text-gray-900 mb-3">
+              Data Belum Ada
+            </h3>
+            <p className="text-gray-600 text-base leading-relaxed mb-2">
+              <span className="font-semibold text-gray-800">
+                Tahap &quot;{steps[activeStep!]?.nama_tahap}&quot;
+              </span>{" "}
+              belum memiliki data
+            </p>
+            <p className="text-gray-500 text-base leading-relaxed">
+              Informasi untuk tahap ini belum tersedia saat ini
+            </p>
+          </div>
+          <div className="mt-8 pt-6 border-t border-gray-100">
+            <div className="flex items-center justify-center gap-2 text-sm text-gray-400">
+              <FileQuestion className="w-5 h-5" />
+              <span>Menunggu data diinput oleh Admin</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+
     if (activeStep === null) {
       return (
         <div className="bg-white rounded-2xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)] p-8 h-full flex items-center justify-center">
           <div className="w-full max-w-xl text-center">
-            {/* Icon Header */}
             <div className="flex items-center justify-center mb-6">
               <div className="w-20 h-20 bg-gradient-to-br from-blue-50 to-blue-100 rounded-full flex items-center justify-center shadow-md">
                 <svg
@@ -161,8 +197,6 @@ export default function DetailProgressKpltLayout({
                 </svg>
               </div>
             </div>
-
-            {/* Content */}
             <div>
               <h3 className="text-2xl font-bold text-gray-900 mb-3">
                 Pilih Tahap Progress
@@ -172,8 +206,6 @@ export default function DetailProgressKpltLayout({
                 melihat detail progress pengajuan
               </p>
             </div>
-
-            {/* Decorative Element */}
             <div className="mt-8 pt-6 border-t border-gray-100">
               <div className="flex items-center justify-center gap-2 text-sm text-gray-400">
                 <svg
@@ -210,13 +242,12 @@ export default function DetailProgressKpltLayout({
     )?.status;
 
     const step = steps[activeStep];
-    const stepProgressId = step.progress_id; // gunakan progressId dari step
-
-    if (step.status === "Batal") {
-      // Logika untuk menampilkan data meski Batal
-    }
+    const stepProgressId = step.progress_id;
 
     if (step.nama_tahap === "MOU") {
+      if (isNotAdminBranch && step.status === "Pending") {
+        return <RenderDataBelumAda />;
+      }
       return (
         <MouProgressCard
           progressId={stepProgressId}
@@ -224,8 +255,12 @@ export default function DetailProgressKpltLayout({
         />
       );
     }
+
     if (step.nama_tahap === "Ijin Tetangga") {
       if (mouStatus === "Done") {
+        if (isNotAdminBranch && step.status === "Pending") {
+          return <RenderDataBelumAda />;
+        }
         return (
           <IzinTetanggaProgressCard
             progressId={stepProgressId}
@@ -234,8 +269,12 @@ export default function DetailProgressKpltLayout({
         );
       }
     }
+
     if (step.nama_tahap === "Perizinan") {
       if (mouStatus === "Done") {
+        if (isNotAdminBranch && step.status === "Pending") {
+          return <RenderDataBelumAda />;
+        }
         return (
           <PerizinanProgressCard
             progressId={stepProgressId}
@@ -244,8 +283,12 @@ export default function DetailProgressKpltLayout({
         );
       }
     }
+
     if (step.nama_tahap === "Notaris") {
       if (itStatus === "Done" && perizinanStatus === "Done") {
+        if (isNotAdminBranch && step.status === "Pending") {
+          return <RenderDataBelumAda />;
+        }
         return (
           <NotarisProgressCard
             progressId={stepProgressId}
@@ -254,8 +297,12 @@ export default function DetailProgressKpltLayout({
         );
       }
     }
+
     if (step.nama_tahap === "Renovasi") {
       if (notarisStatus === "Done") {
+        if (isNotAdminBranch && step.status === "Pending") {
+          return <RenderDataBelumAda />;
+        }
         return (
           <RenovasiProgressCard
             progressId={stepProgressId}
@@ -264,8 +311,12 @@ export default function DetailProgressKpltLayout({
         );
       }
     }
+
     if (step.nama_tahap === "Grand Opening") {
       if (renovasiStatus === "Done") {
+        if (isNotAdminBranch && step.status === "Pending") {
+          return <RenderDataBelumAda />;
+        }
         return (
           <GrandOpeningProgressCard
             progressId={stepProgressId}
@@ -275,10 +326,13 @@ export default function DetailProgressKpltLayout({
       }
     }
 
+    if (isNotAdminBranch) {
+      return <RenderDataBelumAda />;
+    }
+
     return (
       <div className="bg-white rounded-2xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)] p-8 h-full flex items-center justify-center min-h-[400px]">
         <div className="w-full max-w-xl text-center">
-          {/* Icon Header */}
           <div className="flex items-center justify-center mb-6">
             <div className="w-20 h-20 bg-gradient-to-br from-amber-50 to-amber-100 rounded-full flex items-center justify-center shadow-md">
               <svg
@@ -297,7 +351,6 @@ export default function DetailProgressKpltLayout({
             </div>
           </div>
 
-          {/* Content */}
           <div>
             <h3 className="text-2xl font-bold text-gray-900 mb-3">
               Tahap Terkunci
@@ -313,7 +366,6 @@ export default function DetailProgressKpltLayout({
             </p>
           </div>
 
-          {/* Decorative Element */}
           <div className="mt-8 pt-6 border-t border-gray-100">
             <div className="flex items-center justify-center gap-2 text-sm text-gray-400">
               <svg
@@ -353,7 +405,6 @@ export default function DetailProgressKpltLayout({
 
       <div className="bg-white rounded-xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)] transition-all duration-500">
         <div className="p-6">
-          {/* Judul dan Created Date */}
           <div className="flex-1 min-w-0 mb-4">
             <h1 className="text-lg lg:text-xl font-bold text-gray-800">
               {kplt.nama_kplt}
@@ -375,13 +426,11 @@ export default function DetailProgressKpltLayout({
           }`}
         >
           <div className="px-6 pb-6">
-            {/* Detail Info KPLT */}
             <div className="border-t border-gray-300 pt-5">
               <h4 className="text-base lg:text-lg font-semibold text-gray-700 mb-3">
                 Informasi Detail KPLT
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4 text-sm">
-                {/* Baris 1 */}
                 <div className="bg-gray-100 p-3 rounded-lg">
                   <label className="text-gray-500 text-xs block mb-1">
                     Provinsi<span className="text-red-500">*</span>
@@ -401,7 +450,6 @@ export default function DetailProgressKpltLayout({
                   <p className="font-medium text-gray-900">{kplt.kecamatan}</p>
                 </div>
 
-                {/* Baris 2 */}
                 <div className="bg-gray-100 p-3 rounded-lg">
                   <label className="text-gray-500 text-xs block mb-1">
                     Kelurahan/Desa<span className="text-red-500">*</span>
@@ -417,7 +465,6 @@ export default function DetailProgressKpltLayout({
                   <p className="font-medium text-gray-900">{kplt.alamat}</p>
                 </div>
 
-                {/* Baris 3 */}
                 <div className="bg-gray-100 p-3 rounded-lg">
                   <label className="text-gray-500 text-xs block mb-1">
                     LatLong
@@ -443,7 +490,6 @@ export default function DetailProgressKpltLayout({
                   </p>
                 </div>
 
-                {/* Baris 4 */}
                 <div className="bg-gray-100 p-3 rounded-lg">
                   <label className="text-gray-500 text-xs block mb-1">
                     Harga Sewa
@@ -465,7 +511,6 @@ export default function DetailProgressKpltLayout({
                   </p>
                 </div>
 
-                {/* Baris 5 */}
                 <div className="bg-gray-100 p-3 rounded-lg">
                   <label className="text-gray-500 text-xs block mb-1">
                     Format Store
@@ -487,7 +532,6 @@ export default function DetailProgressKpltLayout({
                   <p className="font-medium text-gray-900">{kplt.panjang} m</p>
                 </div>
 
-                {/* Baris 6 */}
                 <div className="bg-gray-100 p-3 rounded-lg">
                   <label className="text-gray-500 text-xs block mb-1">
                     Lebar Depan
@@ -513,7 +557,6 @@ export default function DetailProgressKpltLayout({
                   </p>
                 </div>
 
-                {/* Baris 7 */}
                 <div className="bg-gray-100 p-3 rounded-lg">
                   <label className="text-gray-500 text-xs block mb-1">
                     Sosial Ekonomi
@@ -535,7 +578,6 @@ export default function DetailProgressKpltLayout({
                   <p className="font-medium text-gray-900">{kplt.apc}</p>
                 </div>
 
-                {/* Baris 8 */}
                 <div className="bg-gray-100 p-3 rounded-lg">
                   <label className="text-gray-500 text-xs block mb-1">
                     SPD
@@ -557,7 +599,6 @@ export default function DetailProgressKpltLayout({
                   </p>
                 </div>
 
-                {/* Baris 9 */}
                 <div className="bg-gray-100 p-3 rounded-lg">
                   <label className="text-gray-500 text-xs block mb-1">
                     KPLT Approval
@@ -575,7 +616,6 @@ export default function DetailProgressKpltLayout({
               </div>
             </div>
 
-            {/* Dokumen KPLT */}
             <div className="border-t border-gray-300 pt-5 mt-6">
               <h4 className="text-base lg:text-lg font-semibold text-gray-700 mb-3">
                 Dokumen KPLT Terkait
@@ -648,9 +688,7 @@ export default function DetailProgressKpltLayout({
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* KOLOM KIRI: Timeline Vertikal */}
             <div className="lg:col-span-1">
-              {/* Tambahkan sticky top-24 agar sejajar & mengambang */}
               <div className="sticky top-12">
                 <VerticalProgressTimeline
                   steps={steps}
@@ -662,7 +700,6 @@ export default function DetailProgressKpltLayout({
               </div>
             </div>
 
-            {/* KOLOM KANAN: Form Input Dinamis */}
             <div className="lg:col-span-2">
               <div className="">{renderActiveStepForm()}</div>
             </div>

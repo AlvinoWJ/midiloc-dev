@@ -55,6 +55,8 @@ export type KpltDetailData = KpltBaseData & {
   file_intip: string | null;
   tanggal_ukur: string | null;
   form_ukur: string | null;
+  updated_at: string | null;
+  updated_by: string | null;
 };
 
 export type KpltDetailApiResponse = {
@@ -134,6 +136,23 @@ function mapKpltDetailResponse(
 
   const { kplt, approvals, approvals_summary } = data;
   const kpltId = kplt.id;
+
+  const allApprovals = [...approvals];
+
+  if (kplt.kplt_approval === "OK" || kplt.kplt_approval === "NOK") {
+    const isGmApproved = kplt.kplt_approval === "OK";
+
+    const gmApproval: ApprovalDetail = {
+      id: `gm-approval-${kplt.id}`,
+      kplt_id: kplt.id,
+      created_at: kplt.updated_at || new Date().toISOString(),
+      approved_at: kplt.updated_at || new Date().toISOString(),
+      approved_by: kplt.updated_by || "General Manager",
+      is_approved: isGmApproved,
+      position_nama: "General Manager",
+    };
+    allApprovals.push(gmApproval);
+  }
 
   const formatDisplayDate = (isoDate: string | null) => {
     if (!isoDate) return null;
@@ -216,19 +235,16 @@ function mapKpltDetailResponse(
       videoTrafficMalam: createFileDisplayUrl(kplt.video_traffic_malam),
       videoTrafficSiang: createFileDisplayUrl(kplt.video_traffic_siang),
     },
-    approvals: approvals,
+    approvals: allApprovals,
     approvalsSummary: approvals_summary,
   };
 }
 
-// =========================================================================
-// CUSTOM HOOK DENGAN SWR
-// =========================================================================
 export function useKpltDetail(id: string | undefined) {
   const key = id ? `/api/kplt/${id}` : null;
 
   const {
-    data: rawData, // Data mentah dari API
+    data: rawData,
     error,
     isLoading,
     mutate,

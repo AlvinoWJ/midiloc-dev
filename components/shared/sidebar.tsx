@@ -12,13 +12,12 @@ import {
   TimerIcon,
   MapPinned,
   Store,
-} from "lucide-react"; // Tambahkan ikon X
+} from "lucide-react";
 import Image from "next/image";
-import { LogoutButton } from "../ui/logout-button"; // Sesuaikan path jika perlu
+import { LogoutButton } from "../ui/logout-button";
 import { useSidebar } from "@/hooks/useSidebar";
 import { useUser } from "@/hooks/useUser";
 
-// Definisikan menu sekali saja
 const menu = [
   { name: "Dashboard", href: "/dashboard", icon: <Home size={20} /> },
   {
@@ -70,15 +69,28 @@ export default function Sidebar() {
     };
   }, [isOpen, isMobile]);
 
+  const filteredMenu = menu.filter((item) => {
+    if (item.href === "/usulan_lokasi") {
+      if (loadingUser) return false;
+
+      const position = user?.position_nama?.toLowerCase();
+      if (position === "branch manager" || position === "general manager") {
+        return false;
+      }
+    }
+    if (item.href === "/ulok_eksternal") {
+      if (loadingUser) return false;
+
+      const position = user?.position_nama?.toLowerCase();
+      if (position === "branch manager" || position === "general manager") {
+        return false;
+      }
+    }
+    return true;
+  });
+
   return (
     <>
-      {/* =================================
-        ==      SIDEBAR DESKTOP        ==
-        =================================
-        - Tampil di layar besar (lg) dan ke atas.
-        - Sembunyi di layar kecil.
-        - Menggunakan class: `hidden lg:flex`
-      */}
       <aside
         className={`
           hidden lg:flex flex-col fixed left-0 top-0 h-screen bg-primary-foreground shadow-[1px_1px_6px_rgba(0,0,0,0.25)]
@@ -139,7 +151,7 @@ export default function Sidebar() {
 
         {/* Menu */}
         <nav className="absolute left-4 right-4 top-[240px] space-y-2 mt-2">
-          {menu.map((item) => {
+          {filteredMenu.map((item) => {
             const isActive =
               pathname === item.href ||
               (pathname.startsWith(item.href) &&
@@ -245,7 +257,7 @@ export default function Sidebar() {
 
               {/* Menu Items */}
               <nav className="p-4 space-y-2 flex-1 ">
-                {menu.map((item) => {
+                {filteredMenu.map((item) => {
                   const isActive = pathname.startsWith(item.href);
                   return (
                     <Link
