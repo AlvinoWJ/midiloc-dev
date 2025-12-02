@@ -388,7 +388,6 @@ export default function DetailKpltLayout({
   return (
     <main className="space-y-4 lg:space-y-6">
       <div className="max-w-7xl mx-auto">
-        {/* Tombol Kembali */}
         <Button
           type="button"
           onClick={() => router.back()}

@@ -1,10 +1,10 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, Check, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import CustomSelect from "../ui/customselect";
 import { KpltCreatePayload } from "@/lib/validations/kplt";
@@ -29,6 +29,8 @@ interface FileInputConfig {
   name: keyof KpltCreatePayload;
   label: string;
   accept: string;
+  helpertext: string;
+  maxSize: number; // in bytes
 }
 
 export default function TambahKpltLayout({
@@ -49,39 +51,94 @@ export default function TambahKpltLayout({
   ];
   const SocialEconomyOptions = ["Upper", "Upper & Middle", "Upper & Lower"];
   const PeStatusOptions = ["OK", "NOK"];
+
   const fileInputList: FileInputConfig[] = [
-    { name: "pdf_foto", label: "Foto", accept: ".pdf" },
-    { name: "pdf_pembanding", label: "Data Pembanding", accept: ".pdf" },
-    { name: "pdf_kks", label: "Kertas Kerja Survei", accept: ".pdf" },
+    {
+      name: "pdf_foto",
+      label: "Foto",
+      accept: ".pdf",
+      helpertext: "PDF, maks. 15MB",
+      maxSize: 15 * 1024 * 1024,
+    },
+    {
+      name: "pdf_pembanding",
+      label: "Data Pembanding",
+      accept: ".pdf",
+      helpertext: "PDF, maks. 15MB",
+      maxSize: 15 * 1024 * 1024,
+    },
+    {
+      name: "pdf_kks",
+      label: "Kertas Kerja Survei",
+      accept: ".pdf",
+      helpertext: "PDF, maks. 15MB",
+      maxSize: 15 * 1024 * 1024,
+    },
     {
       name: "counting_kompetitor",
       label: "Counting Kompetitor",
       accept: ".xlsx, .xls",
+      helpertext: "Excel (XLSX/XLS), maks. 15MB",
+      maxSize: 15 * 1024 * 1024,
     },
     {
       name: "excel_fpl",
       label: "Form Pembobotan Lokasi",
       accept: ".xlsx, .xls",
+      helpertext: "Excel (XLSX/XLS), maks. 15MB",
+      maxSize: 15 * 1024 * 1024,
     },
-    { name: "excel_pe", label: "Project Evaluation", accept: ".xlsx, .xls" },
+    {
+      name: "excel_pe",
+      label: "Project Evaluation",
+      accept: ".xlsx, .xls",
+      helpertext: "Excel (XLSX/XLS), maks. 15MB",
+      maxSize: 15 * 1024 * 1024,
+    },
     {
       name: "video_traffic_siang",
       label: "Video Traffic Siang",
-      accept: "video/*",
+      accept: ".mp4, .mov, .avi, .webm",
+      helpertext: "Video (MP4/MOV/AVI/WEBM), maks. 15MB",
+      maxSize: 15 * 1024 * 1024,
     },
     {
       name: "video_traffic_malam",
       label: "Video Traffic Malam",
-      accept: "video/*",
+      accept: ".mp4, .mov, .avi, .webm",
+      helpertext: "Video (MP4/MOV/AVI/WEBM), maks. 15MB",
+      maxSize: 15 * 1024 * 1024,
     },
-    { name: "video_360_siang", label: "Video 360 Siang", accept: "video/*" },
-    { name: "video_360_malam", label: "Video 360 Malam", accept: "video/*" },
+    {
+      name: "video_360_siang",
+      label: "Video 360 Siang",
+      accept: ".mp4, .mov, .avi, .webm",
+      helpertext: "Video (MP4/MOV/AVI/WEBM), maks. 15MB",
+      maxSize: 15 * 1024 * 1024,
+    },
+    {
+      name: "video_360_malam",
+      label: "Video 360 Malam",
+      accept: ".mp4, .mov, .avi, .webm",
+      helpertext: "Video (MP4/MOV/AVI/WEBM), maks. 15MB",
+      maxSize: 15 * 1024 * 1024,
+    },
     {
       name: "peta_coverage",
       label: "Peta Coverage",
-      accept: "image/*",
+      accept: ".png, .jpg, .jpeg, .webp",
+      helpertext: "Gambar (PNG/JPG/WEBP), maks. 15MB",
+      maxSize: 15 * 1024 * 1024,
     },
   ];
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return "0 Bytes";
+    const k = 1024;
+    const sizes = ["Bytes", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + " " + sizes[i];
+  };
 
   const formatNumber = (value: string) => {
     if (!value) return "";
@@ -296,13 +353,34 @@ export default function TambahKpltLayout({
                   type="file"
                   onChange={handleFileChange}
                   disabled={isSubmitting}
-                  className={`file:mr-4 ...`}
+                  className={`file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-medium file:text-red-700 ${
+                    errors[file.name] ? "border-red-500" : ""
+                  }`}
                   accept={file.accept}
                 />
+
+                {!errors[file.name] && !formData[file.name] && (
+                  <p className="text-xs text-gray-500">{file.helpertext}</p>
+                )}
+
+                {formData[file.name] && !errors[file.name] && (
+                  <div className="flex items-center gap-1 text-xs text-green-600 bg-green-50 px-3 py-2 rounded">
+                    <Check className="w-3 h-3 flex-shrink-0" />
+                    <span className="truncate flex-1">
+                      {formData[file.name].name}
+                    </span>
+                    <span className="text-gray-600 flex-shrink-0">
+                      ({formatFileSize(formData[file.name].size)})
+                    </span>
+                  </div>
+                )}
+
+                {/* Error message */}
                 {errors[file.name] && (
-                  <p className="text-sm text-red-600 mt-1">
-                    {errors[file.name]}
-                  </p>
+                  <div className="flex items-start gap-1 text-xs text-red-600 bg-red-50 px-3 py-2 rounded">
+                    <X className="w-3 h-3  flex-shrink-0 mt-0.5" />
+                    <span>{errors[file.name]}</span>
+                  </div>
                 )}
               </div>
             ))}
