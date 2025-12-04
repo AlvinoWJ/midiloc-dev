@@ -2,6 +2,13 @@
 
 import { useState, useEffect } from "react";
 
+/**
+ * Interface KpltDetail
+ * --------------------
+ * Representasi lengkap data KPLT (Kajian Potensi Lokasi Toko).
+ * Mencakup data fisik, legalitas, file attachment, dan skor analisis.
+ * Digunakan untuk menampilkan detail lengkap pada halaman Progress.
+ */
 export interface KpltDetail {
   id: string;
   apc: number;
@@ -57,6 +64,13 @@ export interface KpltDetail {
   tanggal_approval_intip: string;
 }
 
+/**
+ * Interface TimelineItem
+ * ----------------------
+ * Struktur data untuk visualisasi timeline (Stepper).
+ * step: Nama tahapan (misal: "MOU", "Renovasi").
+ * ui_status: Status visual ("done", "in_progress", "pending").
+ */
 export interface TimelineItem {
   step: string;
   ui_status: "done" | "pending" | "in_progress" | string;
@@ -64,6 +78,9 @@ export interface TimelineItem {
   finalized_at: string | null;
 }
 
+/**
+ * Wrapper data progress utama.
+ */
 export interface ProgressData {
   id: string;
   kplt_id: string;
@@ -73,6 +90,9 @@ export interface ProgressData {
   kplt: KpltDetail;
 }
 
+/**
+ * Payload lengkap yang dikembalikan oleh API Detail Progress.
+ */
 export interface ProgressDetailData {
   progress: ProgressData;
   timeline: TimelineItem[];
@@ -82,9 +102,15 @@ interface UseProgressDetailResult {
   progressDetail: ProgressDetailData | null;
   isLoading: boolean;
   isError: string | null;
-  refetch: () => Promise<void>;
+  refetch: () => Promise<void>; // Fungsi manual refresh
 }
 
+/**
+ * Custom Hook: useProgressDetail
+ * ------------------------------
+ * Mengambil data detail progress KPLT beserta timeline-nya.
+ * @param id - ID Progress (bukan ID KPLT, tapi ID dari tabel progress).
+ */
 export function useProgressDetail(
   id: string | undefined
 ): UseProgressDetailResult {
@@ -93,7 +119,12 @@ export function useProgressDetail(
   const [isLoading, setIsLoading] = useState(true);
   const [isError, setIsError] = useState<string | null>(null);
 
+  /**
+   * Fungsi Fetcher Utama.
+   * Melakukan request ke `/api/progress/[id]`.
+   */
   async function fetchProgressDetail() {
+    // Guard: Pastikan ID ada sebelum fetch
     if (!id) {
       setIsError("ID progress tidak valid");
       setIsLoading(false);
@@ -107,6 +138,9 @@ export function useProgressDetail(
       const res = await fetch(`/api/progress/${id}`);
       const json = await res.json();
 
+      // --- Handling 404 (Not Found) ---
+      // Jika data tidak ditemukan, set data null dan stop loading.
+      // Ini mencegah aplikasi crash atau menampilkan error generik.
       if (
         res.status === 404 ||
         (typeof json.error === "string" &&
@@ -117,19 +151,22 @@ export function useProgressDetail(
         return;
       }
 
+      // --- Handling Generic Error ---
       if (!res.ok) {
         throw new Error(json.error || "Gagal mengambil data progress detail.");
       }
 
+      // --- Validasi Data ---
       if (!json?.data) {
         setProgressDetail(null);
         setIsLoading(false);
         return;
       }
 
+      // Set State Sukses
       setProgressDetail({
         progress: json.data.progress,
-        timeline: json.data.timeline ?? [],
+        timeline: json.data.timeline ?? [], // Fallback array kosong jika timeline null
       });
     } catch (err: any) {
       setIsError(err.message || "Terjadi kesalahan");
@@ -138,6 +175,7 @@ export function useProgressDetail(
     }
   }
 
+  // Efek: Jalankan fetch saat ID berubah
   useEffect(() => {
     fetchProgressDetail();
   }, [id]);
@@ -146,6 +184,6 @@ export function useProgressDetail(
     progressDetail,
     isLoading,
     isError,
-    refetch: fetchProgressDetail,
+    refetch: fetchProgressDetail, // Expose fungsi refetch untuk dipanggil komponen UI
   };
 }

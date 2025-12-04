@@ -9,6 +9,10 @@ import {
   NotarisHistoryItem,
 } from "@/hooks/progress_kplt/useNotarisHistory";
 
+/**
+ * Format tanggal lengkap dengan jam dan menit.
+ * Output: "20 Oktober 2023, 14:30"
+ */
 const formatDate = (dateString: string) => {
   if (!dateString) return "-";
   try {
@@ -24,6 +28,10 @@ const formatDate = (dateString: string) => {
   }
 };
 
+/**
+ * Format tanggal saja (tanpa jam).
+ * Output: "20 Oktober 2023"
+ */
 const formatDateOnly = (dateString?: string | null) =>
   dateString
     ? new Date(dateString).toLocaleDateString("id-ID", {
@@ -33,17 +41,25 @@ const formatDateOnly = (dateString?: string | null) =>
       })
     : "-";
 
+/**
+ * Logika Inti: Membandingkan dua snapshot data (current vs previous).
+ * Menghasilkan array string deskripsi perubahan.
+ * Contoh output: ["Mengubah Awal Sewa.", "Menambahkan File PAR."]
+ */
 function getChanges(
   current: NotarisHistoryItem["data"],
   previous: NotarisHistoryItem["data"] | null
 ): string[] {
+  // Jika tidak ada data sebelumnya, berarti ini adalah input pertama
   if (!previous) {
     return ["Mencatat data awal."];
   }
 
   const changes: string[] = [];
+  // Menggabungkan semua key dari kedua objek untuk diperiksa satu per satu
   const allKeys = new Set([...Object.keys(current), ...Object.keys(previous)]);
 
+  // Mapping nama field database ke label yang mudah dibaca user
   const fieldLabels: Record<string, string> = {
     awal_sewa: "Awal Sewa",
     akhir_sewa: "Akhir Sewa",
@@ -59,6 +75,7 @@ function getChanges(
   };
 
   allKeys.forEach((key) => {
+    // Abaikan field metadata atau teknikal yang tidak perlu ditampilkan ke user
     if (
       key.startsWith("final_status") ||
       key.startsWith("tgl_selesai") ||
@@ -71,16 +88,19 @@ function getChanges(
     const currentVal = current[key];
     const previousVal = previous[key];
 
+    // Cek apakah nilai berubah
     if (currentVal !== previousVal) {
       const label = fieldLabels[key] || key;
+      // Jika sebelumnya kosong/null, gunakan kata "Menambahkan"
       if (!previousVal) {
         changes.push(`Menambahkan ${label}.`);
       } else {
+        // Jika sebelumnya ada isinya, gunakan kata "Mengubah"
         changes.push(`Mengubah ${label}.`);
       }
     }
   });
-
+  // Fallback jika ada perubahan tapi hanya pada field yang di-ignore
   return changes.length > 0 ? changes : ["Pembaruan Status."];
 }
 
@@ -90,7 +110,10 @@ interface HistoryItemProps {
   onSelect: () => void;
 }
 
-// Komponen kecil untuk menampilkan satu item riwayat
+/**
+ * Komponen Baris Riwayat (Timeline Item).
+ * Menampilkan ringkasan perubahan dan status pada satu titik waktu.
+ */
 const HistoryItem: React.FC<HistoryItemProps> = ({
   item,
   previousItem,
@@ -98,8 +121,11 @@ const HistoryItem: React.FC<HistoryItemProps> = ({
 }) => {
   const currentStatus = item.data?.final_status_notaris;
   const prevStatus = previousItem?.data?.final_status_notaris;
+
+  // Hitung perubahan dibandingkan item sebelumnya
   const dataChanges = getChanges(item.data, previousItem?.data || null);
 
+  // Cek apakah ada perubahan status final (misal dari Proses -> Selesai)
   let statusChangeElement: React.ReactNode = null;
   if (currentStatus !== prevStatus) {
     statusChangeElement = (
@@ -115,15 +141,20 @@ const HistoryItem: React.FC<HistoryItemProps> = ({
       onClick={onSelect}
       className="relative w-full text-left pl-8 py-4 border-l border-gray-300 hover:bg-gray-50 transition-colors duration-150"
     >
+      {/* Titik merah pada timeline */}
       <span className="absolute -left-[9px] top-6 w-4 h-4 bg-red-500 rounded-full border-4 border-white"></span>
       <p className="text-sm font-semibold text-gray-800 mb-1">
         {formatDate(item.created_at)}
       </p>
+
+      {/* List perubahan */}
       <div className="text-sm text-gray-600">
         {dataChanges.map((change, idx) => (
           <p key={idx}>• {change}</p>
         ))}
       </div>
+
+      {/* Tampilan perubahan status final jika ada */}
       {statusChangeElement && (
         <div className="mt-2 pt-2 border-t border-dashed">
           {statusChangeElement}
@@ -133,6 +164,7 @@ const HistoryItem: React.FC<HistoryItemProps> = ({
   );
 };
 
+// Komponen Helper untuk menampilkan Field Label & Value di Detail View
 const DetailField: React.FC<{ label: string; value: React.ReactNode }> = ({
   label,
   value,
@@ -145,11 +177,13 @@ const DetailField: React.FC<{ label: string; value: React.ReactNode }> = ({
   </div>
 );
 
+// Komponen Helper untuk menampilkan Link Download File
 const FileLink: React.FC<{
   label: string;
   fileKey: string | null | undefined;
   progressId: string;
 }> = ({ label, fileKey, progressId }) => {
+  // Generate URL API untuk download file
   const href = fileKey
     ? `/api/files/notaris/${progressId}?path=${encodeURIComponent(
         fileKey
@@ -185,6 +219,11 @@ const FileLink: React.FC<{
   );
 };
 
+/**
+ * Tampilan Detail (Page 2 dari Modal).
+ * Muncul ketika user mengklik salah satu item di list riwayat.
+ * Menampilkan snapshot lengkap data pada saat itu.
+ */
 const HistoryDetailView: React.FC<{
   item: NotarisHistoryItem;
   progressId: string;
@@ -220,6 +259,7 @@ const HistoryDetailView: React.FC<{
           </p>
         </div>
 
+        {/* Grid Data Snapshot */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <DetailField
             label="Awal Sewa"
@@ -280,12 +320,18 @@ interface HistoryModalProps {
   onClose: () => void;
 }
 
+/**
+ * Komponen Utama: NotarisHistoryModal
+ * Menggunakan React Portal untuk merender modal di atas layer aplikasi utama.
+ */
 export function NotarisHistoryModal({
   progressId,
   onClose,
 }: HistoryModalProps) {
   const { history, isLoading, isError, refetch } =
     useNotarisHistory(progressId);
+
+  // State untuk melacak item mana yang sedang dilihat detailnya (View Switching)
   const [selectedItem, setSelectedItem] = useState<NotarisHistoryItem | null>(
     null
   );
@@ -294,6 +340,8 @@ export function NotarisHistoryModal({
     refetch();
   }, [refetch]);
 
+  // Memoization: Mengurutkan history secara kronologis (Lama -> Baru)
+  // Ini penting agar logika "Previous Item" bekerja dengan benar saat mapping.
   const sortedHistory = useMemo(() => {
     if (!Array.isArray(history)) return [];
     return [...history].sort(
@@ -302,7 +350,9 @@ export function NotarisHistoryModal({
     );
   }, [history]);
 
+  // Render Content Switcher: Detail View atau List View
   const renderContent = () => {
+    // 1. Tampilkan Detail View jika ada item terpilih
     if (selectedItem) {
       return (
         <HistoryDetailView
@@ -313,6 +363,7 @@ export function NotarisHistoryModal({
       );
     }
 
+    // 2. Tampilkan List View (Timeline)
     return (
       <>
         <div className="relative border-b border-gray-300 bg-gradient-to-r from-red-50 via-white to-red-50 px-6 py-5 flex justify-between items-center">
@@ -367,6 +418,9 @@ export function NotarisHistoryModal({
       </>
     );
   };
+
+  // Menggunakan Portal untuk merender modal di body, menghindari masalah z-index/overflow
+  if (typeof document === "undefined") return null;
 
   return createPortal(
     <div className="fixed inset-0 bg-gradient-to-br from-black/70 via-black/60 to-black/70 backdrop-blur-sm flex justify-center items-center z-50 p-4 animate-in fade-in duration-200">

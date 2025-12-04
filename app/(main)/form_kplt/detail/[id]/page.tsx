@@ -1,5 +1,21 @@
-// app/(main)/form_kplt/detail/[id]/page.tsx
 "use client";
+
+/**
+ * DetailKpltPage
+ * ---------------
+ * Halaman detail KPLT yang menampilkan:
+ * - Data KPLT lengkap berdasarkan ID
+ * - Aksi approval (OK / NOK) berdasarkan jabatan user
+ * - Form upload Intip & Form Ukur
+ * - Modal untuk input LM (Location Manager)
+ *
+ * Fitur utama:
+ * - Mendapatkan detail KPLT via hook `useKpltDetail`
+ * - Mengatur status approval sesuai role GM / RM / BM
+ * - Patch file Intip & Form Ukur
+ * - Menggunakan SWR mutate + invalidate untuk refresh data
+ * - Menampilkan toast / konfirmasi menggunakan AlertContext
+ */
 
 import React, { useState, useMemo, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -10,26 +26,48 @@ import { useUser } from "@/hooks/useUser";
 import { invalidate } from "@/lib/swr-invalidate";
 
 export default function DetailKpltPage() {
+  /**
+   * Ambil parameter ID dari URL.
+   */
   const params = useParams<{ id: string }>();
   const kpltId = params?.id;
+
   const router = useRouter();
 
+  /**
+   * Context: toast dan konfirmasi
+   */
   const { showToast, showConfirmation } = useAlert();
-  const { user } = useUser();
-  const [isApproving, setIsApproving] = useState(false);
-  const { data, isLoading, isError, error, mutate, rawData } =
-    useKpltDetail(kpltId);
 
+  /**
+   * Data user yang login.
+   */
+  const { user } = useUser();
+
+  /**
+   * State internal halaman.
+   */
+  const [isApproving, setIsApproving] = useState(false);
   const [showIntipModal, setShowIntipModal] = useState(false);
   const [showFormUkurModal, setShowFormUkurModal] = useState(false);
   const [isSubmittingLmInput, setIsSubmittingLmInput] = useState(false);
 
+  /**
+   * Ambil detail KPLT berdasarkan ID.
+   */
+  const { data, isLoading, isError, error, mutate, rawData } =
+    useKpltDetail(kpltId);
+
+  /**
+   * Utility fetch: POST approval dari RM/BM.
+   */
   const fetchApprovalPost = async (id: string, is_approved: boolean) => {
     const res = await fetch(`/api/kplt/${id}/approvals`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ is_approved }),
     });
+
     const result = await res.json();
     if (!res.ok) {
       throw new Error(result.error || "Gagal mengirim status approval");
@@ -37,12 +75,16 @@ export default function DetailKpltPage() {
     return result.data;
   };
 
+  /**
+   * Utility fetch: PATCH status final oleh GM.
+   */
   const fetchStatusPatch = async (id: string, newStatus: "OK" | "NOK") => {
     const res = await fetch(`/api/kplt/${id}/approvals`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ kplt_approval: newStatus }),
     });
+
     const result = await res.json();
     if (!res.ok) {
       throw new Error(result.error || "Gagal memperbarui status");
@@ -50,10 +92,17 @@ export default function DetailKpltPage() {
     return result.data;
   };
 
+  /**
+   * Handler untuk aksi approval:
+   * - General Manager → PATCH status final
+   * - BM/RM → POST approval
+   */
   const handleApprovalClick = async (status: "OK" | "NOK") => {
     if (!kpltId || !user?.position_nama) return;
 
     const position = user.position_nama.toLowerCase();
+
+    // Konfirmasi sebelum melanjutkan
     const confirmed = await showConfirmation({
       title: `Konfirmasi Approval KPLT (${status})`,
       message: `Apakah Anda yakin ingin ${
@@ -65,17 +114,18 @@ export default function DetailKpltPage() {
     });
 
     if (!confirmed) return;
-
     setIsApproving(true);
 
     try {
       if (position === "general manager") {
+        // GM langsung mengubah status final KPLT
         await fetchStatusPatch(kpltId, status);
         showToast({
           type: "success",
           message: `Status KPLT berhasil diubah menjadi ${status}!`,
         });
       } else {
+        // RM/BM mengirim approval bertingkat
         const isApproved = status === "OK";
         await fetchApprovalPost(kpltId, isApproved);
         showToast({
@@ -83,6 +133,8 @@ export default function DetailKpltPage() {
           message: "Status approval berhasil dikirim!",
         });
       }
+
+      // Redirect dan refresh data SWR
       router.push("/form_kplt");
       invalidate.kplt();
     } catch (err: any) {
@@ -93,24 +145,31 @@ export default function DetailKpltPage() {
     }
   };
 
+  /**
+   * Handler submit untuk file Intip.
+   */
   const handleIntipSubmit = useCallback(
     async (intipFormData: FormData) => {
       if (!kpltId) return;
       setIsSubmittingLmInput(true);
+
       try {
         const res = await fetch(`/api/kplt/${kpltId}/file_intip`, {
           method: "PATCH",
           body: intipFormData,
         });
+
         const result = await res.json();
         if (!res.ok) {
           throw new Error(result.error || "Gagal menyimpan data Intip.");
         }
+
         showToast({
           type: "success",
           message: "Data Intip berhasil diperbarui.",
         });
         setShowIntipModal(false);
+
         await mutate();
         invalidate.kplt();
       } catch (err: any) {
@@ -126,10 +185,14 @@ export default function DetailKpltPage() {
     [kpltId, mutate, showToast]
   );
 
+  /**
+   * Handler submit Form Ukur.
+   */
   const handleFormUkurSubmit = useCallback(
     async (ukurFormData: FormData) => {
       if (!kpltId) return;
       setIsSubmittingLmInput(true);
+
       try {
         const res = await fetch(`/api/kplt/${kpltId}/form_ukur`, {
           method: "PATCH",
@@ -140,10 +203,12 @@ export default function DetailKpltPage() {
         if (!res.ok) {
           throw new Error(result.error || "Gagal menyimpan data Form Ukur.");
         }
+
         showToast({
           type: "success",
           message: "Data Form Ukur berhasil diperbarui.",
         });
+
         setShowFormUkurModal(false);
         await mutate();
         invalidate.kplt();
@@ -160,6 +225,10 @@ export default function DetailKpltPage() {
     [kpltId, mutate, showToast]
   );
 
+  /**
+   * Menentukan apakah user boleh melakukan approval
+   * dan apakah approval-nya sudah pernah dilakukan.
+   */
   const { isAlreadyApproved, showApprovalSection } = useMemo(() => {
     if (!data || !user?.position_nama) {
       return { isAlreadyApproved: false, showApprovalSection: false };
@@ -169,6 +238,7 @@ export default function DetailKpltPage() {
     const mainStatus = data.base.kpltapproval;
     const summary = data.approvalsSummary;
 
+    // GM hanya bisa approve jika status "Waiting for Forum"
     if (position === "general manager") {
       const show = mainStatus === "Waiting for Forum";
       return {
@@ -177,20 +247,22 @@ export default function DetailKpltPage() {
       };
     }
 
+    // Branch Manager
     if (position === "branch manager") {
-      const alreadyApproved = !!summary?.bm;
-      const show = mainStatus === "In Progress" && !alreadyApproved;
+      const already = !!summary?.bm;
+      const show = mainStatus === "In Progress" && !already;
       return {
-        isAlreadyApproved: alreadyApproved,
+        isAlreadyApproved: already,
         showApprovalSection: show,
       };
     }
 
+    // Regional Manager
     if (position === "regional manager") {
-      const AlreadyApproved = !!summary?.rm;
-      const show = mainStatus === "In Progress" && !AlreadyApproved;
+      const already = !!summary?.rm;
+      const show = mainStatus === "In Progress" && !already;
       return {
-        isAlreadyApproved: AlreadyApproved,
+        isAlreadyApproved: already,
         showApprovalSection: show,
       };
     }
@@ -198,6 +270,9 @@ export default function DetailKpltPage() {
     return { isAlreadyApproved: false, showApprovalSection: false };
   }, [data, user]);
 
+  /**
+   * Render layout detail KPLT beserta semua handler & state.
+   */
   return (
     <DetailKpltLayout
       id={kpltId!}

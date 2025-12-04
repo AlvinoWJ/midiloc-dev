@@ -7,60 +7,71 @@ import FilterDropdown from "@/components/ui/filterdropdown";
 import { useMediaQuery } from "@/hooks/use-media-query";
 
 interface SearchWithFilterProps {
-  onSearch: (value: string) => void;
-  onFilterChange: (month: string, year: string) => void;
+  onSearch: (value: string) => void; // callback pencarian
+  onFilterChange: (month: string, year: string) => void; // callback filter
 }
 
 export default function SearchWithFilter({
   onSearch,
   onFilterChange,
 }: SearchWithFilterProps) {
-  const [search, setSearch] = useState("");
-  const [month, setMonth] = useState("");
-  const [year, setYear] = useState("");
-  const [showFilter, setShowFilter] = useState(false);
-  const isDesktop = useMediaQuery("(min-width: 768px)");
+  // -------------------- State --------------------
+  const [search, setSearch] = useState(""); // input teks pencarian
+  const [month, setMonth] = useState(""); // nilai filter bulan
+  const [year, setYear] = useState(""); // nilai filter tahun
+  const [showFilter, setShowFilter] = useState(false); // toggle dropdown filter
+  const isDesktop = useMediaQuery("(min-width: 768px)"); // cek ukuran layar
 
-  // hanya ubah state search, tapi tidak langsung trigger onSearch
+  // -------------------- Handler Pencarian --------------------
+
+  // Update input search tanpa langsung trigger pencarian
   const handleSearchChange = (value: string) => {
     setSearch(value);
     if (value === "") {
-      onSearch(""); // tampilkan data semula kalau dikosongkan
+      onSearch(""); // reset data ketika input dikosongkan
     }
   };
 
-  // trigger saat tekan Enter atau klik tombol Search
+  // Trigger ketika tekan Enter atau klik tombol Search
   const handleSearchSubmit = () => {
     onSearch(search.trim());
   };
 
-  // tombol clear (X) di searchbar
+  // Tombol X di searchbar → clear input + reset data
   const handleSearchClear = () => {
     setSearch("");
-    onSearch(""); // reset data ke awal
+    onSearch("");
   };
 
+  // -------------------- Handler Filter --------------------
+
+  // Update filter bulan
   const handleMonthChange = (value: string) => {
     setMonth(value);
     onFilterChange(value, year);
   };
 
+  // Update filter tahun
   const handleYearChange = (value: string) => {
     setYear(value);
     onFilterChange(month, value);
   };
 
+  // Update sekaligus (khusus desktop dropdown)
   const handleFilterChange = (newMonth: string, newYear: string) => {
     setMonth(newMonth);
     setYear(newYear);
     onFilterChange(newMonth, newYear);
   };
 
+  // Reset semua filter
   const clearFilters = () => {
     setMonth("");
     setYear("");
     onFilterChange("", "");
   };
+
+  // -------------------- Data Bulan & Tahun --------------------
 
   const months = [
     { value: "01", label: "Januari" },
@@ -78,25 +89,28 @@ export default function SearchWithFilter({
   ];
 
   const currentYear = new Date().getFullYear();
-  const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
+  const years = Array.from({ length: 5 }, (_, i) => currentYear - i); // list 5 tahun terakhir
 
   return (
     <>
-      {/* ----------------- Desktop ----------------- */}
+      {/* =========================================================
+          DESKTOP VIEW
+          ========================================================= */}
       <div className="hidden md:flex items-center gap-3 relative">
+        {/* Komponen SearchBar terpisah */}
         <SearchBar
           value={search}
-          onChange={handleSearchChange}
-          onSubmit={handleSearchSubmit}
-          onClear={handleSearchClear}
+          onChange={handleSearchChange} // update input
+          onSubmit={handleSearchSubmit} // enter/klik search
+          onClear={handleSearchClear} // clear input
         />
 
-        {/* Tombol Filter (Satu-satunya trigger) */}
+        {/* Tombol filter, menjadi merah jika filter aktif */}
         <div className="relative">
           <button
             onClick={() => setShowFilter(!showFilter)}
             className={`flex items-center justify-center bg-white shadow-[1px_1px_6px_rgba(0,0,0,0.25)] rounded-xl w-[46px] h-[46px] p-2 transition-colors ${
-              month || year // Highlight jika ada filter aktif (bulan ATAU tahun)
+              month || year // highlight jika ada filter aktif
                 ? "text-red-600"
                 : "hover:bg-gray-100 text-gray-600"
             }`}
@@ -109,12 +123,12 @@ export default function SearchWithFilter({
             />
           </button>
 
+          {/* Dropdown filter (hanya untuk desktop) */}
           {showFilter && isDesktop && (
             <FilterDropdown
               month={month}
               year={year}
-              // Mengirimkan fungsi update sekaligus
-              onApply={(m, y) => handleFilterChange(m, y)}
+              onApply={(m, y) => handleFilterChange(m, y)} // apply filter sekaligus
               show={showFilter}
               setShow={setShowFilter}
             />
@@ -122,19 +136,25 @@ export default function SearchWithFilter({
         </div>
       </div>
 
-      {/* ----------------- Mobile ----------------- */}
+      {/* =========================================================
+          MOBILE VIEW
+          ========================================================= */}
       <div className="space-y-4 md:hidden">
         <div className="relative">
+          {/* Form pencarian mobile */}
           <form
             onSubmit={(e) => {
               e.preventDefault();
               onSearch(search.trim());
             }}
           >
+            {/* Ikon search kiri */}
             <Search
               size={20}
               className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
             />
+
+            {/* Input pencarian */}
             <input
               type="text"
               placeholder="Cari usulan lokasi..."
@@ -142,11 +162,12 @@ export default function SearchWithFilter({
               onChange={(e) => {
                 const value = e.target.value;
                 setSearch(value);
-                if (value === "") onSearch("");
+                if (value === "") onSearch(""); // reset
               }}
-              className="w-full pl-10 pr-12 py-3 border border-gray-300 bg-white text-base shadow-sm transition-colors placeholder:text-muted-foreground focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+              className="w-full pl-10 pr-12 py-3 border border-gray-300 bg-white text-base shadow-sm transition-colors placeholder:text-muted-foreground focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500"
             />
 
+            {/* Tombol clear (X) di input mobile */}
             {search && (
               <button
                 type="button"
@@ -158,6 +179,7 @@ export default function SearchWithFilter({
             )}
           </form>
 
+          {/* Tombol filter mobile */}
           <button
             onClick={() => setShowFilter(!showFilter)}
             className={`absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded transition-colors duration-200 ${
@@ -168,18 +190,23 @@ export default function SearchWithFilter({
           </button>
         </div>
 
+        {/* Panel filter mobile */}
         {showFilter && !isDesktop && (
           <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-lg">
+            {/* Header filter */}
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-semibold text-gray-900">Filter</h3>
               <button
                 onClick={() => setShowFilter(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors duration-200"
+                className="text-gray-400 hover:text-gray-600"
               >
                 <X size={20} />
               </button>
             </div>
+
+            {/* Input Bulan & Tahun */}
             <div className="space-y-4">
+              {/* Dropdown Bulan */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Bulan
@@ -187,7 +214,7 @@ export default function SearchWithFilter({
                 <select
                   value={month}
                   onChange={(e) => handleMonthChange(e.target.value)}
-                  className="w-full p-3 border border-gray-200 rounded-lg bg-white shadow-sm focus:outline-none focus:shadow-md focus:border-gray-300 transition-all duration-200"
+                  className="w-full p-3 border border-gray-200 rounded-lg bg-white shadow-sm focus:outline-none focus:shadow-md"
                 >
                   <option value="">Semua Bulan</option>
                   {months.map((m) => (
@@ -197,6 +224,8 @@ export default function SearchWithFilter({
                   ))}
                 </select>
               </div>
+
+              {/* Dropdown Tahun */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Tahun
@@ -204,7 +233,7 @@ export default function SearchWithFilter({
                 <select
                   value={year}
                   onChange={(e) => handleYearChange(e.target.value)}
-                  className="w-full p-3 border border-gray-200 rounded-lg bg-white shadow-sm focus:outline-none focus:shadow-md focus:border-gray-300 transition-all duration-200"
+                  className="w-full p-3 border border-gray-200 rounded-lg bg-white shadow-sm focus:outline-none focus:shadow-md"
                 >
                   <option value="">Semua Tahun</option>
                   {years.map((y) => (
@@ -214,10 +243,12 @@ export default function SearchWithFilter({
                   ))}
                 </select>
               </div>
+
+              {/* Tombol reset filter */}
               {(month || year) && (
                 <button
                   onClick={clearFilters}
-                  className="w-full py-2 text-sm text-red-600 hover:text-red-800 font-medium transition-colors duration-200"
+                  className="w-full py-2 text-sm text-red-600 hover:text-red-800 font-medium"
                 >
                   Hapus Filter
                 </button>

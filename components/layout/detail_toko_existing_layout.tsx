@@ -1,5 +1,26 @@
 "use client";
 
+/**
+ * DetailTokoExistingLayout
+ * ------------------------
+ * Layout presentasional untuk menampilkan detail lengkap data "Toko Existing".
+ * Halaman ini dirancang untuk menyajikan informasi padat dalam bentuk kartu-kartu yang terkelompok.
+ *
+ * Struktur Visual:
+ * - **Header Info**: Menampilkan Nama Toko, Tanggal GO, dan Badge status (Kode Toko/Tipe).
+ * - **Peta Lokasi**: Visualisasi koordinat toko menggunakan peta interaktif.
+ * - **Informasi Terkelompok**: Data dibagi menjadi 5 kartu utama:
+ * 1. Detail Lokasi (Alamat & Demografi)
+ * 2. Data Pemilik
+ * 3. Spesifikasi Store (Fisik & Legalitas)
+ * 4. Performa Toko (Metrik Keuangan)
+ * 5. Informasi Sewa & Legal
+ *
+ * Fitur Utilitas:
+ * - **Auto-Formatting**: Format mata uang (IDR) dan Tanggal (Indonesia) otomatis.
+ * - **Empty State Handling**: Menangani nilai null/undefined dengan fallback tanda strip ("-").
+ */
+
 import { useRouter } from "next/navigation";
 import {
   MapPin,
@@ -21,6 +42,10 @@ interface DetailTokoExistingLayoutProps {
   data?: TokoExistingDetailData;
 }
 
+/**
+ * Komponen reusable untuk menampilkan pasangan Label dan Value.
+ * Menangani styling standar dan fallback jika value kosong/null.
+ */
 const DetailField = ({
   label,
   value,
@@ -38,6 +63,9 @@ const DetailField = ({
   </div>
 );
 
+/**
+ * Utilitas format mata uang ke Rupiah (IDR).
+ */
 const formatCurrency = (value: number | undefined) => {
   if (value === undefined || value === null) return "-";
   return new Intl.NumberFormat("id-ID", {
@@ -47,6 +75,9 @@ const formatCurrency = (value: number | undefined) => {
   }).format(value);
 };
 
+/**
+ * Utilitas format tanggal ISO string ke format lokal Indonesia (dd MMMM yyyy).
+ */
 const formatDate = (dateString: string | undefined) => {
   if (!dateString) return "-";
   return new Date(dateString).toLocaleDateString("id-ID", {
@@ -62,10 +93,16 @@ export default function DetailTokoExistingLayout({
 }: DetailTokoExistingLayoutProps) {
   const router = useRouter();
 
+  /**
+   * Render state: Loading (Skeleton)
+   */
   if (isLoading) {
     return <DetailUlokSkeleton />;
   }
 
+  /**
+   * Render state: Data Tidak Ditemukan / Error
+   */
   if (!data) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4">
@@ -79,8 +116,12 @@ export default function DetailTokoExistingLayout({
     );
   }
 
+  /**
+   * Render Utama Layout
+   */
   return (
     <main className="space-y-4 lg:space-y-6 pb-16 lg:pb-8">
+      {/* Tombol Navigasi Kembali */}
       <div className="flex justify-between items-center mb-6">
         <Button onClick={() => router.back()} variant="back">
           <ArrowLeft size={20} className="mr-1" />
@@ -88,6 +129,7 @@ export default function DetailTokoExistingLayout({
         </Button>
       </div>
 
+      {/* --- Section: Header Card (Summary) --- */}
       <div className="bg-white rounded-xl p-6 mb-8 shadow-[1px_1px_6px_rgba(0,0,0,0.25)] border-l-4 border-blue-600">
         <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
           <div className="flex-1 pr-4 min-w-0">
@@ -113,6 +155,7 @@ export default function DetailTokoExistingLayout({
             </div>
           </div>
 
+          {/* Badges: Kode Store & Tipe Toko */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 flex-shrink-0">
             <span className="bg-blue-100 text-blue-800 text-base font-bold px-3 py-1 rounded border border-blue-400">
               {data.kode_store || "NO CODE"}
@@ -124,6 +167,7 @@ export default function DetailTokoExistingLayout({
         </div>
       </div>
 
+      {/* --- Section: Peta Lokasi --- */}
       <div>
         <DetailMapCard
           id={data.kode_store || "existing"}
@@ -133,7 +177,9 @@ export default function DetailTokoExistingLayout({
         />
       </div>
 
+      {/* --- Section: Grid Informasi Detail --- */}
       <div className="space-y-6">
+        {/* KARTU DETAIL LOKASI */}
         <div className="bg-white rounded-xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)]">
           <div className="border-b border-gray-200 px-6 py-4 rounded-t-xl">
             <div className="flex items-center">
@@ -164,7 +210,7 @@ export default function DetailTokoExistingLayout({
           </div>
         </div>
 
-        {/* 2. KARTU DATA PEMILIK */}
+        {/* KARTU DATA PEMILIK */}
         <div className="bg-white rounded-xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)]">
           <div className="border-b border-gray-200 px-6 py-4 rounded-t-xl">
             <div className="flex items-center">
@@ -180,7 +226,7 @@ export default function DetailTokoExistingLayout({
           </div>
         </div>
 
-        {/* 3. KARTU SPESIFIKASI STORE */}
+        {/* KARTU SPESIFIKASI STORE */}
         <div className="bg-white rounded-xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)]">
           <div className="border-b border-gray-200 px-6 py-4 rounded-t-xl">
             <div className="flex items-center">
@@ -202,7 +248,7 @@ export default function DetailTokoExistingLayout({
           </div>
         </div>
 
-        {/* 4. KARTU PERFORMA TOKO */}
+        {/* KARTU PERFORMA TOKO */}
         <div className="bg-white rounded-xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)]">
           <div className="border-b border-gray-200 px-6 py-4 rounded-t-xl">
             <div className="flex items-center">
@@ -220,7 +266,7 @@ export default function DetailTokoExistingLayout({
           </div>
         </div>
 
-        {/* 5. KARTU INFORMASI SEWA & LEGAL */}
+        {/* KARTU INFORMASI SEWA & LEGAL */}
         <div className="bg-white rounded-xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)]">
           <div className="border-b border-gray-200 px-6 py-4 bg-gray-50 rounded-t-xl">
             <div className="flex items-center">

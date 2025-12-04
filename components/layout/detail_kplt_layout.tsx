@@ -1,5 +1,19 @@
-// components/detail_kplt_layout.tsx
 "use client";
+
+/**
+ * DetailKpltLayout
+ * ----------------
+ * Layout UI utama untuk menampilkan detail data KPLT (Kajian Potensi Lokasi Toko).
+ * Komponen ini berfungsi sebagai presentational layer yang menerima data dan handler dari page parent.
+ *
+ * Fitur Utama:
+ * - Menampilkan informasi detail KPLT (Header & Analisis Kelayakan).
+ * - Menampilkan kartu khusus untuk input data "Intip" dan "Form Ukur" (khusus Location Manager).
+ * - Menampilkan daftar file dokumen pendukung (PDF/Excel/Video).
+ * - Menampilkan riwayat persetujuan (Approval Logs).
+ * - Menyediakan tombol aksi Approval (Setuju/Tolak) untuk Manager.
+ * - Menangani logika display modal input menggunakan `createPortal`.
+ */
 
 import React from "react";
 import { Button } from "@/components/ui/button";
@@ -29,6 +43,9 @@ import InputFormUkur from "../ui/inputformukur";
 import { useMemo } from "react";
 import { createPortal } from "react-dom";
 
+/**
+ * Komponen pembantu untuk menampilkan Label dan Value dalam kotak abu-abu.
+ */
 const DetailField = ({ label, value }: { label: string; value: any }) => (
   <div>
     <label className="text-gray-600 font-medium text-sm lg:text-base mb-1 block">
@@ -40,6 +57,9 @@ const DetailField = ({ label, value }: { label: string; value: any }) => (
   </div>
 );
 
+/**
+ * Komponen pembantu untuk menampilkan link file dengan tombol "Lihat".
+ */
 const FileLink = ({ label, url }: { label: string; url: string | null }) => {
   if (!url) return null;
   return (
@@ -58,6 +78,10 @@ const FileLink = ({ label, url }: { label: string; url: string | null }) => {
   );
 };
 
+/**
+ * Helper untuk memformat nama field file menjadi label yang mudah dibaca.
+ * Contoh: "file_surat_ijin" -> "File Surat Ijin"
+ */
 const generateLabel = (field: string | null): string => {
   if (!field) return "File Lainnya";
   return field
@@ -66,6 +90,9 @@ const generateLabel = (field: string | null): string => {
     .join(" ");
 };
 
+/**
+ * Helper untuk menentukan ikon berdasarkan tipe file.
+ */
 const getIconForFileType = (fileType: MappedKpltFile["fileType"]) => {
   switch (fileType) {
     case "pdf":
@@ -79,7 +106,9 @@ const getIconForFileType = (fileType: MappedKpltFile["fileType"]) => {
   }
 };
 
-// --- Komponen FileListItem (Tidak berubah) ---
+/**
+ * Komponen item list untuk daftar file dokumen pendukung.
+ */
 const FileListItem = ({ file }: { file: MappedKpltFile }) => {
   const label = generateLabel(file.field);
 
@@ -104,7 +133,9 @@ const FileListItem = ({ file }: { file: MappedKpltFile }) => {
   );
 };
 
-// --- Komponen DetailCard (Tidak berubah) ---
+/**
+ * Wrapper Card standar untuk setiap bagian detail.
+ */
 const DetailCard = ({
   title,
   icon,
@@ -131,6 +162,9 @@ const DetailCard = ({
   </div>
 );
 
+/**
+ * Helper format tanggal untuk log approval.
+ */
 const formatLogDate = (isoDate: string | null): string => {
   if (!isoDate) return "-";
   try {
@@ -174,6 +208,9 @@ const ApprovalLogItem = ({ approval }: { approval: ApprovalDetail }) => {
   );
 };
 
+/**
+ * Interface untuk Card Input Data (Intip & Form Ukur).
+ */
 interface DataInputCardProps {
   title: string;
   icon: React.ReactNode;
@@ -192,6 +229,11 @@ interface DataInputCardProps {
   disabledMessage?: string;
 }
 
+/**
+ * Komponen Card yang menangani dua kondisi:
+ * 1. Data Kosong: Menampilkan pesan kosong dan tombol input (jika punya akses).
+ * 2. Data Ada: Menampilkan detail data tersebut.
+ */
 const DataInputCard = ({
   title,
   icon,
@@ -208,7 +250,6 @@ const DataInputCard = ({
   buttonLabel,
   disabledMessage,
 }: DataInputCardProps) => {
-  // Hitung jumlah field yang ada
   const fieldCount = [statusValue, dateValue].filter(Boolean).length;
   const gridClass =
     fieldCount === 1 ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2";
@@ -235,7 +276,6 @@ const DataInputCard = ({
               </Button>
             )}
 
-            {/* Pesan jika tidak bisa edit */}
             {!caninput && disabledMessage && (
               <div className="mt-4 px-4 py-2 bg-yellow-50 border border-yellow-200 rounded-lg">
                 <p className="text-xs text-yellow-700 text-center">
@@ -271,7 +311,9 @@ const DataInputCard = ({
   );
 };
 
-// --- Interface Utama DIPERBARUI ---
+/**
+ * Interface Props Utama Layout
+ */
 interface DetailKpltLayoutProps {
   id: string;
   data?: MappedKpltDetail;
@@ -293,7 +335,6 @@ interface DetailKpltLayoutProps {
   isSubmittingLmInput: boolean;
 }
 
-// --- Komponen Utama DIPERBARUI ---
 export default function DetailKpltLayout({
   id,
   data,
@@ -303,7 +344,6 @@ export default function DetailKpltLayout({
   isAlreadyApproved,
   isApproving,
   onApprove,
-  // Props LM
   isLocationManager,
   onOpenIntipModal,
   onOpenFormUkurModal,
@@ -316,24 +356,38 @@ export default function DetailKpltLayout({
   isSubmittingLmInput,
 }: DetailKpltLayoutProps) {
   const router = useRouter();
+
+  /**
+   * Mengambil daftar file tambahan menggunakan hook.
+   */
   const {
     files,
     isLoading: isLoadingFiles,
     isError: isFilesError,
   } = useKpltFiles(id);
 
+  /**
+   * Memfilter file list untuk MENGECUALIKAN 'file_intip' dan 'form_ukur'.
+   * Alasannya: kedua file ini sudah ditampilkan di Card khususnya masing-masing,
+   * jadi tidak perlu ditampilkan ulang di bagian "Dokumen Terlampir Lainnya".
+   */
   const filteredOtherFiles = useMemo(() => {
     if (!files) return [];
-    // Kecualikan file jika fieldnya adalah 'file_intip' atau 'form_ukur'
     return files.filter(
       (file) => file.field !== "file_intip" && file.field !== "form_ukur"
     );
   }, [files]);
 
-  // --- Handling Loading & Error (Tidak berubah) ---
+  /**
+   * Render Loading Skeleton.
+   */
   if (isLoading || (isLoadingFiles && !isError && !isFilesError)) {
     return <DetailKpltSkeleton />;
   }
+
+  /**
+   * Render Error State.
+   */
   if (isError) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[70vh] text-center p-4">
@@ -356,8 +410,12 @@ export default function DetailKpltLayout({
       </div>
     );
   }
+
   const showFilesError = !isLoadingFiles && isFilesError;
 
+  /**
+   * Render Data Not Found State.
+   */
   if (!data) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[70vh] text-center p-4">
@@ -378,9 +436,12 @@ export default function DetailKpltLayout({
   }
 
   const { base, analytics } = data;
+
+  // Validasi apakah Location Manager boleh mengedit data
   const canLmEdit =
     isLocationManager && data.base.kpltapproval === "In Progress";
 
+  // Validasi kelengkapan data sebelum tombol approval muncul
   const isFormUkurFilled = !!base.formUkurUrl;
   const isFileIntipFilled = !!base.fileIntipUrl;
   const canShowApprovalButton = isFormUkurFilled && isFileIntipFilled;
@@ -398,7 +459,7 @@ export default function DetailKpltLayout({
           Kembali
         </Button>
 
-        {/* Kartu Prefill */}
+        {/* Header & Informasi Dasar (Prefill) */}
         <div className="mb-10">
           {data && (
             <PrefillKpltCard baseData={base} approvalsData={data.approvals} />
@@ -502,6 +563,7 @@ export default function DetailKpltLayout({
           )}
         </DetailCard>
 
+        {/* Riwayat Persetujuan */}
         <DetailCard
           title="Riwayat Persetujuan"
           icon={<History className="text-red-500 mr-3" size={20} />}

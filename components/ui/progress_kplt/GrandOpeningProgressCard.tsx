@@ -8,7 +8,7 @@ import {
   Pencil,
   CheckCircle,
   XCircle,
-  PartyPopper, // Icon untuk Grand Opening
+  PartyPopper,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,7 +17,10 @@ import { GOEditableSchema } from "@/lib/validations/grand_opening";
 import { useAlert } from "@/components/shared/alertcontext";
 import { useUser } from "@/hooks/useUser";
 
-// DetailCard (Helper)
+/**
+ * Komponen Helper: DetailCard
+ * Wrapper UI standar untuk kartu detail dengan judul, ikon, dan slot konten.
+ */
 const DetailCard = ({
   title,
   icon,
@@ -45,7 +48,11 @@ const DetailCard = ({
   </div>
 );
 
-// Form Component
+/**
+ * Komponen Form: GrandOpeningForm
+ * Menangani input dan penyimpanan data (Drafting).
+ * Mendukung mode Create (POST) dan Edit (PATCH) berdasarkan prop `initialData`.
+ */
 interface FormProps {
   progressId: string;
   onSuccess: () => void;
@@ -66,22 +73,32 @@ const GrandOpeningForm: React.FC<FormProps> = ({
 
   const statusOptions = ["Belum", "Selesai", "Batal"];
 
+  // State lokal untuk controlled input (select)
   const [rekomGoVendor, setRekomGoVendor] = useState<string>(
     initialData?.rekom_go_vendor || ""
   );
 
+  /**
+   * Handler Submit Form
+   * 1. Mengambil data dari FormData.
+   * 2. Validasi menggunakan Zod Schema (GOEditableSchema).
+   * 3. Menentukan method HTTP (POST/PATCH).
+   * 4. Mengirim data ke API.
+   */
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
 
     const formData = new FormData(e.currentTarget);
 
-    // Ambil semua field dari form
+    // Konstruksi payload object dari form data
     const payload = {
       rekom_go_vendor: rekomGoVendor || undefined,
       tgl_rekom_go_vendor: formData.get("tgl_rekom_go_vendor") || undefined,
       tgl_go: formData.get("tgl_go") || undefined,
     };
+
+    // Validasi data (Safe Parse)
     const parsed = GOEditableSchema.partial().safeParse(payload);
 
     if (!parsed.success) {
@@ -94,6 +111,7 @@ const GrandOpeningForm: React.FC<FormProps> = ({
     }
 
     try {
+      // Tentukan method: PATCH jika ada data awal (edit), POST jika baru
       const method = initialData ? "PATCH" : "POST";
       const res = await fetch(`/api/progress/${progressId}/grand_opening`, {
         method,
@@ -208,6 +226,10 @@ const GrandOpeningForm: React.FC<FormProps> = ({
   );
 };
 
+/**
+ * Komponen Helper: DetailField
+ * Menampilkan label dan value dalam kotak read-only.
+ */
 const DetailField: React.FC<{ label: string; value: React.ReactNode }> = ({
   label,
   value,
@@ -225,19 +247,26 @@ interface GrandOpeningProgressCardProps {
   onDataUpdate: () => void;
 }
 
+/**
+ * Komponen Utama: GrandOpeningProgressCard
+ * Mengatur logika tampilan (View vs Edit), fetching data, dan approval akhir.
+ */
 const GrandOpeningProgressCard: React.FC<GrandOpeningProgressCardProps> = ({
   progressId,
   onDataUpdate,
 }) => {
+  // Fetch data progress spesifik
   const { data, loading, error, refetch } = useGrandOpeningProgress(progressId);
 
   const [isEditing, setIsEditing] = useState(false);
   const [isSubmittingApproval, setIsSubmittingApproval] = useState(false);
   const { showToast, showConfirmation } = useAlert();
 
+  // Cek otorisasi user (RBAC)
   const { user } = useUser();
   const isBranchAdmin = user?.position_nama === "admin branch";
 
+  // Helper formatter tanggal
   const formatDate = (dateString?: string | null) =>
     dateString
       ? new Date(dateString).toLocaleDateString("id-ID", {
@@ -251,6 +280,11 @@ const GrandOpeningProgressCard: React.FC<GrandOpeningProgressCardProps> = ({
     refetch();
   }, [progressId]);
 
+  /**
+   * Handler untuk Final Submit (Approval).
+   * Berbeda dengan 'Simpan', ini mengubah status final menjadi 'selesai'.
+   * Memerlukan konfirmasi dialog.
+   */
   const handleFinalizeGO = async () => {
     const confirmed = await showConfirmation({
       title: "Konfirmasi submit Grand Opening",
@@ -289,6 +323,7 @@ const GrandOpeningProgressCard: React.FC<GrandOpeningProgressCardProps> = ({
     }
   };
 
+  /* --- KONDISI 1: LOADING & ERROR --- */
   if (loading)
     return (
       <div className="flex justify-center py-10 mt-8 w-full w-full">
@@ -303,6 +338,8 @@ const GrandOpeningProgressCard: React.FC<GrandOpeningProgressCardProps> = ({
       </div>
     );
 
+  /* --- KONDISI 2: EDIT MODE / DATA KOSONG --- */
+  // Jika tidak ada data atau sedang mode edit, tampilkan Form
   if (!data || isEditing)
     return (
       <div className="w-full w-full">
@@ -319,9 +356,11 @@ const GrandOpeningProgressCard: React.FC<GrandOpeningProgressCardProps> = ({
       </div>
     );
 
+  // Cek apakah status sudah final (Selesai/Batal)
   const isFinalized =
     data.final_status_go === "Selesai" || data.final_status_go === "Batal";
 
+  /* --- KONDISI 3: VIEW MODE (Read Only) --- */
   return (
     <div className="w-full w-full">
       <DetailCard
@@ -345,6 +384,8 @@ const GrandOpeningProgressCard: React.FC<GrandOpeningProgressCardProps> = ({
             />
           </div>
         </div>
+
+        {/* Tombol Aksi: Hanya muncul jika Admin Branch & Belum Final */}
         {!isFinalized && isBranchAdmin && (
           <div className="flex justify-between items-center mt-8">
             <Button variant="secondary" onClick={() => setIsEditing(true)}>

@@ -10,12 +10,14 @@ import { Ulok } from "@/hooks/ulok/useUlok";
 import {
   ChevronLeft,
   ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
   MoreHorizontal,
   Loader2,
 } from "lucide-react";
 
+/**
+ * Interface props untuk UlokLayout.
+ * Menerima data dan handler dari parent/hook container.
+ */
 export interface UlokPageProps {
   isLoading: boolean;
   isRefreshing: boolean;
@@ -34,6 +36,14 @@ export interface UlokPageProps {
   isLocationSpecialist: () => boolean;
 }
 
+/**
+ * Layout Utama Halaman Usulan Lokasi (ULOK).
+ * Fitur:
+ * - Menampilkan daftar ULOK dalam bentuk Grid Card.
+ * - Navigasi Tab (Recent vs History).
+ * - Tombol Tambah (Hanya untuk Specialist).
+ * - Pagination & Filter.
+ */
 export default function UlokLayout(props: UlokPageProps) {
   const router = useRouter();
 
@@ -55,6 +65,11 @@ export default function UlokLayout(props: UlokPageProps) {
     onPageChange,
   } = props;
 
+  /**
+   * Helper untuk membuat array nomor halaman pagination.
+   * Menangani tampilan ellipsis (...) jika halaman terlalu banyak (> 7 halaman).
+   * Memastikan halaman pertama, terakhir, dan sekitar halaman aktif selalu terlihat.
+   */
   const getPageNumbers = () => {
     const pages = [];
     const showEllipsisStart = currentPage > 3;
@@ -86,10 +101,12 @@ export default function UlokLayout(props: UlokPageProps) {
     return pages;
   };
 
+  /* --- KONDISI 1: INITIAL LOADING --- */
   if (isLoading) {
     return <UlokPageSkeleton />;
   }
 
+  /* --- KONDISI 2: ERROR STATE --- */
   if (isError) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[70vh] text-center p-4">
@@ -114,13 +131,16 @@ export default function UlokLayout(props: UlokPageProps) {
 
   const pageNumbers = getPageNumbers();
 
+  /* --- KONDISI 3: DATA READY --- */
   return (
     <div className="space-y-4 lg:space-y-6 flex flex-col flex-grow">
+      {/* Header & Search */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <h1 className="text-2xl lg:text-4xl font-bold">Usulan Lokasi</h1>
         <SearchWithFilter onSearch={onSearch} onFilterChange={onFilterChange} />
       </div>
 
+      {/* Tabs & Action Button */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <Tabs
           tabs={["Recent", "History"]}
@@ -132,12 +152,15 @@ export default function UlokLayout(props: UlokPageProps) {
         )}
       </div>
 
+      {/* Main Content Area */}
       <div className=" flex-grow">
+        {/* Refreshing State (Spinner saat ganti halaman/filter) */}
         {isRefreshing ? (
           <div className="flex items-center justify-center min-h-[23rem]">
             <Loader2 className="w-8 h-8 text-primary animate-spin" />
           </div>
         ) : filteredUlok.length === 0 ? (
+          /* Empty State */
           <div className="flex flex-col items-center justify-center text-center py-16 px-4 flex-grow">
             <div className="text-gray-300 text-6xl mb-4">📍</div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">
@@ -152,6 +175,8 @@ export default function UlokLayout(props: UlokPageProps) {
                 ? "Mulai dengan menambahkan usulan lokasi baru."
                 : "Belum ada data riwayat usulan lokasi."}
             </p>
+
+            {/* Shortcut tombol tambah di empty state jika user berhak */}
             {isLocationSpecialist() &&
               !searchQuery &&
               !filterMonth &&
@@ -166,6 +191,7 @@ export default function UlokLayout(props: UlokPageProps) {
               )}
           </div>
         ) : (
+          /* Grid Data List */
           <div className="space-y-6 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-6 min-h-[23rem]">
             {filteredUlok.map((ulok) => (
               <InfoCard
@@ -182,9 +208,11 @@ export default function UlokLayout(props: UlokPageProps) {
         )}
       </div>
 
+      {/* Pagination Controls */}
       {totalPages > 1 && !isRefreshing && (
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-auto pt-6">
           <div className="flex items-center gap-1">
+            {/* Tombol Previous */}
             <button
               onClick={() => onPageChange(currentPage - 1)}
               disabled={currentPage <= 1 || isLoading || isRefreshing}
@@ -193,6 +221,7 @@ export default function UlokLayout(props: UlokPageProps) {
               <ChevronLeft className="w-5 h-5" />
             </button>
 
+            {/* List Nomor Halaman */}
             <div className="flex items-center gap-1 mx-2">
               {pageNumbers.map((pageNum) => {
                 if (typeof pageNum === "string") {
@@ -206,6 +235,7 @@ export default function UlokLayout(props: UlokPageProps) {
                   );
                 }
 
+                // Render Tombol Angka
                 const isActive = pageNum === currentPage;
                 return (
                   <button
@@ -230,6 +260,7 @@ export default function UlokLayout(props: UlokPageProps) {
               })}
             </div>
 
+            {/* Tombol Next */}
             <button
               onClick={() => onPageChange(currentPage + 1)}
               disabled={currentPage >= totalPages || isLoading || isRefreshing}

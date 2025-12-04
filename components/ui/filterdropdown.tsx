@@ -3,10 +3,29 @@
 import { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 
+/**
+ * FilterDropdown
+ * --------------
+ * Komponen dropdown untuk filter berdasarkan bulan & tahun.
+ *
+ * Fitur:
+ * - Menampilkan daftar bulan dan tahun dalam bentuk grid.
+ * - User dapat memilih bulan atau tahun secara langsung (langsung apply).
+ * - Auto-close ketika user klik di luar dropdown.
+ * - Tombol Reset Filter untuk mengembalikan ke kondisi default.
+ *
+ * Props:
+ * - month (string): Nilai bulan yang sedang terpilih.
+ * - year (string): Nilai tahun yang sedang terpilih.
+ * - onApply(month, year): Callback untuk menerapkan perubahan filter.
+ * - show (boolean): Menentukan apakah dropdown ditampilkan.
+ * - setShow(boolean): Fungsi untuk membuka/menutup dropdown.
+ */
+
 type FilterDropdownProps = {
   month: string;
   year: string;
-  onApply: (month: string, year: string) => void; // Fungsi untuk apply sekaligus
+  onApply: (month: string, year: string) => void;
   show: boolean;
   setShow: (value: boolean) => void;
 };
@@ -18,15 +37,16 @@ export default function FilterDropdown({
   show,
   setShow,
 }: FilterDropdownProps) {
+  // Untuk mendeteksi klik di luar dropdown → auto-close.
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // State lokal untuk menampung pilihan sebelum user klik "Terapkan" (opsional)
-  // Atau kita bisa langsung update (seperti behavior dashboard biasanya).
-  // Di sini saya buat langsung update agar UX-nya cepat.
-
+  // Ambil tahun saat ini sebagai dasar list tahun.
   const currentYear = new Date().getFullYear();
-  const years = Array.from({ length: 6 }, (_, i) => currentYear - i); // 2025, 2024, ...
 
+  // Generate list 6 tahun terakhir, misal: 2025 → 2020.
+  const years = Array.from({ length: 6 }, (_, i) => currentYear - i);
+
+  // Daftar bulan (value & label).
   const months = [
     { value: "01", label: "Jan" },
     { value: "02", label: "Feb" },
@@ -42,6 +62,9 @@ export default function FilterDropdown({
     { value: "12", label: "Des" },
   ];
 
+  /**
+   * Efek untuk menutup dropdown ketika user klik di luar elemen.
+   */
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (
@@ -51,10 +74,12 @@ export default function FilterDropdown({
         setShow(false);
       }
     }
+
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [setShow]);
 
+  // Jika dropdown tidak sedang dibuka → tidak render apapun.
   if (!show) return null;
 
   return (
@@ -62,8 +87,11 @@ export default function FilterDropdown({
       ref={dropdownRef}
       className="absolute top-14 right-0 bg-white shadow-xl border border-gray-100 rounded-xl p-5 w-[340px] z-50 animate-in fade-in zoom-in-95 duration-200"
     >
+      {/* Header dropdown */}
       <div className="flex justify-between items-center mb-4 border-b pb-2">
         <h3 className="font-semibold text-gray-800">Filter Data</h3>
+
+        {/* Tombol penutup dropdown */}
         <button
           onClick={() => setShow(false)}
           className="text-gray-400 hover:text-gray-600"
@@ -73,13 +101,16 @@ export default function FilterDropdown({
       </div>
 
       <div className="space-y-5">
-        {/* Bagian TAHUN (Gaya Grid / YearPicker Style) */}
+        {/* ============================
+            BAGIAN FILTER TAHUN
+        ============================= */}
         <div>
           <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">
             Tahun
           </label>
+
           <div className="grid grid-cols-4 gap-2">
-            {/* Tombol 'All' untuk reset tahun */}
+            {/* Tombol reset tahun */}
             <button
               onClick={() => onApply(month, "")}
               className={`px-2 py-2 text-sm rounded-lg border transition-all ${
@@ -90,6 +121,8 @@ export default function FilterDropdown({
             >
               All
             </button>
+
+            {/* List Tahun */}
             {years.map((y) => (
               <button
                 key={y}
@@ -106,12 +139,16 @@ export default function FilterDropdown({
           </div>
         </div>
 
-        {/* Bagian BULAN (Gaya Grid untuk konsistensi) */}
+        {/* ============================
+            BAGIAN FILTER BULAN
+        ============================= */}
         <div>
           <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">
             Bulan
           </label>
+
           <div className="grid grid-cols-4 gap-2">
+            {/* Tombol reset bulan */}
             <button
               onClick={() => onApply("", year)}
               className={`px-2 py-2 text-sm rounded-lg border transition-all col-span-4 ${
@@ -122,6 +159,8 @@ export default function FilterDropdown({
             >
               Semua Bulan
             </button>
+
+            {/* List Bulan */}
             {months.map((m) => (
               <button
                 key={m.value}
@@ -139,7 +178,9 @@ export default function FilterDropdown({
         </div>
       </div>
 
-      {/* Footer: Reset All */}
+      {/* ============================
+          FOOTER — RESET FILTER
+      ============================= */}
       <div className="mt-6 pt-3 border-t flex justify-end">
         <button
           onClick={() => {

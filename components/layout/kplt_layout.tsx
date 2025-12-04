@@ -9,13 +9,14 @@ import { KpltSkeleton } from "../ui/skleton";
 import {
   ChevronLeft,
   ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
   MoreHorizontal,
   Loader2,
 } from "lucide-react";
 
-// Helper component for the chevron icon to keep JSX cleaner
+/**
+ * Komponen ikon panah sederhana untuk indikator accordion.
+ * Berubah rotasi berdasarkan prop `isExpanded`.
+ */
 const ChevronIcon = ({ isExpanded }: { isExpanded: boolean }) => (
   <svg
     className={`w-5 h-5 text-gray-600 transition-transform duration-200 ${
@@ -34,6 +35,16 @@ const ChevronIcon = ({ isExpanded }: { isExpanded: boolean }) => (
   </svg>
 );
 
+/**
+ * Komponen Utama: KpltLayout
+ * * Bertanggung jawab untuk menampilkan daftar data KPLT.
+ * Fitur mencakup:
+ * 1. Tab navigasi (Recent vs History)
+ * 2. Pencarian dan Filter
+ * 3. Pengelompokan data berdasarkan status (Accordion) untuk tab Recent
+ * 4. Tampilan Grid dan Pagination untuk tab History
+ * 5. Penanganan state Loading dan Error
+ */
 export default function KpltLayout(props: KpltPageProps) {
   const {
     isLoading,
@@ -52,6 +63,8 @@ export default function KpltLayout(props: KpltPageProps) {
     onPageChange,
   } = props;
 
+  // State untuk melacak status accordion mana yang terbuka (expanded)
+  // Default: semua status terbuka
   const [expandedStatuses, setExpandedStatuses] = useState<{
     [key: string]: boolean;
   }>({
@@ -60,6 +73,11 @@ export default function KpltLayout(props: KpltPageProps) {
     "Waiting For Forum": true,
   });
 
+  /**
+   * Mengelompokkan data berdasarkan statusnya.
+   * Hanya dijalankan jika tab aktif adalah "Recent" dan data berubah.
+   * Menggunakan useMemo untuk mencegah kalkulasi ulang yang tidak perlu saat render.
+   */
   const groupedData = useMemo(() => {
     if (activeTab !== "Recent") return {};
     return displayData.reduce((acc, item) => {
@@ -72,12 +90,15 @@ export default function KpltLayout(props: KpltPageProps) {
     }, {} as { [key: string]: typeof displayData });
   }, [displayData, activeTab]);
 
+  // Urutan prioritas tampilan status pada Accordion
   const statusOrder = ["Need Input", "In Progress", "Waiting For Forum"];
 
+  // Handler untuk membuka/tutup accordion
   const toggleStatus = (status: string) => {
     setExpandedStatuses((prev) => ({ ...prev, [status]: !prev[status] }));
   };
 
+  // Helper untuk menentukan warna badge berdasarkan status string
   const getStatusBadgeClass = (status: string): string => {
     switch (status) {
       case "Need Input":
@@ -91,6 +112,7 @@ export default function KpltLayout(props: KpltPageProps) {
     }
   };
 
+  // Membuat array nomor halaman untuk navigasi pagination
   const pageNumbers = useMemo(() => {
     if (!totalPages) return [];
 
@@ -102,6 +124,7 @@ export default function KpltLayout(props: KpltPageProps) {
     return pages;
   }, [totalPages]);
 
+  // Helper untuk normalisasi label status (menghandle case-sensitivity atau format API yang berbeda)
   const getStatusLabel = (status: string) => {
     switch (status.toLowerCase()) {
       case "need input":
@@ -117,9 +140,11 @@ export default function KpltLayout(props: KpltPageProps) {
 
   return (
     <main className="space-y-4 lg:space-y-6 flex flex-col flex-grow min-h-[85vh]">
+      {/* --- KONDISI 1: LOADING STATE --- */}
       {isLoading ? (
         <KpltSkeleton accordionCount={3} cardsPerAccordion={3} />
       ) : isError ? (
+        /* --- KONDISI 2: ERROR STATE --- */
         <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
           <div className="bg-white p-6 rounded-lg shadow-sm border w-full max-w-md">
             <div className="text-red-500 text-4xl md:text-5xl mb-4">⚠️</div>
@@ -138,6 +163,7 @@ export default function KpltLayout(props: KpltPageProps) {
           </div>
         </div>
       ) : (
+        /* --- KONDISI 3: DATA READY (Content Utama) --- */
         <>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <h1 className="text-3xl md:text-4xl font-bold">KPLT</h1>
@@ -155,16 +181,20 @@ export default function KpltLayout(props: KpltPageProps) {
             />
           </div>
 
+          {/* Container Data */}
           <div className="relative flex-grow flex flex-col min-h-[23rem]">
+            {/* Loading Indicator saat refresh/pindah halaman (bukan initial load) */}
             {isRefreshing ? (
               <div className="flex items-center justify-center min-h-[23rem]">
                 <Loader2 className="w-8 h-8 text-primary animate-spin" />{" "}
               </div>
             ) : displayData.length === 0 ? (
+              /* --- EMPTY STATE --- */
               <div className="col-span-full flex flex-col items-center justify-center py-12 md:py-16 text-center">
                 <div className="text-gray-300 text-5xl md:text-6xl mb-4">
                   📍
                 </div>
+                {/* Menampilkan pesan berbeda tergantung apakah user sedang mencari/filter atau memang kosong */}
                 <h3 className="text-base md:text-lg font-medium text-gray-900 mb-2">
                   {searchQuery || filterMonth || filterYear
                     ? "Tidak ada data yang cocok"
@@ -179,7 +209,9 @@ export default function KpltLayout(props: KpltPageProps) {
                 </p>
               </div>
             ) : (
+              /* --- DATA LIST --- */
               <div className="space-y-6 flex flex-col flex-grow">
+                {/* TAMPILAN TAB: RECENT (Grouped by Status/Accordion) */}
                 {activeTab === "Recent" && (
                   <div className="space-y-6">
                     {statusOrder.map((status) => {
@@ -205,6 +237,8 @@ export default function KpltLayout(props: KpltPageProps) {
                               {items.length}
                             </span>
                           </button>
+
+                          {/* Accordion Content (Grid Cards) */}
                           {expandedStatuses[status] && (
                             <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-6">
                               {items.map((kplt) => (
@@ -215,6 +249,7 @@ export default function KpltLayout(props: KpltPageProps) {
                                   alamat={kplt.alamat}
                                   created_at={kplt.created_at}
                                   status={kplt.status}
+                                  // Logika routing: 'Need Input' -> form edit, Lainnya -> detail view
                                   detailPath={
                                     kplt.status.toLowerCase() === "need input"
                                       ? `/form_kplt/tambah/`
@@ -232,6 +267,7 @@ export default function KpltLayout(props: KpltPageProps) {
                   </div>
                 )}
 
+                {/* TAMPILAN TAB: HISTORY (Flat Grid List) */}
                 {activeTab === "History" && totalPages && totalPages > 1 && (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-6 min-h-[24rem]">
                     {displayData.map((kplt) => (
@@ -248,9 +284,11 @@ export default function KpltLayout(props: KpltPageProps) {
                   </div>
                 )}
 
+                {/* PAGINATION CONTROL (Hanya muncul di Tab History) */}
                 {activeTab === "History" && totalPages && totalPages > 1 && (
                   <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-auto pt-6">
                     <div className="flex items-center gap-1">
+                      {/* Tombol Previous */}
                       <button
                         onClick={() =>
                           onPageChange && onPageChange(currentPage - 1)
@@ -262,8 +300,10 @@ export default function KpltLayout(props: KpltPageProps) {
                         <ChevronLeft className="w-5 h-5" />
                       </button>
 
+                      {/* Nomor Halaman */}
                       <div className="flex items-center gap-1 mx-2">
                         {pageNumbers.map((pageNum) => {
+                          // Handle jika pagination menggunakan ellipsis (...) berupa string
                           if (typeof pageNum === "string") {
                             return (
                               <div
@@ -301,6 +341,7 @@ export default function KpltLayout(props: KpltPageProps) {
                         })}
                       </div>
 
+                      {/* Tombol Next */}
                       <button
                         onClick={() =>
                           onPageChange && onPageChange(currentPage + 1)

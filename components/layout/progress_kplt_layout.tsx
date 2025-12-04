@@ -8,8 +8,6 @@ import SearchWithFilter from "../ui/searchwithfilter";
 import {
   ChevronLeft,
   ChevronRight,
-  // ChevronsLeft,
-  // ChevronsRight,
   MoreHorizontal,
   Loader2,
 } from "lucide-react";
@@ -29,6 +27,14 @@ interface ProgressKpltLayoutProps {
   onFilterChange: (month: string, year: string) => void;
 }
 
+/**
+ * Komponen Layout Utama untuk Halaman Progress KPLT.
+ * * Fitur:
+ * - Menampilkan daftar kartu progress dalam format Grid.
+ * - Mengkonversi status teks (misal: "Mou") menjadi visual progress bar (%).
+ * - Menangani pagination dinamis dengan elipsis (...).
+ * - Menangani state: Loading, Refreshing (spin), Error, dan Empty State.
+ */
 export default function ProgressKpltLayout(props: ProgressKpltLayoutProps) {
   const {
     isLoading,
@@ -42,9 +48,12 @@ export default function ProgressKpltLayout(props: ProgressKpltLayoutProps) {
     onFilterChange,
   } = props;
 
-  const isContentLoading = isLoading || isRefreshing;
-
+  /**
+   * Mengkonversi status string dari backend menjadi angka persentase (0-100).
+   * Digunakan untuk prop `progressPercentage` pada kartu info.
+   */
   const calculateProgress = (item: ProgressItem): number => {
+    // Definisi tipe status yang valid untuk type-safety
     type ValidStatus =
       | "Not Started"
       | "Mou"
@@ -53,6 +62,7 @@ export default function ProgressKpltLayout(props: ProgressKpltLayoutProps) {
       | "Renovasi"
       | "Grand Opening";
 
+    // Mapping nilai persentase berdasarkan status
     const statusMap: Record<ValidStatus, number> = {
       "Not Started": 0,
       Mou: 20,
@@ -61,25 +71,38 @@ export default function ProgressKpltLayout(props: ProgressKpltLayoutProps) {
       Renovasi: 80,
       "Grand Opening": 100,
     };
+    // Casting status item ke tipe ValidStatus, default 0 jika status tidak dikenali
     const status = item.status as ValidStatus;
     return statusMap[status] ?? 0;
   };
 
+  /**
+   * Menghasilkan array nomor halaman untuk navigasi pagination.
+   * Logika:
+   * - Jika total halaman <= 7: Tampilkan semua angka (1 2 3 4 5 6 7).
+   * - Jika total halaman > 7: Gunakan elipsis (...) untuk memendekkan tampilan.
+   * Contoh: [1, "...", 4, 5, 6, "...", 10]
+   */
   const getPageNumbers = () => {
     const pages = [];
     const showEllipsisStart = currentPage > 3;
     const showEllipsisEnd = currentPage < totalPages - 2;
 
     if (totalPages <= 7) {
+      // Case sederhana: Tampilkan semua
       for (let i = 1; i <= totalPages; i++) {
         pages.push(i);
       }
     } else {
+      // Case kompleks: Selalu tampilkan halaman pertama
       pages.push(1);
 
+      // Tambahkan elipsis awal jika posisi halaman jauh dari awal
       if (showEllipsisStart) {
         pages.push("ellipsis-start");
       }
+
+      // Hitung range halaman di sekitar halaman aktif (current page)
       const start = Math.max(2, currentPage - 1);
       const end = Math.min(totalPages - 1, currentPage + 1);
 
@@ -87,19 +110,22 @@ export default function ProgressKpltLayout(props: ProgressKpltLayoutProps) {
         pages.push(i);
       }
 
+      // Tambahkan elipsis akhir jika posisi halaman jauh dari akhir
       if (showEllipsisEnd) {
         pages.push("ellipsis-end");
       }
+      // Selalu tampilkan halaman terakhir
       pages.push(totalPages);
     }
-
     return pages;
   };
 
+  /* --- KONDISI 1: INITIAL LOADING (Skeleton) --- */
   if (isLoading && progressData.length === 0) {
     return <ProgressKpltSkeleton />;
   }
 
+  /* --- KONDISI 2: ERROR STATE --- */
   if (isError) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-4">
@@ -123,22 +149,26 @@ export default function ProgressKpltLayout(props: ProgressKpltLayoutProps) {
     );
   }
 
+  // Generate nomor halaman sebelum render
   const pageNumbers = getPageNumbers();
 
+  /* --- KONDISI 3: DATA READY / MAIN CONTENT --- */
   return (
     <div className="space-y-4 lg:space-y-6 flex flex-col">
-      {/* Header Halaman */}
+      {/* Header Halaman & Filter */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <h1 className="text-2xl lg:text-4xl font-bold">Progress KPLT</h1>
         <SearchWithFilter onSearch={onSearch} onFilterChange={onFilterChange} />
       </div>
 
       <div className="flex-grow">
+        {/* Loading Indicator saat Refresh/Search */}
         {isRefreshing ? (
           <div className="flex items-center justify-center min-h-[23rem]">
             <Loader2 className="w-8 h-8 text-primary animate-spin" />
           </div>
         ) : progressData.length === 0 ? (
+          /* --- EMPTY STATE --- */
           <div className="flex flex-col items-center justify-center text-center py-16 px-4 flex-grow">
             <div className="text-gray-300 text-6xl mb-4">📄</div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">
@@ -150,6 +180,7 @@ export default function ProgressKpltLayout(props: ProgressKpltLayoutProps) {
             </p>
           </div>
         ) : (
+          /* --- DATA GRID LIST --- */
           <div className="space-y-6 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-6 min-h-[23rem] flex-grow">
             {progressData.map((item) => {
               const kpltId = item.id;
@@ -181,15 +212,6 @@ export default function ProgressKpltLayout(props: ProgressKpltLayoutProps) {
       {totalPages > 1 && (
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-auto pt-6">
           <div className="flex items-center gap-1">
-            {/* Tombol halaman pertama
-            <button
-              onClick={() => onPageChange(1)}
-              disabled={currentPage === 1 || isLoading || isRefreshing}
-              className="p-2 rounded-full text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
-            >
-              <ChevronsLeft className="w-5 h-5" />
-            </button> */}
-
             {/* Tombol sebelumnya */}
             <button
               onClick={() => onPageChange(currentPage - 1)}
@@ -210,6 +232,7 @@ export default function ProgressKpltLayout(props: ProgressKpltLayoutProps) {
                     <MoreHorizontal className="w-4 h-4" />
                   </div>
                 ) : (
+                  // Render tombol angka
                   <button
                     key={pageNum}
                     onClick={() => onPageChange(pageNum)}
@@ -234,15 +257,6 @@ export default function ProgressKpltLayout(props: ProgressKpltLayoutProps) {
             >
               <ChevronRight className="w-5 h-5" />
             </button>
-
-            {/* Tombol halaman terakhir
-            <button
-              onClick={() => onPageChange(totalPages)}
-              disabled={currentPage >= totalPages || isLoading || isRefreshing}
-              className="p-2 rounded-full text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
-            >
-              <ChevronsRight className="w-5 h-5" />
-            </button> */}
           </div>
         </div>
       )}

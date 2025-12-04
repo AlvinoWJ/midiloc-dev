@@ -1,68 +1,101 @@
+/* ----------------------------------------------------------
+   IMPORT FONT & TAILWIND BASE
+----------------------------------------------------------- */
+
+/* Import font Poppins dari Google Fonts */
 @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap");
 
+/* Import utilities bawaan Tailwind */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* Set default font untuk html dan body */
 html,
 body {
   @apply font-sans;
 }
 
+/* ----------------------------------------------------------
+   THEME VARIABLE (CUSTOM CSS VARIABLES)
+   Mengatur warna utama proyek menggunakan HSL.
+----------------------------------------------------------- */
 @layer base {
   :root {
-    --background: 210, 16.67%, 97.65%; /*#f8f9fa*/
-    --foreground: 0 0% 0%; /*hitam*/
-    --card: 0 0% 100%; /*#ffffff*/
-    --card-foreground: 0 0% 0%; /*hitam*/
+    --background: 210, 16.67%, 97.65%; /* Warna background utama (#f8f9fa) */
+    --foreground: 0 0% 0%; /* Teks utama (hitam) */
+    --card: 0 0% 100%; /* Warna kartu (#ffffff) */
+    --card-foreground: 0 0% 0%; /* Teks dalam kartu (hitam) */
     --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%; /*#fafafa*/
-    --primary: 352 80% 46%; /*merah*/
-    --primary-foreground: 0 0% 100%; /*#ffffff*/
-    --secondary: 215.68, 53.62%, 40.59%; /*#305D9F*/
-    --secondary-foreground: 0 0% 98%; /*#fafafa*/
+    --popover-foreground: 0 0% 98%; /* #fafafa */
+    --primary: 352 80% 46%; /* Warna utama (merah) */
+    --primary-foreground: 0 0% 100%; /* Putih */
+    --secondary: 215.68, 53.62%, 40.59%; /* Warna sekunder (#305D9F) */
+    --secondary-foreground: 0 0% 98%; /* Putih */
     --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%; /*#a3a3a3*/
+    --muted-foreground: 0 0% 63.9%; /* Abu (#a3a3a3) */
     --accent: 0 0% 14.9%;
     --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 0 62.8% 30.6%; /* Warna merah (error) */
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
+    --border: 0 0% 14.9%; /* Warna border */
     --input: 0 0% 14.9%;
     --ring: 0 0% 83.1%;
-    --submit: 145.44, 63.2%, 49.02%; /*#2ECC71*/
-    --submit-foreground: 0 0% 100%; /*#ffffff*/
-    --progress: 45, 100%, 51.37%; /*#FFC107*/
+    --submit: 145.44, 63.2%, 49.02%; /* Warna tombol submit (#2ECC71) */
+    --submit-foreground: 0 0% 100%; /* Putih */
+    --progress: 45, 100%, 51.37%; /* Warna progress bar (#FFC107) */
   }
 }
 
+/* ----------------------------------------------------------
+   BASE LAYER STYLES
+   Mengatur style default untuk elemen global.
+----------------------------------------------------------- */
 @layer base {
+  /* Semua elemen akan menggunakan warna border yang didefinisikan */
   * {
     @apply border-border;
   }
+
+  /* Warna background dan warna teks default */
   body {
     @apply bg-background text-foreground;
   }
+
+  /* Menghilangkan scrollbar default */
   html {
     @apply hide-scrollbar;
   }
 }
 
+/* ----------------------------------------------------------
+   CUSTOM UTILITIES
+   Utility tambahan yang tidak tersedia di Tailwind.
+----------------------------------------------------------- */
 @layer utilities {
+  /* Utility untuk menyembunyikan scrollbar di berbagai browser */
   .hide-scrollbar {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
+    -ms-overflow-style: none; /* IE & Edge */
+    scrollbar-width: none; /* Firefox */
   }
+
   .hide-scrollbar::-webkit-scrollbar {
-    display: none;
+    display: none; /* Chrome, Safari */
   }
 }
 
+/* ----------------------------------------------------------
+   CUSTOM STYLE INPUT DATE
+   Mengatur tampilan input[type="date"]
+----------------------------------------------------------- */
+
+/* Memberikan ruang untuk icon kalender */
 input[type="date"] {
   position: relative;
   padding-right: 2.5rem;
 }
 
+/* Mengatur posisi icon kalender (Chrome/Safari) */
 input[type="date"]::-webkit-calendar-picker-indicator {
   position: absolute;
   right: 0.75rem;
@@ -71,21 +104,25 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   transition: opacity 0.2s;
 }
 
+/* Hover effect pada icon kalender */
 input[type="date"]::-webkit-calendar-picker-indicator:hover {
   opacity: 1;
 }
 
+/* Mengatur padding teks dalam input date (Chrome/Safari) */
 input[type="date"]::-webkit-datetime-edit {
   padding-right: 0.5rem;
 }
 
+/* Warna teks tanggal */
 input[type="date"]::-webkit-datetime-edit-text,
 input[type="date"]::-webkit-datetime-edit-month-field,
 input[type="date"]::-webkit-datetime-edit-day-field,
 input[type="date"]::-webkit-datetime-edit-year-field {
-  color: #374151;
+  color: #374151; /* Gray-700 */
 }
 
+/* Icon kalender untuk Firefox */
 input[type="date"]::-moz-calendar-picker-indicator {
   position: absolute;
   right: 0.75rem;

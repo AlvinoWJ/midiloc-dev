@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useAlert } from "@/components/shared/alertcontext"; // Pastikan path ini benar
+import { useAlert } from "@/components/shared/alertcontext";
 import {
   KpltCreatePayload,
   KpltCreatePayloadSchema,
@@ -15,6 +15,12 @@ import {
   IMAGE_FIELDS,
 } from "@/lib/storage/path";
 
+/**
+ * Tipe data khusus untuk State Form.
+ * Berbeda dengan payload API, di sini kita menggunakan:
+ * 1. `string` untuk field numerik agar bisa menangani formatting input (titik/koma).
+ * 2. `File | null` untuk field upload agar bisa menyimpan objek File mentah.
+ */
 export type KpltFormData = Omit<
   KpltCreatePayload,
   | "latitude"
@@ -64,6 +70,16 @@ interface UseTambahKpltProps {
 
 type FormErrors = Partial<Record<keyof KpltCreatePayload, string>>;
 
+/**
+ * Custom Hook: useTambahKplt
+ * --------------------------
+ * Mengelola logika form pembuatan KPLT, termasuk:
+ * 1. State form & Error handling.
+ * 2. Formatting input angka (Format Indonesia).
+ * 3. Kalkulasi otomatis (SPD = STD * APC).
+ * 4. Validasi File (MIME type).
+ * 5. Validasi Data (Manual & Zod Schema).
+ */
 export function useTambahKplt({
   onSubmit,
   isSubmitting,
@@ -71,6 +87,7 @@ export function useTambahKplt({
 }: UseTambahKpltProps) {
   const { showConfirmation, showToast } = useAlert();
 
+  // Inisialisasi state form dengan nilai default kosong/null
   const [formData, setFormData] = useState<KpltFormData>({
     nama_kplt: "",
     latitude: "",
@@ -99,6 +116,7 @@ export function useTambahKplt({
 
   const [errors, setErrors] = useState<FormErrors>({});
 
+  // Efek untuk mengisi data awal (Prefill) jika berasal dari flow ULOK
   useEffect(() => {
     if (initialData?.base) {
       setFormData((prev) => ({
@@ -110,6 +128,10 @@ export function useTambahKplt({
     }
   }, [initialData]);
 
+  /**
+   * Handler Perubahan Input Text/Select
+   * Menangani logika khusus untuk field numerik (formatting & auto-calc).
+   */
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
@@ -120,9 +142,11 @@ export function useTambahKplt({
     const numericFields = ["skor_fpl", "std", "apc", "spd", "pe_rab"];
 
     if (numericFields.includes(name)) {
+      // 1. Sanitasi Input: Hapus titik (ribuan) dan karakter non-angka/koma
       let cleanValue = value.replace(/\./g, "");
       let filtered = cleanValue.replace(/[^0-9,]/g, "");
 
+      // Cegah multiple koma
       const parts = filtered.split(",");
       if (parts.length > 2) {
         filtered = parts[0] + "," + parts[1];
@@ -130,20 +154,25 @@ export function useTambahKplt({
 
       const updates: Partial<KpltFormData> = { [name]: filtered };
 
+      // 2. Auto-Calculation: Hitung SPD jika STD atau APC berubah
+      // Rumus: SPD = STD * APC
       if (name === "std" || name === "apc") {
         const rawStd = name === "std" ? filtered : formData.std;
         const rawApc = name === "apc" ? filtered : formData.apc;
 
+        // Konversi format Indo (koma) ke JS Number (titik)
         const valStd = parseFloat(rawStd.replace(",", ".") || "0");
         const valApc = parseFloat(rawApc.replace(",", ".") || "0");
 
         const valSpd = valStd * valApc;
 
+        // Simpan hasil kalkulasi kembali ke format Indo (koma)
         updates.spd = valSpd === 0 ? "" : String(valSpd).replace(".", ",");
       }
 
       setFormData((prev) => ({ ...prev, ...updates }));
 
+      // Hapus error field terkait jika ada
       if (errors[name as keyof FormErrors]) {
         setErrors((prev) => {
           const newErrors = { ...prev };
@@ -152,6 +181,7 @@ export function useTambahKplt({
         });
       }
 
+      // Hapus error SPD juga jika dia ikut terupdate
       if (updates.spd && errors.spd) {
         setErrors((prev) => {
           const newErrors = { ...prev };
@@ -163,6 +193,7 @@ export function useTambahKplt({
       return;
     }
 
+    // Default handler untuk input non-numerik
     setFormData((prev) => ({ ...prev, [name]: value }));
     if (errors[name as keyof FormErrors]) {
       setErrors((prev) => {
@@ -173,6 +204,10 @@ export function useTambahKplt({
     }
   };
 
+  /**
+   * Handler Perubahan Input File
+   * Melakukan validasi tipe file (MIME check) sebelum menyimpan ke state.
+   */
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, files } = e.target;
 
@@ -182,6 +217,7 @@ export function useTambahKplt({
       let isValid = false;
       let errorMessage = "";
 
+      // Validasi ekstensi berdasarkan field name
       if (PDF_FIELDS.includes(name as any)) {
         isValid = MIME.pdf.includes(fileType);
         errorMessage = "File harus berupa PDF (.pdf)";
@@ -203,13 +239,14 @@ export function useTambahKplt({
           ...prev,
           [name]: errorMessage,
         }));
-        e.target.value = "";
+        e.target.value = ""; // Reset input file
         setFormData((prev) => ({ ...prev, [name]: null }));
         return;
       }
 
       setFormData((prev) => ({ ...prev, [name]: selectedFile }));
 
+      // Clear error jika valid
       if (errors[name as keyof FormErrors]) {
         setErrors((prev) => {
           const newErrors = { ...prev };
@@ -222,10 +259,16 @@ export function useTambahKplt({
     }
   };
 
+  /**
+   * Handler Submit Form
+   * Melakukan validasi bertingkat (Manual -> Zod) sebelum submit.
+   */
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
 
+    // --- TAHAP 1: VALIDASI MANUAL (Required Fields) ---
+    // Kita cek manual untuk memastikan semua field wajib (termasuk file) terisi.
     const requiredFields = {
       karakter_lokasi: "Karakter Lokasi wajib diisi",
       sosial_ekonomi: "Sosial Ekonomi wajib diisi",
@@ -276,6 +319,7 @@ export function useTambahKplt({
       }
     });
 
+    // Validasi numeric sederhana (NaN check)
     const numericFields = ["skor_fpl", "std", "apc", "spd", "pe_rab"];
     numericFields.forEach((field) => {
       const key = field as keyof typeof formData;
@@ -293,11 +337,11 @@ export function useTambahKplt({
         title: "Validasi Gagal",
         message: "Beberapa data wajib diisi atau tidak valid.",
       });
-      return; // Hentikan proses jika ada error manual
+      return;
     }
-    // --- AKHIR BLOK VALIDASI MANUAL ---
 
-    // --- VALIDASI ZOD (Tetap berjalan setelah validasi manual lolos) ---
+    // --- TAHAP 2: VALIDASI ZOD SCHEMA ---
+    // Persiapkan payload untuk Zod (ubah objek File menjadi string nama file)
     const payloadToValidate = {
       ...formData,
       pdf_foto: formData.pdf_foto?.name,
@@ -334,9 +378,7 @@ export function useTambahKplt({
       return;
     }
 
-    console.log("✅ [DEBUG] Validasi berhasil:", result.data);
-
-    // --- Konfirmasi dan Submit (Tidak Diubah) ---
+    // --- TAHAP 3: KONFIRMASI & SUBMIT ---
     const isConfirmed = await showConfirmation({
       title: "Konfirmasi Simpan KPLT",
       message: "Apakah Anda yakin data yang diisi sudah benar?",
@@ -345,9 +387,10 @@ export function useTambahKplt({
 
     if (isConfirmed) {
       try {
+        // Konversi data numeric dari string (di form) ke number (untuk logika bisnis)
+        // Note: Payload yang dikirim ke onSubmit tetap formData karena berisi File object
         const convertedData: KpltCreatePayload = {
           ...result.data,
-          // pastikan semua nilai numeric dikonversi dari string ke number
           skor_fpl: Number(result.data.skor_fpl),
           std: Number(result.data.std),
           apc: Number(result.data.apc),
@@ -359,8 +402,8 @@ export function useTambahKplt({
           "🚀 [DEBUG] Data final sebelum dikirim ke page (berisi File):",
           formData
         );
-        // Kirim formData asli yang masih berisi objek File, bukan hasil validasi Zod.
-        await onSubmit(formData);
+
+        await onSubmit(formData); // Kirim formData asli yang punya File objects
         console.log("🎉 [DEBUG] Submit berhasil");
       } catch (error) {
         console.error("🔥 [DEBUG] Gagal upload ke storage:", error);

@@ -10,12 +10,15 @@ import { Properti } from "@/types/common";
 import {
   ChevronLeft,
   ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
   MoreHorizontal,
   Loader2,
 } from "lucide-react";
 
+/**
+ * Komponen Skeleton (Placeholder) nanti pindahkan aja ke components/ui/skeleton.
+ * Ditampilkan saat data sedang dimuat awal (isLoading=true).
+ * Memberikan efek visual "shimmer" agar UI tidak terlihat kosong/lompat.
+ */
 const TokoExistingSkeleton = () => (
   <div className="space-y-6 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-6 min-h-[23rem] flex-grow">
     {Array.from({ length: 9 }).map((_, index) => (
@@ -48,6 +51,14 @@ interface TokoExistingLayoutProps {
   onFilterChange: (month: string, year: string) => void;
 }
 
+/**
+ * Layout Utama Halaman Toko Existing.
+ * Fitur:
+ * 1. Menampilkan Peta Sebaran Toko (PetaLoader).
+ * 2. Menampilkan Daftar Kartu Toko (Grid).
+ * 3. Filter & Pencarian.
+ * 4. Pagination Lanjutan.
+ */
 export default function TokoExistingLayout(props: TokoExistingLayoutProps) {
   const {
     isLoading,
@@ -65,6 +76,13 @@ export default function TokoExistingLayout(props: TokoExistingLayoutProps) {
     totalPages,
   } = props;
 
+  /**
+   * Helper untuk generate nomor halaman pagination.
+   * Logika:
+   * - Menangani kasus jumlah halaman sedikit (<= 7).
+   * - Menangani kasus jumlah halaman banyak dengan menyisipkan 'ellipsis' (...).
+   * - Memastikan halaman aktif (current), awal (1), dan akhir selalu terlihat.
+   */
   const getPageNumbers = () => {
     const pages = [];
     const showEllipsisStart = currentPage > 3;
@@ -95,10 +113,12 @@ export default function TokoExistingLayout(props: TokoExistingLayoutProps) {
     return pages;
   };
 
+  /* --- KONDISI 1: LOADING AWAL --- */
   if (isLoading) {
     return <TokoExistingSkeleton />;
   }
 
+  /* --- KONDISI 2: ERROR STATE --- */
   if (isError) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-4">
@@ -124,6 +144,7 @@ export default function TokoExistingLayout(props: TokoExistingLayoutProps) {
 
   const pageNumbers = getPageNumbers();
 
+  /* --- KONDISI 3: CONTENT READY --- */
   return (
     <div className="space-y-4 lg:space-y-6 flex flex-col">
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
@@ -134,15 +155,20 @@ export default function TokoExistingLayout(props: TokoExistingLayoutProps) {
         />
       </div>
 
+      {/* Komponen Peta */}
+      {/* Z-index 0 agar tidak menutupi dropdown/modal jika ada */}
       <div className="w-full h-[400px] bg-white rounded-xl shadow-md overflow-hidden border z-0 relative">
         <PetaLoader data={mapData} />
       </div>
+
+      {/* Main Content List */}
       <div className=" flex-grow">
         {isRefreshing ? (
           <div className="flex items-center justify-center mt-6">
             <Loader2 className="w-8 h-8 text-primary animate-spin" />
           </div>
         ) : tokoData.length === 0 ? (
+          /* State Kosong */
           <div className="flex flex-col items-center justify-center text-center py-16 px-4 flex-grow">
             <div className="text-gray-300 text-6xl mb-4">📄</div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">
@@ -153,6 +179,7 @@ export default function TokoExistingLayout(props: TokoExistingLayoutProps) {
             </p>
           </div>
         ) : (
+          /* Grid Data Toko */
           <div className="mt-2 space-y-6 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-6 min-h-[23rem] flex-grow">
             {isLoading ? (
               <TokoExistingSkeleton />
@@ -175,17 +202,11 @@ export default function TokoExistingLayout(props: TokoExistingLayoutProps) {
         )}
       </div>
 
+      {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-auto pt-2">
           <div className="flex items-center gap-1">
-            <button
-              onClick={() => onPageChange(1)}
-              disabled={currentPage === 1 || isLoading}
-              className="p-2 rounded-full text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
-            >
-              <ChevronsLeft className="w-5 h-5" />
-            </button>
-
+            {/* Tombol sebelumnya */}
             <button
               onClick={() => onPageChange(currentPage - 1)}
               disabled={currentPage <= 1 || isLoading}
@@ -194,6 +215,7 @@ export default function TokoExistingLayout(props: TokoExistingLayoutProps) {
               <ChevronLeft className="w-5 h-5" />
             </button>
 
+            {/* Nomor halaman */}
             <div className="flex items-center gap-1 mx-2">
               {pageNumbers.map((pageNum) =>
                 typeof pageNum === "string" ? (
@@ -204,6 +226,7 @@ export default function TokoExistingLayout(props: TokoExistingLayoutProps) {
                     <MoreHorizontal className="w-4 h-4" />
                   </div>
                 ) : (
+                  // Render tombol angka
                   <button
                     key={pageNum}
                     onClick={() => onPageChange(pageNum)}
@@ -220,20 +243,13 @@ export default function TokoExistingLayout(props: TokoExistingLayoutProps) {
               )}
             </div>
 
+            {/* Tombol berikutnya */}
             <button
               onClick={() => onPageChange(currentPage + 1)}
               disabled={currentPage >= totalPages || isLoading}
               className="p-2 rounded-full text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
             >
               <ChevronRight className="w-5 h-5" />
-            </button>
-
-            <button
-              onClick={() => onPageChange(totalPages)}
-              disabled={currentPage >= totalPages || isLoading}
-              className="p-2 rounded-full text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
-            >
-              <ChevronsRight className="w-5 h-5" />
             </button>
           </div>
         </div>

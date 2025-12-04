@@ -1,23 +1,26 @@
 import React, { useState, useRef, useEffect } from "react";
 
 interface YearPickerProps {
-  selectedYear: number;
-  onYearChange: (year: number) => void;
-  minYear?: number;
-  maxYear?: number;
+  selectedYear: number; // Tahun yang sedang dipilih
+  onYearChange: (year: number) => void; // Callback saat memilih tahun baru
+  minYear?: number; // Tahun minimal
+  maxYear?: number; // Tahun maksimal
 }
 
 export default function YearPicker({
   selectedYear,
   onYearChange,
-  minYear = 2017,
-  maxYear = new Date().getFullYear(),
+  minYear = 2017, // Default min tahun = 2017
+  maxYear = new Date().getFullYear(), // Default max tahun = tahun sekarang
 }: YearPickerProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [displayYears, setDisplayYears] = useState<number[]>([]);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [isOpen, setIsOpen] = useState(false); // Kontrol buka/tutup dropdown
+  const [displayYears, setDisplayYears] = useState<number[]>([]); // List tahun
+  const dropdownRef = useRef<HTMLDivElement>(null); // Referensi untuk deteksi klik di luar
 
-  // Generate years array
+  /**
+   * Generate daftar tahun dari maxYear → minYear
+   * Contoh: 2025, 2024, 2023, ... 2017
+   */
   useEffect(() => {
     const years: number[] = [];
     for (let year = maxYear; year >= minYear; year--) {
@@ -26,7 +29,9 @@ export default function YearPicker({
     setDisplayYears(years);
   }, [minYear, maxYear]);
 
-  // Close dropdown when clicking outside
+  /**
+   * Menutup dropdown jika user mengklik area di luar komponen
+   */
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -46,16 +51,19 @@ export default function YearPicker({
     };
   }, [isOpen]);
 
+  /**
+   * Aksi ketika tahun dipilih dari dropdown
+   */
   const handleYearSelect = (year: number) => {
-    onYearChange(year);
-    setIsOpen(false);
+    onYearChange(year); // Kirim data ke parent
+    setIsOpen(false); // Tutup dropdown
   };
 
   return (
     <div className="relative inline-block w-full sm:w-auto" ref={dropdownRef}>
-      {/* Trigger Button */}
+      {/* === TRIGGER BUTTON === */}
       <div className="relative group">
-        {/* Calendar Icon - positioned absolute */}
+        {/* Ikon kalender di sisi kiri input */}
         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
           <svg
             className="w-4 h-4 text-gray-400"
@@ -72,15 +80,20 @@ export default function YearPicker({
           </svg>
         </div>
 
+        {/* Tombol utama untuk membuka dropdown */}
         <button
           type="button"
           onClick={() => setIsOpen(!isOpen)}
-          className="appearance-none w-full sm:w-auto bg-white border border-gray-300 rounded-lg pl-10 pr-10 py-2.5 text-sm font-medium text-gray-700 hover:border-red-400 hover:shadow-md focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500 transition-all cursor-pointer min-w-[140px] text-left"
+          className="appearance-none w-full sm:w-auto bg-white border border-gray-300 rounded-lg 
+                     pl-10 pr-10 py-2.5 text-sm font-medium text-gray-700
+                     hover:border-red-400 hover:shadow-md
+                     focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500
+                     transition-all cursor-pointer min-w-[140px] text-left"
         >
           {selectedYear}
         </button>
 
-        {/* Dropdown Arrow - positioned absolute */}
+        {/* Ikon arrow di kanan — berputar ketika dropdown terbuka */}
         <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
           <svg
             className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${
@@ -100,9 +113,12 @@ export default function YearPicker({
         </div>
       </div>
 
-      {/* Dropdown Menu */}
+      {/* === DROPDOWN MENU === */}
       {isOpen && (
-        <div className="absolute left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto min-w-[140px]">
+        <div
+          className="absolute left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg 
+                        z-50 max-h-64 overflow-y-auto min-w-[140px]"
+        >
           <div className="py-1">
             {displayYears.map((year) => (
               <button
@@ -110,7 +126,7 @@ export default function YearPicker({
                 onClick={() => handleYearSelect(year)}
                 className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${
                   year === selectedYear
-                    ? "bg-red-50 text-red-600 font-semibold"
+                    ? "bg-red-50 text-red-600 font-semibold" // Highlight tahun terpilih
                     : "text-gray-700 hover:bg-gray-50"
                 }`}
               >

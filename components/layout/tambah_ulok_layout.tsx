@@ -12,20 +12,36 @@ import { useAddUlokForm } from "@/hooks/ulok/useAddUlokForm";
 import { useRouter } from "next/navigation";
 import { FileUpload } from "@/components/ui/uploadfile";
 
+/**
+ * Props untuk komponen TambahUlokForm.
+ * Logic submit sebenarnya ditangani oleh parent component atau hook,
+ * komponen ini hanya menerima trigger function-nya.
+ */
 interface TambahUlokFormProps {
   onSubmit: (data: UlokCreateInput) => Promise<void>;
   isSubmitting: boolean;
 }
 
+/**
+ * Import komponen peta secara dinamis (Lazy Loading) dengan SSR dimatikan.
+ * Penting: Library peta seperti Leaflet membutuhkan objek 'window' yang hanya ada di browser,
+ * sehingga akan error jika dirender di server (Next.js default SSR).
+ */
 const LocationPickerModal = dynamic(
   () => import("@/components/map/LocationPickerMap"),
   { ssr: false }
 );
 
+/**
+ * Komponen Form Tambah ULOK (Usulan Lokasi).
+ * Menggunakan pendekatan "Presentation Component" dimana logic state yang kompleks
+ * dipisahkan ke dalam custom hook `useAddUlokForm`.
+ */
 export default function TambahUlokForm({
   onSubmit,
   isSubmitting,
 }: TambahUlokFormProps) {
+  // Menggunakan custom hook untuk manajemen state form, error handling, dan logic peta
   const {
     formData,
     errors,
@@ -38,10 +54,16 @@ export default function TambahUlokForm({
     handleFormSubmit,
   } = useAddUlokForm({ onSubmit, isSubmitting });
 
+  // Opsi-opsi statis untuk dropdown
   const formatStoreOptions = ["Reguler", "Super", "Spesifik", "Franchise"];
   const bentukObjekOptions = ["Tanah", "Bangunan"];
   const router = useRouter();
 
+  /**
+   * Mencegah form tersubmit secara otomatis saat user menekan tombol 'Enter'.
+   * UX Improvement: User sering tidak sengaja menekan Enter saat mengisi input text,
+   * yang seharusnya hanya pindah field, bukan submit form.
+   */
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (
       e.key === "Enter" &&
@@ -52,6 +74,11 @@ export default function TambahUlokForm({
     }
   };
 
+  /**
+   * Helper untuk memformat input angka dengan pemisah ribuan (titik).
+   * Contoh: "1000000" menjadi "1.000.000".
+   * Regex `/\B(?=(\d{3})+(?!\d))/g` menyisipkan titik setiap 3 digit dari belakang.
+   */
   const formatNumber = (value: string) => {
     if (!value) return "";
     const parts = value.split(",");
@@ -66,6 +93,7 @@ export default function TambahUlokForm({
         onKeyDown={handleKeyDown}
         className="space-y-8 lg:space-y-10 max-w-7xl mx-auto lg:px-0"
       >
+        {/* Tombol Kembali */}
         <div className="flex justify-between items-center mb-4 lg:mb-6">
           <Button
             type="button"
@@ -426,12 +454,16 @@ export default function TambahUlokForm({
         </div>
       </form>
 
+      {/* === MODAL DIALOG PETA (Headless UI) === */}
       <Dialog
         open={isMapOpen}
         onClose={() => setIsMapOpen(false)}
         className="relative z-50"
       >
+        {/* Backdrop gelap */}
         <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+
+        {/* Container Modal */}
         <div className="fixed inset-0 flex items-center justify-center p-4">
           <Dialog.Panel className="w-full max-w-3xl h-[80vh] bg-white rounded-lg shadow-xl overflow-hidden">
             <div className="p-4 ">
@@ -442,6 +474,7 @@ export default function TambahUlokForm({
                 Klik pada peta untuk memilih koordinat.
               </p>
             </div>
+            {/* Render Peta (Dynamic Component) */}
             <div className="h-[calc(100%-80px)]">
               {isMapOpen && <LocationPickerModal onConfirm={handleMapSelect} />}
             </div>

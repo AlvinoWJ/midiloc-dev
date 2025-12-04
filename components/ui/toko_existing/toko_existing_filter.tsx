@@ -1,17 +1,39 @@
-// components/ui/toko_existing/toko_existing_filter.tsx
 "use client";
+
+/**
+ * TokoExistingFilter
+ * ------------------
+ * Komponen filter & search untuk halaman daftar Toko Existing.
+ *
+ * Fitur utama:
+ * - Search input + tombol clear (desktop & mobile)
+ * - Filter per "Tahun Beroperasi"
+ * - Filter per "Regional"
+ * - Dropdown filter (desktop: floating - mobile: slide-down)
+ *
+ * Props:
+ * - onSearch(value): Callback untuk melakukan pencarian
+ * - onFilterChange(year, regional): Callback untuk perubahan filter
+ *
+ * Catatan:
+ * - Komponen ini mendukung responsive layout menggunakan `useMediaQuery`
+ */
 
 import { useState } from "react";
 import { Filter, X, Search } from "lucide-react";
 import SearchBar from "@/components/ui/searchbar";
-import { useMediaQuery } from "@/hooks/use-media-query"; // Asumsi hook ini ada
+import { useMediaQuery } from "@/hooks/use-media-query";
 
 interface TokoExistingFilterProps {
   onSearch: (value: string) => void;
   onFilterChange: (year: string, regional: string) => void;
 }
 
-// Data Regional Mock
+/**
+ * mockRegionalOptions
+ * -------------------
+ * Opsi regional sementara (mock) sebagai dropdown filter Regional.
+ */
 const mockRegionalOptions = [
   { value: "Jakarta Barat", label: "Jakarta Barat" },
   { value: "Tangerang Selatan", label: "Tangerang Selatan" },
@@ -27,18 +49,30 @@ export default function TokoExistingFilter({
   onSearch,
   onFilterChange,
 }: TokoExistingFilterProps) {
+  /**
+   * State Management
+   * ----------------
+   * - search   : nilai input pencarian
+   * - year     : filter tahun beroperasi
+   * - regional : filter regional
+   * - showFilter : menampilkan popup filter (berbeda untuk mobile & desktop)
+   */
   const [search, setSearch] = useState("");
   const [year, setYear] = useState("");
   const [regional, setRegional] = useState("");
   const [showFilter, setShowFilter] = useState(false);
-  const isDesktop = useMediaQuery("(min-width: 768px)"); // Asumsi hook ini tersedia
 
-  // --- Search Handlers (diambil dari SearchWithFilter) ---
+  // Breakpoint responsive untuk membedakan tampilan mobile & desktop
+  const isDesktop = useMediaQuery("(min-width: 768px)");
+
+  /**
+   * Search Handlers
+   * ---------------
+   * Mengatur perilaku ketika input search berubah, submit, atau dibersihkan.
+   */
   const handleSearchChange = (value: string) => {
     setSearch(value);
-    if (value === "") {
-      onSearch("");
-    }
+    if (value === "") onSearch("");
   };
 
   const handleSearchSubmit = () => {
@@ -50,7 +84,11 @@ export default function TokoExistingFilter({
     onSearch("");
   };
 
-  // --- Filter Handlers ---
+  /**
+   * Filter Handlers
+   * ----------------
+   * Mengatur perubahan filter tahun dan regional, serta reset filter.
+   */
   const handleYearChange = (value: string) => {
     setYear(value);
     onFilterChange(value, regional);
@@ -67,18 +105,30 @@ export default function TokoExistingFilter({
     onFilterChange("", "");
   };
 
+  /**
+   * Generate daftar tahun: tahun sekarang hingga 7 tahun sebelumnya
+   */
   const currentYear = new Date().getFullYear();
-  // Generate tahun: tahun saat ini dan 7 tahun ke belakang
   const years = Array.from({ length: 8 }, (_, i) => currentYear - i);
+
+  // Cek apakah ada filter aktif
   const isFilterActive = !!year || !!regional;
 
-  // Konten Dropdown Filter (digunakan untuk desktop dan mobile)
+  /**
+   * FilterContent
+   * -------------
+   * Komponen isi dropdown filter, digunakan untuk desktop & mobile.
+   *
+   * Props:
+   * - isMobile: mengaktifkan UI yang berbeda untuk mobile
+   */
   const FilterContent = ({ isMobile = false }) => (
     <div
       className={`bg-white border border-gray-200 rounded-lg p-4 shadow-lg ${
         isMobile ? "mt-4" : "absolute right-0 top-14 min-w-[250px] z-50"
       }`}
     >
+      {/* Header untuk mobile */}
       {isMobile && (
         <div className="flex justify-between items-center mb-4">
           <h3 className="font-semibold text-gray-900">Filter</h3>
@@ -90,16 +140,18 @@ export default function TokoExistingFilter({
           </button>
         </div>
       )}
+
       <div className="space-y-4">
-        {/* Tahun Filter */}
+        {/* Filter Tahun */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Tahun Beroperasi
           </label>
+
           <select
             value={year}
             onChange={(e) => handleYearChange(e.target.value)}
-            className="w-full p-2.5 border border-gray-300 rounded-lg bg-white shadow-sm focus:outline-none focus:ring-1 focus:ring-red-500 transition-all duration-200 text-sm"
+            className="w-full p-2.5 border border-gray-300 rounded-lg bg-white shadow-sm focus:ring-1 focus:ring-red-500 text-sm"
           >
             <option value="">Semua Tahun</option>
             {years.map((y) => (
@@ -110,14 +162,16 @@ export default function TokoExistingFilter({
           </select>
         </div>
 
+        {/* Filter Regional */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Regional
           </label>
+
           <select
             value={regional}
             onChange={(e) => handleRegionalChange(e.target.value)}
-            className="w-full p-2.5 border border-gray-300 rounded-lg bg-white shadow-sm focus:outline-none focus:ring-1 focus:ring-red-500 transition-all duration-200 text-sm"
+            className="w-full p-2.5 border border-gray-300 rounded-lg bg-white shadow-sm focus:ring-1 focus:ring-red-500 text-sm"
           >
             <option value="">Semua Regional</option>
             {mockRegionalOptions.map((r) => (
@@ -128,10 +182,11 @@ export default function TokoExistingFilter({
           </select>
         </div>
 
+        {/* Tombol Hapus Filter */}
         {isFilterActive && (
           <button
             onClick={clearFilters}
-            className="w-full py-2 text-sm text-red-600 hover:text-red-800 font-medium transition-colors duration-200"
+            className="w-full py-2 text-sm text-red-600 hover:text-red-800 font-medium"
           >
             Hapus Filter
           </button>
@@ -142,8 +197,11 @@ export default function TokoExistingFilter({
 
   return (
     <>
-      {/* ----------------- Desktop ----------------- */}
+      {/* ============================================================
+         DESKTOP VIEW
+      ============================================================ */}
       <div className="hidden md:flex items-center gap-3 relative">
+        {/* Komponen Search khusus desktop */}
         <SearchBar
           value={search}
           onChange={handleSearchChange}
@@ -151,32 +209,31 @@ export default function TokoExistingFilter({
           onClear={handleSearchClear}
         />
 
-        {/* Tombol Filter */}
+        {/* Tombol Filter (floating dropdown) */}
         <div className="relative">
           <button
             onClick={() => setShowFilter(!showFilter)}
-            className={`flex items-center justify-center bg-white shadow-[1px_1px_6px_rgba(0,0,0,0.25)] rounded-xl w-[46px] h-[46px] p-2 transition-colors ${
+            className={`flex items-center justify-center bg-white shadow-[1px_1px_6px_rgba(0,0,0,0.25)] rounded-xl w-[46px] h-[46px] p-2 ${
               isFilterActive
                 ? "text-red-600"
-                : "hover:bg-gray-100 text-gray-600"
+                : "text-gray-600 hover:bg-gray-100"
             }`}
             title="Filter Data"
           >
-            <Filter
-              className={`w-[18px] h-[18px] ${
-                isFilterActive ? "text-red-600" : ""
-              }`}
-            />
+            <Filter className="w-[18px] h-[18px]" />
           </button>
 
+          {/* Dropdown filter untuk desktop */}
           {showFilter && isDesktop && <FilterContent />}
         </div>
       </div>
 
-      {/* ----------------- Mobile ----------------- */}
+      {/* ============================================================
+         MOBILE VIEW
+      ============================================================ */}
       <div className="space-y-4 md:hidden">
         <div className="relative">
-          {/* Mobile Search Input and Filter Button (adapted from SearchWithFilter) */}
+          {/* Search input mobile */}
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -187,6 +244,7 @@ export default function TokoExistingFilter({
               size={20}
               className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
             />
+
             <input
               type="text"
               placeholder="Cari nama atau alamat toko..."
@@ -196,9 +254,10 @@ export default function TokoExistingFilter({
                 setSearch(value);
                 if (value === "") handleSearchClear();
               }}
-              className="w-full pl-10 pr-12 py-3 border border-gray-300 bg-white text-base shadow-sm transition-colors placeholder:text-muted-foreground focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm rounded-lg"
+              className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg bg-white text-base shadow-sm focus:ring-1 focus:ring-red-500"
             />
 
+            {/* Tombol clear */}
             {search && (
               <button
                 type="button"
@@ -210,9 +269,10 @@ export default function TokoExistingFilter({
             )}
           </form>
 
+          {/* Tombol filter untuk mobile */}
           <button
             onClick={() => setShowFilter(!showFilter)}
-            className={`absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded transition-colors duration-200 ${
+            className={`absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded ${
               isFilterActive
                 ? "text-red-600"
                 : "text-gray-400 hover:text-gray-600"
@@ -222,7 +282,7 @@ export default function TokoExistingFilter({
           </button>
         </div>
 
-        {/* Mobile Filter Dropdown Content */}
+        {/* Konten filter mobile */}
         {showFilter && !isDesktop && <FilterContent isMobile={true} />}
       </div>
     </>
