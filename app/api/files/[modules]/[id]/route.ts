@@ -119,9 +119,10 @@ async function resolveContext(
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { modules: string; id: string } }
+  { params }: { params: Promise<{ modules: string; id: string }> }
 ) {
   try {
+    const { id, modules } = await params;
     const supabase = await createClient();
     const user = await getCurrentUser();
 
@@ -137,8 +138,8 @@ export async function GET(
         { status: 403 }
       );
 
-    const moduleName = params.modules as AllowedModule;
-    const resourceId = params.id;
+    const moduleName = modules as AllowedModule;
+    const resourceId = id;
 
     // 2. Input Validation
     if (!ALLOWED_MODULES.includes(moduleName)) {

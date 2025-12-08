@@ -15,9 +15,10 @@ export const revalidate = 0;
  */
 export async function GET(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const supabase = await createClient();
     const user = await getCurrentUser();
 
@@ -44,7 +45,7 @@ export async function GET(
     }
 
     // 2. Validate Params (UUID Check)
-    const parsed = KpltIdParamSchema.safeParse(params);
+    const parsed = KpltIdParamSchema.safeParse({ id });
     if (!parsed.success) {
       return NextResponse.json(
         { error: "Invalid ID format", detail: parsed.error.issues },

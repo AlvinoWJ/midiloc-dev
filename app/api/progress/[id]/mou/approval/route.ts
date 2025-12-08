@@ -13,9 +13,10 @@ export const dynamic = "force-dynamic";
  */
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const supabase = await createClient();
     const user = await getCurrentUser();
 
@@ -31,7 +32,7 @@ export async function PATCH(
       );
 
     // 2. Validate Access to Progress ID
-    const check = await validateProgressAccess(supabase, user, params.id);
+    const check = await validateProgressAccess(supabase, user, id);
     if (!check.allowed)
       return NextResponse.json(
         { error: check.error },
@@ -39,7 +40,7 @@ export async function PATCH(
       );
 
     // 3. Parse & Validate Body
-    const progressId = params.id;
+    const progressId = id;
     const body = await req.json().catch(() => null);
     if (!body || typeof body !== "object")
       return NextResponse.json(

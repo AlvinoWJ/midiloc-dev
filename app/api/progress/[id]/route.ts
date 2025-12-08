@@ -17,9 +17,10 @@ export const dynamic = "force-dynamic";
  */
 export async function GET(
   _req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const supabase = await createClient();
     const user = await getCurrentUser();
 
@@ -44,14 +45,14 @@ export async function GET(
     }
 
     // 2. Validate Access (Branch & Existence)
-    const check = await validateProgressAccess(supabase, user, params.id);
+    const check = await validateProgressAccess(supabase, user, id);
     if (!check.allowed)
       return NextResponse.json(
         { error: check.error },
         { status: check.status }
       );
 
-    const progressId = params?.id;
+    const progressId = id;
     if (!progressId) {
       return NextResponse.json(
         {

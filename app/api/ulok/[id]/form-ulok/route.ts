@@ -9,8 +9,9 @@ import { NextRequest, NextResponse } from "next/server";
  */
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const url = new URL(req.url);
 
   // Ambil parameter dari query string asli
@@ -20,7 +21,7 @@ export async function GET(
   const expiresIn = url.searchParams.get("expiresIn"); // opsional: detik
 
   // Construct target URL ke endpoint general file handler
-  const target = new URL(`/api/files/ulok/${params.id}`, req.url);
+  const target = new URL(`/api/files/ulok/${id}`, req.url);
 
   if (name && name.trim() !== "") {
     target.searchParams.set("name", name);

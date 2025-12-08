@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser, canUlokEksisting } from "@/lib/auth/acl";
 
+// --- Helper Functions ---
 function decodeCursor(
   encoded?: string | null
 ): { tgl_go: string; id: string } | null {
@@ -31,12 +32,17 @@ function encodeCursor(
     .replace(/=+$/g, "");
 }
 
-// GET /api/ulok-eksisting?limit=20&search=alfamart&month=11&year=2025&after=<cursor>
+/**
+ * @route GET /api/ulok_eksisting
+ * @description Mengambil dashboard Ulok Eksisting (Toko Buka).
+ * Mendukung filter (search, month, year) dan cursor pagination.
+ */
 export async function GET(req: NextRequest) {
   try {
     const supabase = await createClient();
     const user = await getCurrentUser();
 
+    // 1. Auth Check
     if (!user) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
@@ -50,101 +56,84 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    // 2. Parse Params
     const url = new URL(req.url);
-    const limitRaw = Number(url.searchParams.get("limit") ?? "20");
-    const limit =
-      Number.isFinite(limitRaw) && limitRaw > 0 ? Math.min(limitRaw, 200) : 20;
-
     const search =
       (
         url.searchParams.get("search") ||
         url.searchParams.get("q") ||
         ""
       ).trim() || null;
+    const limit = Math.min(Number(url.searchParams.get("limit") ?? "20"), 200);
 
-    const monthRaw =
-      url.searchParams.get("month") ?? url.searchParams.get("bulan");
-    const yearRaw =
-      url.searchParams.get("year") ?? url.searchParams.get("tahun");
+    const month = Number(
+      url.searchParams.get("month") ?? url.searchParams.get("bulan")
+    );
+    const year = Number(
+      url.searchParams.get("year") ?? url.searchParams.get("tahun")
+    );
 
-    const month = monthRaw ? Number(monthRaw) : undefined;
-    const year = yearRaw ? Number(yearRaw) : undefined;
+    const validMonth = !isNaN(month) && month >= 1 && month <= 12;
+    const validYear = !isNaN(year) && year >= 1970 && year <= 2100;
 
-    const validMonth = (m: unknown) =>
-      Number.isInteger(m) && (m as number) >= 1 && (m as number) <= 12;
-    const validYear = (y: unknown) =>
-      Number.isInteger(y) && (y as number) >= 1970 && (y as number) <= 2100;
-
-    if ((monthRaw && !validMonth(month)) || (yearRaw && !validYear(year))) {
+    if (
+      (url.searchParams.has("month") && !validMonth) ||
+      (url.searchParams.has("year") && !validYear)
+    ) {
       return NextResponse.json(
-        {
-          success: false,
-          error: "Invalid month/year. month=1..12 year=1970..2100",
-        },
+        { error: "Bad Request: Invalid Date" },
         { status: 422 }
       );
     }
 
     const after = decodeCursor(url.searchParams.get("after"));
-    const afterTglGo = after?.tgl_go ?? null;
-    const afterId = after?.id ?? null;
 
     const { data, error } = await supabase.rpc("fn_ulok_eksisting_dashboard", {
       p_actor_user_id: user.id,
       p_limit: limit,
       p_search: search,
-      p_month: month ?? null,
-      p_year: year ?? null,
-      p_after_tgl_go: afterTglGo,
-      p_after_progress_id: afterId,
+      p_month: validMonth ? month : null,
+      p_year: validYear ? year : null,
+      p_after_tgl_go: after?.tgl_go ?? null,
+      p_after_progress_id: after?.id ?? null,
     });
 
     if (error) {
+      console.error("[ULOK_EKSISTING_DASHBOARD]", error);
       return NextResponse.json(
-        { success: false, error: error.message ?? String(error) },
+        { error: "Failed to fetch dashboard data" },
         { status: 500 }
       );
     }
 
-    if (!data || typeof data !== "object" || Array.isArray(data)) {
-      return NextResponse.json(
-        {
-          success: true,
-          filters: { search, month: month ?? null, year: year ?? null },
-          data: [],
-          pagination: { limit, count: 0 },
-        },
-        { status: 200 }
-      );
-    }
-
-    const payload: any = data;
+    // 4. Format Response
+    const payload: any = data || {};
     const pag = payload.pagination || {};
 
+    // Generate Next/Prev Cursors
     const startCursor = encodeCursor(pag.start_created_at, pag.start_id);
     const endCursor = encodeCursor(pag.end_created_at, pag.end_id);
 
-    const finalPagination = {
-      limit: pag.limit,
-      count: pag.count,
-      hasNextPage: pag.hasNextPage,
-      hasPrevPage: pag.hasPrevPage,
-      startCursor,
-      endCursor,
-    };
-
     return NextResponse.json(
       {
-        success: payload.success,
+        success: Boolean(payload.success),
         filters: payload.filters,
-        data: payload.data,
-        pagination: finalPagination,
+        data: payload.data ?? [],
+        pagination: {
+          limit: pag.limit ?? limit,
+          count: pag.count ?? 0,
+          hasNextPage: !!pag.hasNextPage,
+          hasPrevPage: !!pag.hasPrevPage,
+          startCursor,
+          endCursor,
+        },
       },
       { status: 200 }
     );
-  } catch (e: any) {
+  } catch (err) {
+    console.error("[ULOK_EKSISTING_DASHBOARD_UNHANDLED]", err);
     return NextResponse.json(
-      { success: false, error: e?.message ?? "Internal server error" },
+      { error: "Internal Server Error" },
       { status: 500 }
     );
   }

@@ -15,19 +15,15 @@ export const dynamic = "force-dynamic";
  */
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const supabase = await createClient();
 
   try {
     const user = await getCurrentUser();
     // 1. Auth Check
-    const authErr = await checkAuthAndAccess(
-      supabase,
-      user,
-      params.id,
-      "update"
-    );
+    const authErr = await checkAuthAndAccess(supabase, user, id, "update");
     if (authErr) return NextResponse.json(authErr, { status: authErr.status });
 
     // 2. Parse Body
@@ -45,7 +41,7 @@ export async function PATCH(
     const { data, error } = await supabase.rpc("fn_renovasi_approve", {
       p_user_id: user!.id,
       p_branch_id: user!.branch_id,
-      p_progress_kplt_id: params.id,
+      p_progress_kplt_id: id,
       p_final_status: parsed.data.final_status_renov, // "selesai" | "batal"
     });
 

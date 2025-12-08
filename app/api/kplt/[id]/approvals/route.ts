@@ -16,9 +16,10 @@ export const dynamic = "force-dynamic";
  */
 export async function POST(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const supabase = await createClient();
     const user = await getCurrentUser();
 
@@ -34,7 +35,7 @@ export async function POST(
       );
 
     // 2. Validation
-    const p = KpltIdParamSchema.safeParse(params);
+    const p = KpltIdParamSchema.safeParse({ id });
     if (!p.success)
       return NextResponse.json(
         { error: "Invalid id", detail: p.error.issues },
@@ -83,9 +84,10 @@ export async function POST(
  */
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const supabase = await createClient();
     const user = await getCurrentUser();
 
@@ -101,7 +103,7 @@ export async function PATCH(
       );
 
     // 2. Validation
-    const p = KpltIdParamSchema.safeParse(params);
+    const p = KpltIdParamSchema.safeParse({ id });
     if (!p.success)
       return NextResponse.json(
         { error: "Invalid id", detail: p.error.issues },

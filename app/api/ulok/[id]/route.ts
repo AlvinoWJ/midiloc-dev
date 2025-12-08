@@ -383,7 +383,7 @@ async function handleSubmissionUpdate(
 
 export async function GET(
   _request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const supabase = await createClient();
   const user = await getCurrentUser();
@@ -393,7 +393,7 @@ export async function GET(
   if (!canUlok("read", user))
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const { id } = params;
+  const { id } = await params;
 
   // QUERY
   let query = supabase
@@ -425,15 +425,15 @@ export async function GET(
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const supabase = await createClient();
   const user = await getCurrentUser();
 
   if (!user)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { id } = params;
   if (!isUuid(id))
     return NextResponse.json({ error: "Invalid ulok_id" }, { status: 422 });
 
@@ -456,7 +456,7 @@ export async function PATCH(
 
 export async function DELETE(
   _req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const supabase = await createClient();
   const user = await getCurrentUser();
@@ -466,7 +466,7 @@ export async function DELETE(
   if (!canUlok("delete", user))
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const { id } = params;
+  const { id } = await params;
 
   if (user.position_nama === POSITION.LOCATION_SPECIALIST) {
     const { data, error } = await supabase

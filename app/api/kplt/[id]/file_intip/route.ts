@@ -26,8 +26,9 @@ const stripBucketPrefix = (p: string) =>
  */
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   let newFilePath: string | undefined;
   const supabase = await createClient();
 
@@ -46,7 +47,7 @@ export async function PATCH(
       );
     }
 
-    const kpltId = (params?.id || "").trim();
+    const kpltId = (id || "").trim();
     if (!isUuid(kpltId))
       return NextResponse.json({ error: "Invalid kplt_id" }, { status: 422 });
 

@@ -6,12 +6,19 @@ import { getCurrentUser, POSITION } from "@/lib/auth/acl";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+/**
+ * @route PATCH /api/ulok_eksternal/[id]/assign-branch
+ * @description Menetapkan Branch pada Ulok Eksternal.
+ * Hanya bisa dilakukan oleh Regional Manager (RM).
+ */
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const me = await getCurrentUser();
+    // 1. Auth & Role Check
     if (!me)
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -24,66 +31,55 @@ export async function PATCH(
       );
     }
 
-    let json: unknown;
-    try {
-      json = await req.json();
-    } catch {
-      return NextResponse.json({ error: "Body harus JSON" }, { status: 400 });
+    // 2. Validate Param ID
+    if (!id) {
+      return NextResponse.json(
+        { error: "Missing ulok_eksternal id" },
+        { status: 400 }
+      );
     }
 
+    // 3. Parse Body
+    const json = await req.json().catch(() => null);
     const parsed = assignBranchSchema.safeParse(json);
     if (!parsed.success) {
-      const msg = parsed.error.issues
-        .map((i) => `${i.path.join(".")}: ${i.message}`)
-        .join("; ");
-      return NextResponse.json({ success: false, error: msg }, { status: 422 });
-    }
-
-    if (!params.id) {
       return NextResponse.json(
-        { success: false, error: "Missing ulok_eksternal id in route" },
-        { status: 400 }
+        { error: "Validation failed", detail: parsed.error.issues },
+        { status: 422 }
       );
     }
 
     const supabase = await createClient();
 
-    // Panggil RPC
+    // 4. Execute RPC
     const { data, error } = await supabase.rpc(
       "fn_ulok_eksternal_assign_branch",
       {
         p_actor_user_id: me.id,
-        p_ulok_eksternal_id: params.id,
+        p_ulok_eksternal_id: id,
         p_new_branch_id: parsed.data.branch_id,
       }
     );
 
+    // 5. Handle RPC Errors
     if (error) {
       return NextResponse.json(
-        { success: false, error: error.message ?? String(error) },
+        { error: "Assign Branch Failed", detail: error.message },
         { status: 400 }
       );
     }
 
-    if (!data || typeof data !== "object") {
-      return NextResponse.json(
-        { success: false, error: "Unexpected RPC response" },
-        { status: 500 }
-      );
-    }
-
+    // Check application-level success flag from RPC
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if ((data as any).success === false) {
+    if ((data as any)?.success === false) {
       return NextResponse.json(data, { status: 400 });
     }
 
     return NextResponse.json(data, { status: 200 });
-  } catch (e: unknown) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (e: any) {
     return NextResponse.json(
-      {
-        success: false,
-        error: e instanceof Error ? e.message : "Internal server error",
-      },
+      { error: "Internal Server Error", detail: e.message },
       { status: 500 }
     );
   }

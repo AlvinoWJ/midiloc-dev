@@ -20,20 +20,21 @@ export const dynamic = "force-dynamic";
  */
 export async function GET(
   _req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const supabase = await createClient();
   const user = await getCurrentUser();
 
   //auth check
-  const authErr = await checkAuthAndAccess(supabase, user, params.id, "read");
+  const authErr = await checkAuthAndAccess(supabase, user, id, "read");
   if (authErr) return NextResponse.json(authErr, { status: authErr.status });
 
   //execute RPC
   const { data, error } = await supabase.rpc("fn_go_get", {
     p_user_id: user!.id,
     p_branch_id: user!.branch_id,
-    p_progress_kplt_id: params.id,
+    p_progress_kplt_id: id,
   });
 
   if (error) return handleCommonError(error, "GO_GET");
@@ -48,19 +49,15 @@ export async function GET(
  */
 export async function POST(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const supabase = await createClient();
     const user = await getCurrentUser();
 
     //auth check
-    const authErr = await checkAuthAndAccess(
-      supabase,
-      user,
-      params.id,
-      "create"
-    );
+    const authErr = await checkAuthAndAccess(supabase, user, id, "create");
     if (authErr) return NextResponse.json(authErr, { status: authErr.status });
 
     const body = await req.json().catch(() => ({}));
@@ -77,7 +74,7 @@ export async function POST(
     const { data, error } = await supabase.rpc("fn_go_create", {
       p_user_id: user!.id,
       p_branch_id: user!.branch_id,
-      p_progress_kplt_id: params.id,
+      p_progress_kplt_id: id,
       p_payload: payload,
     });
     if (error) {
@@ -103,17 +100,13 @@ export async function POST(
  */
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const supabase = await createClient();
     const user = await getCurrentUser();
-    const authErr = await checkAuthAndAccess(
-      supabase,
-      user,
-      params.id,
-      "update"
-    );
+    const authErr = await checkAuthAndAccess(supabase, user, id, "update");
     if (authErr) return NextResponse.json(authErr, { status: authErr.status });
 
     const body = await req.json().catch(() => ({}));
@@ -131,7 +124,7 @@ export async function PATCH(
     const { data, error } = await supabase.rpc("fn_go_update", {
       p_user_id: user!.id,
       p_branch_id: user!.branch_id,
-      p_progress_kplt_id: params.id,
+      p_progress_kplt_id: id,
       p_payload: payload,
     });
 
@@ -151,18 +144,19 @@ export async function PATCH(
  */
 export async function DELETE(
   _req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const supabase = await createClient();
   const user = await getCurrentUser();
 
   //auth check
-  const authErr = await checkAuthAndAccess(supabase, user, params.id, "delete");
+  const authErr = await checkAuthAndAccess(supabase, user, id, "delete");
   if (authErr) return NextResponse.json(authErr, { status: authErr.status });
   const { data, error } = await supabase.rpc("fn_go_delete", {
     p_user_id: user!.id,
     p_branch_id: user!.branch_id,
-    p_progress_kplt_id: params.id,
+    p_progress_kplt_id: id,
   });
 
   if (error) return handleCommonError(error, "GO_DELETE");

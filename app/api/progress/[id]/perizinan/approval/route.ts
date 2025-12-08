@@ -12,9 +12,10 @@ export const dynamic = "force-dynamic";
  */
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const supabase = await createClient();
     const user = await getCurrentUser();
 
@@ -30,7 +31,7 @@ export async function PATCH(
       );
 
     // 2. Validate Access
-    const check = await validateProgressAccess(supabase, user, params.id);
+    const check = await validateProgressAccess(supabase, user, id);
     if (!check.allowed)
       return NextResponse.json(
         { error: check.error },
@@ -51,7 +52,7 @@ export async function PATCH(
     const { data, error } = await supabase.rpc("fn_perizinan_approve", {
       p_user_id: user.id,
       p_branch_id: user.branch_id,
-      p_progress_kplt_id: params.id,
+      p_progress_kplt_id: id,
       p_final_status: parsed.data.final_status_perizinan,
     });
 

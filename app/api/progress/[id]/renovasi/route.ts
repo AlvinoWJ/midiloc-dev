@@ -25,18 +25,19 @@ const FILE_FIELDS = ["file_rekom_renovasi"] as const;
  */
 export async function GET(
   _req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const supabase = await createClient();
   const user = await getCurrentUser();
-  const authErr = await checkAuthAndAccess(supabase, user, params.id, "read");
+  const authErr = await checkAuthAndAccess(supabase, user, id, "read");
   if (authErr) return NextResponse.json(authErr, { status: authErr.status });
 
   //fetch data
   const { data, error } = await supabase.rpc("fn_renovasi_get", {
     p_user_id: user!.id,
     p_branch_id: user!.branch_id,
-    p_progress_kplt_id: params.id,
+    p_progress_kplt_id: id,
   });
 
   if (error) return handleCommonError(error, "RENOVASI_GET");
@@ -51,24 +52,20 @@ export async function GET(
  */
 export async function POST(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const supabase = await createClient();
   let uploadedKeys: string[] = [];
 
   try {
     const user = await getCurrentUser();
     // 1. Auth Check
-    const authErr = await checkAuthAndAccess(
-      supabase,
-      user,
-      params.id,
-      "create"
-    );
+    const authErr = await checkAuthAndAccess(supabase, user, id, "create");
     if (authErr) return NextResponse.json(authErr, { status: authErr.status });
 
     // 2. Resolve Context
-    const ulokId = await resolveUlokId(supabase, params.id, user!.branch_id!);
+    const ulokId = await resolveUlokId(supabase, id, user!.branch_id!);
 
     // 3. Parse Payload
     const ct = req.headers.get("content-type") || "";
@@ -106,7 +103,7 @@ export async function POST(
     const { data, error } = await supabase.rpc("fn_renovasi_create", {
       p_user_id: user!.id,
       p_branch_id: user!.branch_id,
-      p_progress_kplt_id: params.id,
+      p_progress_kplt_id: id,
       p_payload: payload,
     });
 
@@ -136,32 +133,28 @@ export async function POST(
  */
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const supabase = await createClient();
   let uploadedKeys: string[] = [];
 
   try {
     const user = await getCurrentUser();
     // 1. Auth Check
-    const authErr = await checkAuthAndAccess(
-      supabase,
-      user,
-      params.id,
-      "update"
-    );
+    const authErr = await checkAuthAndAccess(supabase, user, id, "update");
     if (authErr) return NextResponse.json(authErr, { status: authErr.status });
 
     // 2. Pre-fetch Old Data (cleanup purpose)
     const { data: oldRow } = await supabase.rpc("fn_renovasi_get", {
       p_user_id: user!.id,
       p_branch_id: user!.branch_id,
-      p_progress_kplt_id: params.id,
+      p_progress_kplt_id: id,
     });
     if (!oldRow)
       return NextResponse.json({ error: "Data not found" }, { status: 404 });
 
-    const ulokId = await resolveUlokId(supabase, params.id, user!.branch_id!);
+    const ulokId = await resolveUlokId(supabase, id, user!.branch_id!);
 
     // 3. Parse Payload
     const ct = req.headers.get("content-type") || "";
@@ -204,7 +197,7 @@ export async function PATCH(
     const { data, error } = await supabase.rpc("fn_renovasi_update", {
       p_user_id: user!.id,
       p_branch_id: user!.branch_id,
-      p_progress_kplt_id: params.id,
+      p_progress_kplt_id: id,
       p_payload: payload,
     });
 
@@ -236,26 +229,27 @@ export async function PATCH(
  */
 export async function DELETE(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const supabase = await createClient();
   const user = await getCurrentUser();
 
-  const authErr = await checkAuthAndAccess(supabase, user, params.id, "delete");
+  const authErr = await checkAuthAndAccess(supabase, user, id, "delete");
   if (authErr) return NextResponse.json(authErr, { status: authErr.status });
 
   // Get Old Data
   const { data: oldRow } = await supabase.rpc("fn_renovasi_get", {
     p_user_id: user!.id,
     p_branch_id: user!.branch_id,
-    p_progress_kplt_id: params.id,
+    p_progress_kplt_id: id,
   });
 
   // Execute Delete
   const { data, error } = await supabase.rpc("fn_renovasi_delete", {
     p_user_id: user!.id,
     p_branch_id: user!.branch_id,
-    p_progress_kplt_id: params.id,
+    p_progress_kplt_id: id,
   });
 
   if (error) return handleCommonError(error, "RENOVASI_DELETE");

@@ -30,21 +30,22 @@ const FILE_FIELDS = ["file_izin_tetangga", "file_bukti_pembayaran"] as const;
  */
 export async function GET(
   _req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const supabase = await createClient();
     const user = await getCurrentUser();
 
     // Auth Check
-    const authErr = await checkAuthAndAccess(supabase, user, params.id, "read");
+    const authErr = await checkAuthAndAccess(supabase, user, id, "read");
     if (authErr) return NextResponse.json(authErr, { status: authErr.status });
 
     // Fetch Data
     const { data, error } = await supabase.rpc("fn_it_get", {
       p_user_id: user!.id,
       p_branch_id: user!.branch_id,
-      p_progress_kplt_id: params.id,
+      p_progress_kplt_id: id,
     });
 
     if (error) return handleCommonError(error, "IT_GET");
@@ -67,30 +68,26 @@ export async function GET(
  */
 export async function POST(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const supabase = await createClient();
   let uploadedKeys: string[] = [];
 
   try {
     const user = await getCurrentUser();
-    const authErr = await checkAuthAndAccess(
-      supabase,
-      user,
-      params.id,
-      "create"
-    );
+    const authErr = await checkAuthAndAccess(supabase, user, id, "create");
     if (authErr) return NextResponse.json(authErr, { status: authErr.status });
 
     // Validate Access
-    const check = await validateProgressAccess(supabase, user, params.id);
+    const check = await validateProgressAccess(supabase, user, id);
     if (!check.allowed)
       return NextResponse.json(
         { error: check.error },
         { status: check.status }
       );
 
-    const ulokId = await resolveUlokId(supabase, params.id, user!.branch_id!);
+    const ulokId = await resolveUlokId(supabase, id, user!.branch_id!);
 
     // Parse Multipart
     const ct = req.headers.get("content-type") || "";
@@ -119,7 +116,7 @@ export async function POST(
     const { data, error } = await supabase.rpc("fn_it_create", {
       p_user_id: user!.id,
       p_branch_id: user!.branch_id,
-      p_progress_kplt_id: params.id,
+      p_progress_kplt_id: id,
       p_payload: payload,
     });
 
@@ -141,29 +138,25 @@ export async function POST(
  */
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const supabase = await createClient();
   let uploadedKeys: string[] = [];
 
   try {
     //auth check
     const user = await getCurrentUser();
-    const authErr = await checkAuthAndAccess(
-      supabase,
-      user,
-      params.id,
-      "update"
-    );
+    const authErr = await checkAuthAndAccess(supabase, user, id, "update");
     if (authErr) return NextResponse.json(authErr, { status: authErr.status });
 
     // Pre-fetch old data for cleanup
-    const ulokId = await resolveUlokId(supabase, params.id, user!.branch_id!);
+    const ulokId = await resolveUlokId(supabase, id, user!.branch_id!);
 
     const { data: oldRow, error: getErr } = await supabase.rpc("fn_it_get", {
       p_user_id: user!.id,
       p_branch_id: user!.branch_id,
-      p_progress_kplt_id: params.id,
+      p_progress_kplt_id: id,
     });
 
     if (getErr || !oldRow)
@@ -201,7 +194,7 @@ export async function PATCH(
     const { data, error } = await supabase.rpc("fn_it_update", {
       p_user_id: user!.id,
       p_branch_id: user!.branch_id,
-      p_progress_kplt_id: params.id,
+      p_progress_kplt_id: id,
       p_payload: payload,
     });
 
@@ -233,26 +226,22 @@ export async function PATCH(
  */
 export async function DELETE(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const supabase = await createClient();
     const user = await getCurrentUser();
 
     // Auth Check
-    const authErr = await checkAuthAndAccess(
-      supabase,
-      user,
-      params.id,
-      "delete"
-    );
+    const authErr = await checkAuthAndAccess(supabase, user, id, "delete");
     if (authErr) return NextResponse.json(authErr, { status: authErr.status });
 
     // Get Old Data (for cleanup)
     const { data: oldRow, error: getErr } = await supabase.rpc("fn_it_get", {
       p_user_id: user!.id,
       p_branch_id: user!.branch_id,
-      p_progress_kplt_id: params.id,
+      p_progress_kplt_id: id,
     });
 
     if (getErr || !oldRow)
@@ -262,7 +251,7 @@ export async function DELETE(
     const { data, error } = await supabase.rpc("fn_it_delete", {
       p_user_id: user!.id,
       p_branch_id: user!.branch_id,
-      p_progress_kplt_id: params.id,
+      p_progress_kplt_id: id,
     });
 
     if (error) {

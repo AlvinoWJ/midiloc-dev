@@ -14,21 +14,22 @@ export const dynamic = "force-dynamic";
  */
 export async function GET(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const supabase = await createClient();
     const user = await getCurrentUser();
 
     // 1. Auth Check (Permission 'read' cukup)
-    const authErr = await checkAuthAndAccess(supabase, user, params.id, "read");
+    const authErr = await checkAuthAndAccess(supabase, user, id, "read");
     if (authErr) return NextResponse.json(authErr, { status: authErr.status });
 
     // 2. Fetch History RPC
     const { data, error } = await supabase.rpc("fn_renovasi_history_list", {
       p_user_id: user!.id,
       p_branch_id: user!.branch_id,
-      p_progress_kplt_id: params.id,
+      p_progress_kplt_id: id,
     });
 
     if (error) {

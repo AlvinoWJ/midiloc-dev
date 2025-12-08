@@ -32,12 +32,13 @@ async function checkAuthAndAccess(
 // GET: Ambil data MOU
 export async function GET(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const supabase = await createClient();
   const user = await getCurrentUser();
 
-  const authErr = await checkAuthAndAccess(supabase, user, params.id, "read");
+  const authErr = await checkAuthAndAccess(supabase, user, id, "read");
   if (authErr)
     return NextResponse.json(
       { error: authErr.error },
@@ -47,7 +48,7 @@ export async function GET(
   const { data, error } = await supabase
     .from("mou")
     .select("*")
-    .eq("progress_kplt_id", params.id)
+    .eq("progress_kplt_id", id)
     .maybeSingle();
 
   if (error) {
@@ -61,18 +62,14 @@ export async function GET(
 // POST: Buat MOU Baru
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const supabase = await createClient();
     const user = await getCurrentUser();
 
-    const authErr = await checkAuthAndAccess(
-      supabase,
-      user,
-      params.id,
-      "create"
-    );
+    const authErr = await checkAuthAndAccess(supabase, user, id, "create");
     if (authErr)
       return NextResponse.json(
         { error: authErr.error },
@@ -91,7 +88,7 @@ export async function POST(
     const { data, error } = await supabase.rpc("fn_mou_create", {
       p_user_id: user!.id,
       p_branch_id: user!.branch_id,
-      p_progress_kplt_id: params.id,
+      p_progress_kplt_id: id,
       p_payload: parsed.data,
     });
 
@@ -120,18 +117,14 @@ export async function POST(
 // PATCH: Update MOU
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const supabase = await createClient();
     const user = await getCurrentUser();
 
-    const authErr = await checkAuthAndAccess(
-      supabase,
-      user,
-      params.id,
-      "update"
-    );
+    const authErr = await checkAuthAndAccess(supabase, user, id, "update");
     if (authErr)
       return NextResponse.json(
         { error: authErr.error },
@@ -150,7 +143,7 @@ export async function PATCH(
     const { data, error } = await supabase.rpc("fn_mou_update", {
       p_user_id: user!.id,
       p_branch_id: user!.branch_id,
-      p_progress_kplt_id: params.id,
+      p_progress_kplt_id: id,
       p_payload: parsed.data,
     });
 
@@ -179,18 +172,14 @@ export async function PATCH(
 // DELETE: Hapus MOU
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const supabase = await createClient();
     const user = await getCurrentUser();
 
-    const authErr = await checkAuthAndAccess(
-      supabase,
-      user,
-      params.id,
-      "delete"
-    );
+    const authErr = await checkAuthAndAccess(supabase, user, id, "delete");
     if (authErr)
       return NextResponse.json(
         { error: authErr.error },
@@ -200,7 +189,7 @@ export async function DELETE(
     const { data, error } = await supabase.rpc("fn_mou_delete", {
       p_user_id: user!.id,
       p_branch_id: user!.branch_id,
-      p_progress_kplt_id: params.id,
+      p_progress_kplt_id: id,
     });
 
     if (error) {

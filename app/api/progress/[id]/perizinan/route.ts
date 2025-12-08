@@ -35,21 +35,22 @@ const FILE_FIELDS = [
  */
 export async function GET(
   _req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const supabase = await createClient();
     const user = await getCurrentUser();
 
     // Auth Check
-    const authErr = await checkAuthAndAccess(supabase, user, params.id, "read");
+    const authErr = await checkAuthAndAccess(supabase, user, id, "read");
     if (authErr) return NextResponse.json(authErr, { status: authErr.status });
 
     // Fetch Data
     const { data, error } = await supabase.rpc("fn_perizinan_get", {
       p_user_id: user!.id,
       p_branch_id: user!.branch_id,
-      p_progress_kplt_id: params.id,
+      p_progress_kplt_id: id,
     });
 
     if (error) return handleCommonError(error, "PERIZINAN_GET");
@@ -72,8 +73,9 @@ export async function GET(
  */
 export async function POST(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const supabase = await createClient();
   let uploadedKeys: string[] = [];
 
@@ -81,15 +83,10 @@ export async function POST(
     const user = await getCurrentUser();
 
     // Auth Check
-    const authErr = await checkAuthAndAccess(
-      supabase,
-      user,
-      params.id,
-      "create"
-    );
+    const authErr = await checkAuthAndAccess(supabase, user, id, "create");
     if (authErr) return NextResponse.json(authErr, { status: authErr.status });
 
-    const ulokId = await resolveUlokId(supabase, params.id, user!.branch_id!);
+    const ulokId = await resolveUlokId(supabase, id, user!.branch_id!);
     const ct = req.headers.get("content-type") || "";
     let payload: Record<string, unknown> = {};
 
@@ -116,7 +113,7 @@ export async function POST(
     const { data, error } = await supabase.rpc("fn_perizinan_create", {
       p_user_id: user!.id,
       p_branch_id: user!.branch_id,
-      p_progress_kplt_id: params.id,
+      p_progress_kplt_id: id,
       p_payload: payload,
     });
 
@@ -142,8 +139,10 @@ export async function POST(
  */
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
+
   const supabase = await createClient();
   let uploadedKeys: string[] = [];
 
@@ -151,23 +150,18 @@ export async function PATCH(
     const user = await getCurrentUser();
 
     // Auth Check
-    const authErr = await checkAuthAndAccess(
-      supabase,
-      user,
-      params.id,
-      "update"
-    );
+    const authErr = await checkAuthAndAccess(supabase, user, id, "update");
     if (authErr) return NextResponse.json(authErr, { status: authErr.status });
 
     // Resolve Context & Old Data
-    const ulokId = await resolveUlokId(supabase, params.id, user!.branch_id!);
+    const ulokId = await resolveUlokId(supabase, id, user!.branch_id!);
 
     const { data: oldRow, error: getErr } = await supabase.rpc(
       "fn_perizinan_get",
       {
         p_user_id: user!.id,
         p_branch_id: user!.branch_id,
-        p_progress_kplt_id: params.id,
+        p_progress_kplt_id: id,
       }
     );
 
@@ -206,7 +200,7 @@ export async function PATCH(
     const { data, error } = await supabase.rpc("fn_perizinan_update", {
       p_user_id: user!.id,
       p_branch_id: user!.branch_id,
-      p_progress_kplt_id: params.id,
+      p_progress_kplt_id: id,
       p_payload: payload,
     });
 
@@ -240,18 +234,19 @@ export async function PATCH(
  */
 export async function DELETE(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const supabase = await createClient();
   const user = await getCurrentUser();
 
-  const authErr = await checkAuthAndAccess(supabase, user, params.id, "delete");
+  const authErr = await checkAuthAndAccess(supabase, user, id, "delete");
   if (authErr) return NextResponse.json(authErr, { status: authErr.status });
 
   const { data, error } = await supabase.rpc("fn_perizinan_delete", {
     p_user_id: user!.id,
     p_branch_id: user!.branch_id,
-    p_progress_kplt_id: params.id,
+    p_progress_kplt_id: id,
   });
 
   if (error) return handleCommonError(error, "PERIZINAN_DELETE");
