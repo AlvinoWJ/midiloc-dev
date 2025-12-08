@@ -5,6 +5,10 @@ import { getCurrentUser } from "@/lib/auth/acl";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
+// =============================================================================
+// HELPER FUNCTIONS
+// =============================================================================
+
 function parseIntParam(val: string | null): number | null {
   if (!val) return null;
   const n = Number(val);
@@ -41,11 +45,21 @@ function parseCursor(val: string | null): {
   return { created_at: ts || null, id: id || null };
 }
 
+// =============================================================================
+// ROUTE HANDLER
+// =============================================================================
+
+/**
+ * @route GET /api/dashboard
+ * @description Mengambil ringkasan dashboard (Summary) dan titik lokasi peta (Points).
+ * Menggunakan parallel execution untuk performa maksimal.
+ */
 export async function GET(req: NextRequest) {
   try {
     const supabase = await createClient();
     const user = await getCurrentUser();
 
+    // 1. Auth Check
     if (!user) {
       return NextResponse.json(
         { error: "unauthorized", message: "User must login" },
@@ -61,7 +75,7 @@ export async function GET(req: NextRequest) {
 
     const sp = req.nextUrl.searchParams;
 
-    // Common params
+    // 2. Parse & Validate Query Params
     const yearParam = sp.get("year");
     const p_year = parseIntParam(yearParam);
     if (yearParam && p_year === null) {
@@ -97,7 +111,7 @@ export async function GET(req: NextRequest) {
       p_ls_id = val;
     }
 
-    // Points-specific params
+    // Filter Logic: Status & Lokasi
     const p_ulok_only_ok = parseBoolParam(sp.get("ulok_only_ok"), false);
     const p_ulok_without_kplt = parseBoolParam(
       sp.get("ulok_without_kplt"),
@@ -108,20 +122,27 @@ export async function GET(req: NextRequest) {
     const p_min_lng = parseFloatParam(sp.get("min_lng"));
     const p_max_lat = parseFloatParam(sp.get("max_lat"));
     const p_max_lng = parseFloatParam(sp.get("max_lng"));
-    if (
-      [p_min_lat, p_min_lng, p_max_lat, p_max_lng].some((v) => v !== null) &&
-      [p_min_lat, p_min_lng, p_max_lat, p_max_lng].some((v) => v === null)
-    ) {
+
+    // Validasi Bounding Box Peta (Harus lengkap jika ada salah satu)
+    const hasAnyCoord = [p_min_lat, p_min_lng, p_max_lat, p_max_lng].some(
+      (v) => v !== null
+    );
+    const hasAllCoord = [p_min_lat, p_min_lng, p_max_lat, p_max_lng].every(
+      (v) => v !== null
+    );
+
+    if (hasAnyCoord && !hasAllCoord) {
       return NextResponse.json(
         {
-          error: "bad_request",
+          error: "Bad Request",
           message:
-            "If using map viewport, all of min_lat,min_lng,max_lat,max_lng are required",
+            "If using map viewport, all of min_lat, min_lng, max_lat, max_lng are required",
         },
         { status: 400 }
       );
     }
 
+    // Pagination & Search
     const p_page_size_raw = parseIntParam(sp.get("page_size"));
     const p_page_size =
       p_page_size_raw && p_page_size_raw > 0 ? p_page_size_raw : 1000;
@@ -135,7 +156,7 @@ export async function GET(req: NextRequest) {
 
     const p_search = sp.get("search") || null;
 
-    // Panggil kedua RPC secara paralel
+    // 3. Execute RPCs in Parallel (Optimasi Performa)
     const [summaryRes, pointsRes] = await Promise.all([
       supabase.rpc("rpc_dashboard", {
         p_user_id: user.id,
@@ -163,48 +184,38 @@ export async function GET(req: NextRequest) {
       }),
     ]);
 
-    // Tangani error keduanya
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const sumPgErr = summaryRes.error as any;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const ptsPgErr = pointsRes.error as any;
+    // 4. Handle RPC Errors
+    const sumErr = summaryRes.error;
+    const ptsErr = pointsRes.error;
 
-    if (sumPgErr?.code === "22023") {
+    if (sumErr || ptsErr) {
+      console.error("[DASHBOARD_RPC_ERROR]", {
+        summary: sumErr,
+        points: ptsErr,
+      });
+
+      // Deteksi error spesifik PG (misal invalid input type)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const errCode = (sumErr as any)?.code || (ptsErr as any)?.code;
+      if (errCode === "22023") {
+        return NextResponse.json(
+          { error: "Bad Request", message: sumErr?.message || ptsErr?.message },
+          { status: 400 }
+        );
+      }
+
       return NextResponse.json(
-        { error: "bad_request", message: summaryRes.error?.message },
-        { status: 400 }
-      );
-    }
-    if (ptsPgErr?.code === "22023") {
-      return NextResponse.json(
-        { error: "bad_request", message: pointsRes.error?.message },
-        { status: 400 }
-      );
-    }
-    if (summaryRes.error) {
-      console.error("Supabase RPC Error (summary):", summaryRes.error);
-      return NextResponse.json(
-        { error: "rpc_error", message: summaryRes.error.message },
-        { status: 500 }
-      );
-    }
-    if (pointsRes.error) {
-      console.error("Supabase RPC Error (points):", pointsRes.error);
-      return NextResponse.json(
-        { error: "rpc_error", message: pointsRes.error.message },
+        {
+          error: "Internal Server Error",
+          message: "Gagal mengambil data dashboard",
+        },
         { status: 500 }
       );
     }
 
-    if (!summaryRes.data) {
+    if (!summaryRes.data || !pointsRes.data) {
       return NextResponse.json(
-        { error: "not_found", message: "Summary not found." },
-        { status: 404 }
-      );
-    }
-    if (!pointsRes.data) {
-      return NextResponse.json(
-        { error: "not_found", message: "Points not found." },
+        { error: "Not Found", message: "Summary or Points not found." },
         { status: 404 }
       );
     }
@@ -214,9 +225,12 @@ export async function GET(req: NextRequest) {
       points: pointsRes.data,
     });
   } catch (err) {
-    console.error("Server Error (dashboard full):", err);
+    console.error("[DASHBOARD_GET_UNHANDLED]", err);
     return NextResponse.json(
-      { error: "server_error", message: "Terjadi kesalahan pada server." },
+      {
+        error: "Internal Server Error",
+        message: "Terjadi kesalahan pada server.",
+      },
       { status: 500 }
     );
   }

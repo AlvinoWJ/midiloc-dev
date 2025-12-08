@@ -1,85 +1,73 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/client";
-import { getCurrentUser, canProgressKplt } from "@/lib/auth/acl";
+import { getCurrentUser } from "@/lib/auth/acl";
 import { NotarisApprovalSchema } from "@/lib/validations/notaris";
-import { validateProgressAccess } from "@/utils/kpltProgressBranchChecker";
+import {
+  checkAuthAndAccess,
+  handleCommonError,
+} from "@/lib/progress/api-helper";
 
-// PATCH /api/progress/[id]/notaris/approval
+export const dynamic = "force-dynamic";
+
+/**
+ * @route PATCH /api/progress/[id]/notaris/approval
+ * @description Melakukan Approval (Selesai/Batal) pada tahap Notaris.
+ */
 export async function PATCH(
   req: Request,
   { params }: { params: { id: string } }
 ) {
-  const supabase = await createClient();
-  const user = await getCurrentUser();
-  if (!user)
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!canProgressKplt("update", user))
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  if (!user.branch_id)
-    return NextResponse.json(
-      { error: "Forbidden", message: "User has no branch" },
-      { status: 403 }
+  try {
+    const supabase = await createClient();
+    const user = await getCurrentUser();
+
+    // 1. Auth Check (Permission: 'update')
+    const authErr = await checkAuthAndAccess(
+      supabase,
+      user,
+      params.id,
+      "update"
     );
-  const check = await validateProgressAccess(supabase, user, params.id);
-  if (!check.allowed)
-    return NextResponse.json({ error: check.error }, { status: check.status });
+    if (authErr) return NextResponse.json(authErr, { status: authErr.status });
 
-  const progressId = params?.id;
-  if (!progressId)
-    return NextResponse.json({ error: "Invalid id" }, { status: 422 });
+    // 2. Parse & Validate Body
+    const body = await req.json().catch(() => ({}));
+    const parsed = NotarisApprovalSchema.safeParse(body);
 
-  const body = await req.json().catch(() => ({}));
-  const parsed = NotarisApprovalSchema.safeParse(body);
-  if (!parsed.success)
-    return NextResponse.json(
-      { error: "Validation failed", detail: parsed.error.issues },
-      { status: 422 }
-    );
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Validation failed", detail: parsed.error.issues },
+        { status: 422 }
+      );
+    }
 
-  const { data, error } = await supabase.rpc("fn_notaris_approve", {
-    p_user_id: user.id,
-    p_branch_id: user.branch_id,
-    p_progress_kplt_id: progressId,
-    p_final_status: parsed.data.final_status_notaris, // "selesai" | "batal"
-  });
+    // 3. Execute Approval RPC
+    const { data, error } = await supabase.rpc("fn_notaris_approve", {
+      p_user_id: user!.id,
+      p_branch_id: user!.branch_id,
+      p_progress_kplt_id: params.id,
+      p_final_status: parsed.data.final_status_notaris,
+    });
 
-  type SupabaseError = {
-    message?: string;
-    code?: string;
-    [key: string]: unknown;
-  };
-
-  if (error) {
-    const supabaseError = error as unknown as SupabaseError;
-    const msg = supabaseError?.message?.toLowerCase() || "";
-    const isAlready = msg.includes("already finalized");
-    const isInvalid = supabaseError?.code === "22P02";
-    const isMissing = msg.includes("required fields");
-    const isPrereq = msg.includes("prerequisites");
-    return NextResponse.json(
-      {
-        error: isAlready
-          ? "Notaris already finalized"
-          : isInvalid
-          ? "Invalid status"
-          : isMissing
-          ? "Required fields missing"
-          : isPrereq
-          ? "Prerequisites not met"
-          : "Failed to approve Notaris",
-        detail: supabaseError?.message ?? error,
-      },
-      {
-        status: isAlready
-          ? 409
-          : isInvalid
-          ? 422
-          : isMissing || isPrereq
-          ? 422
-          : 500,
+    if (error) {
+      // Handle Specific Business Logic Errors for Notaris
+      const msg = (error.message || "").toLowerCase();
+      if (msg.includes("prerequisites not met")) {
+        return NextResponse.json(
+          {
+            error: "Precondition Failed",
+            message: "Syarat belum terpenuhi (Cek Perizinan/Validasi Legal)",
+          },
+          { status: 422 }
+        );
       }
-    );
-  }
 
-  return NextResponse.json({ data }, { status: 200 });
+      // Fallback to common error handler
+      return handleCommonError(error, "NOTARIS_APPROVAL");
+    }
+
+    return NextResponse.json({ data }, { status: 200 });
+  } catch (err) {
+    return handleCommonError(err, "NOTARIS_APPROVAL_UNHANDLED");
+  }
 }

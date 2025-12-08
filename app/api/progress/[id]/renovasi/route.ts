@@ -1,470 +1,270 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentUser, canProgressKplt } from "@/lib/auth/acl";
+import { getCurrentUser } from "@/lib/auth/acl";
 import {
   RenovasiCreateSchema,
   RenovasiUpdateSchema,
   stripServerControlledFieldsRenovasi,
 } from "@/lib/validations/renovasi";
-import { makeFieldKey, isValidPrefixKey } from "@/lib/storage/naming";
-import { validateProgressAccess } from "@/utils/kpltProgressBranchChecker";
+import {
+  checkAuthAndAccess,
+  handleCommonError,
+  parseMultipartRequest,
+  removeFiles,
+  resolveUlokId,
+} from "@/lib/progress/api-helper";
 
-const BUCKET = "file_storage";
-const FILE_FIELD = "file_rekom_renovasi" as const;
+export const dynamic = "force-dynamic";
 
-async function resolveUlokIdWithinScope(
-  supabase: any,
-  progressId: string,
-  branchId: string
-) {
-  const { data, error } = await supabase
-    .from("progress_kplt")
-    .select(
-      `id, kplt:kplt!progress_kplt_kplt_id_fkey!inner ( id, branch_id, ulok_id )`
-    )
-    .eq("id", progressId)
-    .eq("kplt.branch_id", branchId)
-    .maybeSingle();
+const FILE_FIELDS = ["file_rekom_renovasi"] as const;
 
-  if (error) throw new Error(error.message ?? "Scope check failed");
-  const ulokId = (data as any)?.kplt?.ulok_id as string | null;
-  if (!ulokId) throw new Error("Progress not found or out of scope");
-  return ulokId;
-}
-
-async function uploadOne(supabase: any, ulokId: string, f: File) {
-  const key = makeFieldKey(ulokId, "renovasi", FILE_FIELD, f);
-  const { error } = await supabase.storage.from(BUCKET).upload(key, f, {
-    upsert: false,
-    contentType: f.type || "application/octet-stream",
-    cacheControl: "3600",
-  });
-  if (error) throw new Error(`Upload failed: ${error.message}`);
-  return key;
-}
-
-async function removeKeys(supabase: any, keys: string[]) {
-  if (!keys.length) return;
-  await supabase.storage.from(BUCKET).remove(keys);
-}
-
-async function parseMultipartAndUpload(
-  supabase: any,
-  ulokId: string,
-  req: Request
-): Promise<{
-  payload: Record<string, unknown>;
-  newUploadedKey?: string;
-  replacedFile?: boolean;
-}> {
-  const form = await req.formData();
-  const payload: Record<string, unknown> = {};
-  let newUploadedKey: string | undefined;
-  let replacedFile = false;
-
-  const v = form.get(FILE_FIELD);
-  if (v instanceof File && v.size > 0) {
-    const key = await uploadOne(supabase, ulokId, v);
-    payload[FILE_FIELD] = key;
-    newUploadedKey = key;
-    replacedFile = true;
-  } else if (typeof v === "string" && v.trim() !== "") {
-    const key = v.trim();
-    if (!isValidPrefixKey(ulokId, "renovasi", key)) {
-      throw new Error("Invalid file_rekom_renovasi key prefix");
-    }
-    payload[FILE_FIELD] = key;
-    replacedFile = true;
-  }
-
-  for (const [k, val] of form.entries()) {
-    if (k === FILE_FIELD) continue;
-    if (typeof val === "string") {
-      const t = val.trim();
-      if (t !== "") payload[k] = t;
-    }
-  }
-
-  return { payload, newUploadedKey, replacedFile };
-}
-
-// GET /api/progress/[id]/renovasi
+/**
+ * @route GET /api/progress/[id]/renovasi
+ * @description Mengambil detail data Renovasi.
+ */
 export async function GET(
   _req: Request,
   { params }: { params: { id: string } }
 ) {
   const supabase = await createClient();
   const user = await getCurrentUser();
-  if (!user)
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!canProgressKplt("read", user))
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Forbidden",
-        message: "Anda tidak berhak melakukan aksi ini",
-      },
-      { status: 403 }
-    );
-  if (!user.branch_id)
-    return NextResponse.json(
-      { error: "Forbidden", message: "User has no branch" },
-      { status: 403 }
-    );
-  const check = await validateProgressAccess(supabase, user, params.id);
-  if (!check.allowed)
-    return NextResponse.json({ error: check.error }, { status: check.status });
+  const authErr = await checkAuthAndAccess(supabase, user, params.id, "read");
+  if (authErr) return NextResponse.json(authErr, { status: authErr.status });
 
-  const progressId = params?.id;
-  if (!progressId)
-    return NextResponse.json({ error: "Invalid id" }, { status: 422 });
-
+  //fetch data
   const { data, error } = await supabase.rpc("fn_renovasi_get", {
-    p_user_id: user.id,
-    p_branch_id: user.branch_id,
-    p_progress_kplt_id: progressId,
+    p_user_id: user!.id,
+    p_branch_id: user!.branch_id,
+    p_progress_kplt_id: params.id,
   });
 
-  if (error) {
-    const status = (error as any)?.code === "22023" ? 404 : 500;
-    return NextResponse.json(
-      { error: "Failed to load Renovasi", detail: error.message ?? error },
-      { status }
-    );
-  }
+  if (error) return handleCommonError(error, "RENOVASI_GET");
   if (!data)
-    return NextResponse.json({ error: "Renovasi not found" }, { status: 404 });
+    return NextResponse.json({ error: "Data not found" }, { status: 404 });
   return NextResponse.json({ data }, { status: 200 });
 }
 
-// POST /api/progress/[id]/renovasi
+/**
+ * @route POST /api/progress/[id]/renovasi
+ * @description Membuat data Renovasi baru. (Multipart/JSON)
+ */
 export async function POST(
   req: Request,
   { params }: { params: { id: string } }
 ) {
   const supabase = await createClient();
-  const user = await getCurrentUser();
-  if (!user)
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!canProgressKplt("create", user) && !canProgressKplt("update", user))
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Forbidden",
-        message: "Anda tidak berhak melakukan aksi ini",
-      },
-      { status: 403 }
-    );
-  if (!user.branch_id)
-    return NextResponse.json(
-      { error: "Forbidden", message: "User has no branch" },
-      { status: 403 }
-    );
-  const check = await validateProgressAccess(supabase, user, params.id);
-  if (!check.allowed)
-    return NextResponse.json({ error: check.error }, { status: check.status });
+  let uploadedKeys: string[] = [];
 
-  const progressId = params?.id;
-  if (!progressId)
-    return NextResponse.json({ error: "Invalid id" }, { status: 422 });
-
-  let ulokId: string;
   try {
-    ulokId = await resolveUlokIdWithinScope(
+    const user = await getCurrentUser();
+    // 1. Auth Check
+    const authErr = await checkAuthAndAccess(
       supabase,
-      progressId,
-      user.branch_id
+      user,
+      params.id,
+      "create"
     );
-  } catch (e: any) {
-    const msg = e?.message || "Scope check failed";
-    const status = /out of scope|not found/i.test(msg) ? 404 : 500;
-    return NextResponse.json({ error: msg }, { status });
-  }
+    if (authErr) return NextResponse.json(authErr, { status: authErr.status });
 
-  const ct = req.headers.get("content-type") || "";
-  let payload: Record<string, unknown> = {};
-  let uploadedKey: string | undefined;
+    // 2. Resolve Context
+    const ulokId = await resolveUlokId(supabase, params.id, user!.branch_id!);
 
-  try {
+    // 3. Parse Payload
+    const ct = req.headers.get("content-type") || "";
+    let payload: Record<string, unknown> = {};
+
     if (ct.includes("multipart/form-data")) {
-      const parsed = await parseMultipartAndUpload(supabase, ulokId, req);
+      const parsed = await parseMultipartRequest(supabase, req, {
+        ulokId,
+        moduleName: "renovasi",
+        fileFields: FILE_FIELDS,
+      });
       payload = parsed.payload;
-      uploadedKey = parsed.newUploadedKey;
+      uploadedKeys = parsed.uploadedKeys;
     } else {
       const body = await req.json().catch(() => ({}));
-      if (
-        "id" in body ||
-        "progress_kplt_id" in body ||
-        "final_status_renov" in body ||
-        "created_at" in body ||
-        "updated_at" in body ||
-        "tgl_selesai_renov" in body
-      ) {
-        return NextResponse.json(
-          { error: "Invalid payload: server-controlled fields present" },
-          { status: 400 }
-        );
-      }
       const parsed = RenovasiCreateSchema.safeParse(body);
-      if (!parsed.success)
+      if (!parsed.success) {
         return NextResponse.json(
           { error: "Validation failed", detail: parsed.error.issues },
           { status: 422 }
         );
+      }
       payload = stripServerControlledFieldsRenovasi(parsed.data);
-
+      // Validate prefix manually for JSON payload
       const fr = (payload as any)?.file_rekom_renovasi;
       if (typeof fr === "string" && !fr.startsWith(`${ulokId}/renovasi/`)) {
         return NextResponse.json(
-          { error: "Invalid file_rekom_renovasi key prefix" },
+          { error: "Invalid file key prefix" },
           { status: 422 }
         );
       }
     }
 
+    // 4. Execute RPC
     const { data, error } = await supabase.rpc("fn_renovasi_create", {
-      p_user_id: user.id,
-      p_branch_id: user.branch_id,
-      p_progress_kplt_id: progressId,
+      p_user_id: user!.id,
+      p_branch_id: user!.branch_id,
+      p_progress_kplt_id: params.id,
       p_payload: payload,
     });
 
     if (error) {
-      if (uploadedKey) await removeKeys(supabase, [uploadedKey]);
-      const msg = (error as any)?.message?.toLowerCase() || "";
-      const isPrereq =
-        msg.includes("prerequisite invalid") || msg.includes("notaris");
-      if ((error as any)?.code === "23505")
+      await removeFiles(supabase, uploadedKeys); // Rollback
+      // Handle Renovasi-specific prerequisite error
+      const msg = (error.message || "").toLowerCase();
+      if (msg.includes("prerequisite") || msg.includes("notaris")) {
         return NextResponse.json(
-          { error: "Renovasi already exists for this progress" },
-          { status: 409 }
+          { error: "Prerequisite Notaris not met" },
+          { status: 422 }
         );
-      return NextResponse.json(
-        {
-          error: isPrereq
-            ? "Prerequisite Notaris not met"
-            : "Failed to create Renovasi",
-          detail: (error as any)?.message ?? error,
-        },
-        { status: isPrereq ? 422 : 500 }
-      );
+      }
+      return handleCommonError(error, "RENOVASI_CREATE");
     }
 
     return NextResponse.json({ data }, { status: 201 });
-  } catch (e: any) {
-    if (uploadedKey) await removeKeys(supabase, [uploadedKey]);
-    return NextResponse.json(
-      { error: "Failed to create Renovasi", detail: e?.message ?? String(e) },
-      { status: 500 }
-    );
+  } catch (err: any) {
+    await removeFiles(supabase, uploadedKeys);
+    return handleCommonError(err, "RENOVASI_POST_UNHANDLED");
   }
 }
 
-// PATCH /api/progress/[id]/renovasi
+/**
+ * @route PATCH /api/progress/[id]/renovasi
+ * @description Mengupdate data Renovasi.
+ */
 export async function PATCH(
   req: Request,
   { params }: { params: { id: string } }
 ) {
   const supabase = await createClient();
-  const user = await getCurrentUser();
-  if (!user)
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!canProgressKplt("update", user))
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Forbidden",
-        message: "Anda tidak berhak melakukan aksi ini",
-      },
-      { status: 403 }
-    );
-  if (!user.branch_id)
-    return NextResponse.json(
-      { error: "Forbidden", message: "User has no branch" },
-      { status: 403 }
-    );
-  const check = await validateProgressAccess(supabase, user, params.id);
-  if (!check.allowed)
-    return NextResponse.json({ error: check.error }, { status: check.status });
+  let uploadedKeys: string[] = [];
 
-  const progressId = params?.id;
-  if (!progressId)
-    return NextResponse.json({ error: "Invalid id" }, { status: 422 });
-
-  let ulokId: string;
   try {
-    ulokId = await resolveUlokIdWithinScope(
+    const user = await getCurrentUser();
+    // 1. Auth Check
+    const authErr = await checkAuthAndAccess(
       supabase,
-      progressId,
-      user.branch_id
+      user,
+      params.id,
+      "update"
     );
-  } catch (e: any) {
-    const msg = e?.message || "Scope check failed";
-    const status = /out of scope|not found/i.test(msg) ? 404 : 500;
-    return NextResponse.json({ error: msg }, { status });
-  }
+    if (authErr) return NextResponse.json(authErr, { status: authErr.status });
 
-  // Ambil row lama (untuk cleanup file jika diganti)
-  const { data: oldRow, error: getErr } = await supabase.rpc(
-    "fn_renovasi_get",
-    {
-      p_user_id: user.id,
-      p_branch_id: user.branch_id,
-      p_progress_kplt_id: progressId,
-    }
-  );
-  if (getErr) {
-    const status = (getErr as any)?.code === "22023" ? 404 : 500;
-    return NextResponse.json(
-      { error: "Failed to load Renovasi", detail: getErr.message ?? getErr },
-      { status }
-    );
-  }
-  if (!oldRow)
-    return NextResponse.json({ error: "Renovasi not found" }, { status: 404 });
+    // 2. Pre-fetch Old Data (cleanup purpose)
+    const { data: oldRow } = await supabase.rpc("fn_renovasi_get", {
+      p_user_id: user!.id,
+      p_branch_id: user!.branch_id,
+      p_progress_kplt_id: params.id,
+    });
+    if (!oldRow)
+      return NextResponse.json({ error: "Data not found" }, { status: 404 });
 
-  const ct = req.headers.get("content-type") || "";
-  let payload: Record<string, unknown> = {};
-  let uploadedKey: string | undefined;
-  let replaced = false;
+    const ulokId = await resolveUlokId(supabase, params.id, user!.branch_id!);
 
-  try {
+    // 3. Parse Payload
+    const ct = req.headers.get("content-type") || "";
+    let payload: Record<string, unknown> = {};
+    let fieldsToCheck: string[] = [];
+
     if (ct.includes("multipart/form-data")) {
-      const parsed = await parseMultipartAndUpload(supabase, ulokId, req);
+      const parsed = await parseMultipartRequest(supabase, req, {
+        ulokId,
+        moduleName: "renovasi",
+        fileFields: FILE_FIELDS,
+      });
       payload = parsed.payload;
-      uploadedKey = parsed.newUploadedKey;
-      replaced = parsed.replacedFile || false;
+      uploadedKeys = parsed.uploadedKeys;
+      fieldsToCheck = parsed.fileFieldsFound;
     } else {
       const body = await req.json().catch(() => ({}));
-      if (
-        "id" in body ||
-        "progress_kplt_id" in body ||
-        "final_status_renov" in body ||
-        "created_at" in body ||
-        "updated_at" in body ||
-        "tgl_selesai_renov" in body
-      ) {
-        return NextResponse.json(
-          { error: "Invalid payload: server-controlled fields present" },
-          { status: 400 }
-        );
-      }
       const parsed = RenovasiUpdateSchema.safeParse(body);
-      if (!parsed.success)
+      if (!parsed.success) {
         return NextResponse.json(
           { error: "Validation failed", detail: parsed.error.issues },
           { status: 422 }
         );
+      }
       payload = stripServerControlledFieldsRenovasi(parsed.data);
+      fieldsToCheck = FILE_FIELDS.filter((f) =>
+        Object.prototype.hasOwnProperty.call(payload, f)
+      );
 
       const fr = (payload as any)?.file_rekom_renovasi;
-      if (typeof fr === "string") {
-        if (!fr.startsWith(`${ulokId}/renovasi/`)) {
-          return NextResponse.json(
-            { error: "Invalid file_rekom_renovasi key prefix" },
-            { status: 422 }
-          );
-        }
-        replaced = true;
+      if (typeof fr === "string" && !fr.startsWith(`${ulokId}/renovasi/`)) {
+        return NextResponse.json(
+          { error: "Invalid file key prefix" },
+          { status: 422 }
+        );
       }
     }
 
+    // 4. Execute RPC
     const { data, error } = await supabase.rpc("fn_renovasi_update", {
-      p_user_id: user.id,
-      p_branch_id: user.branch_id,
-      p_progress_kplt_id: progressId,
+      p_user_id: user!.id,
+      p_branch_id: user!.branch_id,
+      p_progress_kplt_id: params.id,
       p_payload: payload,
     });
 
     if (error) {
-      if (uploadedKey) await removeKeys(supabase, [uploadedKey]);
-      const status = (error as any)?.code === "22023" ? 409 : 500;
-      return NextResponse.json(
-        { error: "Failed to update Renovasi", detail: error.message ?? error },
-        { status }
-      );
+      await removeFiles(supabase, uploadedKeys);
+      return handleCommonError(error, "RENOVASI_UPDATE");
     }
 
-    // Hapus file lama jika diganti
-    if (replaced) {
-      const prev = (oldRow as any)?.file_rekom_renovasi;
-      const now = (payload as any)?.file_rekom_renovasi;
-      if (typeof prev === "string" && prev && prev !== now) {
-        await removeKeys(supabase, [prev]);
-      }
+    // 5. Cleanup Old Files
+    const keysToDelete: string[] = [];
+    for (const f of fieldsToCheck) {
+      const prev = (oldRow as any)?.[f];
+      const now = (payload as any)?.[f];
+      if (prev && typeof prev === "string" && prev !== now)
+        keysToDelete.push(prev);
     }
+    await removeFiles(supabase, keysToDelete);
 
     return NextResponse.json({ data }, { status: 200 });
-  } catch (e: any) {
-    if (uploadedKey) await removeKeys(supabase, [uploadedKey]);
-    return NextResponse.json(
-      { error: "Failed to update Renovasi", detail: e?.message ?? String(e) },
-      { status: 500 }
-    );
+  } catch (err: any) {
+    await removeFiles(supabase, uploadedKeys);
+    return handleCommonError(err, "RENOVASI_PATCH_UNHANDLED");
   }
 }
 
-// DELETE /api/progress/[id]/renovasi
+/**
+ * @route DELETE /api/progress/[id]/renovasi
+ * @description Menghapus data Renovasi.
+ */
 export async function DELETE(
-  _req: Request,
+  req: Request,
   { params }: { params: { id: string } }
 ) {
   const supabase = await createClient();
   const user = await getCurrentUser();
-  if (!user)
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!canProgressKplt("delete", user) && !canProgressKplt("update", user))
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  if (!user.branch_id)
-    return NextResponse.json(
-      { error: "Forbidden", message: "User has no branch" },
-      { status: 403 }
-    );
-  const check = await validateProgressAccess(supabase, user, params.id);
-  if (!check.allowed)
-    return NextResponse.json({ error: check.error }, { status: check.status });
 
-  const progressId = params?.id;
-  if (!progressId)
-    return NextResponse.json({ error: "Invalid id" }, { status: 422 });
+  const authErr = await checkAuthAndAccess(supabase, user, params.id, "delete");
+  if (authErr) return NextResponse.json(authErr, { status: authErr.status });
 
-  // Ambil row lama dulu agar tahu key file
-  const { data: oldRow, error: getErr } = await supabase.rpc(
-    "fn_renovasi_get",
-    {
-      p_user_id: user.id,
-      p_branch_id: user.branch_id,
-      p_progress_kplt_id: progressId,
-    }
-  );
-  if (getErr) {
-    const status = (getErr as any)?.code === "22023" ? 404 : 500;
-    return NextResponse.json(
-      { error: "Failed to load Renovasi", detail: getErr.message ?? getErr },
-      { status }
-    );
-  }
-  if (!oldRow)
-    return NextResponse.json({ error: "Renovasi not found" }, { status: 404 });
-
-  const { data, error } = await supabase.rpc("fn_renovasi_delete", {
-    p_user_id: user.id,
-    p_branch_id: user.branch_id,
-    p_progress_kplt_id: progressId,
+  // Get Old Data
+  const { data: oldRow } = await supabase.rpc("fn_renovasi_get", {
+    p_user_id: user!.id,
+    p_branch_id: user!.branch_id,
+    p_progress_kplt_id: params.id,
   });
 
-  if (error) {
-    const status = (error as any)?.code === "22023" ? 409 : 500;
-    return NextResponse.json(
-      { error: "Failed to delete Renovasi", detail: error.message ?? error },
-      { status }
-    );
-  }
+  // Execute Delete
+  const { data, error } = await supabase.rpc("fn_renovasi_delete", {
+    p_user_id: user!.id,
+    p_branch_id: user!.branch_id,
+    p_progress_kplt_id: params.id,
+  });
 
-  // Hapus file Storage (best-effort)
-  const prev = (oldRow as any)?.[FILE_FIELD];
-  if (typeof prev === "string" && prev) await removeKeys(supabase, [prev]);
+  if (error) return handleCommonError(error, "RENOVASI_DELETE");
+
+  // Cleanup File
+  if (oldRow) {
+    const keys = FILE_FIELDS.map((f) => (oldRow as any)[f]).filter(Boolean);
+    await removeFiles(supabase, keys);
+  }
 
   return NextResponse.json({ data }, { status: 200 });
 }

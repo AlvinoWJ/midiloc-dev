@@ -161,7 +161,7 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
   const md = user.app_metadata || {};
 
   // (Sesuaikan dengan field yang Anda simpan di SQL Trigger)
-  if (md.role_nama && md.position_nama && md.branch_nama) {
+  if (md.role_nama && md.position_nama && md.branch_nama && md.nama) {
     // Casting type aman untuk data dari metadata
     const roleNama = (md.role_nama as string).toLowerCase();
     const positionNama = (md.position_nama as string).toLowerCase();
@@ -172,7 +172,7 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
     return {
       id: uid,
       email: user.email ?? null,
-      nama: user.user_metadata?.nama ?? null,
+      nama: user.user_metadata?.name ?? null,
 
       // Data Cabang
       branch_id: branchId,
