@@ -48,11 +48,35 @@ export async function PATCH(
     if (error) {
       // Handle Specific Business Logic Errors
       const msg = (error.message || "").toLowerCase();
-      if (msg.includes("prerequisite")) {
+      if (msg.includes("must be 100") || msg.includes("plan_renov")) {
         return NextResponse.json(
           {
             error: "Precondition Failed",
-            message: "Syarat Notaris belum terpenuhi",
+            message:
+              "Approval Gagal: Progress Plan & Realisasi Renovasi wajib 100% sebelum diselesaikan.",
+          },
+          { status: 422 }
+        );
+      }
+
+      // Handle Prerequisite (Notaris belum selesai)
+      if (msg.includes("prerequisite") || msg.includes("notaris")) {
+        return NextResponse.json(
+          {
+            error: "Precondition Failed",
+            message: "Syarat Tahap Notaris belum terpenuhi (Harus Selesai).",
+          },
+          { status: 422 }
+        );
+      }
+
+      // Handle Field Wajib Lainnya
+      if (msg.includes("required fields") || msg.includes("missing")) {
+        return NextResponse.json(
+          {
+            error: "Incomplete Data",
+            message:
+              "Data belum lengkap. Mohon isi semua field wajib renovasi.",
           },
           { status: 422 }
         );
