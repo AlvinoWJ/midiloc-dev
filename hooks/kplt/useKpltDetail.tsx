@@ -4,10 +4,12 @@ import useSWR from "swr";
 import { KpltBaseUIMapped, KpltBaseData } from "@/types/common";
 
 // =========================================================================
-// DEFINISI TIPE BARU UNTUK API DETAIL KPLT
+// 1. TYPE DEFINITIONS (Definisi Tipe Data)
 // =========================================================================
 
-// --- Tipe baru untuk detail masing-masing approval ---
+/**
+ * Struktur data untuk riwayat approval individual.
+ */
 export type ApprovalDetail = {
   id: string;
   kplt_id: string;
@@ -18,16 +20,25 @@ export type ApprovalDetail = {
   position_nama: string;
 };
 
-// --- Tipe baru untuk ringkasan approval per peran ---
+/**
+ * Struktur data untuk ringkasan approval berdasarkan peran (BM, GM, RM).
+ */
 export type ApprovalSummaryDetail = {
   approved_at: string;
   approved_by: string;
   is_approved: boolean;
 };
 
+/**
+ * KpltDetailData
+ * --------------
+ * Representasi RAW data KPLT yang diterima langsung dari API Backend.
+ * Menggunakan format snake_case sesuai database.
+ */
 export type KpltDetailData = KpltBaseData & {
   id: string;
   ulok_id: string;
+
   // --- Data Analitis & Skor ---
   apc: number;
   spd: number;
@@ -37,7 +48,8 @@ export type KpltDetailData = KpltBaseData & {
   pe_rab: number;
   sosial_ekonomi: string;
   karakter_lokasi: string;
-  // --- Nama File ---
+
+  // --- Nama File (Path mentah dari DB) ---
   pdf_kks: string | null;
   excel_pe: string | null;
   pdf_foto: string | null;
@@ -49,16 +61,22 @@ export type KpltDetailData = KpltBaseData & {
   video_360_siang: string | null;
   video_traffic_malam: string | null;
   video_traffic_siang: string | null;
-  // --- Data INTIP & Form Ukur dari KPLT ---
+
+  // --- Data INTIP & Form Ukur ---
   approval_intip: string | null;
   tanggal_approval_intip: string | null;
   file_intip: string | null;
   tanggal_ukur: string | null;
   form_ukur: string | null;
+
+  // --- Metadata ---
   updated_at: string | null;
   updated_by: string | null;
 };
 
+/**
+ * Struktur Response JSON lengkap dari API Detail KPLT.
+ */
 export type KpltDetailApiResponse = {
   kplt: KpltDetailData;
   approvals: ApprovalDetail[];
@@ -71,6 +89,12 @@ export type KpltDetailApiResponse = {
 
 export type ApprovalsSummary = KpltDetailApiResponse["approvals_summary"];
 
+/**
+ * MappedKpltDetail
+ * ----------------
+ * View Model: Struktur data yang sudah diproses untuk UI.
+ * Mengelompokkan field agar komponen UI lebih bersih membacanya.
+ */
 export type MappedKpltDetail = {
   base: KpltBaseUIMapped & {
     approvalIntipStatus: string | null;
@@ -99,8 +123,13 @@ export type MappedKpltDetail = {
 };
 
 // =========================================================================
-// FUNGSI FETCHER UNTUK SWR
+// 2. ERROR HANDLING & FETCHER
 // =========================================================================
+
+/**
+ * Custom Error Class untuk menangani response non-200 dari API.
+ * Menyimpan info error tambahan dari body response JSON.
+ */
 class FetchError extends Error {
   info: any;
   status: number;
@@ -113,11 +142,15 @@ class FetchError extends Error {
   }
 }
 
+/**
+ * Wrapper fetch standar untuk SWR.
+ * Melempar FetchError jika status code >= 400.
+ */
 const fetcher = async (url: string) => {
   const res = await fetch(url);
   if (!res.ok) {
     const errorInfo = await res.json();
-    throw new FetchError( // Gunakan class yang baru didefinisikan
+    throw new FetchError(
       "An error occurred while fetching the data.",
       errorInfo,
       res.status
@@ -127,8 +160,14 @@ const fetcher = async (url: string) => {
 };
 
 // =========================================================================
-// FUNGSI MAPPING BARU
+// 3. MAPPING LOGIC (Backend Data -> UI Data)
 // =========================================================================
+
+/**
+ * Fungsi transformasi data.
+ * Mengubah data mentah API menjadi struktur yang siap dipakai komponen React.
+ * Menangani formatting tanggal, URL file, dan logika bisnis tambahan.
+ */
 function mapKpltDetailResponse(
   data: KpltDetailApiResponse | undefined
 ): MappedKpltDetail | undefined {
@@ -137,8 +176,12 @@ function mapKpltDetailResponse(
   const { kplt, approvals, approvals_summary } = data;
   const kpltId = kplt.id;
 
+  // Clone array approval agar tidak memutasi data asli
   const allApprovals = [...approvals];
 
+  // --- Logic Tambahan: GM Approval ---
+  // Jika status KPLT sudah OK/NOK, kita asumsikan GM sudah melakukan approval
+  // dan kita buatkan object approval buatan untuk ditampilkan di UI timeline.
   if (kplt.kplt_approval === "OK" || kplt.kplt_approval === "NOK") {
     const isGmApproved = kplt.kplt_approval === "OK";
 
@@ -154,6 +197,7 @@ function mapKpltDetailResponse(
     allApprovals.push(gmApproval);
   }
 
+  // --- Helper: Format Tanggal (DD/MM/YYYY) ---
   const formatDisplayDate = (isoDate: string | null) => {
     if (!isoDate) return null;
     try {
@@ -163,10 +207,11 @@ function mapKpltDetailResponse(
         year: "numeric",
       });
     } catch {
-      return null; // Return null jika tanggal tidak valid
+      return null;
     }
   };
 
+  // --- Helper: Format Tanggal Panjang (DD MMMM YYYY) ---
   const formatTanggal = (tanggalISO: string | null): string => {
     if (!tanggalISO) return "-";
     return new Date(tanggalISO).toLocaleDateString("id-ID", {
@@ -176,12 +221,16 @@ function mapKpltDetailResponse(
     });
   };
 
+  // --- Helper: Generate URL File ---
+  // Mengubah path file mentah menjadi URL API endpoint yang bisa diakses/download.
+  // Menghapus prefix "file_storage/" jika ada.
   const createFileDisplayUrl = (filePath: string | null): string | null => {
     if (!filePath) return null;
     const cleanPath = filePath.replace(/^file_storage\//, "");
     return `/api/kplt/${kpltId}/files?path=${encodeURIComponent(cleanPath)}`;
   };
 
+  // --- Return Mapped Object ---
   return {
     base: {
       namaKplt: kplt.nama_kplt,
@@ -203,7 +252,7 @@ function mapKpltDetailResponse(
       bentukObjek: kplt.bentuk_objek,
       jumlahLantai: kplt.jumlah_lantai,
       isActive: kplt.is_active,
-      formUlok: kplt.form_ulok ? `/api/ulok/${kplt.ulok_id}/form-ulok` : null, // Asumsi ini benar
+      formUlok: kplt.form_ulok ? `/api/ulok/${kplt.ulok_id}/form-ulok` : null,
       approvalIntipStatus: kplt.approval_intip ?? null,
       tanggalApprovalIntip: formatDisplayDate(kplt.tanggal_approval_intip),
       fileIntipUrl: createFileDisplayUrl(kplt.file_intip),
@@ -240,7 +289,18 @@ function mapKpltDetailResponse(
   };
 }
 
+// =========================================================================
+// 4. MAIN HOOK
+// =========================================================================
+
+/**
+ * useKpltDetail Hook
+ * ------------------
+ * Hook utama untuk mengambil data detail KPLT.
+ * @param id - ID KPLT yang akan diambil.
+ */
 export function useKpltDetail(id: string | undefined) {
+  // Conditional Fetching: Jika ID tidak ada, key menjadi null (SWR pause)
   const key = id ? `/api/kplt/${id}` : null;
 
   const {
@@ -249,14 +309,16 @@ export function useKpltDetail(id: string | undefined) {
     isLoading,
     mutate,
   } = useSWR<KpltDetailApiResponse>(key, fetcher);
+
+  // Lakukan mapping data sebelum dikembalikan ke komponen
   const data = mapKpltDetailResponse(rawData);
 
   return {
-    data,
-    rawData,
+    data, // Data yang sudah diproses (Mapped)
+    rawData, // Data mentah (jika komponen butuh akses langsung)
     isLoading,
     isError: !!error,
     error,
-    mutate,
+    mutate, // Fungsi untuk me-refresh data manual
   };
 }

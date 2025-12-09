@@ -1,4 +1,3 @@
-// components/ui/progress_kplt/RenovasiHistoryModal.tsx
 "use client";
 
 import React, { useState, useMemo, useEffect } from "react";
@@ -10,7 +9,7 @@ import {
   FileText,
   LinkIcon,
   ArrowLeft,
-  Gavel, // Ganti ikon
+  Gavel, // Ikon untuk header (bisa disesuaikan jika ingin ikon lain untuk Renovasi, misal: Hammer/Construction)
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,6 +17,12 @@ import {
   RenovasiHistoryItem,
 } from "@/hooks/progress_kplt/useRenovasiHistory";
 
+// --- Utility Functions ---
+
+/**
+ * Format tanggal lengkap (Hari, Bulan, Tahun, Jam, Menit).
+ * Digunakan untuk header item di timeline.
+ */
 const formatDate = (dateString: string) => {
   if (!dateString) return "-";
   try {
@@ -33,6 +38,10 @@ const formatDate = (dateString: string) => {
   }
 };
 
+/**
+ * Format tanggal ringkas (Hanya tanggal).
+ * Digunakan untuk menampilkan nilai field tanggal.
+ */
 const formatDateOnly = (dateString?: string | null) =>
   dateString
     ? new Date(dateString).toLocaleDateString("id-ID", {
@@ -42,10 +51,15 @@ const formatDateOnly = (dateString?: string | null) =>
       })
     : "-";
 
+/**
+ * Logika Diffing: Membandingkan snapshot data Renovasi saat ini vs sebelumnya.
+ * Menghasilkan array string deskripsi perubahan.
+ */
 function getChanges(
   current: RenovasiHistoryItem["data"],
   previous: RenovasiHistoryItem["data"] | null
 ): string[] {
+  // Jika history pertama, anggap inisialisasi
   if (!previous) {
     return ["Mencatat data awal."];
   }
@@ -53,6 +67,7 @@ function getChanges(
   const changes: string[] = [];
   const allKeys = new Set([...Object.keys(current), ...Object.keys(previous)]);
 
+  // Mapping field database ke Label UI yang user-friendly
   const fieldLabels: Record<string, string> = {
     kode_store: "Kode Store",
     tipe_toko: "Tipe Toko",
@@ -69,6 +84,7 @@ function getChanges(
   };
 
   allKeys.forEach((key) => {
+    // Abaikan field metadata
     if (
       key.startsWith("final_status") ||
       key.startsWith("tgl_selesai") ||
@@ -81,6 +97,7 @@ function getChanges(
     const currentVal = current[key];
     const previousVal = previous[key];
 
+    // Deteksi perubahan nilai
     if (currentVal !== previousVal) {
       const label = fieldLabels[key] || key;
       if (!previousVal) {
@@ -100,6 +117,9 @@ interface RenovasiItemProps {
   onSelect: () => void;
 }
 
+/**
+ * Komponen Item pada List Riwayat (Timeline).
+ */
 const HistoryItem: React.FC<RenovasiItemProps> = ({
   item,
   previousItem,
@@ -107,8 +127,11 @@ const HistoryItem: React.FC<RenovasiItemProps> = ({
 }) => {
   const currentStatus = item.data?.final_status_renov;
   const prevStatus = previousItem?.data?.final_status_renov;
+
+  // Hitung perubahan
   const dataChanges = getChanges(item.data, previousItem?.data || null);
 
+  // Cek perubahan status final
   let statusChangeElement: React.ReactNode = null;
   if (currentStatus !== prevStatus) {
     statusChangeElement = (
@@ -142,6 +165,7 @@ const HistoryItem: React.FC<RenovasiItemProps> = ({
   );
 };
 
+// Helper: Menampilkan Label & Value di Detail View
 const DetailField: React.FC<{ label: string; value: React.ReactNode }> = ({
   label,
   value,
@@ -154,7 +178,7 @@ const DetailField: React.FC<{ label: string; value: React.ReactNode }> = ({
   </div>
 );
 
-// Komponen read-only untuk file
+// Helper: Menampilkan Link Download File (Read-Only)
 const FileLink: React.FC<{
   label: string;
   fileKey: string | null | undefined;
@@ -195,6 +219,10 @@ const FileLink: React.FC<{
   );
 };
 
+/**
+ * Tampilan Detail Snapshot (Halaman 2 Modal).
+ * Menampilkan seluruh data Renovasi pada satu titik waktu.
+ */
 const HistoryDetailView: React.FC<{
   item: RenovasiHistoryItem;
   progressId: string;
@@ -232,7 +260,7 @@ const HistoryDetailView: React.FC<{
           </p>
         </div>
 
-        {/* Data Fields */}
+        {/* Data Fields Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <DetailField label="Kode Store" value={data.kode_store} />
           <DetailField label="Tipe Toko" value={data.tipe_toko} />
@@ -264,7 +292,7 @@ const HistoryDetailView: React.FC<{
           />
         </div>
 
-        {/* Dokumen */}
+        {/* Dokumen Section */}
         <div className="space-y-3">
           <h3 className="font-semibold text-gray-600 text-sm mb-2">Dokumen</h3>
           <FileLink
@@ -283,12 +311,17 @@ interface HistoryModalProps {
   onClose: () => void;
 }
 
+/**
+ * Komponen Utama: RenovasiHistoryModal
+ * Mengelola state fetching dan tampilan modal.
+ */
 export function RenovasiHistoryModal({
   progressId,
   onClose,
 }: HistoryModalProps) {
   const { history, isLoading, isError, refetch } =
     useRenovasiHistory(progressId);
+  // State untuk menyimpan item yang sedang dilihat detailnya
   const [selectedItem, setSelectedItem] = useState<RenovasiHistoryItem | null>(
     null
   );
@@ -297,6 +330,7 @@ export function RenovasiHistoryModal({
     refetch();
   }, [refetch]);
 
+  // Urutkan history secara kronologis (Lama -> Baru) untuk keperluan diffing
   const sortedHistory = useMemo(() => {
     if (!Array.isArray(history)) return [];
     return [...history].sort(
@@ -305,7 +339,9 @@ export function RenovasiHistoryModal({
     );
   }, [history]);
 
+  // Render content switcher (List vs Detail)
   const renderContent = () => {
+    // Tampilkan Detail View
     if (selectedItem) {
       return (
         <HistoryDetailView
@@ -316,6 +352,7 @@ export function RenovasiHistoryModal({
       );
     }
 
+    // Tampilkan List View
     return (
       <>
         {/* Header Modal */}
@@ -354,6 +391,7 @@ export function RenovasiHistoryModal({
           ) : (
             <div className="flow-root">
               <div className="-mb-4">
+                {/* Render list terbalik (Baru -> Lama) */}
                 {[...sortedHistory].reverse().map((item, index, arr) => {
                   const previousItem = arr[index + 1] || null;
                   return (
@@ -372,6 +410,9 @@ export function RenovasiHistoryModal({
       </>
     );
   };
+
+  // Render Portal
+  if (typeof document === "undefined") return null;
 
   return createPortal(
     <div className="fixed inset-0 bg-gradient-to-br from-black/70 via-black/60 to-black/70 backdrop-blur-sm flex justify-center items-center z-50 p-4 animate-in fade-in duration-200">

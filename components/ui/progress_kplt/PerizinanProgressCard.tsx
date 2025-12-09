@@ -1,8 +1,7 @@
-// components/ui/progress_kplt/PerizinanProgressCard.tsx
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { usePerizinanProgress } from "@/hooks/progress_kplt/usePerizinanProgreess";
+import { usePerizinanProgress } from "@/hooks/progress_kplt/usePerizinanProgress";
 import { useFile, ApiFile } from "@/hooks/progress_kplt/useFilesProgress";
 import {
   Loader2,
@@ -21,6 +20,9 @@ import { useAlert } from "@/components/shared/alertcontext";
 import { PerizinanHistoryModal } from "./PerizinanHistoryModal";
 import { useUser } from "@/hooks/useUser";
 
+/**
+ * Helper: Format angka ke format ribuan Indonesia (1.000.000)
+ */
 const formatnumeric = (value: string | number | undefined | null) => {
   if (value === undefined || value === null || value === "") return "";
   const numberValue =
@@ -31,6 +33,9 @@ const formatnumeric = (value: string | number | undefined | null) => {
   return new Intl.NumberFormat("id-ID").format(numberValue);
 };
 
+/**
+ * Helper: Hapus format ribuan untuk kalkulasi/API (1000000)
+ */
 const unformatnumeric = (value: string | undefined | null) => {
   if (!value) return undefined;
   const unformatted = value.replace(/\./g, "");
@@ -38,6 +43,9 @@ const unformatnumeric = (value: string | undefined | null) => {
   return isNaN(numberValue) ? undefined : numberValue;
 };
 
+/**
+ * Komponen UI Wrapper untuk Kartu Detail
+ */
 const DetailCard = ({
   title,
   icon,
@@ -65,6 +73,9 @@ const DetailCard = ({
   </div>
 );
 
+/**
+ * Komponen UI untuk Link File Download
+ */
 const FileLink = ({
   label,
   file,
@@ -97,6 +108,9 @@ const FileLink = ({
   );
 };
 
+/**
+ * Komponen Input File reusable untuk Form
+ */
 const FormFileInput: React.FC<{
   label: string;
   name: string;
@@ -133,6 +147,10 @@ interface FormProps {
   filesMap: Map<string, ApiFile>;
 }
 
+/**
+ * Komponen Form: PerizinanForm
+ * Menangani input data (OSS, SPH, SPK, dll) dan multiple file upload.
+ */
 const PerizinanForm: React.FC<FormProps> = ({
   progressId,
   onSuccess,
@@ -144,14 +162,17 @@ const PerizinanForm: React.FC<FormProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { showToast } = useAlert();
 
+  // State untuk file uploads
   const [fileSph, setFileSph] = useState<File | null>(null);
   const [fileSt, setFileSt] = useState<File | null>(null);
   const [fileDenah, setFileDenah] = useState<File | null>(null);
   const [fileSpk, setFileSpk] = useState<File | null>(null);
   const [fileNotaris, setFileNotaris] = useState<File | null>(null);
 
+  // State tampilan angka (Formatted)
   const [displayNominalSph, setDisplayNominalSph] = useState<string>("");
 
+  // State lokal untuk Select inputs
   const [oss, setoss] = useState<string>(initialData?.oss || "");
   const [statusBerkas, setStatusBerkas] = useState<string>(
     initialData?.status_berkas || ""
@@ -168,6 +189,7 @@ const PerizinanForm: React.FC<FormProps> = ({
 
   const StatusOptions = ["Belum", "Selesai", "Batal"];
 
+  // Sinkronisasi data awal saat mode edit aktif
   useEffect(() => {
     if (initialData) {
       setDisplayNominalSph(formatnumeric(initialData.nominal_sph));
@@ -179,6 +201,7 @@ const PerizinanForm: React.FC<FormProps> = ({
     }
   }, [initialData]);
 
+  // Handler input angka (hanya digit)
   const handleNumericInputChange = (
     e: React.ChangeEvent<HTMLInputElement>,
     setter: React.Dispatch<React.SetStateAction<string>>
@@ -190,30 +213,37 @@ const PerizinanForm: React.FC<FormProps> = ({
     setter(formatnumeric(rawValue));
   };
 
+  /**
+   * Handler Simpan Data (Drafting)
+   */
   const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
 
     const formData = new FormData(e.currentTarget);
 
+    // Append files jika user memilih file baru
     if (fileSph) formData.append("file_sph", fileSph);
     if (fileSt) formData.append("file_bukti_st", fileSt);
     if (fileDenah) formData.append("file_denah", fileDenah);
     if (fileSpk) formData.append("file_spk", fileSpk);
     if (fileNotaris) formData.append("file_rekom_notaris", fileNotaris);
 
+    // Append select values
     formData.append("oss", oss);
     formData.append("status_berkas", statusBerkas);
     formData.append("status_gambar_denah", statusGambarDenah);
     formData.append("status_spk", statusSpk);
     formData.append("rekom_notaris_vendor", rekomNotarisVendor);
 
+    // Format ulang nominal sebelum validasi & kirim
     const nominalSphUnformatted = unformatnumeric(displayNominalSph);
     formData.set(
       "nominal_sph",
       nominalSphUnformatted !== undefined ? String(nominalSphUnformatted) : ""
     );
 
+    // Payload object untuk validasi Zod
     const payload = {
       oss: oss || undefined,
       tgl_oss: formData.get("tgl_oss"),
@@ -243,7 +273,7 @@ const PerizinanForm: React.FC<FormProps> = ({
       const method = initialData ? "PATCH" : "POST";
       const res = await fetch(`/api/progress/${progressId}/perizinan`, {
         method,
-        body: formData,
+        body: formData, // Kirim sebagai multipart/form-data
       });
 
       const json = await res.json();
@@ -280,7 +310,7 @@ const PerizinanForm: React.FC<FormProps> = ({
     >
       <form onSubmit={handleSave} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* OSS */}
+          {/* OSS Section */}
           <div>
             <label
               htmlFor="tgl_oss"
@@ -306,7 +336,7 @@ const PerizinanForm: React.FC<FormProps> = ({
             onChange={(e) => setoss(e.target.value)}
           />
 
-          {/* 1. Tanggal SPH - Nominal SPH */}
+          {/* SPH Section */}
           <div>
             <label
               htmlFor="tgl_sph"
@@ -340,7 +370,7 @@ const PerizinanForm: React.FC<FormProps> = ({
             />
           </div>
 
-          {/* 2. Tanggal ST - Status Berkas */}
+          {/* ST Berkas Section */}
           <div>
             <label
               htmlFor="tgl_st_berkas"
@@ -365,7 +395,7 @@ const PerizinanForm: React.FC<FormProps> = ({
             onChange={(e) => setStatusBerkas(e.target.value)}
           />
 
-          {/* 3. Tanggal Denah - Status Gambar Denah */}
+          {/* Denah Section */}
           <div>
             <label
               htmlFor="tgl_gambar_denah"
@@ -390,7 +420,7 @@ const PerizinanForm: React.FC<FormProps> = ({
             onChange={(e) => setStatusGambarDenah(e.target.value)}
           />
 
-          {/* 4. Tanggal SPK - Status SPK */}
+          {/* SPK Section */}
           <div>
             <label
               htmlFor="tgl_spk"
@@ -415,7 +445,7 @@ const PerizinanForm: React.FC<FormProps> = ({
             onChange={(e) => setStatusSpk(e.target.value)}
           />
 
-          {/* 5. Tanggal Rekom Notaris - Rekom Notaris Vendor */}
+          {/* Rekom Notaris Section */}
           <div>
             <label
               htmlFor="tgl_rekom_notaris"
@@ -441,7 +471,7 @@ const PerizinanForm: React.FC<FormProps> = ({
           />
         </div>
 
-        {/* File Inputs Moved to Bottom */}
+        {/* File Inputs (Grouped at Bottom) */}
         <div className="space-y-4 pt-4 border-t border-gray-100">
           <div className="space-y-4">
             <FormFileInput
@@ -482,6 +512,7 @@ const PerizinanForm: React.FC<FormProps> = ({
           </div>
         </div>
 
+        {/* Action Buttons */}
         <div className="flex justify-end gap-3 mt-6">
           {onCancelEdit && (
             <Button
@@ -518,11 +549,16 @@ interface PerizinanProgressCardProps {
   onDataUpdate: () => void;
 }
 
+/**
+ * Komponen Utama: PerizinanProgressCard
+ * Mengatur View Mode, Edit Mode, Approval Final, dan History.
+ */
 const PerizinanProgressCard: React.FC<PerizinanProgressCardProps> = ({
   progressId,
   onDataUpdate,
 }) => {
   const { data, loading, error, refetch } = usePerizinanProgress(progressId);
+  // Fetch semua file terkait perizinan
   const {
     filesMap,
     loading: loadingFiles,
@@ -539,6 +575,7 @@ const PerizinanProgressCard: React.FC<PerizinanProgressCardProps> = ({
   const { user } = useUser();
   const isBranchAdmin = user?.position_nama === "admin branch";
 
+  // Formatter tanggal
   const formatDate = (dateString?: string | null) =>
     dateString
       ? new Date(dateString).toLocaleDateString("id-ID", {
@@ -548,6 +585,10 @@ const PerizinanProgressCard: React.FC<PerizinanProgressCardProps> = ({
         })
       : "-";
 
+  /**
+   * Handler Finalisasi (Approval)
+   * Mengubah status final menjadi Selesai atau Batal.
+   */
   const handleFinalizeIT = async (status: "Selesai" | "Batal") => {
     const actionText = status === "Selesai" ? "submit" : "batalkan";
     const actionTitle = status === "Selesai" ? "Submit" : "Pembatalan";
@@ -616,6 +657,7 @@ const PerizinanProgressCard: React.FC<PerizinanProgressCardProps> = ({
     }
   };
 
+  /* --- KONDISI LOADING & ERROR --- */
   if (loading || loadingFiles)
     return (
       <div className="flex justify-center py-10 mt-8 w-full ">
@@ -630,6 +672,7 @@ const PerizinanProgressCard: React.FC<PerizinanProgressCardProps> = ({
       </div>
     );
 
+  /* --- KONDISI EDIT MODE --- */
   if (!data || isEditing)
     return (
       <div className="w-full ">
@@ -652,6 +695,7 @@ const PerizinanProgressCard: React.FC<PerizinanProgressCardProps> = ({
     data.final_status_perizinan === "Selesai" ||
     data.final_status_perizinan === "Batal";
 
+  /* --- KONDISI VIEW MODE (Read Only) --- */
   return (
     <div className="w-full ">
       <DetailCard
@@ -671,7 +715,7 @@ const PerizinanProgressCard: React.FC<PerizinanProgressCardProps> = ({
       >
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* OSS */}
+            {/* View Fields: OSS */}
             <div>
               <h3 className="block font-semibold text-base lg:text-lg mb-2">
                 Tanggal OSS
@@ -689,7 +733,7 @@ const PerizinanProgressCard: React.FC<PerizinanProgressCardProps> = ({
               </div>
             </div>
 
-            {/* SPH - Nominal */}
+            {/* View Fields: SPH */}
             <div>
               <h3 className="block font-semibold text-base lg:text-lg mb-2">
                 Tanggal SPH
@@ -707,7 +751,7 @@ const PerizinanProgressCard: React.FC<PerizinanProgressCardProps> = ({
               </div>
             </div>
 
-            {/* ST - Status Berkas */}
+            {/* View Fields: ST Berkas */}
             <div>
               <h3 className="block font-semibold text-base lg:text-lg mb-2">
                 Tanggal ST
@@ -725,7 +769,7 @@ const PerizinanProgressCard: React.FC<PerizinanProgressCardProps> = ({
               </div>
             </div>
 
-            {/* Denah - Status Denah */}
+            {/* View Fields: Denah */}
             <div>
               <h3 className="font-semibold  mb-2">Tanggal Denah</h3>
               <div className="bg-gray-100 px-4 py-2 rounded-md">
@@ -741,6 +785,7 @@ const PerizinanProgressCard: React.FC<PerizinanProgressCardProps> = ({
               </div>
             </div>
 
+            {/* View Fields: SPK */}
             <div>
               <h3 className="block font-semibold text-base lg:text-lg mb-2">
                 Tanggal SPK
@@ -758,6 +803,7 @@ const PerizinanProgressCard: React.FC<PerizinanProgressCardProps> = ({
               </div>
             </div>
 
+            {/* View Fields: Rekom Notaris */}
             <div>
               <h3 className="block font-semibold text-base lg:text-lg mb-2">
                 Tanggal Rekom Notaris
@@ -776,7 +822,7 @@ const PerizinanProgressCard: React.FC<PerizinanProgressCardProps> = ({
             </div>
           </div>
 
-          {/* Files List Moved to Bottom */}
+          {/* Files View List */}
           <div className="pt-4 border-t border-gray-100">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
               Dokumen Pendukung
@@ -825,9 +871,9 @@ const PerizinanProgressCard: React.FC<PerizinanProgressCardProps> = ({
           </div>
         </div>
 
+        {/* Action Buttons: Muncul jika admin branch & belum final */}
         {!isFinalized && isBranchAdmin && (
           <div className="flex gap-3 mt-6">
-            {/* Tombol Edit */}
             <Button
               variant="secondary"
               onClick={() => setIsEditing(true)}
@@ -837,7 +883,6 @@ const PerizinanProgressCard: React.FC<PerizinanProgressCardProps> = ({
               <Pencil className="mr-2" size={16} /> Edit
             </Button>
 
-            {/* Tombol Batal */}
             <Button
               variant="default"
               onClick={() => handleFinalizeIT("Batal")}
@@ -851,7 +896,6 @@ const PerizinanProgressCard: React.FC<PerizinanProgressCardProps> = ({
               Batal
             </Button>
 
-            {/* Tombol Submit */}
             <Button
               type="submit"
               variant="submit"
@@ -862,12 +906,14 @@ const PerizinanProgressCard: React.FC<PerizinanProgressCardProps> = ({
                 <Loader2 className="animate-spin" size={16} />
               ) : (
                 <CheckCircle className="mr-2" size={16} />
-              )}
+              )}{" "}
               Submit
             </Button>
           </div>
         )}
       </DetailCard>
+
+      {/* Modal History */}
       {showHistoryModal && (
         <PerizinanHistoryModal
           progressId={progressId}

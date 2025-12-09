@@ -9,11 +9,24 @@ interface UseAddUlokFormProps {
   isSubmitting: boolean;
 }
 
+/**
+ * Custom Hook: useAddUlokForm
+ * ---------------------------
+ * Mengelola state dan logika bisnis untuk form penambahan ULOK baru.
+ * Fitur:
+ * - State Management form data
+ * - Validasi manual & schema (Zod)
+ * - Formatting input angka (ID locale)
+ * - Integrasi dengan modal peta
+ * - Reset bertingkat untuk dropdown wilayah
+ */
 export function useAddUlokForm({
   onSubmit,
   isSubmitting,
 }: UseAddUlokFormProps) {
   const { showConfirmation, showToast } = useAlert();
+
+  // Initial State Form
   const [formData, setFormData] = useState({
     namaUlok: "",
     provinsi: "",
@@ -21,7 +34,7 @@ export function useAddUlokForm({
     kecamatan: "",
     kelurahan: "",
     alamat: "",
-    latlong: "",
+    latlong: "", // String format "lat, long"
     formatStore: "",
     bentukObjek: "",
     alasHak: "",
@@ -32,29 +45,36 @@ export function useAddUlokForm({
     hargasewa: "",
     namapemilik: "",
     kontakpemilik: "",
-    formulok: null as File | null,
+    formulok: null as File | null, // File upload
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [isMapOpen, setIsMapOpen] = useState(false);
+  const [isMapOpen, setIsMapOpen] = useState(false); // Kontrol modal peta
 
+  // Helper cek apakah string adalah angka valid
   const isNumber = (val: string) => {
     if (!val) return false;
     const normalized = val.replace(",", ".");
     return !isNaN(Number(normalized));
   };
 
+  /**
+   * Handler Input Text & Numeric
+   * Menangani formatting khusus untuk field angka (ribuan titik, desimal koma).
+   */
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
     >
   ) => {
     const { name, value } = e.target;
+
+    // 1. Handling Angka dengan Desimal (Lebar, Panjang, Luas)
     if (["lebardepan", "panjang", "luas"].includes(name)) {
-      // Hapus semua titik (pemisah ribuan) terlebih dahulu
+      // Hapus titik ribuan lama
       let cleanValue = value.replace(/\./g, "");
 
-      // Hanya izinkan angka dan koma
+      // Hanya izinkan angka dan satu koma
       let filtered = cleanValue.replace(/[^0-9,]/g, "");
 
       // Cegah multiple koma
@@ -67,14 +87,18 @@ export function useAddUlokForm({
       return;
     }
 
+    // 2. Handling Angka Bulat (Lantai, Harga Sewa)
     if (name === "jumlahlantai" || name === "hargasewa") {
-      // Hapus semua karakter non-digit (termasuk titik dan koma)
+      // Hapus semua karakter non-digit
       const numericOnly = value.replace(/[^0-9]/g, "");
       setFormData((prev) => ({ ...prev, [name]: numericOnly }));
       return;
     }
 
+    // 3. Default Handler (Text biasa)
     setFormData((prev) => ({ ...prev, [name]: value }));
+
+    // Clear error saat user mengetik ulang
     if (errors[name]) {
       setErrors((prev) => {
         const newErrors = { ...prev };
@@ -84,6 +108,9 @@ export function useAddUlokForm({
     }
   };
 
+  /**
+   * Handler Input File
+   */
   const handleFileChange = (file: File | null) => {
     setFormData((prev) => ({ ...prev, formulok: file }));
     if (errors["formulok"]) {
@@ -95,8 +122,13 @@ export function useAddUlokForm({
     }
   };
 
+  /**
+   * Handler Dropdown Wilayah (Cascading Dropdown)
+   * Saat parent berubah (misal Provinsi), child (Kabupaten, dll) di-reset.
+   */
   const handleWilayahChange = (field: string, name: string) => {
     const updatedData: Record<string, any> = { [field]: name };
+
     if (field === "provinsi") {
       updatedData.kabupaten = "";
       updatedData.kecamatan = "";
@@ -110,6 +142,10 @@ export function useAddUlokForm({
     setFormData((prev) => ({ ...prev, ...updatedData }));
   };
 
+  /**
+   * Callback dari Modal Peta
+   * Mengupdate field latlong dengan format string.
+   */
   const handleMapSelect = (lat: number, lng: number) => {
     setFormData((prev) => ({
       ...prev,
@@ -118,11 +154,14 @@ export function useAddUlokForm({
     setIsMapOpen(false);
   };
 
+  /**
+   * Handler Submit Form
+   */
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
 
-    // --- VALIDASI MANUAL
+    // --- TAHAP 1: VALIDASI MANUAL (Required Fields & File Type) ---
     const requiredFields = {
       namaUlok: "Nama ULOK wajib diisi",
       provinsi: "Provinsi wajib diisi",
@@ -154,7 +193,7 @@ export function useAddUlokForm({
           fieldErrors[field] =
             requiredFields[field as keyof typeof requiredFields];
         } else {
-          // ✅ hanya boleh PDF
+          // Validasi tipe file PDF
           const file = value as File;
           if (file.type !== "application/pdf") {
             fieldErrors[field] = "File harus berupa PDF";
@@ -166,11 +205,12 @@ export function useAddUlokForm({
       }
     });
 
-    // Cek format latlong
+    // Validasi format latlong
     if (formData.latlong && !formData.latlong.includes(",")) {
       fieldErrors.latlong = "Format koordinat harus: latitude,longitude";
     }
 
+    // Validasi numeric (NaN & Positive check)
     const numericFields = [
       "jumlahlantai",
       "lebardepan",
@@ -196,6 +236,7 @@ export function useAddUlokForm({
       return;
     }
 
+    // Helper parser string (format Indo) -> number JS
     const parseNumber = (value: string) => {
       if (!value) return 0;
       const normalized = value.replace(/\./g, "").replace(",", ".");
@@ -203,6 +244,7 @@ export function useAddUlokForm({
       return isNaN(parsed) ? 0 : parsed;
     };
 
+    // Siapkan payload untuk validasi Zod
     const payloadToValidate = {
       nama_ulok: formData.namaUlok,
       provinsi: formData.provinsi,
@@ -225,10 +267,12 @@ export function useAddUlokForm({
       form_ulok: formData.formulok,
     };
 
+    // --- TAHAP 2: VALIDASI ZOD ---
     const result = UlokCreateSchema.safeParse(payloadToValidate);
 
     if (!result.success) {
       const schemaErrors: Record<string, string> = {};
+      // Mapping field schema Zod ke field name Form State
       const schemaFieldMap: Record<string, string> = {
         nama_ulok: "namaulok",
         desa_kelurahan: "kelurahan",
@@ -246,6 +290,7 @@ export function useAddUlokForm({
         kontak_pemilik: "kontakpemilik",
         form_ulok: "formulok",
       };
+
       result.error.issues.forEach((err) => {
         const schemaField = err.path[0] as string;
         const formField = schemaFieldMap[schemaField] || schemaField;
@@ -253,6 +298,7 @@ export function useAddUlokForm({
           schemaErrors[formField] = err.message;
         }
       });
+
       setErrors(schemaErrors);
       showToast({
         type: "error",
@@ -262,6 +308,7 @@ export function useAddUlokForm({
       return;
     }
 
+    // --- TAHAP 3: KONFIRMASI & SUBMIT ---
     const isConfirmed = await showConfirmation({
       title: "Konfirmasi Simpan Data",
       message: "Apakah Anda yakin semua data yang diisi sudah benar?",

@@ -1,547 +1,468 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { UlokCreateSchema } from "@/lib/validations/ulok";
-import { getCurrentUser, canUlok } from "@/lib/auth/acl";
+import {
+  getCurrentUser,
+  canUlok,
+  isRegionalOrAbove,
+  POSITION,
+} from "@/lib/auth/acl";
 import { buildPathByField } from "@/lib/storage/path";
 import { isPdfFile } from "@/utils/fileChecker";
 
-const BUCKET = "file_storage";
-const MAX_PDF_SIZE = 15 * 1024 * 1024; // 15MB
+// ==============================================================================
+// CONFIG & CONSTANTS
+// ==============================================================================
+export const dynamic = "force-dynamic"; // Pastikan route ini tidak di-cache statis
 
-const DEFAULT_LIMIT = 36;
+const STORAGE_BUCKET = "file_storage";
+const UPLOAD_FOLDER = "ulok";
+const MAX_PDF_SIZE_MB = 15;
+const MAX_PDF_SIZE_BYTES = MAX_PDF_SIZE_MB * 1024 * 1024;
+const DEFAULT_PAGE_LIMIT = 36;
+const MAX_PAGE_LIMIT = 100;
 
-// Base64url helpers
-function b64urlEncode(s: string) {
-  return Buffer.from(s)
-    .toString("base64")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
-}
-function b64urlDecode(s: string) {
-  s = s.replace(/-/g, "+").replace(/_/g, "/");
-  const pad = s.length % 4;
-  if (pad) s += "=".repeat(4 - pad);
-  return Buffer.from(s, "base64").toString("utf8");
-}
+// ==============================================================================
+// HELPER FUNCTIONS
+// ==============================================================================
 
-type CursorPayload = { created_at: string; id: string };
-function encodeCursor(p: CursorPayload) {
-  return b64urlEncode(JSON.stringify(p));
-}
-function decodeCursor(c: string): CursorPayload | null {
+/**
+ * Mengubah string base64url menjadi objek cursor.
+ */
+function decodeCursor(encoded?: string | null) {
+  if (!encoded) return null;
   try {
-    const obj = JSON.parse(b64urlDecode(c));
-    if (obj && typeof obj.created_at === "string" && typeof obj.id === "string")
-      return obj;
-    return null;
+    const base = encoded.replace(/-/g, "+").replace(/_/g, "/");
+    const pad = base.padEnd(base.length + ((4 - (base.length % 4)) % 4), "=");
+    const raw = Buffer.from(pad, "base64").toString("utf8");
+    return JSON.parse(raw) as { created_at: string; id: string };
   } catch {
     return null;
   }
 }
 
-function dropForbiddenFields<T extends Record<string, unknown>>(obj: T) {
+/**
+ * Mengubah objek cursor menjadi string base64url.
+ */
+function encodeCursor(payload: { created_at: string; id: string }) {
+  const json = JSON.stringify(payload);
+  return Buffer.from(json, "utf8")
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+}
+
+/**
+ * Membersihkan field object dari properti yang dilarang (security sanitization).
+ */
+function sanitizePayload(raw: Record<string, unknown>) {
   const forbidden = new Set([
+    "id",
+    "created_at",
+    "updated_at",
+    "updated_by",
     "users_id",
     "branch_id",
-    "approval_intip",
-    "tanggal_approval_intip",
-    "file_intip",
+    "is_active",
     "approval_status",
     "approved_at",
     "approved_by",
-    "updated_at",
-    "updated_by",
-    "id",
-    "created_at",
-    "is_active",
-    "form_ulok", // file di-handle terpisah
+    "approval_intip",
+    "tanggal_approval_intip",
+    "file_intip",
+    "form_ulok", // File di-handle terpisah
   ]);
+
   const clean: Record<string, unknown> = {};
-  for (const [k, v] of Object.entries(obj)) {
-    if (!forbidden.has(k)) clean[k] = v;
+  for (const [key, val] of Object.entries(raw)) {
+    if (!forbidden.has(key)) {
+      clean[key] = val;
+    }
   }
   return clean;
 }
 
-function coerceNumbers(raw: Record<string, unknown>) {
-  // Koersi numeric fields dari string → number
-  const numKeys = ["lebar_depan", "panjang", "luas", "harga_sewa"];
-  const intKeys = ["jumlah_lantai"];
+/**
+ * Mengkonversi string numerik dari FormData menjadi tipe number yang valid.
+ */
+function coerceNumericFields(raw: Record<string, unknown>) {
+  const floatFields = ["lebar_depan", "panjang", "luas", "harga_sewa"];
+  const intFields = ["jumlah_lantai"];
 
-  for (const k of numKeys) {
-    if (raw[k] != null) {
-      const s = String(raw[k]).replace(",", ".").trim();
+  for (const key of floatFields) {
+    if (typeof raw[key] === "string" || typeof raw[key] === "number") {
+      const s = String(raw[key]).replace(",", ".").trim();
       const n = s === "" ? NaN : Number(s);
-      raw[k] = Number.isFinite(n) ? n : raw[k];
+      if (Number.isFinite(n)) raw[key] = n;
     }
   }
-  for (const k of intKeys) {
-    if (raw[k] != null) {
-      const s = String(raw[k]).trim();
-      const n = s === "" ? NaN : Number.parseInt(s, 10);
-      raw[k] = Number.isFinite(n) ? n : raw[k];
+
+  for (const key of intFields) {
+    if (typeof raw[key] === "string" || typeof raw[key] === "number") {
+      const s = String(raw[key]).trim();
+      const n = s === "" ? NaN : parseInt(s, 10);
+      if (Number.isFinite(n)) raw[key] = n;
     }
   }
   return raw;
 }
 
-// GET /api/ulok?page=1&limit=10
+// ==============================================================================
+// ROUTE HANDLERS
+// ==============================================================================
 
-export async function GET(request: Request) {
+/**
+ * @route GET /api/ulok
+ * @description Mengambil daftar Usulan Lokasi (ULOK) dengan pagination cursor-based.
+ * @access Private (Memerlukan login & permission 'read')
+ *
+ * @param {string} scope - 'recent' | 'history' | 'all'
+ * @param {string} search - Keyword pencarian nama_ulok
+ * @param {string} after - Cursor untuk halaman selanjutnya
+ * @param {string} before - Cursor untuk halaman sebelumnya
+ * @param {number} year - filter tahun
+ * @param {number} month - filter bulan
+ * @param {number} limit - batas get data
+ */
+export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    // 1. Auth Check
     const user = await getCurrentUser();
-
     if (!user) {
       return NextResponse.json(
-        { success: false, message: "Unauthorized", error: "User must login" },
+        {
+          success: false,
+          message: "Unauthorized: Harap login terlebih dahulu",
+        },
         { status: 401 }
       );
     }
+
     if (!canUlok("read", user)) {
       return NextResponse.json(
-        { success: false, message: "Forbidden", error: "Access denied" },
+        { success: false, message: "Forbidden: Anda tidak memiliki akses" },
         { status: 403 }
       );
     }
+
     if (!user.branch_id) {
       return NextResponse.json(
-        { success: false, message: "Forbidden", error: "User has no branch" },
+        {
+          success: false,
+          message: "Forbidden: User tidak terasosiasi dengan cabang",
+        },
         { status: 403 }
       );
     }
 
+    // 2. Parse Query Params
     const { searchParams } = new URL(request.url);
-
-    // Limit
-    const limitRaw = Number(searchParams.get("limit") ?? String(DEFAULT_LIMIT));
-    const limit =
-      Number.isFinite(limitRaw) && limitRaw > 0
-        ? Math.min(limitRaw, 100)
-        : DEFAULT_LIMIT;
-    const pageSize = limit + 1; // ambil 1 ekstra untuk deteksi hasNext/hasPrev
-
-    // Cursor params
+    const scope = (searchParams.get("scope") || "recent").toLowerCase();
+    const searchName = (searchParams.get("search") || "").trim();
+    const specialistId = searchParams.get("specialist_id") || "";
     const after = searchParams.get("after") || "";
     const before = searchParams.get("before") || "";
 
-    const scope = (searchParams.get("scope") || "recent").toLowerCase();
-    const isRecent = scope === "recent";
-    const isHistory = scope === "history";
-    const isAll = scope === "all";
-
-    if (!isRecent && !isHistory && !isAll) {
+    // Validasi Scope
+    if (!["recent", "history", "all"].includes(scope)) {
       return NextResponse.json(
         {
           success: false,
-          message: "Bad Request",
-          error: "scope must be 'recent' or 'history'",
+          message: "Scope harus 'recent', 'history', atau 'all'",
         },
-        { status: 422 }
+        { status: 400 }
       );
     }
 
-    // withCount: planned (cepat), exact (mahal), none
-    const withCount = (
-      searchParams.get("withCount") || "planned"
-    ).toLowerCase();
-    const countOption =
-      withCount === "exact"
-        ? "exact"
-        : withCount === "planned"
-        ? "planned"
-        : undefined;
+    // Pagination Limit
+    const limitRaw = Number(searchParams.get("limit") ?? DEFAULT_PAGE_LIMIT);
+    const limit =
+      Number.isFinite(limitRaw) && limitRaw > 0
+        ? Math.min(limitRaw, MAX_PAGE_LIMIT)
+        : DEFAULT_PAGE_LIMIT;
+    const pageSize = limit + 1; // +1 untuk deteksi next page
 
-    const searchName = (searchParams.get("search") || "").trim();
-    const specialistId = searchParams.get("specialist_id") || "";
-
-    // Filter bulan/tahun
-    const monthParam = searchParams.get("month") ?? searchParams.get("bulan");
-    const yearParam = searchParams.get("year") ?? searchParams.get("tahun");
-    const month = monthParam ? Number(monthParam) : undefined;
-    const year = yearParam ? Number(yearParam) : undefined;
-
-    const isValidMonth = (m: unknown) =>
-      Number.isInteger(m) && (m as number) >= 1 && (m as number) <= 12;
-    const isValidYear = (y: unknown) =>
-      Number.isInteger(y) && (y as number) >= 1970 && (y as number) <= 2100;
-
-    if (
-      (monthParam && !isValidMonth(month)) ||
-      (yearParam && !isValidYear(year))
-    ) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Bad Request",
-          error: "Invalid month/year. Example: month=1..12, year=1970..2100",
-        },
-        { status: 422 }
-      );
+    // 3. Build Query
+    const supabase = await createClient();
+    let query = supabase.from("ulok").select(
+      "id, nama_ulok, approval_status, alamat, created_at, latitude, longitude, users_id",
+      { count: "planned" } // Optimasi count
+    );
+    if (!isRegionalOrAbove(user)) {
+      query = query.eq("branch_id", user.branch_id);
     }
 
-    // Rentang waktu UTC (opsional)
-    let startISO: string | undefined;
-    let endISO: string | undefined;
-    if (month && year) {
-      const start = new Date(Date.UTC(year, month - 1, 1));
-      const nm = month === 12 ? 1 : month + 1;
-      const ny = month === 12 ? year + 1 : year;
-      const end = new Date(Date.UTC(ny, nm - 1, 1));
-      startISO = start.toISOString();
-      endISO = end.toISOString();
-    } else if (year && !month) {
-      startISO = new Date(Date.UTC(year, 0, 1)).toISOString();
-      endISO = new Date(Date.UTC(year + 1, 0, 1)).toISOString();
-    } else if (!year && month) {
-      const nowUTC = new Date();
-      const y = nowUTC.getUTCFullYear();
-      const start = new Date(Date.UTC(y, month - 1, 1));
-      const nm = month === 12 ? 1 : month + 1;
-      const ny = month === 12 ? y + 1 : y;
-      const end = new Date(Date.UTC(ny, nm - 1, 1));
-      startISO = start.toISOString();
-      endISO = end.toISOString();
-    }
-
-    // Kolom list view minimal
-    const listColumns = [
-      "id",
-      "nama_ulok",
-      "approval_status",
-      "alamat",
-      "created_at",
-      "latitude",
-      "longitude",
-      "users_id",
-    ].join(",");
-
-    let query = supabase
-      .from("ulok")
-      .select(listColumns, { count: countOption as any })
-      .eq("branch_id", user.branch_id);
-
-    // Scope status
-    if (isRecent) {
+    // Filter Scope
+    if (scope === "recent") {
       query = query.eq("approval_status", "In Progress");
-    } else if (isHistory) {
+    } else if (scope === "history") {
       query = query.in("approval_status", ["OK", "NOK"]);
-    } else if (isAll) {
+    } else if (scope === "all") {
       query = query.in("approval_status", ["OK", "NOK", "In Progress"]);
     }
 
-    //scope date
-    if (startISO && endISO) {
-      query = query.gte("created_at", startISO).lt("created_at", endISO);
-    }
-
-    // Scoping posisi
-    const pos = (user.position_nama || "").toLowerCase();
-    if (pos === "location specialist") {
-      query = query.eq("users_id", user.id);
-    } else if (specialistId && specialistId !== "semua") {
-      query = query.eq("users_id", specialistId);
-    }
-
-    //search
+    // Filter Search
     if (searchName) {
       query = query.ilike("nama_ulok", `%${searchName}%`);
     }
 
-    // Order stabil
+    // Filter Role (Location Specialist hanya lihat miliknya sendiri)
+    const pos = user.position_nama?.toLowerCase() || "";
+    if (pos === POSITION.LOCATION_SPECIALIST) {
+      query = query.eq("users_id", user.id);
+    } else if (specialistId && specialistId !== "semua") {
+      query = query.eq("users_id", specialistId);
+    }
+    // Filter Tanggal (Opsional)
+    // Filter Month (Opsional)
+    const month = Number(searchParams.get("month"));
+    const year = Number(searchParams.get("year"));
+    const now = new Date();
+    if (month && !year) {
+      const currentYear = now.getUTCFullYear();
+      const start = new Date(Date.UTC(currentYear, month - 1, 1));
+      const end = new Date(Date.UTC(currentYear, month, 1));
+      query = query
+        .gte("created_at", start.toISOString())
+        .lt("created_at", end.toISOString());
+    }
+    if (year) {
+      const start = new Date(Date.UTC(year, month ? month - 1 : 0, 1));
+      const end = new Date(
+        Date.UTC(year + (month ? 0 : 1), month ? month : 0, 1)
+      );
+      query = query
+        .gte("created_at", start.toISOString())
+        .lt("created_at", end.toISOString());
+    }
+
+    // Sorting Stabil
     query = query
       .order("created_at", { ascending: false })
       .order("id", { ascending: false });
 
-    // Terapkan cursor
-    const afterPayload = after ? decodeCursor(after) : null;
-    const beforePayload = before ? decodeCursor(before) : null;
-
-    if (afterPayload && beforePayload) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Bad Request",
-          error: "Only one of 'after' or 'before' can be provided",
-        },
-        { status: 422 }
-      );
-    }
+    // Cursor Pagination Logic
+    const afterPayload = decodeCursor(after);
+    const beforePayload = decodeCursor(before);
 
     if (afterPayload) {
-      // Ambil item LEBIH LAMA dari cursor (karena urutan desc)
-      // Kondisi: created_at < ts OR (created_at = ts AND id < cursor_id)
-      const ts = afterPayload.created_at;
-      const id = afterPayload.id;
       query = query.or(
-        `created_at.lt.${ts},and(created_at.eq.${ts},id.lt.${id})`
+        `created_at.lt.${afterPayload.created_at},and(created_at.eq.${afterPayload.created_at},id.lt.${afterPayload.id})`
       );
     } else if (beforePayload) {
-      // Ambil item LEBIH BARU dari cursor (urutan desc), untuk "previous"
-      // Kondisi: created_at > ts OR (created_at = ts AND id > cursor_id)
-      const ts = beforePayload.created_at;
-      const id = beforePayload.id;
+      // Note: Logic 'before' (prev page) seringkali kompleks di infinite scroll standard,
+      // tapi untuk simplifikasi kita pakai logika reverse dari 'after' jika diperlukan.
+      // Disini kita validasi conflict saja.
+      if (afterPayload) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Tidak boleh mengirim 'after' dan 'before' bersamaan",
+          },
+          { status: 400 }
+        );
+      }
       query = query.or(
-        `created_at.gt.${ts},and(created_at.eq.${ts},id.gt.${id})`
+        `created_at.gt.${beforePayload.created_at},and(created_at.eq.${beforePayload.created_at},id.gt.${beforePayload.id})`
       );
     }
 
-    // Limit + 1 untuk deteksi hasNext/hasPrev
     query = query.limit(pageSize);
 
-    const { data, error } = await query;
+    // 4. Execute Query
+    const { data, error, count } = await query;
 
     if (error) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Gagal mengambil data ULOK",
-          error: error.message,
-        },
-        { status: 500 }
-      );
+      console.error("[API_ULOK_GET] Database error:", error);
+      throw new Error("Gagal mengambil data dari database");
     }
 
-    const rows =
-      Array.isArray(data) &&
-      data.every(
-        (item) =>
-          typeof item === "object" &&
-          item !== null &&
-          "created_at" in item &&
-          "id" in item
-      )
-        ? (data as Array<{ created_at: string; id: string }>)
-        : [];
-    const gotExtra = rows.length > limit;
-    const items = gotExtra ? rows.slice(0, limit) : rows;
+    const rows = (data || []) as Array<{ created_at: string; id: string }>;
+    const hasNextPage = rows.length > limit;
+    const items = hasNextPage ? rows.slice(0, limit) : rows;
 
-    const count = items.length;
+    // 5. Build Cursors
+    const startCursor =
+      items.length > 0
+        ? encodeCursor({ created_at: items[0].created_at, id: items[0].id })
+        : null;
+    const endCursor =
+      items.length > 0
+        ? encodeCursor({
+            created_at: items[items.length - 1].created_at,
+            id: items[items.length - 1].id,
+          })
+        : null;
 
-    // PageInfo
-    const startCursor = items.length
-      ? encodeCursor({ created_at: items[0].created_at, id: items[0].id })
-      : null;
-    const endCursor = items.length
-      ? encodeCursor({
-          created_at: items[items.length - 1].created_at,
-          id: items[items.length - 1].id,
-        })
-      : null;
-
-    // hasNextPage: bila ada ekstra item di sisi "lebih lama" (arah after)
-    // - Untuk initial/after: gotExtra = true → masih ada next
-    // - Untuk before: kita tetap pakai gotExtra, karena order tetap desc, query mengambil "lebih baru"
-    //   sehingga gotExtra menunjukkan masih ada data ke arah yang diminta. Di FE pakai sesuai tombol.
-    const hasNextPage =
-      !beforePayload && gotExtra
-        ? true
-        : beforePayload
-        ? // saat before (previous), "next" arah mundur/maju tergantung interpretasi FE.
-          // Kita sediakan kedua flag berikut; FE akan gunakan sesuai tombol.
-          false
-        : gotExtra;
-
-    // hasPrevPage heuristik:
-    const hasPrevPage = Boolean(afterPayload || beforePayload);
-
-    return NextResponse.json(
-      {
-        success: true,
-        scope,
-        filters: {
-          month: month ?? null,
-          year: year ?? null,
-          search: searchName || null,
-          specialist_id: specialistId || null,
-        },
-        data: items,
-        pagination: {
-          count,
-          limit,
-          order: "desc",
-          startCursor,
-          endCursor,
-          hasNextPage,
-          hasPrevPage,
-        },
+    return NextResponse.json({
+      success: true,
+      scope,
+      data: items,
+      pagination: {
+        total: count,
+        limit,
+        hasNextPage,
+        hasPrevPage: Boolean(afterPayload || beforePayload),
+        startCursor,
+        endCursor,
       },
-      { status: 200 }
-    );
-  } catch (err: any) {
+    });
+  } catch (error) {
+    console.error("[API_ULOK_GET] Unhandled error:", error);
     return NextResponse.json(
-      {
-        success: false,
-        message: "Terjadi kesalahan server internal",
-        error:
-          process.env.NODE_ENV === "development"
-            ? err?.message ?? String(err)
-            : "Internal server error",
-      },
+      { success: false, message: "Terjadi kesalahan internal server" },
       { status: 500 }
     );
   }
 }
 
-// POST /api/ulok
-export async function POST(request: Request) {
-  try {
-    const supabase = await createClient();
-    const user = await getCurrentUser();
+/**
+ * @route POST /api/ulok
+ * @description Membuat data Usulan Lokasi baru beserta upload file form_ulok.
+ * @access Private (Memerlukan login & permission 'create')
+ * @content multipart/form-data
+ */
+export async function POST(request: NextRequest) {
+  let objectPath: string | null = null;
+  const supabase = await createClient();
 
-    if (!user) {
+  try {
+    // 1. Auth Check
+    const user = await getCurrentUser();
+    if (!user || !user.branch_id) {
       return NextResponse.json(
-        { success: false, message: "Unauthorized" },
+        { success: false, message: "Unauthorized or No Branch Assigned" },
         { status: 401 }
       );
     }
+
     if (!canUlok("create", user)) {
       return NextResponse.json(
-        { success: false, message: "Forbidden" },
-        { status: 403 }
-      );
-    }
-    if (!user.branch_id) {
-      return NextResponse.json(
-        { success: false, message: "User has no branch" },
+        { success: false, message: "Forbidden: Hak akses ditolak" },
         { status: 403 }
       );
     }
 
+    // 2. Validate Content-Type
     const contentType = request.headers.get("content-type") || "";
-    if (!contentType.startsWith("multipart/form-data")) {
+    if (!contentType.includes("multipart/form-data")) {
+      return NextResponse.json(
+        { success: false, message: "Content-Type harus multipart/forms-data" },
+        { status: 400 }
+      );
+    }
+
+    // 3. Parse FormData
+    const formData = await request.formData();
+    const file = formData.get("form_ulok") as File | null;
+
+    // 4. Validate File
+    if (!file || !(file instanceof File)) {
+      return NextResponse.json(
+        { success: false, message: "File 'form_ulok' wajib diunggah" },
+        { status: 400 }
+      );
+    }
+    if (file.size > MAX_PDF_SIZE_BYTES) {
       return NextResponse.json(
         {
           success: false,
-          message:
-            "Harus multipart/form-data karena wajib upload file form_ulok",
+          message: `Ukuran file melebihi batas ${MAX_PDF_SIZE_MB}MB`,
         },
         { status: 400 }
       );
     }
 
-    const form = await request.formData().catch(() => null);
-    if (!form) {
-      return NextResponse.json(
-        { success: false, message: "Invalid multipart form-data" },
-        { status: 400 }
-      );
-    }
-
-    const file = form.get("form_ulok") as File | null;
-    if (!file || !(file instanceof File)) {
-      return NextResponse.json(
-        { success: false, message: "File form_ulok wajib dikirim" },
-        { status: 422 }
-      );
-    }
-    if (file.size === 0) {
-      return NextResponse.json(
-        { success: false, message: "File kosong" },
-        { status: 422 }
-      );
-    }
-    if (file.size > MAX_PDF_SIZE) {
-      return NextResponse.json(
-        { success: false, message: "File melebihi 15MB" },
-        { status: 422 }
-      );
-    }
-
+    // Deep Check File Type (Magic Number)
     const pdfCheck = await isPdfFile(file);
     if (!pdfCheck.ok) {
       return NextResponse.json(
         {
           success: false,
-          message: "File bukan PDF valid",
+          message: "Format file tidak valid. Harus PDF.",
           detail: pdfCheck.reason,
         },
-        { status: 422 }
+        { status: 400 }
       );
     }
 
-    // Ambil field text → parse
-    const raw: Record<string, unknown> = {};
-    form.forEach((val, keyOrig) => {
-      if (val instanceof File) return;
-      const key = keyOrig.trim();
-      if (key === "form_ulok") return;
-      raw[key] = val;
+    // 5. Parse & Validate Fields
+    const rawData: Record<string, unknown> = {};
+    formData.forEach((value, key) => {
+      if (typeof value === "string" && key !== "form_ulok") {
+        rawData[key] = value;
+      }
     });
 
-    const sanitized = dropForbiddenFields(coerceNumbers(raw));
+    const sanitizedData = sanitizePayload(coerceNumericFields(rawData));
 
-    const UlokCreateInputSchema = UlokCreateSchema.omit({
+    // Menggunakan schema yang mengecualikan 'form_ulok' karena dihandle manual
+    const validation = UlokCreateSchema.omit({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       form_ulok: true as any,
-    });
-    const parsed = UlokCreateInputSchema.safeParse(sanitized);
-    if (!parsed.success) {
+    }).safeParse(sanitizedData);
+
+    if (!validation.success) {
+      const errors = validation.error.flatten().fieldErrors;
       return NextResponse.json(
-        {
-          success: false,
-          message: "Validasi gagal",
-          error: parsed.error.issues,
-        },
+        { success: false, message: "Data tidak valid", errors },
         { status: 422 }
       );
     }
 
-    // Generate ULOK ID sebelum upload → path seragam: <ulokId>/ulok/<ts>_form_ulok.pdf
-    const newUlokId = crypto.randomUUID();
-    const objectPath = buildPathByField(
-      newUlokId,
-      "ulok",
+    // 6. Upload File (Storage)
+    const ulokId = crypto.randomUUID();
+    objectPath = buildPathByField(
+      ulokId,
+      UPLOAD_FOLDER,
       "form_ulok",
       file.name,
       file.type
     );
 
-    // Upload file fisik ke bucket seragam
-    const { error: uploadErr } = await supabase.storage
-      .from(BUCKET)
+    const { error: uploadError } = await supabase.storage
+      .from(STORAGE_BUCKET)
       .upload(objectPath, file, {
-        upsert: false,
         contentType: "application/pdf",
+        upsert: false,
       });
 
-    if (uploadErr) {
+    if (uploadError) {
+      console.error("[API_ULOK_POST] Upload error:", uploadError);
       return NextResponse.json(
-        {
-          success: false,
-          message: "Gagal upload file",
-          error: uploadErr.message,
-        },
-        { status: 500 }
+        { success: false, message: "Gagal mengunggah file ke storage" },
+        { status: 502 } // Bad Gateway / Upstream Error
       );
     }
 
-    // Simpan path (path relatif; untuk akses, FE bisa generate signed URL)
-    const filePathToStore = objectPath;
-
+    // 7. Insert to Database
     const insertPayload = {
-      id: newUlokId,
-      ...(parsed.data as Record<string, unknown>),
+      id: ulokId,
+      ...validation.data,
       users_id: user.id,
       branch_id: user.branch_id,
-      form_ulok: filePathToStore,
+      form_ulok: objectPath, // Path relatif disimpan di DB
+      // Field default lain ditangani oleh Database Default Value (created_at, approval_status, dll)
     };
 
-    const { data, error } = await supabase
+    const { data, error: dbError } = await supabase
       .from("ulok")
       .insert(insertPayload)
-      .select("*")
+      .select()
       .single();
 
-    if (error) {
-      // Hapus file jika insert gagal (best-effort)
-      await supabase.storage
-        .from(BUCKET)
-        .remove([objectPath])
-        .catch(() => {});
+    if (dbError) {
+      console.error("[API_ULOK_POST] DB Insert error:", dbError);
+      // Rollback: Hapus file jika DB gagal
+      if (objectPath) {
+        await supabase.storage
+          .from(STORAGE_BUCKET)
+          .remove([objectPath])
+          .catch(() => {});
+      }
       return NextResponse.json(
-        { success: false, message: "Gagal insert ulok", error: error.message },
+        { success: false, message: "Gagal menyimpan data ke database" },
         { status: 500 }
       );
     }
@@ -549,23 +470,24 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         success: true,
-        message: "Data ULOK + file form_ulok berhasil dibuat",
+        message: "ULOK berhasil dibuat",
         data,
-        stored_form_ulok: filePathToStore,
-        object_path: objectPath,
       },
       { status: 201 }
     );
-  } catch (e: any) {
+  } catch (error) {
+    console.error("[API_ULOK_POST] Unhandled error:", error);
+
+    // Rollback (Best effort) jika terjadi crash setelah upload tapi sebelum return
+    if (objectPath) {
+      await supabase.storage
+        .from(STORAGE_BUCKET)
+        .remove([objectPath])
+        .catch(() => {});
+    }
+
     return NextResponse.json(
-      {
-        success: false,
-        message: "Terjadi kesalahan server internal",
-        error:
-          process.env.NODE_ENV === "development"
-            ? e?.message
-            : "Internal error",
-      },
+      { success: false, message: "Terjadi kesalahan internal server" },
       { status: 500 }
     );
   }

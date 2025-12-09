@@ -13,6 +13,10 @@ import { useAlert } from "@/components/shared/alertcontext";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/hooks/useUser";
 
+/**
+ * Helper: Format angka ke format ribuan Indonesia.
+ * Contoh: 1000000 -> "1.000.000"
+ */
 const formatnumeric = (value: string | number | undefined | null) => {
   if (value === undefined || value === null || value === "") return "";
   const numberValue =
@@ -23,6 +27,10 @@ const formatnumeric = (value: string | number | undefined | null) => {
   return new Intl.NumberFormat("id-ID").format(numberValue);
 };
 
+/**
+ * Helper: Hapus format ribuan untuk kalkulasi/API.
+ * Contoh: "1.000.000" -> 1000000
+ */
 const unformatnumeric = (value: string | undefined | null) => {
   if (!value) return undefined;
   const unformatted = value.replace(/\./g, "");
@@ -39,6 +47,9 @@ interface MouFormProps {
   onDataUpdate: () => void;
 }
 
+/**
+ * Komponen Wrapper UI untuk konsistensi tampilan kartu.
+ */
 const DetailCard = ({
   title,
   icon,
@@ -65,6 +76,10 @@ const DetailCard = ({
   </div>
 );
 
+/**
+ * Komponen Form: MouForm
+ * Menangani input data MOU (Create & Edit).
+ */
 const MouForm: React.FC<MouFormProps> = ({
   progressId,
   onSuccess,
@@ -77,6 +92,7 @@ const MouForm: React.FC<MouFormProps> = ({
   const { showToast } = useAlert();
   const { user } = useUser();
 
+  // State lokal untuk input (terutama Select dan Formatted Number)
   const [statusPajak, setStatusPajak] = useState<string>(
     initialData?.status_pajak || ""
   );
@@ -86,11 +102,14 @@ const MouForm: React.FC<MouFormProps> = ({
   const [caraPembayaran, setCaraPembayaran] = useState<string>(
     initialData?.cara_pembayaran || ""
   );
+
+  // State khusus tampilan angka (formatted)
   const [displayNilaiSewa, setDisplayNilaiSewa] = useState<string>("");
   const [displayHargaFinal, setDisplayHargaFinal] = useState<string>("");
   const [displayPeriodeSewa, setDisplayPeriodeSewa] = useState<string>("");
   const [displayGracePeriod, setDisplayGracePeriod] = useState<string>("");
 
+  // Efek untuk sinkronisasi data awal ke state lokal saat mode Edit
   useEffect(() => {
     if (initialData) {
       setDisplayNilaiSewa(formatnumeric(initialData.nilai_sewa));
@@ -103,16 +122,16 @@ const MouForm: React.FC<MouFormProps> = ({
     setCaraPembayaran(initialData?.cara_pembayaran || "");
   }, [initialData]);
 
+  // Opsi dropdown
   const statusPajakOptions = ["PKP", "NPKP"];
-
   const pembayaranPphOptions = [
     "Pemilik",
     "Perusahaan",
     "Pemilik dan Perusahaan",
   ];
-
   const caraPembayaranOptions = ["Sekaligus", "Bertahap"];
 
+  // Handlers untuk Select Change
   const handleStatusPajakChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setStatusPajak(e.target.value);
   };
@@ -127,12 +146,19 @@ const MouForm: React.FC<MouFormProps> = ({
     setCaraPembayaran(e.target.value);
   };
 
+  /**
+   * Helper: Mengubah string kosong menjadi undefined.
+   * Penting untuk Zod schema `.optional()`, agar tidak dianggap string kosong invalid.
+   */
   const emptyToUndefined = (value: string | number | null) => {
     if (value === "" || value === null) return undefined;
     if (typeof value === "string" && value.trim() === "") return undefined;
     return value;
   };
 
+  /**
+   * Handler input angka: Hanya izinkan digit, lalu format ke ribuan.
+   */
   const handleNumericInputChange = (
     e: React.ChangeEvent<HTMLInputElement>,
     setter: React.Dispatch<React.SetStateAction<string>>
@@ -144,17 +170,22 @@ const MouForm: React.FC<MouFormProps> = ({
     setter(formatnumeric(rawValue));
   };
 
+  /**
+   * Handler Simpan Data (Submit Form)
+   */
   const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
 
     const formData = new FormData(e.currentTarget);
 
+    // Unformat angka sebelum validasi
     const nilaiSewaUnformatted = unformatnumeric(displayNilaiSewa);
     const hargaFinalUnformatted = unformatnumeric(displayHargaFinal);
     const periodesewaUnformated = unformatnumeric(displayPeriodeSewa);
     const graceperiodUnformatted = unformatnumeric(displayGracePeriod);
 
+    // Konstruksi payload dengan konversi tipe data
     const payload = {
       nama_pemilik_final: emptyToUndefined(
         formData.get("nama_pemilik_final") as string
@@ -164,12 +195,14 @@ const MouForm: React.FC<MouFormProps> = ({
       pembayaran_pph: emptyToUndefined(pembayaranPph),
       cara_pembayaran: emptyToUndefined(caraPembayaran),
       keterangan: emptyToUndefined(formData.get("keterangan") as string),
+      // Konversi ke number, jika NaN maka undefined (atau empty string tergantung logic)
       periode_sewa: emptyToUndefined(Number(periodesewaUnformated) || ""),
       nilai_sewa: emptyToUndefined(Number(nilaiSewaUnformatted) || ""),
       grace_period: emptyToUndefined(Number(graceperiodUnformatted) || ""),
       harga_final: emptyToUndefined(Number(hargaFinalUnformatted) || ""),
     };
 
+    // Validasi Zod
     const parsed = MouEditableSchema.safeParse(payload);
     if (!parsed.success) {
       console.error(parsed.error.format());
@@ -227,6 +260,7 @@ const MouForm: React.FC<MouFormProps> = ({
         onSubmit={handleSave}
         className="grid grid-cols-1 md:grid-cols-2 gap-4"
       >
+        {/* Input Tanggal MOU */}
         <div>
           <label
             htmlFor="tanggal_mou"
@@ -256,6 +290,7 @@ const MouForm: React.FC<MouFormProps> = ({
             defaultValue={initialData?.nama_pemilik_final || ""}
           />
         </div>
+        {/* Input Periode Sewa (Numeric) */}
         <div>
           <label
             htmlFor="periode_sewa"
@@ -272,6 +307,7 @@ const MouForm: React.FC<MouFormProps> = ({
             onChange={(e) => handleNumericInputChange(e, setDisplayPeriodeSewa)}
           />
         </div>
+        {/* Input Nilai Sewa (Numeric) */}
         <div>
           <label
             htmlFor="nilai_sewa"
@@ -288,6 +324,8 @@ const MouForm: React.FC<MouFormProps> = ({
             placeholder="Masukkan nilai sewa"
           />
         </div>
+
+        {/* Select Inputs */}
         <div>
           <CustomSelect
             id="status_pajak"
@@ -321,6 +359,8 @@ const MouForm: React.FC<MouFormProps> = ({
             onChange={handleCaraPembayaranChange}
           />
         </div>
+
+        {/* Grace Period & Harga Final */}
         <div>
           <label
             htmlFor="grace_period"
@@ -353,7 +393,8 @@ const MouForm: React.FC<MouFormProps> = ({
             placeholder="Masukkan harga final"
           />
         </div>
-        {/* Full width */}
+
+        {/* Keterangan */}
         <div className="md:col-span-2">
           <label
             htmlFor="keterangan"
@@ -368,6 +409,7 @@ const MouForm: React.FC<MouFormProps> = ({
           />
         </div>
 
+        {/* Tombol Aksi Form */}
         <div className="md:col-span-2 flex justify-end gap-3 mt-2">
           {onCancelEdit && (
             <Button
@@ -404,6 +446,10 @@ interface MouProgressCardProps {
   onDataUpdate: () => void;
 }
 
+/**
+ * Komponen Utama: MouProgressCard
+ * Mengatur tampilan View/Edit dan Final Approval.
+ */
 const MouProgressCard: React.FC<MouProgressCardProps> = ({
   progressId,
   onDataUpdate,
@@ -416,9 +462,14 @@ const MouProgressCard: React.FC<MouProgressCardProps> = ({
   const [isSubmittingReject, setIsSubmittingReject] = useState(false);
   const { showToast, showConfirmation } = useAlert();
 
+  // RBAC: Cek admin branch
   const { user } = useUser();
   const isBranchAdmin = user?.position_nama === "admin branch";
 
+  /**
+   * Handler untuk Final Approval (Selesai/Batal).
+   * Mengunci data setelah dieksekusi.
+   */
   const handleFinalizeMou = async (status: "Selesai" | "Batal") => {
     const actionText = status === "Selesai" ? "submit" : "batalkan";
     const actionTitle = status === "Selesai" ? "Submit" : "Pembatalan";
@@ -443,14 +494,11 @@ const MouProgressCard: React.FC<MouProgressCardProps> = ({
       const apiStatus = status.toLowerCase() as "selesai" | "batal";
       const payload = { final_status_mou: apiStatus };
 
-      const res = await fetch(
-        `/api/progress/${progressId}/mou/approval`, // URL diperbaiki
-        {
-          method: "PATCH", // Method diperbaiki
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload), // Body ditambahkan
-        }
-      );
+      const res = await fetch(`/api/progress/${progressId}/mou/approval`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
 
       const json = await res.json();
 
@@ -458,6 +506,7 @@ const MouProgressCard: React.FC<MouProgressCardProps> = ({
         let errorTitle = "Gagal Mengirim";
         let errorMessage = json.error || "Gagal melakukan submit.";
 
+        // Handle validasi backend khusus (misal data belum lengkap)
         if (
           res.status === 422 &&
           json.missing_fields &&
@@ -483,19 +532,19 @@ const MouProgressCard: React.FC<MouProgressCardProps> = ({
       router.refresh();
     } catch (err: any) {
       console.error(err);
-      // Tampilkan toast error jika ada kesalahan 'catch'
       showToast({
         type: "error",
         title: "Terjadi Kesalahan",
         message: err.message || "Tidak dapat terhubung ke server.",
       });
     } finally {
-      // ‹- PERBAIKAN 3 (UTAMA): Selalu reset KEDUA state
+      // Reset loading state
       setIsSubmittingApprove(false);
       setIsSubmittingReject(false);
     }
   };
 
+  /* --- KONDISI LOADING & ERROR --- */
   if (loading)
     return (
       <div className="flex justify-center py-10 mt-8 w-full ">
@@ -510,10 +559,7 @@ const MouProgressCard: React.FC<MouProgressCardProps> = ({
       </div>
     );
 
-  console.log("Created At:", data?.created_at);
-  console.log("Status:", data?.final_status_mou);
-  console.log("Tanggal Selesai:", data?.tgl_selesai_mou);
-
+  /* --- KONDISI EDIT MODE --- */
   if (!data || isEditing) {
     return (
       <div className="w-full ">
@@ -532,10 +578,11 @@ const MouProgressCard: React.FC<MouProgressCardProps> = ({
     );
   }
 
+  // Cek Status Final
   const isFinalized =
     data.final_status_mou === "Selesai" || data.final_status_mou === "Batal";
 
-  // Mode Read - Tampilkan data
+  /* --- KONDISI VIEW MODE (Read Only) --- */
   return (
     <div className="w-full ">
       <DetailCard
@@ -544,7 +591,7 @@ const MouProgressCard: React.FC<MouProgressCardProps> = ({
         className=""
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Tanggal MOU */}
+          {/* Tampilan Data Read Only */}
           <div>
             <h3 className="block font-semibold text-base lg:text-lg mb-2">
               Tanggal MOU
@@ -554,7 +601,6 @@ const MouProgressCard: React.FC<MouProgressCardProps> = ({
             </div>
           </div>
 
-          {/* Nama Pemilik */}
           <div>
             <h3 className="block font-semibold text-base lg:text-lg mb-2">
               Nama Pemilik
@@ -564,7 +610,6 @@ const MouProgressCard: React.FC<MouProgressCardProps> = ({
             </div>
           </div>
 
-          {/* Periode Sewa */}
           <div>
             <h3 className="block font-semibold text-base lg:text-lg mb-2">
               Periode Sewa (tahun)
@@ -574,17 +619,16 @@ const MouProgressCard: React.FC<MouProgressCardProps> = ({
             </div>
           </div>
 
-          {/* Nilai Sewa */}
           <div>
             <h3 className="block font-semibold text-base lg:text-lg mb-2">
               Nilai Sewa (Rp)
             </h3>
             <div className="bg-gray-100 rounded-md px-4 py-2 text-base">
+              {/* Format Rupiah */}
               Rp {data.nilai_sewa?.toLocaleString("id-ID") || "-"}
             </div>
           </div>
 
-          {/* Status Pajak */}
           <div>
             <h3 className="block font-semibold text-base lg:text-lg mb-2">
               Status Pajak
@@ -594,7 +638,6 @@ const MouProgressCard: React.FC<MouProgressCardProps> = ({
             </div>
           </div>
 
-          {/* Pembayaran PPh */}
           <div>
             <h3 className="block font-semibold text-base lg:text-lg mb-2">
               Pembayaran PPh
@@ -604,7 +647,6 @@ const MouProgressCard: React.FC<MouProgressCardProps> = ({
             </div>
           </div>
 
-          {/* Cara Pembayaran */}
           <div>
             <h3 className="block font-semibold text-base lg:text-lg mb-2">
               Cara Pembayaran
@@ -614,7 +656,6 @@ const MouProgressCard: React.FC<MouProgressCardProps> = ({
             </div>
           </div>
 
-          {/* Grace Period */}
           <div>
             <h3 className="block font-semibold text-base lg:text-lg mb-2">
               Grace Period (bulan)
@@ -624,7 +665,6 @@ const MouProgressCard: React.FC<MouProgressCardProps> = ({
             </div>
           </div>
 
-          {/* Harga Final - Full Width */}
           <div className="md:col-span-2">
             <h3 className="block font-semibold text-base lg:text-lg mb-2">
               Harga Final (Rp)
@@ -634,7 +674,6 @@ const MouProgressCard: React.FC<MouProgressCardProps> = ({
             </div>
           </div>
 
-          {/* Keterangan - Full Width */}
           <div className="md:col-span-2">
             <h3 className="block font-semibold text-base lg:text-lg mb-2">
               Keterangan
@@ -645,6 +684,7 @@ const MouProgressCard: React.FC<MouProgressCardProps> = ({
           </div>
         </div>
 
+        {/* Action Buttons: Muncul jika admin branch & belum final */}
         {!isFinalized && isBranchAdmin && (
           <div className="flex gap-3 mt-8">
             <Button

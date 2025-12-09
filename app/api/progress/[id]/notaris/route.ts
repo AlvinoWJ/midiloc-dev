@@ -1,204 +1,89 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentUser, canProgressKplt } from "@/lib/auth/acl";
+import { getCurrentUser } from "@/lib/auth/acl";
 import {
   NotarisCreateSchema,
   NotarisUpdateSchema,
   stripServerControlledFieldsNotaris,
 } from "@/lib/validations/notaris";
-import { makeFieldKey, isValidPrefixKey } from "@/lib/storage/naming";
+import {
+  checkAuthAndAccess,
+  handleCommonError,
+  parseMultipartRequest,
+  removeFiles,
+  resolveUlokId,
+} from "@/lib/progress/api-helper";
 
-const BUCKET = "file_storage";
-const FILE_FIELD = "par_online" as const;
+export const dynamic = "force-dynamic";
+const FILE_FIELDS = ["par_online"] as const;
 
-async function resolveUlokIdWithinScope(
-  supabase: any,
-  progressId: string,
-  branchId: string
-) {
-  const { data, error } = await supabase
-    .from("progress_kplt")
-    .select(
-      `id, kplt:kplt!progress_kplt_kplt_id_fkey!inner ( id, branch_id, ulok_id )`
-    )
-    .eq("id", progressId)
-    .eq("kplt.branch_id", branchId)
-    .maybeSingle();
-
-  if (error) throw new Error(error.message ?? "Scope check failed");
-  const ulokId = (data as any)?.kplt?.ulok_id as string | null;
-  if (!ulokId) throw new Error("Progress not found or out of scope");
-  return ulokId;
-}
-
-async function uploadOne(supabase: any, ulokId: string, f: File) {
-  const key = makeFieldKey(ulokId, "notaris", FILE_FIELD, f);
-  const { error } = await supabase.storage.from(BUCKET).upload(key, f, {
-    upsert: false,
-    contentType: f.type || "application/octet-stream",
-    cacheControl: "3600",
-  });
-  if (error) throw new Error(`Upload failed: ${error.message}`);
-  return key;
-}
-
-async function removeKeys(supabase: any, keys: string[]) {
-  if (!keys.length) return;
-  await supabase.storage.from(BUCKET).remove(keys);
-}
-
-async function parseMultipartAndUpload(
-  supabase: any,
-  ulokId: string,
-  req: Request
-): Promise<{
-  payload: Record<string, unknown>;
-  newUploadedKey?: string;
-  replacedFile?: boolean;
-}> {
-  const form = await req.formData();
-  const payload: Record<string, unknown> = {};
-  let newUploadedKey: string | undefined;
-  let replacedFile = false;
-
-  const v = form.get(FILE_FIELD);
-  if (v instanceof File && v.size > 0) {
-    const key = await uploadOne(supabase, ulokId, v);
-    payload[FILE_FIELD] = key;
-    newUploadedKey = key;
-    replacedFile = true;
-  } else if (typeof v === "string" && v.trim() !== "") {
-    const key = v.trim();
-    if (!isValidPrefixKey(ulokId, "notaris", key)) {
-      throw new Error("Invalid par_online key prefix");
-    }
-    payload[FILE_FIELD] = key;
-    replacedFile = true;
-  }
-
-  for (const [k, val] of form.entries()) {
-    if (k === FILE_FIELD) continue;
-    if (typeof val === "string") {
-      const t = val.trim();
-      if (t !== "") payload[k] = t;
-    }
-  }
-
-  return { payload, newUploadedKey, replacedFile };
-}
-
-// GET /api/progress/[id]/notaris
+/**
+ * @route GET /api/progress/[id]/notaris
+ * @description Mengambil detail data Notaris untuk progress tertentu.
+ */
 export async function GET(
   _req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const supabase = await createClient();
   const user = await getCurrentUser();
-  if (!user)
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!canProgressKplt("read", user))
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Forbidden",
-        message: "Anda tidak berhak melakukan aksi ini",
-      },
-      { status: 403 }
-    );
-  if (!user.branch_id)
-    return NextResponse.json(
-      { error: "Forbidden", message: "User has no branch" },
-      { status: 403 }
-    );
 
-  const progressId = params?.id;
-  if (!progressId)
-    return NextResponse.json({ error: "Invalid id" }, { status: 422 });
+  //auth check
+  const authErr = await checkAuthAndAccess(supabase, user, id, "read");
+  if (authErr) return NextResponse.json(authErr, { status: authErr.status });
+
+  const progressId = id;
 
   const { data, error } = await supabase.rpc("fn_notaris_get", {
-    p_user_id: user.id,
-    p_branch_id: user.branch_id,
+    p_user_id: user!.id,
+    p_branch_id: user!.branch_id,
     p_progress_kplt_id: progressId,
   });
 
-  if (error) {
-    const status = (error as any)?.code === "22023" ? 404 : 500;
-    return NextResponse.json(
-      { error: "Failed to load Notaris", detail: error.message ?? error },
-      { status }
-    );
-  }
+  if (error) return handleCommonError(error, "NOTARIS_GET");
   if (!data)
-    return NextResponse.json({ error: "Notaris not found" }, { status: 404 });
-  return NextResponse.json({ data }, { status: 200 });
+    return NextResponse.json({ error: "Data not found" }, { status: 404 });
+
+  return NextResponse.json({ data });
 }
 
-// POST /api/progress/[id]/notaris
+/**
+ * @route POST /api/progress/[id]/notaris
+ * @description Membuat data Notaris baru. Mendukung Multipart (dengan file) atau JSON.
+ */
 export async function POST(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const supabase = await createClient();
-  const user = await getCurrentUser();
-  if (!user)
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!canProgressKplt("create", user) && !canProgressKplt("update", user))
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Forbidden",
-        message: "Anda tidak berhak melakukan aksi ini",
-      },
-      { status: 403 }
-    );
-  if (!user.branch_id)
-    return NextResponse.json(
-      { error: "Forbidden", message: "User has no branch" },
-      { status: 403 }
-    );
-
-  const progressId = params?.id;
-  if (!progressId)
-    return NextResponse.json({ error: "Invalid id" }, { status: 422 });
-
-  let ulokId: string;
-  try {
-    ulokId = await resolveUlokIdWithinScope(
-      supabase,
-      progressId,
-      user.branch_id
-    );
-  } catch (e: any) {
-    const msg = e?.message || "Scope check failed";
-    const status = /out of scope|not found/i.test(msg) ? 404 : 500;
-    return NextResponse.json({ error: msg }, { status });
-  }
-
-  const ct = req.headers.get("content-type") || "";
-  let payload: Record<string, unknown> = {};
-  let uploadedKey: string | undefined;
+  let uploadedKeys: string[] = [];
 
   try {
+    const user = await getCurrentUser();
+    // 1. Auth & Access Check
+    const authErr = await checkAuthAndAccess(supabase, user, id, "create");
+    if (authErr) return NextResponse.json(authErr, { status: authErr.status });
+
+    // 2. Context Resolution
+    const ulokId = await resolveUlokId(supabase, id, user!.branch_id!);
+    const ct = req.headers.get("content-type") || "";
+    let payload: Record<string, unknown> = {};
+
+    // 3. Parse Payload (Multipart vs JSON)
     if (ct.includes("multipart/form-data")) {
-      const parsed = await parseMultipartAndUpload(supabase, ulokId, req);
+      const parsed = await parseMultipartRequest(supabase, req, {
+        ulokId,
+        moduleName: "notaris",
+        fileFields: FILE_FIELDS,
+      });
       payload = parsed.payload;
-      uploadedKey = parsed.newUploadedKey;
+      uploadedKeys = parsed.uploadedKeys;
     } else {
+      // Validasi manual prefix jika via JSON (Security)
       const body = await req.json().catch(() => ({}));
-      if (
-        "id" in body ||
-        "progress_kplt_id" in body ||
-        "final_status_notaris" in body ||
-        "created_at" in body ||
-        "updated_at" in body ||
-        "tgl_selesai_notaris" in body
-      ) {
-        return NextResponse.json(
-          { error: "Invalid payload: server-controlled fields present" },
-          { status: 400 }
-        );
-      }
       const parsed = NotarisCreateSchema.safeParse(body);
       if (!parsed.success)
         return NextResponse.json(
@@ -206,8 +91,85 @@ export async function POST(
           { status: 422 }
         );
       payload = stripServerControlledFieldsNotaris(parsed.data);
+    }
+    // 4. Execute RPC
+    const { data, error } = await supabase.rpc("fn_notaris_create", {
+      p_user_id: user!.id,
+      p_branch_id: user!.branch_id,
+      p_progress_kplt_id: id,
+      p_payload: payload,
+    });
 
-      // Jika JSON mengirim par_online, validasi prefix
+    if (error) {
+      await removeFiles(supabase, uploadedKeys); // Rollback
+      return handleCommonError(error, "NOTARIS_CREATE");
+    }
+
+    return NextResponse.json({ data }, { status: 201 });
+  } catch (err: any) {
+    await removeFiles(supabase, uploadedKeys); // Rollback
+    return handleCommonError(err, "NOTARIS_POST_UNHANDLED");
+  }
+}
+
+/**
+ * @route PATCH /api/progress/[id]/notaris
+ * @description Mengupdate data Notaris.
+ */
+export async function PATCH(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  const supabase = await createClient();
+  let uploadedKeys: string[] = [];
+
+  try {
+    const user = await getCurrentUser();
+    // 1. Auth Check
+    const authErr = await checkAuthAndAccess(supabase, user, id, "update");
+    if (authErr) return NextResponse.json(authErr, { status: authErr.status });
+
+    // 2. Pre-fetch Old Data (for cleanup)
+    const { data: oldRow } = await supabase.rpc("fn_notaris_get", {
+      p_user_id: user!.id,
+      p_branch_id: user!.branch_id,
+      p_progress_kplt_id: id,
+    });
+    if (!oldRow)
+      return NextResponse.json({ error: "Data not found" }, { status: 404 });
+
+    const ulokId = await resolveUlokId(supabase, id, user!.branch_id!);
+
+    // 3. Parse Payload
+    const ct = req.headers.get("content-type") || "";
+    let payload: Record<string, unknown> = {};
+    let fieldsToCheck: string[] = [];
+
+    if (ct.includes("multipart/form-data")) {
+      const parsed = await parseMultipartRequest(supabase, req, {
+        ulokId,
+        moduleName: "notaris",
+        fileFields: FILE_FIELDS,
+      });
+      payload = parsed.payload;
+      uploadedKeys = parsed.uploadedKeys;
+      fieldsToCheck = parsed.fileFieldsFound;
+    } else {
+      const body = await req.json().catch(() => ({}));
+      const parsed = NotarisUpdateSchema.safeParse(body);
+      if (!parsed.success) {
+        return NextResponse.json(
+          { error: "Validation failed", detail: parsed.error.issues },
+          { status: 422 }
+        );
+      }
+      payload = stripServerControlledFieldsNotaris(parsed.data);
+      fieldsToCheck = FILE_FIELDS.filter((f) =>
+        Object.prototype.hasOwnProperty.call(payload, f)
+      );
+
+      // Validasi prefix jika update JSON menyertakan file key
       const po = (payload as any)?.par_online;
       if (typeof po === "string" && !po.startsWith(`${ulokId}/notaris/`)) {
         return NextResponse.json(
@@ -217,235 +179,72 @@ export async function POST(
       }
     }
 
-    const { data, error } = await supabase.rpc("fn_notaris_create", {
-      p_user_id: user.id,
-      p_branch_id: user.branch_id,
-      p_progress_kplt_id: progressId,
-      p_payload: payload,
-    });
-
-    if (error) {
-      if (uploadedKey) await removeKeys(supabase, [uploadedKey]); // cleanup file
-      const msg = (error as any)?.message?.toLowerCase() || "";
-      if ((error as any)?.code === "23505")
-        return NextResponse.json(
-          { error: "Notaris already exists for this progress" },
-          { status: 409 }
-        );
-      const isPrereq = msg.includes("prerequisites invalid");
-      return NextResponse.json(
-        {
-          error: isPrereq
-            ? "Prerequisites not met"
-            : "Failed to create Notaris",
-          detail: (error as any)?.message ?? error,
-        },
-        { status: 422 }
-      );
-    }
-
-    return NextResponse.json({ data }, { status: 201 });
-  } catch (e: any) {
-    if (uploadedKey) await removeKeys(supabase, [uploadedKey]);
-    return NextResponse.json(
-      { error: "Failed to create Notaris", detail: e?.message ?? String(e) },
-      { status: 500 }
-    );
-  }
-}
-
-// PATCH /api/progress/[id]/notaris
-export async function PATCH(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
-  const supabase = await createClient();
-  const user = await getCurrentUser();
-  if (!user)
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!canProgressKplt("update", user))
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Forbidden",
-        message: "Anda tidak berhak melakukan aksi ini",
-      },
-      { status: 403 }
-    );
-  if (!user.branch_id)
-    return NextResponse.json(
-      { error: "Forbidden", message: "User has no branch" },
-      { status: 403 }
-    );
-
-  const progressId = params?.id;
-  if (!progressId)
-    return NextResponse.json({ error: "Invalid id" }, { status: 422 });
-
-  let ulokId: string;
-  try {
-    ulokId = await resolveUlokIdWithinScope(
-      supabase,
-      progressId,
-      user.branch_id
-    );
-  } catch (e: any) {
-    const msg = e?.message || "Scope check failed";
-    const status = /out of scope|not found/i.test(msg) ? 404 : 500;
-    return NextResponse.json({ error: msg }, { status });
-  }
-
-  // Ambil row lama untuk cleanup file jika diganti
-  const { data: oldRow, error: getErr } = await supabase.rpc("fn_notaris_get", {
-    p_user_id: user.id,
-    p_branch_id: user.branch_id,
-    p_progress_kplt_id: progressId,
-  });
-  if (getErr) {
-    const status = (getErr as any)?.code === "22023" ? 404 : 500;
-    return NextResponse.json(
-      { error: "Failed to load Notaris", detail: getErr.message ?? getErr },
-      { status }
-    );
-  }
-  if (!oldRow)
-    return NextResponse.json({ error: "Notaris not found" }, { status: 404 });
-
-  const ct = req.headers.get("content-type") || "";
-  let payload: Record<string, unknown> = {};
-  let uploadedKey: string | undefined;
-  let replaced = false;
-
-  try {
-    if (ct.includes("multipart/form-data")) {
-      const parsed = await parseMultipartAndUpload(supabase, ulokId, req);
-      payload = parsed.payload;
-      uploadedKey = parsed.newUploadedKey;
-      replaced = parsed.replacedFile || false;
-    } else {
-      const body = await req.json().catch(() => ({}));
-      if (
-        "id" in body ||
-        "progress_kplt_id" in body ||
-        "final_status_notaris" in body ||
-        "created_at" in body ||
-        "updated_at" in body ||
-        "tgl_selesai_notaris" in body
-      ) {
-        return NextResponse.json(
-          { error: "Invalid payload: server-controlled fields present" },
-          { status: 400 }
-        );
-      }
-      const parsed = NotarisUpdateSchema.safeParse(body);
-      if (!parsed.success)
-        return NextResponse.json(
-          { error: "Validation failed", detail: parsed.error.issues },
-          { status: 422 }
-        );
-      payload = stripServerControlledFieldsNotaris(parsed.data);
-
-      const po = (payload as any)?.par_online;
-      if (typeof po === "string") {
-        if (!po.startsWith(`${ulokId}/notaris/`)) {
-          return NextResponse.json(
-            { error: "Invalid par_online key prefix" },
-            { status: 422 }
-          );
-        }
-        replaced = true;
-      }
-    }
-
+    // 4. Execute RPC
     const { data, error } = await supabase.rpc("fn_notaris_update", {
-      p_user_id: user.id,
-      p_branch_id: user.branch_id,
-      p_progress_kplt_id: progressId,
+      p_user_id: user!.id,
+      p_branch_id: user!.branch_id,
+      p_progress_kplt_id: id,
       p_payload: payload,
     });
 
     if (error) {
-      if (uploadedKey) await removeKeys(supabase, [uploadedKey]);
-      const status = (error as any)?.code === "22023" ? 409 : 500;
-      return NextResponse.json(
-        { error: "Failed to update Notaris", detail: error.message ?? error },
-        { status }
-      );
+      await removeFiles(supabase, uploadedKeys); //rollback
+      return handleCommonError(error, "NOTARIS_UPDATE");
     }
 
-    // Hapus file lama jika diganti
-    if (replaced) {
-      const prev = (oldRow as any)?.par_online;
-      const now = (payload as any)?.par_online;
-      if (typeof prev === "string" && prev && prev !== now) {
-        await removeKeys(supabase, [prev]);
-      }
+    // 5. Cleanup Old Files
+    const keysToDelete: string[] = [];
+    for (const f of fieldsToCheck) {
+      const prev = (oldRow as any)?.[f];
+      const now = (payload as any)?.[f];
+      if (prev && typeof prev === "string" && prev !== now)
+        keysToDelete.push(prev);
     }
+    await removeFiles(supabase, keysToDelete);
 
     return NextResponse.json({ data }, { status: 200 });
-  } catch (e: any) {
-    if (uploadedKey) await removeKeys(supabase, [uploadedKey]);
-    return NextResponse.json(
-      { error: "Failed to update Notaris", detail: e?.message ?? String(e) },
-      { status: 500 }
-    );
+  } catch (err: any) {
+    await removeFiles(supabase, uploadedKeys); //rollback
+    return handleCommonError(err, "NOTARIS_PATCH_UNHANDLED");
   }
 }
 
-// DELETE /api/progress/[id]/notaris
+/**
+ * @route DELETE /api/progress/[id]/notaris
+ * @description Menghapus data Notaris dan file par_online terkait.
+ */
 export async function DELETE(
-  _req: Request,
-  { params }: { params: { id: string } }
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const supabase = await createClient();
   const user = await getCurrentUser();
-  if (!user)
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!canProgressKplt("delete", user) && !canProgressKplt("update", user))
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  if (!user.branch_id)
-    return NextResponse.json(
-      { error: "Forbidden", message: "User has no branch" },
-      { status: 403 }
-    );
 
-  const progressId = params?.id;
-  if (!progressId)
-    return NextResponse.json({ error: "Invalid id" }, { status: 422 });
+  // 1. Auth Check
+  const authErr = await checkAuthAndAccess(supabase, user, id, "delete");
+  if (authErr) return NextResponse.json(authErr, { status: authErr.status });
 
-  // Dapatkan row untuk tahu key file
-  const { data: oldRow, error: getErr } = await supabase.rpc("fn_notaris_get", {
-    p_user_id: user.id,
-    p_branch_id: user.branch_id,
-    p_progress_kplt_id: progressId,
+  // 2. Get Old Data (for cleanup)
+  const { data: oldRow } = await supabase.rpc("fn_notaris_get", {
+    p_user_id: user!.id,
+    p_branch_id: user!.branch_id,
+    p_progress_kplt_id: id,
   });
-  if (getErr) {
-    const status = (getErr as any)?.code === "22023" ? 404 : 500;
-    return NextResponse.json(
-      { error: "Failed to load Notaris", detail: getErr.message ?? getErr },
-      { status }
-    );
-  }
-  if (!oldRow)
-    return NextResponse.json({ error: "Notaris not found" }, { status: 404 });
 
+  // 3. Execute Delete
   const { data, error } = await supabase.rpc("fn_notaris_delete", {
-    p_user_id: user.id,
-    p_branch_id: user.branch_id,
-    p_progress_kplt_id: progressId,
+    p_user_id: user!.id,
+    p_branch_id: user!.branch_id,
+    p_progress_kplt_id: id,
   });
 
-  if (error) {
-    const status = (error as any)?.code === "22023" ? 409 : 500;
-    return NextResponse.json(
-      { error: "Failed to delete Notaris", detail: error.message ?? error },
-      { status }
-    );
+  if (error) return handleCommonError(error, "NOTARIS_DELETE");
+  // 4. Cleanup Files
+  if (oldRow) {
+    const keys = FILE_FIELDS.map((f) => (oldRow as any)[f]).filter(Boolean);
+    await removeFiles(supabase, keys);
   }
-
-  // Hapus file par_online (best-effort)
-  const prev = (oldRow as any)?.par_online;
-  if (typeof prev === "string" && prev) await removeKeys(supabase, [prev]);
 
   return NextResponse.json({ data }, { status: 200 });
 }

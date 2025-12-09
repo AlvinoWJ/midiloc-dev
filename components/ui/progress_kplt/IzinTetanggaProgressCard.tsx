@@ -18,6 +18,10 @@ import { useAlert } from "@/components/shared/alertcontext";
 import { useFile, ApiFile } from "@/hooks/progress_kplt/useFilesProgress";
 import { useUser } from "@/hooks/useUser";
 
+/**
+ * Helper: Menambahkan pemisah ribuan (titik) pada string angka.
+ * Contoh: "1000000" -> "1.000.000"
+ */
 const formatnumeric = (value: string | number | undefined | null) => {
   if (value === undefined || value === null || value === "") return "";
   const numberValue =
@@ -28,6 +32,10 @@ const formatnumeric = (value: string | number | undefined | null) => {
   return new Intl.NumberFormat("id-ID").format(numberValue);
 };
 
+/**
+ * Helper: Menghapus pemisah ribuan untuk dikirim ke API / kalkulasi.
+ * Contoh: "1.000.000" -> 1000000
+ */
 const unformatnumeric = (value: string | undefined | null) => {
   if (!value) return undefined;
   const unformatted = value.replace(/\./g, "");
@@ -35,6 +43,9 @@ const unformatnumeric = (value: string | undefined | null) => {
   return isNaN(numberValue) ? undefined : numberValue;
 };
 
+/**
+ * Komponen UI Wrapper untuk Kartu Detail
+ */
 const DetailCard = ({
   title,
   icon,
@@ -59,6 +70,9 @@ const DetailCard = ({
   </div>
 );
 
+/**
+ * Komponen UI untuk menampilkan Link File atau status kosong.
+ */
 const FileLink = ({
   label,
   file,
@@ -105,7 +119,10 @@ interface FormProps {
   currentFileBukti: ApiFile | undefined;
 }
 
-// 🔸 Komponen Form
+/**
+ * Komponen Form: IzinTetanggaForm
+ * Menangani Input Data (Tanggal, Nominal) dan Upload File.
+ */
 const IzinTetanggaForm: React.FC<FormProps> = ({
   progressId,
   onSuccess,
@@ -117,44 +134,55 @@ const IzinTetanggaForm: React.FC<FormProps> = ({
 }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { showToast } = useAlert();
+
+  // State untuk file baru yang akan diupload
   const [fileIzin, setFileIzin] = useState<File | null>(null);
   const [fileBukti, setFileBukti] = useState<File | null>(null);
 
+  // State tampilan nominal (terformat)
   const [displayNominal, setDisplayNominal] = useState<string>("");
 
+  // Set initial value nominal saat edit mode
   useEffect(() => {
     if (initialData) {
       setDisplayNominal(formatnumeric(initialData.nominal));
     }
   }, [initialData]);
 
+  // Handler input angka agar hanya menerima digit
   const handleNumericInputChange = (
     e: React.ChangeEvent<HTMLInputElement>,
     setter: React.Dispatch<React.SetStateAction<string>>
   ) => {
     const { value } = e.target;
-    const rawValue = value.replace(/\./g, "");
-    if (!/^\d*$/.test(rawValue)) return;
+    const rawValue = value.replace(/\./g, ""); // Hapus titik lama
+    if (!/^\d*$/.test(rawValue)) return; // Validasi regex angka only
 
-    setter(formatnumeric(rawValue));
+    setter(formatnumeric(rawValue)); // Format ulang dengan titik
   };
 
+  /**
+   * Handler Simpan Data (Drafting)
+   * Menggunakan FormData karena melibatkan file upload.
+   */
   const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
 
     const formData = new FormData(e.currentTarget);
 
+    // Append file hanya jika user memilih file baru
     if (fileIzin) formData.append("file_izin_tetangga", fileIzin);
     if (fileBukti) formData.append("file_bukti_pembayaran", fileBukti);
 
+    // Bersihkan format nominal sebelum dikirim (hapus titik)
     const nominalUnformatted = unformatnumeric(displayNominal);
-
     formData.set(
       "nominal",
       nominalUnformatted !== undefined ? String(nominalUnformatted) : ""
     );
 
+    // Validasi payload non-file menggunakan Zod
     const payload = {
       tanggal_terbit: formData.get("tanggal_terbit") || undefined,
       nominal: nominalUnformatted,
@@ -172,6 +200,7 @@ const IzinTetanggaForm: React.FC<FormProps> = ({
 
     try {
       const method = initialData ? "PATCH" : "POST";
+      // Kirim formData (bukan JSON) karena ada file
       const res = await fetch(`/api/progress/${progressId}/izin_tetangga`, {
         method,
         body: formData,
@@ -238,6 +267,7 @@ const IzinTetanggaForm: React.FC<FormProps> = ({
         {/* File Izin Tetangga */}
         <div className="md:col-span-2">
           <label className="block font-semibold mb-2">File Izin Tetangga</label>
+          {/* Tampilkan link file lama jika ada */}
           {currentFileIzin && !fileIzin && (
             <div className="mb-3">
               <FileLink label={currentFileIzin.name} file={currentFileIzin} />
@@ -265,6 +295,7 @@ const IzinTetanggaForm: React.FC<FormProps> = ({
           />
         </div>
 
+        {/* Action Buttons (Batal & Simpan) */}
         <div className="md:col-span-2 flex justify-end gap-3 mt-2">
           {onCancelEdit && (
             <Button
@@ -301,12 +332,17 @@ interface IzinTetanggaProgressCardProps {
   onDataUpdate: () => void;
 }
 
-// 🔸 Komponen Utama
+/**
+ * Komponen Utama: IzinTetanggaProgressCard
+ * Mengatur tampilan View/Edit, Fetching Data, dan Approval Final.
+ */
 const IzinTetanggaProgressCard: React.FC<IzinTetanggaProgressCardProps> = ({
   progressId,
   onDataUpdate,
 }) => {
+  // Fetch data progress utama
   const { data, loading, error, refetch } = useIzinTetanggaProgress(progressId);
+  // Fetch list file terkait (menggunakan custom hook useFile)
   const {
     filesMap,
     loading: fileLoading,
@@ -318,9 +354,11 @@ const IzinTetanggaProgressCard: React.FC<IzinTetanggaProgressCardProps> = ({
   const [isSubmittingReject, setIsSubmittingReject] = useState(false);
   const { showToast, showConfirmation } = useAlert();
 
+  // RBAC: Cek apakah user adalah Admin Branch
   const { user } = useUser();
   const isBranchAdmin = user?.position_nama === "admin branch";
 
+  // Ambil file spesifik dari Map
   const fileIzinTetangga = filesMap.get("file_izin_tetangga");
   const fileBuktiPembayaran = filesMap.get("file_bukti_pembayaran");
 
@@ -337,11 +375,17 @@ const IzinTetanggaProgressCard: React.FC<IzinTetanggaProgressCardProps> = ({
     }
   };
 
+  /**
+   * Handler untuk Finalisasi Status (Approval).
+   * Bisa "Selesai" (Submit) atau "Batal" (Reject).
+   * Setelah ini data akan terkunci (tidak bisa diedit).
+   */
   const handleFinalizeIT = async (status: "Selesai" | "Batal") => {
     const actionText = status === "Selesai" ? "submit" : "batalkan";
     const actionTitle = status === "Selesai" ? "Submit" : "Pembatalan";
     const confirmText = status === "Selesai" ? "Ya, Submit" : "Ya, Batalkan";
 
+    // Konfirmasi User
     const isConfirmed = await showConfirmation({
       title: `Konfirmasi ${actionTitle} Izin Tetangga`,
       message: `Apakah Anda yakin ingin ${actionText} Izin Tetangga ini? Data yang sudah di-${actionText} tidak dapat diubah kembali.`,
@@ -351,6 +395,7 @@ const IzinTetanggaProgressCard: React.FC<IzinTetanggaProgressCardProps> = ({
 
     if (!isConfirmed) return;
 
+    // Set loading state sesuai tombol yang ditekan
     if (status === "Selesai") {
       setIsSubmittingApprove(true);
     } else {
@@ -371,6 +416,7 @@ const IzinTetanggaProgressCard: React.FC<IzinTetanggaProgressCardProps> = ({
       const json = await res.json();
 
       if (!res.ok) {
+        // Handle error spesifik dari backend
         const errorMsg =
           json.detail || json.error || "Gagal melakukan " + actionText;
         let errorTitle = "Gagal";
@@ -405,6 +451,7 @@ const IzinTetanggaProgressCard: React.FC<IzinTetanggaProgressCardProps> = ({
     }
   };
 
+  /* --- KONDISI LOADING & ERROR --- */
   if (loading || fileLoading)
     return (
       <div className="flex justify-center py-10 mt-8 w-full">
@@ -419,6 +466,7 @@ const IzinTetanggaProgressCard: React.FC<IzinTetanggaProgressCardProps> = ({
       </div>
     );
 
+  /* --- KONDISI EDIT MODE --- */
   if (!data || isEditing) {
     return (
       <div className="w-full">
@@ -439,10 +487,11 @@ const IzinTetanggaProgressCard: React.FC<IzinTetanggaProgressCardProps> = ({
     );
   }
 
+  // Cek apakah status sudah final
   const isFinalized =
     data.final_status_it === "Selesai" || data.final_status_it === "Batal";
 
-  // Mode Read
+  /* --- KONDISI VIEW MODE (Read Only) --- */
   return (
     <div className="w-full">
       <DetailCard
@@ -482,9 +531,10 @@ const IzinTetanggaProgressCard: React.FC<IzinTetanggaProgressCardProps> = ({
           </div>
         </div>
 
+        {/* Action Buttons: Hanya muncul jika admin branch & belum final */}
         {!isFinalized && isBranchAdmin && (
           <div className="flex gap-3 mt-6">
-            {/* Tombol Edit */}
+            {/* Tombol Edit: Pindah ke Edit Mode */}
             <Button
               variant="secondary" // Ganti variant agar konsisten
               onClick={() => setIsEditing(true)}
@@ -494,7 +544,7 @@ const IzinTetanggaProgressCard: React.FC<IzinTetanggaProgressCardProps> = ({
               <Pencil className="mr-2" size={16} /> Edit
             </Button>
 
-            {/* Tombol Batal (Baru) */}
+            {/* Tombol Batal: Finalisasi dengan status Batal */}
             <Button
               variant="default"
               onClick={() => handleFinalizeIT("Batal")} //
@@ -508,7 +558,7 @@ const IzinTetanggaProgressCard: React.FC<IzinTetanggaProgressCardProps> = ({
               Batal
             </Button>
 
-            {/* Tombol Submit (Modifikasi) */}
+            {/* Tombol Submit: Finalisasi dengan status Selesai */}
             <Button
               type="submit"
               variant="submit"

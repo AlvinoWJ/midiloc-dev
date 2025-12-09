@@ -1,5 +1,21 @@
 "use client";
 
+/**
+ * DetailUlokLayout
+ * ----------------
+ * Layout utama untuk melihat dan mengedit detail Usulan Lokasi (ULOK).
+ * Halaman ini memiliki dua mode tampilan: Mode Baca (Read-Only) dan Mode Edit.
+ *
+ * Fitur Utama:
+ * - **Role-Based Access**:
+ * - **Location Specialist**: Dapat mengedit data jika status masih "In Progress".
+ * - **Location Manager**: Dapat melakukan Approval (OK/NOK) jika status "In Progress".
+ * - **Toggle Edit Mode**: Mengubah tampilan dari teks statis menjadi form input.
+ * - **Dynamic Map Picker**: Modal peta interaktif untuk memilih koordinat (Lat/Long).
+ * - **Sticky Mobile Actions**: Tombol aksi melayang di bawah layar mobile yang otomatis hilang saat scroll mencapai dasar.
+ * - **File Management**: Menampilkan file PDF existing atau upload file baru saat mode edit.
+ */
+
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
@@ -33,6 +49,10 @@ import { MappedUlokData } from "@/hooks/ulok/useUlokDetail";
 import { UlokUpdateInput } from "@/lib/validations/ulok";
 import { FileUpload } from "../ui/uploadfile";
 
+/**
+ * Lazy load component peta untuk pemilihan lokasi (Client-side only)
+ * guna mengurangi bundle size awal.
+ */
 const LocationPickerModal = dynamic(
   () => import("@/components/map/LocationPickerMap"),
   { ssr: false }
@@ -47,6 +67,11 @@ interface DetailUlokLayoutProps {
   formulokUrl: string | null;
 }
 
+/**
+ * Komponen Helper: Field Detail
+ * Menangani rendering kondisional antara teks biasa (Mode Baca)
+ * dan Input/Textarea (Mode Edit).
+ */
 const DetailField = ({
   label,
   value,
@@ -86,7 +111,6 @@ const DetailField = ({
   </div>
 );
 
-// PERUBAHAN 1: Mengganti nama komponen menjadi lebih umum
 export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
   const {
     isLoading,
@@ -102,6 +126,7 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
   const [isApproving, setIsApproving] = useState(false);
   const [isMapOpen, setIsMapOpen] = useState(false);
 
+  // Hook Custom: Mengelola state form, validasi, dan logika penyimpanan
   const {
     isEditing,
     setIsEditing,
@@ -119,14 +144,20 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
     return <DetailUlokSkeleton />;
   }
 
+  // --- Role & Permissions Check ---
   const isLocationManager =
     user?.position_nama?.toLowerCase().trim() === "location manager";
   const isLocationSpecialist =
     user?.position_nama?.toLowerCase().trim() === "location specialist";
   const isPendingApproval = initialData.approval_status === "In Progress";
+
+  // --- Dropdown Options ---
   const formatStoreOptions = ["Reguler", "Super", "Spesifik", "Franchise"];
   const bentukObjekOptions = ["Tanah", "Bangunan"];
 
+  /**
+   * Handler untuk Manager melakukan Approval/Rejection.
+   */
   const handleApproveAction = async (status: "OK" | "NOK") => {
     if (!onApprove) return;
     setIsApproving(true);
@@ -134,6 +165,10 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
     setIsApproving(false);
   };
 
+  /**
+   * Callback saat user memilih lokasi dari modal peta.
+   * Mengisi field LatLong secara otomatis.
+   */
   const handleMapSelect = (lat: number, lng: number) => {
     const latlongValue = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
     const event = {
@@ -143,8 +178,12 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
     setIsMapOpen(false);
   };
 
+  /**
+   * Effect: Mendeteksi scroll position untuk UI Mobile.
+   * Tombol aksi akan "floating" di bawah layar mobile,
+   * namun akan menyatu dengan layout saat scroll mencapai paling bawah.
+   */
   const [isAtBottom, setIsAtBottom] = useState(false);
-
   useEffect(() => {
     const handleScroll = () => {
       const atBottom =
@@ -158,6 +197,10 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
     };
   }, []);
 
+  /**
+   * Komponen Tombol Aksi (Edit, Simpan, Batal).
+   * Dirender di header (Desktop) dan di sticky footer (Mobile).
+   */
   const ActionButtons = () => (
     <>
       {isEditing ? (
@@ -185,7 +228,6 @@ export default function DetailUlokLayout(props: DetailUlokLayoutProps) {
             ) : (
               "Simpan"
             )}
-            {/* {isSubmitting ? "Menyimpan..." : "Simpan"} */}
           </Button>
         </>
       ) : (

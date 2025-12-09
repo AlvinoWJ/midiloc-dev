@@ -1,5 +1,22 @@
 "use client";
 
+/**
+ * DashboardLayout
+ * ---------------
+ * Layout utama untuk halaman Dashboard Performa.
+ * Halaman ini berfungsi sebagai pusat visualisasi data yang mencakup:
+ * - Kartu Statistik (KPI Utama)
+ * - Grafik Donut (Persentase Status)
+ * - Grafik Bar (Tren Per Bulan)
+ * - Peta Interaktif (Sebaran Lokasi)
+ *
+ * Fitur Utama:
+ * - **Filtering Bertingkat**: Tahun, Cabang (untuk Manager), dan Specialist.
+ * - **Role-Based View**: Tampilan filter menyesuaikan role user (GM, RM, BM, LM).
+ * - **Dynamic Map Filters**: Filter peta dapat berubah antara ULOK, KPLT, dan Progress KPLT.
+ * - **Data Calculation**: Melakukan perhitungan ulang KPI di sisi client saat filter specialist aktif.
+ */
+
 import React, { useMemo, useEffect, useState } from "react";
 import { DashboardPageProps } from "@/types/common";
 import { StatsCard } from "../ui/statscard";
@@ -9,6 +26,9 @@ import dynamic from "next/dynamic";
 import { DashboardSkeleton } from "../ui/skleton";
 import YearPicker from "../ui/yearpicker";
 
+/**
+ * Lazy load component peta untuk optimasi performa awal (Client-side only).
+ */
 const PetaLokasiInteraktif = dynamic(
   () => import("@/components/map/PetaLokasiInteraktif"),
   {
@@ -21,7 +41,7 @@ const PetaLokasiInteraktif = dynamic(
   }
 );
 
-// Legends
+// --- Konfigurasi Legend Grafik ---
 const ulokLegendConfig = [
   { status: "In Progress", label: "In Progress" },
   { status: "OK", label: "Approve (OK)" },
@@ -50,9 +70,12 @@ interface BranchOption {
   nama_cabang: string;
 }
 
-// --- PERUBAHAN 1: Tambahkan Tipe dan Status untuk Progress KPLT ---
+// --- Definisi Tipe Filter Peta ---
 type ActiveMapFilter = "ulok" | "kplt" | "progress_kplt";
 
+/**
+ * Opsi status dropdown pada peta yang berubah dinamis tergantung ActiveMapFilter.
+ */
 const STATUS_OPTIONS = {
   ulok: ["Semua Status", "OK", "NOK", "In Progress"] as const,
   kplt: [
@@ -74,13 +97,18 @@ const STATUS_OPTIONS = {
   ] as const,
 };
 
-// Tipe gabungan untuk state status
 type AnyStatus =
   | (typeof STATUS_OPTIONS.ulok)[number]
   | (typeof STATUS_OPTIONS.kplt)[number]
   | (typeof STATUS_OPTIONS.progress_kplt)[number];
 
 export default function DashboardLayout(props: DashboardPageProps) {
+  /**
+   * Destructuring props utama.
+   * - propertiData: Data agregat untuk chart dan KPI.
+   * - propertiUntukPeta: Array raw data lokasi untuk pin di peta.
+   * - on...Change: Handler untuk perubahan filter dari parent component.
+   */
   const {
     propertiData,
     propertiUntukPeta,
@@ -96,29 +124,36 @@ export default function DashboardLayout(props: DashboardPageProps) {
     onMapFilterChange,
   } = props;
 
+  /**
+   * Menentukan role user untuk logika tampilan filter.
+   */
   const userRole = propertiData?.filters?.role?.toLowerCase?.() || "";
-
-  // Tambahan peran
   const isLocationManager = userRole === "location manager";
-  const isBranchManager = userRole === "branch manager"; // BARU: BM ikut pola LM
+  const isBranchManager = userRole === "branch manager";
   const isRegionalManager = userRole === "regional manager";
-  const isGeneralManager = userRole === "general manager"; // BARU: GM bisa filter semua cabang
+  const isGeneralManager = userRole === "general manager";
 
-  // --- PERUBAHAN 2: Tipe state statusValue diperbarui ---
+  /**
+   * State lokal untuk filter status spesifik pada Peta.
+   */
   const [statusValue, setStatusValue] = useState<AnyStatus>("Semua Status");
 
-  // --- PERUBAHAN 3: useEffect diperbarui untuk 3 tipe ---
+  /**
+   * Effect untuk mereset filter status peta jika tipe peta berubah.
+   * Contoh: Pindah dari "ULOK" ke "Progress KPLT", maka status harus divalidasi ulang.
+   */
   useEffect(() => {
-    // Tentukan opsi yang valid berdasarkan filter Tipe
     const options = STATUS_OPTIONS[activeMapFilter as ActiveMapFilter];
-
-    // @ts-ignore - Biarkan untuk pengecekan dinamis
+    // @ts-ignore - Pengecekan dinamis runtime
     if (!options.includes(statusValue)) {
       setStatusValue("Semua Status");
     }
   }, [activeMapFilter, statusValue]);
 
-  // Branch options cache (untuk RM/GM)
+  /**
+   * Cache opsi Cabang (Branch).
+   * Digunakan agar dropdown tidak kosong saat data di-refetch parsial.
+   */
   const [branchOptionsCache, setBranchOptionsCache] = useState<BranchOption[]>(
     []
   );
@@ -145,7 +180,10 @@ export default function DashboardLayout(props: DashboardPageProps) {
       }))
     : [];
 
-  // LS options cache (untuk LM/BM)
+  /**
+   * Cache opsi Specialist (LS).
+   * Digunakan oleh BM/LM untuk memfilter kinerja tim di bawahnya.
+   */
   const [lsOptionsCache, setLsOptionsCache] = useState<
     Array<{ user_id: string; nama: string }>
   >([]);
@@ -181,10 +219,16 @@ export default function DashboardLayout(props: DashboardPageProps) {
         }>) ?? []
       : [];
 
+  /*
+   * Menghitung data Kartu Statistik (KPI) secara dinamis.
+   * - Jika "Semua Specialist", gunakan data agregat global.
+   * - Jika salah satu specialist dipilih, hitung ulang KPI berdasarkan data spesifik user tersebut.
+   */
   const dynamicStatsData = useMemo(() => {
     if (!propertiData) return [];
     let kpis = propertiData.kpis;
 
+    // Logika override KPI jika memfilter user tertentu
     if (
       selectedSpecialistId &&
       propertiData.breakdown?.type === "user" &&
@@ -248,6 +292,10 @@ export default function DashboardLayout(props: DashboardPageProps) {
     ];
   }, [propertiData, selectedSpecialistId]);
 
+  /**
+   * Mempersiapkan data untuk Grafik Donut & Bar.
+   * Sama seperti KPI, data ini juga menyesuaikan jika ada specialist yang dipilih.
+   */
   const { ulokDonut, kpltDonut, ulokBar, kpltBar } = useMemo(() => {
     if (!propertiData)
       return { ulokDonut: [], kpltDonut: [], ulokBar: [], kpltBar: [] };
@@ -276,6 +324,7 @@ export default function DashboardLayout(props: DashboardPageProps) {
       waitingforforum: item.kplt_waiting_for_forum ?? 0,
     }));
 
+    // Override data donut chart jika specialist dipilih
     if (
       selectedSpecialistId &&
       propertiData.breakdown?.type === "user" &&
@@ -313,34 +362,16 @@ export default function DashboardLayout(props: DashboardPageProps) {
     return { ulokDonut, kpltDonut, ulokBar, kpltBar };
   }, [propertiData, selectedSpecialistId]);
 
-  const filteredProperti = useMemo(() => {
-    const dataToFilter = Array.isArray(propertiUntukPeta)
-      ? propertiUntukPeta
-      : [];
-    if (dataToFilter.length === 0) return [];
-
-    const selectedYear = propertiData?.filters?.year;
-    if (!selectedYear) return dataToFilter;
-
-    return dataToFilter.filter((lokasi: any) => {
-      if (!lokasi.created_at) return false;
-      const y = new Date(lokasi.created_at).getFullYear();
-      return y === selectedYear;
-    });
-  }, [propertiUntukPeta, propertiData?.filters?.year]);
-
-  const getYearDate = (year: number | undefined | null) => {
-    const yearToUse = year || new Date().getFullYear();
-    return new Date(yearToUse, 0, 1);
-  };
-
-  const currentStatusOptions =
-    activeMapFilter === "ulok" ? STATUS_OPTIONS.ulok : STATUS_OPTIONS.kplt;
-  activeMapFilter === "ulok" ? STATUS_OPTIONS.ulok : STATUS_OPTIONS.kplt;
-
+  /**
+   * Menyiapkan filter status untuk diteruskan ke komponen Peta.
+   * Jika "Semua Status", kirim undefined agar peta menampilkan semua pin.
+   */
   const childStatusFilter =
     statusValue === "Semua Status" ? undefined : [statusValue];
 
+  /**
+   * Render state Error.
+   */
   if (isError) {
     return (
       <main className="space-y-4 lg:space-y-6">
@@ -365,6 +396,9 @@ export default function DashboardLayout(props: DashboardPageProps) {
     );
   }
 
+  /**
+   * Render state Loading (Skeleton).
+   */
   if (isLoading || !propertiData) {
     return (
       <main className="space-y-4 lg:space-y-6">
@@ -373,9 +407,13 @@ export default function DashboardLayout(props: DashboardPageProps) {
     );
   }
 
+  /**
+   * Render Utama Layout Dashboard.
+   */
   return (
     <main className="space-y-4 lg:space-y-6">
       <>
+        {/* --- Header & Filters Section --- */}
         <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
           <div className="flex-shrink-0">
             <h1 className="text-3xl font-bold text-gray-800">
@@ -383,6 +421,7 @@ export default function DashboardLayout(props: DashboardPageProps) {
             </h1>
           </div>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+            {/* Filter Cabang (Hanya untuk RM/GM) */}
             {(isRegionalManager || isGeneralManager) &&
               branchOptions.length > 0 && (
                 <div className="relative group">
@@ -420,6 +459,7 @@ export default function DashboardLayout(props: DashboardPageProps) {
                 </div>
               )}
 
+            {/* Filter Specialist (Untuk LM/BM) */}
             {(isLocationManager || isBranchManager) &&
               propertiData.breakdown?.type === "user" && (
                 <div className="relative group">
@@ -471,6 +511,7 @@ export default function DashboardLayout(props: DashboardPageProps) {
                 </div>
               )}
 
+            {/* Filter Tahun */}
             <div className="relative group">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
                 <svg
@@ -499,6 +540,7 @@ export default function DashboardLayout(props: DashboardPageProps) {
           </div>
         </div>
 
+        {/* --- Stats Cards Section --- */}
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
             {dynamicStatsData.map((stat, index) => (
@@ -512,6 +554,7 @@ export default function DashboardLayout(props: DashboardPageProps) {
             ))}
           </div>
 
+          {/* --- Charts Section --- */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <DonutChart
               data={ulokDonut || []}
@@ -535,6 +578,7 @@ export default function DashboardLayout(props: DashboardPageProps) {
             />
           </div>
 
+          {/* --- Map Section --- */}
           <div className="bg-white p-4 rounded-lg shadow-[1px_1px_6px_rgba(0,0,0,0.25)]">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-2">
               <h3 className="text-lg font-semibold flex-shrink-0">
@@ -542,6 +586,7 @@ export default function DashboardLayout(props: DashboardPageProps) {
               </h3>
 
               <div className="flex flex-col sm:flex-row items-stretch gap-3 w-full sm:w-auto">
+                {/* Filter Tipe Peta */}
                 <div className="relative">
                   <select
                     value={activeMapFilter}
@@ -571,6 +616,7 @@ export default function DashboardLayout(props: DashboardPageProps) {
                   </div>
                 </div>
 
+                {/* Filter Status Peta (Dynamic) */}
                 <div className="relative">
                   <select
                     value={statusValue}
@@ -609,6 +655,7 @@ export default function DashboardLayout(props: DashboardPageProps) {
               </div>
             </div>
 
+            {/* Map Container */}
             <div className="h-[400px] w-full">
               <PetaLokasiInteraktif
                 data={propertiUntukPeta}

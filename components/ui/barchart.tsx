@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 
+// Konfigurasi warna untuk setiap tipe status
 const barColors: { [key: string]: string } = {
   approved: "#22C55E",
   nok: "#EF4444",
@@ -7,6 +8,10 @@ const barColors: { [key: string]: string } = {
   waitingforforum: "#3B82F6",
 };
 
+/**
+ * Props untuk komponen BarChart.
+ * Data diharapkan dalam bentuk array object per bulan.
+ */
 interface BarChartProps {
   data: {
     month: string;
@@ -22,22 +27,35 @@ interface BarChartProps {
   }[];
 }
 
+/**
+ * Komponen Stacked Bar Chart Custom.
+ * Dibangun menggunakan CSS Flexbox dan absolute positioning.
+ * Fitur: Responsif, Animasi Load, Custom Tooltip.
+ */
 export function BarChart({ data, title, legendConfig }: BarChartProps) {
+  // State untuk interaksi hover (Tooltip)
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [hoveredType, setHoveredType] = useState<
     "approved" | "in progress" | "nok" | null
   >(null);
+
+  // State untuk animasi growing bar saat mount
   const [animationProgress, setAnimationProgress] = useState(0);
+
+  // State untuk posisi tooltip mengikuti mouse
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+
+  // State untuk kalkulasi responsif lebar grafik
   const [containerWidth, setContainerWidth] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Efek 1: Trigger animasi saat komponen di-mount
   useEffect(() => {
     const timer = setTimeout(() => setAnimationProgress(1), 100);
     return () => clearTimeout(timer);
   }, []);
 
-  // Update container width on resize
+  // Efek 2: Handle resize window untuk update lebar grafik
   useEffect(() => {
     const updateWidth = () => {
       if (containerRef.current) {
@@ -50,19 +68,22 @@ export function BarChart({ data, title, legendConfig }: BarChartProps) {
     return () => window.removeEventListener("resize", updateWidth);
   }, []);
 
-  const maxValue = 100;
+  const maxValue = 100; // Skala Y-Axis (0 - 100)
 
-  // Responsive chart height
+  // Tentukan tinggi grafik berdasarkan lebar layar (Mobile vs Desktop)
   const chartHeightPx = containerWidth < 640 ? 180 : 256;
 
-  // Calculate available space and bar width
-  const availableWidth = containerWidth - 64; // padding + y-axis space
-  const totalGapSpace = (data.length - 1) * 4; // gap between bars
+  // --- LOGIKA KALKULASI LEBAR BAR ---
+  // Kurangi padding dan area Y-axis untuk mendapatkan area render bar
+  const availableWidth = containerWidth - 64;
+  const totalGapSpace = (data.length - 1) * 4; // Total spasi antar bar
+  // Hitung lebar per bar, dengan batasan min 18px dan max 32px
   const barWidth = Math.max(
     18,
     Math.min(32, (availableWidth - totalGapSpace) / data.length)
   );
 
+  // Handler posisi mouse untuk tooltip
   const handleMouseMove = (event: React.MouseEvent) => {
     setMousePosition({ x: event.clientX, y: event.clientY });
   };
@@ -86,6 +107,7 @@ export function BarChart({ data, title, legendConfig }: BarChartProps) {
         {title}
       </h3>
 
+      {/* Container Grafik Utama */}
       <div
         ref={containerRef}
         className="relative"

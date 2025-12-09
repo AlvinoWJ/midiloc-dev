@@ -1,8 +1,10 @@
-// components/ui/progress_kplt/VerticalProgressTimeline.tsx
 "use client";
 
 import React from "react";
 
+/**
+ * Tipe data untuk setiap langkah (step) dalam timeline.
+ */
 export interface ProgressStep {
   id: string;
   progress_id: string;
@@ -15,10 +17,14 @@ export interface ProgressStep {
 
 interface VerticalProgressTimelineProps {
   steps: ProgressStep[];
-  activeStep: number | null;
-  onStepClick: (index: number) => void;
+  activeStep: number | null; // Index step yang sedang dipilih/aktif
+  onStepClick: (index: number) => void; // Handler saat step diklik
 }
 
+/**
+ * Helper: Format tanggal manual ke Bahasa Indonesia.
+ * (Alternatif: bisa menggunakan toLocaleString('id-ID', ...))
+ */
 const formatDate = (date: string | null) => {
   if (!date) return "";
   const d = new Date(date);
@@ -39,11 +45,20 @@ const formatDate = (date: string | null) => {
   return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
 };
 
+/**
+ * Komponen Timeline Vertikal.
+ * Menampilkan urutan tahapan progress KPLT (misal: Izin Tetangga -> Perizinan -> dll).
+ */
 export default function VerticalProgressTimeline({
   steps,
   activeStep,
   onStepClick,
 }: VerticalProgressTimelineProps) {
+  /**
+   * Helper: Menggabungkan Start Date dan End Date.
+   * - Jika hanya Start Date: "10 Januari 2024"
+   * - Jika lengkap: "10 Januari 2024 - 15 Februari 2024"
+   */
   const formatDateRange = (
     startDate: string | null,
     endDate: string | null
@@ -59,6 +74,9 @@ export default function VerticalProgressTimeline({
     return `${formattedStartDate} - ${formatDate(endDate)}`;
   };
 
+  /**
+   * Helper: Mapping status kode ke Label UI Bahasa Indonesia.
+   */
   const getStatusText = (status: string) => {
     switch (status) {
       case "Done":
@@ -76,26 +94,29 @@ export default function VerticalProgressTimeline({
 
   return (
     <div className="w-full bg-white rounded-2xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)] p-6">
-      {/* Header */}
+      {/* Header Timeline */}
       <div className="mb-8">
         <h2 className="text-xl font-bold text-gray-900">Timeline Progress</h2>
       </div>
 
       <div className="relative">
         {steps.map((step, index) => {
+          // Tentukan styling berdasarkan status
           const isDone = step.status === "Done";
           const isInProgress = step.status === "In Progress";
           const isBatal = step.status === "Batal";
           const isActive = activeStep === index;
 
+          // Warna indikator (dot)
           const dotColor = isDone
-            ? "bg-submit"
+            ? "bg-submit" // Custom color dari tailwind config (biasanya hijau)
             : isInProgress
             ? "bg-yellow-500"
             : isBatal
             ? "bg-red-500"
             : "bg-gray-300";
 
+          // Cek apakah item terakhir (untuk menghilangkan garis penghubung ke bawah)
           const isLastItem = index === steps.length - 1;
           const dateRange = formatDateRange(step.start_date, step.end_date);
 
@@ -103,26 +124,26 @@ export default function VerticalProgressTimeline({
             <div
               key={step.id}
               className={`relative ${
-                !isLastItem ? "pb-10" : ""
+                !isLastItem ? "pb-10" : "" // Margin bawah untuk memberi ruang garis vertikal
               } cursor-pointer group`}
               onClick={() => onStepClick(index)}
             >
-              {/* Garis vertikal penghubung */}
+              {/* Garis Vertikal Penghubung (Kecuali item terakhir) */}
               {!isLastItem && (
                 <div className="absolute top-6 left-[9px] bottom-0 w-[2px] bg-gray-200" />
               )}
 
               <div className="flex items-start gap-4">
-                {/* Dot timeline - 20px */}
+                {/* Dot Indicator (Lingkaran Status) */}
                 <div
                   className={`relative z-10 flex-shrink-0 w-5 h-5 rounded-full transition-all ${dotColor} ${
-                    isActive ? "ring-2 ring-black " : ""
+                    isActive ? "ring-2 ring-black " : "" // Highlight item aktif
                   }`}
                 />
 
-                {/* Content */}
+                {/* Konten Text */}
                 <div className="flex-1">
-                  {/* Nama Step - 18px */}
+                  {/* Nama Tahapan */}
                   <h3
                     className={`text-lg font-semibold mb-1 ${
                       isActive ? "text-gray-900" : "text-gray-800"
@@ -131,7 +152,7 @@ export default function VerticalProgressTimeline({
                     {step.nama_tahap}
                   </h3>
 
-                  {/* Tanggal atau Status */}
+                  {/* Tampilan Tanggal atau Badge Status (jika tanggal kosong) */}
                   {dateRange ? (
                     <p className="text-sm text-gray-500">{dateRange}</p>
                   ) : (

@@ -2,19 +2,47 @@
 
 import { useState, useCallback } from "react";
 
+/**
+ * Mode file:
+ * - redirect → return URL (tanpa fetch)
+ * - proxy → fetch dan return Blob
+ */
 export type FileMode = "redirect" | "proxy";
 
+/**
+ * Opsi tambahan untuk fetch file:
+ * - mode → redirect / proxy
+ * - download → paksa proses download
+ * - expiresIn → masa berlaku signed URL (detik)
+ */
 interface useUlokEksternalFileOptions {
   mode?: FileMode;
   download?: boolean;
   expiresIn?: number;
 }
 
+/**
+ * useUlokEksternalFile
+ * --------------------
+ * Hook untuk mengelola fetching file ULok Eksternal.
+ * Mendukung redirect URL dan proxy blob.
+ */
 export function useUlokEksternalFile() {
+  /**
+   * State untuk indikator loading dan error.
+   */
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Generate URL endpoint
+  /**
+   * Generate URL endpoint ke route file:
+   * Format: /api/ulok_eksternal/[id]/files
+   *
+   * Menambahkan query params seperti:
+   * - mode
+   * - download=1
+   * - expiresIn=3600
+   */
   const getUrl = (id: string, opts?: useUlokEksternalFileOptions): string => {
     const params = new URLSearchParams();
 
@@ -22,13 +50,22 @@ export function useUlokEksternalFile() {
     if (opts?.download) params.set("download", "1");
     if (opts?.expiresIn) params.set("expiresIn", String(opts.expiresIn));
 
-    // PERBAIKAN: Sesuaikan URL dengan route /api/ulok_eksternal/[id]/files
     return `/api/ulok_eksternal/${id}/files?${params.toString()}`;
   };
 
   /**
-   * 1. Redirect Mode → return direct signed URL (string)
-   * 2. Proxy Mode → return Blob (image/pdf/video)
+   * fetchFile()
+   * -----------
+   * Mengambil file berdasarkan mode:
+   *
+   * 1. Proxy Mode
+   *    - Melakukan fetch ke server
+   *    - Validasi status response
+   *    - Return Blob (PDF/Image/Video)
+   *
+   * 2. Redirect Mode
+   *    - Tidak melakukan fetch
+   *    - Return URL string langsung
    */
   const fetchFile = useCallback(
     async (id: string, opts?: useUlokEksternalFileOptions) => {
@@ -38,8 +75,8 @@ export function useUlokEksternalFile() {
       try {
         const url = getUrl(id, opts);
 
+        // Mode PROXY → fetch file sebagai blob
         if (opts?.mode === "proxy") {
-          // Proxy mode → fetch file blob
           const res = await fetch(url);
 
           if (!res.ok) {
@@ -48,10 +85,10 @@ export function useUlokEksternalFile() {
           }
 
           const blob = await res.blob();
-          return blob; // return Blob for preview
+          return blob; // Blob bisa dipakai untuk preview <img> atau <iframe>
         }
 
-        // Redirect mode → return signed URL only (no fetch)
+        // Mode REDIRECT → return URL saja (tidak fetch)
         return url;
       } catch (err: any) {
         setError(err.message);
@@ -63,11 +100,18 @@ export function useUlokEksternalFile() {
     []
   );
 
+  /**
+   * Membuka file di tab baru menggunakan redirect URL.
+   * Tidak cocok untuk mode proxy (karena blob tidak bisa dibuka via URL secara langsung).
+   */
   const openFileInNewTab = (id: string, opts?: useUlokEksternalFileOptions) => {
     const url = getUrl(id, opts);
     window.open(url, "_blank");
   };
 
+  /**
+   * API Hook
+   */
   return {
     loading,
     error,

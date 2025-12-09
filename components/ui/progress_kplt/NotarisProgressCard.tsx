@@ -1,4 +1,3 @@
-// components/ui/progress_kplt/NotarisProgressCard.tsx
 "use client";
 
 import React, { useState } from "react";
@@ -22,6 +21,9 @@ import { useAlert } from "@/components/shared/alertcontext";
 import { NotarisHistoryModal } from "./NotarisHistoryModal";
 import { useUser } from "@/hooks/useUser";
 
+/**
+ * Komponen UI Wrapper untuk Kartu Detail
+ */
 const DetailCard = ({
   title,
   icon,
@@ -49,6 +51,9 @@ const DetailCard = ({
   </div>
 );
 
+/**
+ * Komponen UI untuk menampilkan Link File atau status kosong.
+ */
 const FileLink = ({
   label,
   file,
@@ -84,6 +89,10 @@ const FileLink = ({
   );
 };
 
+/**
+ * Komponen input file khusus form.
+ * Menampilkan link file lama jika ada dan belum diganti file baru.
+ */
 const FormFileInput: React.FC<{
   label: string;
   name: string;
@@ -98,6 +107,7 @@ const FormFileInput: React.FC<{
     >
       {label}
     </label>
+    {/* Tampilkan file lama jika user belum memilih file baru */}
     {currentFile && !isFileSelected && (
       <FileLink label={currentFile.name} file={currentFile} />
     )}
@@ -111,7 +121,7 @@ const FormFileInput: React.FC<{
   </div>
 );
 
-// Form Component
+// Interface Props untuk Form
 interface FormProps {
   progressId: string;
   onSuccess: () => void;
@@ -119,9 +129,13 @@ interface FormProps {
   onDataUpdate: () => void;
   onCancelEdit?: () => void;
   filesMap: Map<string, ApiFile>;
-  refreshHistory: () => void; // [NEW] Prop baru untuk trigger refresh history
+  refreshHistory: () => void; // Callback untuk refresh data riwayat setelah update
 }
 
+/**
+ * Komponen Form: NotarisForm
+ * Menangani input data Notaris dan Upload File (PAR Online).
+ */
 const NotarisForm: React.FC<FormProps> = ({
   progressId,
   onSuccess,
@@ -137,6 +151,7 @@ const NotarisForm: React.FC<FormProps> = ({
 
   const statusOptions = ["Belum", "Selesai", "Batal"];
 
+  // State lokal untuk controlled inputs (Selects)
   const [validasiLegal, setValidasiLegal] = useState<string>(
     initialData?.validasi_legal || ""
   );
@@ -147,17 +162,23 @@ const NotarisForm: React.FC<FormProps> = ({
     initialData?.status_pembayaran || ""
   );
 
+  /**
+   * Handler Simpan Data (Drafting)
+   */
   const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
 
     const formData = new FormData(e.currentTarget);
+    // Append file hanya jika ada file baru yang dipilih
     if (fileParOnline) formData.append("par_online", fileParOnline);
 
+    // Append state select ke FormData
     formData.append("validasi_legal", validasiLegal);
     formData.append("status_notaris", statusNotaris);
     formData.append("status_pembayaran", statusPembayaran);
 
+    // Validasi payload menggunakan Zod Schema
     const payload = {
       awal_sewa: formData.get("awal_sewa") || undefined,
       akhir_sewa: formData.get("akhir_sewa") || undefined,
@@ -186,7 +207,7 @@ const NotarisForm: React.FC<FormProps> = ({
       const method = initialData ? "PATCH" : "POST";
       const res = await fetch(`/api/progress/${progressId}/notaris`, {
         method,
-        body: formData,
+        body: formData, // Kirim FormData (multipart)
       });
 
       const json = await res.json();
@@ -197,8 +218,8 @@ const NotarisForm: React.FC<FormProps> = ({
         );
       }
 
-      onDataUpdate();
-      refreshHistory();
+      onDataUpdate(); // Refresh data utama
+      refreshHistory(); // Refresh riwayat perubahan
 
       showToast({
         type: "success",
@@ -228,7 +249,7 @@ const NotarisForm: React.FC<FormProps> = ({
         onSubmit={handleSave}
         className="grid grid-cols-1 md:grid-cols-2 gap-4"
       >
-        {/* ... (INPUT FIELD SAMA SEPERTI SEBELUMNYA) ... */}
+        {/* --- Input Fields --- */}
         <div>
           <label
             htmlFor="awal_sewa"
@@ -363,6 +384,8 @@ const NotarisForm: React.FC<FormProps> = ({
             defaultValue={initialData?.tanggal_pembayaran || ""}
           />
         </div>
+
+        {/* Input File: PAR Online */}
         <FormFileInput
           label="PAR Online"
           name="par_online"
@@ -371,6 +394,7 @@ const NotarisForm: React.FC<FormProps> = ({
           onChange={(e) => setFileParOnline(e.target.files?.[0] || null)}
         />
 
+        {/* Action Buttons */}
         <div className="md:col-span-2 flex justify-end gap-3 mt-6">
           {onCancelEdit && (
             <Button
@@ -407,6 +431,7 @@ interface NotarisProgressCardProps {
   onDataUpdate: () => void;
 }
 
+// Komponen Helper untuk menampilkan Field Data Read-Only
 const DetailField: React.FC<{ label: string; value: React.ReactNode }> = ({
   label,
   value,
@@ -419,7 +444,10 @@ const DetailField: React.FC<{ label: string; value: React.ReactNode }> = ({
   </div>
 );
 
-// Komponen Utama
+/**
+ * Komponen Utama: NotarisProgressCard
+ * Mengatur View/Edit Mode, Approval Final, dan Modal History.
+ */
 const NotarisProgressCard: React.FC<NotarisProgressCardProps> = ({
   progressId,
   onDataUpdate,
@@ -442,6 +470,7 @@ const NotarisProgressCard: React.FC<NotarisProgressCardProps> = ({
   const { user } = useUser();
   const isBranchAdmin = user?.position_nama === "admin branch";
 
+  // Fungsi untuk refresh data history via SWR mutate
   const refreshHistoryData = () => {
     mutate(`/api/progress/${progressId}/notaris/history`);
   };
@@ -455,6 +484,10 @@ const NotarisProgressCard: React.FC<NotarisProgressCardProps> = ({
         })
       : "-";
 
+  /**
+   * Handler untuk Finalisasi (Approval).
+   * Bisa Selesai atau Batal.
+   */
   const handleFinalizeNotaris = async (status: "Selesai" | "Batal") => {
     const actionText = status === "Selesai" ? "submit" : "batalkan";
     const actionTitle = status === "Selesai" ? "Submit" : "Pembatalan";
@@ -504,8 +537,7 @@ const NotarisProgressCard: React.FC<NotarisProgressCardProps> = ({
         return;
       }
       onDataUpdate();
-
-      refreshHistoryData();
+      refreshHistoryData(); // Update history setelah approval
 
       showToast({
         type: "success",
@@ -523,6 +555,7 @@ const NotarisProgressCard: React.FC<NotarisProgressCardProps> = ({
     }
   };
 
+  /* --- KONDISI LOADING & ERROR --- */
   if (loading || loadingFiles)
     return (
       <div className="flex justify-center py-10 mt-8 w-full ">
@@ -537,6 +570,7 @@ const NotarisProgressCard: React.FC<NotarisProgressCardProps> = ({
       </div>
     );
 
+  /* --- KONDISI EDIT MODE --- */
   if (!data || isEditing)
     return (
       <div className="w-full ">
@@ -551,7 +585,7 @@ const NotarisProgressCard: React.FC<NotarisProgressCardProps> = ({
           onDataUpdate={onDataUpdate}
           onCancelEdit={isEditing ? () => setIsEditing(false) : undefined}
           filesMap={filesMap}
-          refreshHistory={refreshHistoryData} // [NEW] Pass fungsi ke Form
+          refreshHistory={refreshHistoryData}
         />
       </div>
     );
@@ -560,11 +594,13 @@ const NotarisProgressCard: React.FC<NotarisProgressCardProps> = ({
     data.final_status_notaris === "Selesai" ||
     data.final_status_notaris === "Batal";
 
+  /* --- KONDISI VIEW MODE (Read Only) --- */
   return (
     <div className="w-full ">
       <DetailCard
         title="Notaris"
         icon={<Briefcase className="text-purple-500" size={20} />}
+        // Tombol Riwayat di Header Card
         actions={
           <Button
             variant="default"
@@ -613,6 +649,8 @@ const NotarisProgressCard: React.FC<NotarisProgressCardProps> = ({
             </div>
           </div>
         </div>
+
+        {/* Action Buttons: Muncul jika admin branch & belum final */}
         {!isFinalized && isBranchAdmin && (
           <div className="flex gap-3 mt-6">
             <Button
@@ -653,6 +691,8 @@ const NotarisProgressCard: React.FC<NotarisProgressCardProps> = ({
           </div>
         )}
       </DetailCard>
+
+      {/* Modal Riwayat Perubahan */}
       {showHistoryModal && (
         <NotarisHistoryModal
           progressId={progressId}

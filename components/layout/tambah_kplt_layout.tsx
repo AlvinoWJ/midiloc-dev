@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +11,11 @@ import { KpltCreatePayload } from "@/lib/validations/kplt";
 import PrefillKpltCard from "../ui/prefillkpltcard";
 import { KpltBaseUIMapped } from "@/types/common";
 
+/**
+ * Interface untuk props komponen layout.
+ * Komponen ini bersifat "Presentational", artinya logika state dan validasi
+ * dikelola oleh parent component (via props formData, errors, handleChange, dll).
+ */
 interface TambahKpltLayoutProps {
   prefillData: KpltBaseUIMapped | undefined;
   formData: any;
@@ -25,6 +30,10 @@ interface TambahKpltLayoutProps {
   handleFormSubmit: (e: React.FormEvent) => void;
 }
 
+/**
+ * Interface konfigurasi untuk input file.
+ * Digunakan untuk men-generate input secara dinamis (mapping).
+ */
 interface FileInputConfig {
   name: keyof KpltCreatePayload;
   label: string;
@@ -44,6 +53,7 @@ export default function TambahKpltLayout({
 }: TambahKpltLayoutProps) {
   const router = useRouter();
 
+  // Opsi-opsi statis untuk dropdown select
   const karakterLokasiOptions = [
     "High Traffic",
     "Residential",
@@ -52,6 +62,11 @@ export default function TambahKpltLayout({
   const SocialEconomyOptions = ["Upper", "Upper & Middle", "Upper & Lower"];
   const PeStatusOptions = ["OK", "NOK"];
 
+  /**
+   * Konfigurasi daftar file yang perlu diupload.
+   * Array ini digunakan di method `.map()` di bagian JSX untuk menghindari
+   * penulisan kode komponen <Input type="file"> berulang-ulang (DRY Principle).
+   */
   const fileInputList: FileInputConfig[] = [
     {
       name: "pdf_foto",
@@ -132,6 +147,9 @@ export default function TambahKpltLayout({
     },
   ];
 
+  /**
+   * Helper untuk format ukuran file menjadi text yang mudah dibaca (KB, MB).
+   */
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return "0 Bytes";
     const k = 1024;
@@ -140,6 +158,11 @@ export default function TambahKpltLayout({
     return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + " " + sizes[i];
   };
 
+  /**
+   * Helper untuk format angka input dengan pemisah ribuan (titik).
+   * Contoh: 1000000 -> 1.000.000
+   * Regex `/\B(?=(\d{3})+(?!\d))/g` mencari batas posisi setiap 3 digit.
+   */
   const formatNumber = (value: string) => {
     if (!value) return "";
     const parts = value.split(",");
@@ -147,6 +170,10 @@ export default function TambahKpltLayout({
     return parts.join(",");
   };
 
+  /**
+   * Handler untuk mencegah form ter-submit secara tidak sengaja
+   * saat user menekan tombol 'Enter' pada field input biasa.
+   */
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (
       e.key === "Enter" &&
@@ -165,6 +192,7 @@ export default function TambahKpltLayout({
         noValidate
         className="max-w-7xl mx-auto"
       >
+        {/* Tombol Kembali */}
         <Button
           type="button"
           onClick={() => router.back()}
@@ -175,7 +203,9 @@ export default function TambahKpltLayout({
           Kembali
         </Button>
 
+        {/* Kartu Informasi Prefill (Jika ada data awal) */}
         {prefillData && <PrefillKpltCard baseData={prefillData} />}
+        {/* --- SECTION 1: ANALISIS KELAYAKAN LOKASI --- */}
         <div className="relative mt-10 mx-auto max-w-7xl">
           <div className="absolute -top-4 left-6 bg-red-600 text-white px-4 py-1 rounded shadow font-semibold text-base lg:text-lg">
             Analisis Kelayakan Lokasi
@@ -334,11 +364,13 @@ export default function TambahKpltLayout({
           </div>
         </div>
 
+        {/* --- SECTION 2: EVALUASI LOKASI POTENSIAL (File Uploads) --- */}
         <div className="relative mt-10">
           <div className="absolute -top-4 left-6 bg-red-600 text-white px-4 py-1 rounded shadow font-semibold text-base lg:text-lg">
             Evaluasi Lokasi Potensial
           </div>
           <div className="bg-white shadow-[1px_1px_6px_rgba(0,0,0,0.25)] rounded-xl px-6 py-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Generate Input File secara dinamis menggunakan mapping array fileInputList */}
             {fileInputList.map((file) => (
               <div className="space-y-2" key={file.name}>
                 <Label
@@ -359,10 +391,12 @@ export default function TambahKpltLayout({
                   accept={file.accept}
                 />
 
+                {/* State 1: Default (Helper Text) - Muncul jika tidak ada error & file belum dipilih */}
                 {!errors[file.name] && !formData[file.name] && (
                   <p className="text-xs text-gray-500">{file.helpertext}</p>
                 )}
 
+                {/* State 2: Success (File terpilih) - Muncul nama file & size */}
                 {formData[file.name] && !errors[file.name] && (
                   <div className="flex items-center gap-1 text-xs text-green-600 bg-green-50 px-3 py-2 rounded">
                     <Check className="w-3 h-3 flex-shrink-0" />
@@ -375,7 +409,7 @@ export default function TambahKpltLayout({
                   </div>
                 )}
 
-                {/* Error message */}
+                {/* State 3: Error Message - Muncul jika validasi gagal */}
                 {errors[file.name] && (
                   <div className="flex items-start gap-1 text-xs text-red-600 bg-red-50 px-3 py-2 rounded">
                     <X className="w-3 h-3  flex-shrink-0 mt-0.5" />
@@ -387,6 +421,7 @@ export default function TambahKpltLayout({
           </div>
         </div>
 
+        {/* Submit Button */}
         <div className="flex justify-end mt-6 mb-2">
           <Button
             type="submit"

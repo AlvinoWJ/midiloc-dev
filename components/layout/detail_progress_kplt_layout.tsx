@@ -1,6 +1,25 @@
-//detail_progress_kplt_layout.tsx
-
 "use client";
+
+/**
+ * DetailProgressKpltLayout
+ * ------------------------
+ * Layout utama untuk halaman detail progres KPLT.
+ * Menampilkan:
+ * - Timeline progres secara vertikal
+ * - Konten detail per tahap (MOU, Izin Tetangga, Notaris, Perizinan, Renovasi, Grand Opening)
+ * - Status, file pendukung, dan informasi terkait setiap tahap
+ *
+ * Fitur utama:
+ * - Mengelola `activeStep` untuk menentukan tahap mana yang sedang dibuka
+ * - Mengunci tahap tertentu jika tahap sebelumnya belum selesai
+ * - Menampilkan placeholder jika data belum tersedia
+ * - Menentukan komponen Card yang tampil berdasarkan tahap yang dipilih
+ *
+ * Props utama:
+ * - `detailData`: data detail progres berdasarkan ULok
+ * - `timeline`: daftar progres per tahap (status, tanggal, dll)
+ * - `fileLists`: daftar file pendukung per tahap
+ */
 
 import React, { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
@@ -42,6 +61,9 @@ interface LayoutProps {
   onDataUpdate: () => void;
 }
 
+/**
+ * Mapping tipe file ke ikon visual yang sesuai.
+ */
 const getFileIcon = (fileType: MappedModuleFile["fileType"]) => {
   switch (fileType) {
     case "pdf":
@@ -57,6 +79,9 @@ const getFileIcon = (fileType: MappedModuleFile["fileType"]) => {
   }
 };
 
+/**
+ * Format label field dari database (snake_case) ke Title Case.
+ */
 const generateLabel = (field: string | null): string => {
   if (!field) return "File Lainnya";
   return field
@@ -74,6 +99,9 @@ const formatDate = (dateString?: string | null) =>
       })
     : "-";
 
+/**
+ * Konfigurasi urutan dan penamaan tahapan progress.
+ */
 const STEP_NAME_MAP: { [key: string]: string } = {
   mou: "MOU",
   izin_tetangga: "Ijin Tetangga",
@@ -83,6 +111,9 @@ const STEP_NAME_MAP: { [key: string]: string } = {
   grand_opening: "Grand Opening",
 };
 
+/**
+ * Adapter untuk mengubah status dari backend menjadi status yang dimengerti komponen Timeline UI.
+ */
 const mapUiStatusToProgressStatus = (
   uiStatus: string | undefined | null
 ): ProgressStep["status"] => {
@@ -118,12 +149,20 @@ export default function DetailProgressKpltLayout({
 }: LayoutProps) {
   const router = useRouter();
   const { kplt } = progressData;
-  const [isExpanded, setIsExpanded] = useState(false);
   const { user } = useUser();
 
+  // State untuk mengontrol visibilitas detail header (Accordion)
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  // State navigasi timeline
   const [activeStep, setActiveStep] = useState<number | null>(null);
   const progressId = progressData.id;
 
+  /**
+   * useMemo: Transformasi Data Timeline.
+   * Mengubah array timeline mentah dari database menjadi array objek `ProgressStep`
+   * yang terurut sesuai `STEP_ORDER` untuk dikonsumsi oleh VerticalProgressTimeline.
+   */
   const steps: ProgressStep[] = useMemo(() => {
     return STEP_ORDER.map((stepKey, index) => {
       const timelineData = timeline.find((t) => t.step === stepKey);
@@ -140,10 +179,16 @@ export default function DetailProgressKpltLayout({
     });
   }, [progressId, timeline]);
 
+  /**
+   * Logika Utama Render Content (Business Logic Layer).
+   * Menentukan komponen apa yang dirender berdasarkan step yang aktif.
+   * Menangani logika penguncian (Locking) dan Empty State.
+   */
   const renderActiveStepForm = () => {
     const isNotAdminBranch =
       user?.position_nama?.toLowerCase() !== "admin branch";
 
+    // --- Sub-Component: Tampilan Data Kosong ---
     const RenderDataBelumAda = () => (
       <div className="bg-white rounded-2xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)] p-8 h-full flex items-center justify-center min-h-[400px]">
         <div className="w-full max-w-xl text-center">
@@ -176,6 +221,7 @@ export default function DetailProgressKpltLayout({
       </div>
     );
 
+    // --- State: Tidak ada step yang dipilih (Default View) ---
     if (activeStep === null) {
       return (
         <div className="bg-white rounded-2xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)] p-8 h-full flex items-center justify-center">
@@ -229,6 +275,7 @@ export default function DetailProgressKpltLayout({
       );
     }
 
+    // --- Ekstraksi Status Tahapan untuk Validasi Berjenjang ---
     const mouStatus = steps.find((s) => s.nama_tahap === "MOU")?.status;
     const itStatus = steps.find(
       (s) => s.nama_tahap === "Ijin Tetangga"
@@ -244,6 +291,8 @@ export default function DetailProgressKpltLayout({
     const step = steps[activeStep];
     const stepProgressId = step.progress_id;
 
+    // --- Sequential Logic Routing ---
+    // Logika di bawah memastikan urutan: MOU -> Izin Tetangga -> Perizinan -> Notaris -> Renovasi -> GO
     if (step.nama_tahap === "MOU") {
       if (isNotAdminBranch && step.status === "Pending") {
         return <RenderDataBelumAda />;
@@ -326,10 +375,13 @@ export default function DetailProgressKpltLayout({
       }
     }
 
+    // Jika user bukan admin branch dan kondisi di atas tidak terpenuhi
     if (isNotAdminBranch) {
       return <RenderDataBelumAda />;
     }
 
+    // --- Fallback: Tampilan Tahap Terkunci (Locked State) ---
+    // Ditampilkan jika prasyarat tahapan belum terpenuhi (Sequential Lock).
     return (
       <div className="bg-white rounded-2xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)] p-8 h-full flex items-center justify-center min-h-[400px]">
         <div className="w-full max-w-xl text-center">
@@ -389,8 +441,12 @@ export default function DetailProgressKpltLayout({
     );
   };
 
+  /**
+   * Render Utama Layout
+   */
   return (
     <main className="space-y-4 lg:space-y-6">
+      {/* Tombol Navigasi Kembali */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <Button
           type="button"
@@ -403,6 +459,7 @@ export default function DetailProgressKpltLayout({
         </Button>
       </div>
 
+      {/* --- Section: Detail KPLT & Files (Collapsible) --- */}
       <div className="bg-white rounded-xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)] transition-all duration-500">
         <div className="p-6">
           <div className="flex-1 min-w-0 mb-4">
@@ -420,6 +477,8 @@ export default function DetailProgressKpltLayout({
             )}
           </div>
         </div>
+
+        {/* Collapsible Content Area */}
         <div
           className={`transition-[max-height] duration-700 ease-in-out overflow-hidden ${
             isExpanded ? "max-h-[5000px]" : "max-h-0"
@@ -431,6 +490,7 @@ export default function DetailProgressKpltLayout({
                 Informasi Detail KPLT
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4 text-sm">
+                {/* --- Field Details --- */}
                 <div className="bg-gray-100 p-3 rounded-lg">
                   <label className="text-gray-500 text-xs block mb-1">
                     Provinsi<span className="text-red-500">*</span>
@@ -616,6 +676,7 @@ export default function DetailProgressKpltLayout({
               </div>
             </div>
 
+            {/* --- Section: List Dokumen/File --- */}
             <div className="border-t border-gray-300 pt-5 mt-6">
               <h4 className="text-base lg:text-lg font-semibold text-gray-700 mb-3">
                 Dokumen KPLT Terkait
@@ -667,6 +728,7 @@ export default function DetailProgressKpltLayout({
           </div>
         </div>
 
+        {/* Toggle Button for Accordion */}
         <button
           type="button"
           onClick={() => setIsExpanded(!isExpanded)}
@@ -680,6 +742,7 @@ export default function DetailProgressKpltLayout({
         </button>
       </div>
 
+      {/* --- Section: Main Timeline & Forms --- */}
       <div className="mt-8 lg:mt-10">
         {currentMainStatus === undefined ? (
           <div className="w-full py-8 flex flex-col items-center justify-center min-h-[300px]">

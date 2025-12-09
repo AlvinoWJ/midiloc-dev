@@ -1,4 +1,3 @@
-// components/ui/progress_kplt/RenovasiProgressCard.tsx
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -21,7 +20,9 @@ import { RenovasiEditableSchema } from "@/lib/validations/renovasi";
 import { useAlert } from "@/components/shared/alertcontext";
 import { RenovasiHistoryModal } from "./RenovasiHistoryModal";
 
-// DetailCard (Helper)
+/**
+ * Komponen UI Wrapper untuk Kartu Detail
+ */
 const DetailCard = ({
   title,
   icon,
@@ -49,7 +50,9 @@ const DetailCard = ({
   </div>
 );
 
-// FileLink (Helper)
+/**
+ * Komponen UI untuk Link File Download
+ */
 const FileLink = ({
   label,
   file,
@@ -85,7 +88,9 @@ const FileLink = ({
   );
 };
 
-// FormFileInput (Helper)
+/**
+ * Komponen Input File reusable untuk Form
+ */
 const FormFileInput: React.FC<{
   label: string;
   name: string;
@@ -113,7 +118,6 @@ const FormFileInput: React.FC<{
   </div>
 );
 
-// Form Component
 interface FormProps {
   progressId: string;
   onSuccess: () => void;
@@ -123,6 +127,10 @@ interface FormProps {
   filesMap: Map<string, ApiFile>;
 }
 
+/**
+ * Komponen Form: RenovasiForm
+ * Menangani input data Renovasi, kalkulasi deviasi, dan file upload.
+ */
 const RenovasiForm: React.FC<FormProps> = ({
   progressId,
   onSuccess,
@@ -148,20 +156,25 @@ const RenovasiForm: React.FC<FormProps> = ({
     "SPECIFIC 1",
   ];
 
+  // State lokal untuk Select inputs
   const [rekomRenovasi, setRekomRenovasi] = useState<string>(
     initialData?.rekom_renovasi || ""
   );
   const [bentukObjek, setBentukObjek] = useState<string>(
-    initialData?.rekom_renovasi || ""
+    initialData?.rekom_renovasi || "" // Note: Mungkin typo di initialData? Cek kembali jika perlu
   );
   const [tipetoko, setTipeToko] = useState<string>(
     initialData?.tipe_toko || ""
   );
 
+  // State untuk kalkulasi Progress & Deviasi
   const [planRenov, setPlanRenov] = useState<string>("");
   const [prosesRenov, setProsesRenov] = useState<string>("");
   const [deviasi, setDeviasi] = useState<string>("");
 
+  /**
+   * Helper: Validasi input persentase (0-100, hanya angka).
+   */
   const handlePercentageChange = (
     value: string,
     setter: React.Dispatch<React.SetStateAction<string>>
@@ -181,6 +194,7 @@ const RenovasiForm: React.FC<FormProps> = ({
     setter(String(numValue));
   };
 
+  // Efek 1: Sinkronisasi data awal saat mode edit aktif
   useEffect(() => {
     if (initialData) {
       setRekomRenovasi(initialData.rekom_renovasi || "");
@@ -192,6 +206,7 @@ const RenovasiForm: React.FC<FormProps> = ({
     }
   }, [initialData]);
 
+  // Efek 2: Auto-calculate Deviasi (Proses - Plan)
   useEffect(() => {
     const plan = parseInt(planRenov, 10);
     const proses = parseInt(prosesRenov, 10);
@@ -204,6 +219,9 @@ const RenovasiForm: React.FC<FormProps> = ({
     }
   }, [planRenov, prosesRenov]);
 
+  /**
+   * Handler Simpan Data (Drafting)
+   */
   const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -212,10 +230,12 @@ const RenovasiForm: React.FC<FormProps> = ({
     if (fileRekomRenovasi)
       formData.append("file_rekom_renovasi", fileRekomRenovasi);
 
+    // Append controlled inputs
     formData.append("rekom_renovasi", rekomRenovasi);
     formData.append("bentuk_objek", bentukObjek);
     formData.append("tipe_toko", tipetoko);
 
+    // Konstruksi payload untuk validasi Zod
     const payload = {
       kode_store: formData.get("kode_store") || undefined,
       tipe_toko: formData.get("tipe_toko") || undefined,
@@ -240,6 +260,7 @@ const RenovasiForm: React.FC<FormProps> = ({
       return;
     }
 
+    // Pastikan nilai numeric yang dihitung ikut terkirim dalam FormData
     formData.set("plan_renov", planRenov);
     formData.set("proses_renov", prosesRenov);
     formData.set("deviasi", deviasi);
@@ -248,7 +269,7 @@ const RenovasiForm: React.FC<FormProps> = ({
       const method = initialData ? "PATCH" : "POST";
       const res = await fetch(`/api/progress/${progressId}/renovasi`, {
         method,
-        body: formData,
+        body: formData, // Kirim sebagai multipart/form-data
       });
 
       const json = await res.json();
@@ -287,6 +308,7 @@ const RenovasiForm: React.FC<FormProps> = ({
         onSubmit={handleSave}
         className="grid grid-cols-1 md:grid-cols-2 gap-4"
       >
+        {/* --- Input Fields --- */}
         <div>
           <label
             htmlFor="nama_store"
@@ -394,6 +416,7 @@ const RenovasiForm: React.FC<FormProps> = ({
           />
         </div>
 
+        {/* Input Persentase Plan & Proses */}
         <div>
           <label
             htmlFor="plan_renov"
@@ -432,6 +455,7 @@ const RenovasiForm: React.FC<FormProps> = ({
           />
         </div>
 
+        {/* Deviasi (Read Only - Calculated) */}
         <div>
           <label
             htmlFor="deviasi"
@@ -464,6 +488,7 @@ const RenovasiForm: React.FC<FormProps> = ({
           />
         </div>
 
+        {/* Input File */}
         <FormFileInput
           label="File Rekom Renovasi"
           name="file_rekom_renovasi"
@@ -472,6 +497,7 @@ const RenovasiForm: React.FC<FormProps> = ({
           onChange={(e) => setFileRekomRenovasi(e.target.files?.[0] || null)}
         />
 
+        {/* Action Buttons */}
         <div className="md:col-span-2 flex justify-end gap-3 mt-2">
           {onCancelEdit && (
             <Button
@@ -503,7 +529,7 @@ const RenovasiForm: React.FC<FormProps> = ({
   );
 };
 
-// Komponen Read-Only
+// Komponen Helper Read-Only Field
 const DetailField: React.FC<{ label: string; value: React.ReactNode }> = ({
   label,
   value,
@@ -521,11 +547,16 @@ interface RenovasiProgressCardProps {
   onDataUpdate: () => void;
 }
 
+/**
+ * Komponen Utama: RenovasiProgressCard
+ * Mengatur tampilan (View/Edit), Approval, dan Modal History.
+ */
 const RenovasiProgressCard: React.FC<RenovasiProgressCardProps> = ({
   progressId,
   onDataUpdate,
 }) => {
   const { data, loading, error, refetch } = useRenovasiProgress(progressId);
+  // Fetch file terkait renovasi
   const {
     filesMap,
     loading: loadingFiles,
@@ -542,6 +573,7 @@ const RenovasiProgressCard: React.FC<RenovasiProgressCardProps> = ({
   const { user } = useUser();
   const isBranchAdmin = user?.position_nama === "admin branch";
 
+  // Formatter Tanggal
   const formatDate = (dateString?: string | null) =>
     dateString
       ? new Date(dateString).toLocaleDateString("id-ID", {
@@ -551,6 +583,10 @@ const RenovasiProgressCard: React.FC<RenovasiProgressCardProps> = ({
         })
       : "-";
 
+  /**
+   * Handler Finalisasi (Approval)
+   * Status "Selesai" (Submit) atau "Batal" (Reject).
+   */
   const handleFinalizeRenovasi = async (status: "Selesai" | "Batal") => {
     const actionText = status === "Selesai" ? "submit" : "batalkan";
     const actionTitle = status === "Selesai" ? "Submit" : "Pembatalan";
@@ -616,6 +652,7 @@ const RenovasiProgressCard: React.FC<RenovasiProgressCardProps> = ({
     }
   };
 
+  /* --- KONDISI LOADING & ERROR --- */
   if (loading || loadingFiles)
     return (
       <div className="flex justify-center py-10 mt-8 w-full ">
@@ -630,6 +667,7 @@ const RenovasiProgressCard: React.FC<RenovasiProgressCardProps> = ({
       </div>
     );
 
+  /* --- KONDISI EDIT MODE --- */
   if (!data || isEditing)
     return (
       <div className="w-full ">
@@ -652,6 +690,7 @@ const RenovasiProgressCard: React.FC<RenovasiProgressCardProps> = ({
     data.final_status_renov === "Selesai" ||
     data.final_status_renov === "Batal";
 
+  /* --- KONDISI VIEW MODE (Read Only) --- */
   return (
     <div className="w-full ">
       <DetailCard
@@ -705,9 +744,10 @@ const RenovasiProgressCard: React.FC<RenovasiProgressCardProps> = ({
             </div>
           </div>
         </div>
+
+        {/* Action Buttons: Muncul jika admin branch & belum final */}
         {!isFinalized && isBranchAdmin && (
           <div className="flex gap-3 mt-6">
-            {/* Tombol Edit */}
             <Button
               variant="secondary"
               onClick={() => setIsEditing(true)}
@@ -717,7 +757,6 @@ const RenovasiProgressCard: React.FC<RenovasiProgressCardProps> = ({
               <Pencil className="mr-2" size={16} /> Edit
             </Button>
 
-            {/* Tombol Batal (Baru) */}
             <Button
               variant="default"
               onClick={() => handleFinalizeRenovasi("Batal")} //
@@ -747,6 +786,8 @@ const RenovasiProgressCard: React.FC<RenovasiProgressCardProps> = ({
           </div>
         )}
       </DetailCard>
+
+      {/* Modal Riwayat */}
       {showHistoryModal && (
         <RenovasiHistoryModal
           progressId={progressId}

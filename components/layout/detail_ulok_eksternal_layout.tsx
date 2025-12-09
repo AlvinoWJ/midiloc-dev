@@ -1,5 +1,20 @@
 "use client";
 
+/**
+ * DetailUlokEksternalLayout
+ * -------------------------
+ * Halaman detail untuk Usulan Lokasi (ULOK) Eksternal.
+ *
+ * Fitur Utama:
+ * - **Role-Based Actions**: Menampilkan tombol aksi yang berbeda berdasarkan jabatan user:
+ * - **Regional Manager (RM)**: Assign Branch.
+ * - **Branch/Location Manager (BM/LM)**: Assign Location Specialist.
+ * - **Location Specialist**: Approve (OK) / Reject (NOK).
+ * - **Secure Image Preview**: Mengambil foto lokasi melalui proxy API aman dengan dukungan caching blob & fullscreen modal.
+ * - **Interactive Map**: Visualisasi koordinat lokasi.
+ * - **Editable Assignments**: Mode edit untuk mengubah penugasan Branch atau Specialist jika belum final.
+ */
+
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useUser } from "@/hooks/useUser";
@@ -32,6 +47,8 @@ import { id as inLocale } from "date-fns/locale";
 import SelectBranch from "../ui/SelectBranch";
 import SelectLocationSpecialist from "../ui/SelectLocationSpecialist";
 
+// --- Utility Functions ---
+
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat("id-ID", {
     style: "currency",
@@ -40,6 +57,9 @@ const formatCurrency = (value: number) => {
   }).format(value);
 };
 
+/**
+ * Wrapper UI standar untuk kartu detail (Card).
+ */
 const DetailCard = ({
   title,
   icon,
@@ -82,25 +102,29 @@ export default function DetailUlokEksternalLayout({
   const router = useRouter();
   const { user, loadingUser } = useUser();
   const { showToast, showConfirmation } = useAlert();
+  const { mutate: globalMutate } = useSWRConfig();
 
+  // --- State: Penugasan Branch (Role: RM) ---
   const [selectedBranch, setSelectedBranch] = useState<string>("");
   const [isAssigning, setIsAssigning] = useState<boolean>(false);
-
   const [isEditingBranch, setIsEditingBranch] = useState<boolean>(false);
 
+  // --- State: Penugasan Specialist (Role: BM/LM) ---
   const [selectedSpecialist, setSelectedSpecialist] = useState<string>("");
   const [isAssigningSpecialist, setIsAssigningSpecialist] =
     useState<boolean>(false);
-
   const [isEditingSpecialist, setIsEditingSpecialist] =
     useState<boolean>(false);
 
+  // --- State: Approval (Role: Specialist) ---
   const [approvingStatus, setApprovingStatus] = useState<"OK" | "NOK" | null>(
     null
   );
 
-  const { mutate: globalMutate } = useSWRConfig();
-
+  /**
+   * Effect: Sinkronisasi data awal ke state lokal.
+   * Mengisi dropdown dengan data existing saat halaman dimuat.
+   */
   useEffect(() => {
     if (ulok) {
       if (ulok.branch_id?.id) {
@@ -112,6 +136,10 @@ export default function DetailUlokEksternalLayout({
     }
   }, [ulok]);
 
+  /**
+   * Handler: Assign Branch (Patch Request).
+   * Digunakan oleh Regional Manager untuk menugaskan usulan ke Cabang tertentu.
+   */
   const handleAssignBranch = async () => {
     if (!selectedBranch || !ulok?.id) return;
     setIsAssigning(true);
@@ -160,6 +188,10 @@ export default function DetailUlokEksternalLayout({
     }
   };
 
+  /**
+   * Handler: Assign Specialist (Patch Request).
+   * Digunakan oleh BM/LM untuk menugaskan Location Specialist.
+   */
   const handleAssignSpecialist = async () => {
     if (!selectedSpecialist || !ulok?.id) return;
     setIsAssigningSpecialist(true);
@@ -208,6 +240,10 @@ export default function DetailUlokEksternalLayout({
     }
   };
 
+  /**
+   * Handler: Approval Actions (OK/NOK).
+   * Digunakan oleh Location Specialist untuk memfinalisasi usulan.
+   */
   const handleApproval = async (status: "OK" | "NOK") => {
     if (!ulok?.id) return;
 
@@ -267,6 +303,8 @@ export default function DetailUlokEksternalLayout({
     }
   };
 
+  // --- Render States ---
+
   if (isLoading) {
     return <DetailUlokEksternalSkeleton />;
   }
@@ -290,7 +328,7 @@ export default function DetailUlokEksternalLayout({
 
   return (
     <div className="space-y-6 w-full">
-      {/* 1. Header (Tombol Kembali dan Judul) */}
+      {/* Header (Tombol Kembali dan Judul) */}
       <div className="flex items-center justify-between gap-4">
         <Button onClick={() => router.back()} variant="back">
           <ArrowLeft size={20} className="mr-1" />
@@ -300,7 +338,7 @@ export default function DetailUlokEksternalLayout({
         <StatusBadge status={ulok.status_ulok_eksternal} />
       </div>
 
-      {/* 2. Konten Grid */}
+      {/* Konten Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Kolom Kiri (Info) */}
         <div className="lg:col-span-2 space-y-6">
@@ -356,7 +394,7 @@ export default function DetailUlokEksternalLayout({
             </div>
           </DetailCard>
 
-          {/* Penugasan */}
+          {/* --- Logic: Penugasan Branch (Hanya RM) --- */}
           {!loadingUser &&
             user &&
             user.position_nama === "regional manager" &&
@@ -367,7 +405,6 @@ export default function DetailUlokEksternalLayout({
                 icon={<Briefcase className="w-5 h-5 text-red-500" />}
               >
                 <div className="space-y-6">
-                  {/* [Updated] Logika tampilan Read vs Edit untuk Branch */}
                   {ulok.branch_id && !isEditingBranch ? (
                     <div className="flex items-center justify-between bg-gray-50 p-4 rounded-lg border border-gray-200">
                       <div>
@@ -439,6 +476,7 @@ export default function DetailUlokEksternalLayout({
               </DetailCard>
             )}
 
+          {/* --- Logic: Penugasan Specialist (Hanya BM/LM) --- */}
           {!loadingUser &&
             user &&
             (user.position_nama === "branch manager" ||
@@ -520,6 +558,7 @@ export default function DetailUlokEksternalLayout({
               </DetailCard>
             )}
 
+          {/* --- Logic: Tindakan Approval (Hanya Specialist Penanggungjawab) --- */}
           {!loadingUser &&
             user &&
             user.position_nama === "location specialist" &&
@@ -562,7 +601,7 @@ export default function DetailUlokEksternalLayout({
             )}
         </div>
 
-        {/* Kolom Kanan (Peta & Foto) */}
+        {/* --- Kolom Kanan (Visual & History) --- */}
         <div className="space-y-6">
           {/* Peta */}
           <div className="bg-white rounded-xl shadow-[1px_1px_6px_rgba(0,0,0,0.25)] ">
@@ -585,6 +624,7 @@ export default function DetailUlokEksternalLayout({
               />
             </div>
           </DetailCard>
+          {/* Riwayat */}
           <DetailCard
             title="Riwayat"
             icon={<ClipboardList className="w-5 h-5 text-red-500" />}
@@ -643,6 +683,7 @@ export default function DetailUlokEksternalLayout({
   );
 }
 
+// --- Sub-Components ---
 const InfoItem = ({
   label,
   value,
@@ -662,6 +703,10 @@ const InfoItem = ({
   </div>
 );
 
+/**
+ * Komponen untuk menampilkan preview foto lokasi.
+ * Menggunakan logic proxy untuk keamanan dan mendukung fullscreen modal.
+ */
 const FotoLokasiAutoPreview = ({
   ulokId,
   fileKey,
@@ -673,7 +718,7 @@ const FotoLokasiAutoPreview = ({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [objectUrl, setObjectUrl] = useState<string | null>(null);
 
-  // [Baru] State untuk mengontrol modal fullscreen
+  // State untuk mengontrol modal fullscreen
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
@@ -684,6 +729,7 @@ const FotoLokasiAutoPreview = ({
     };
   }, [objectUrl]);
 
+  // Fetch logic
   useEffect(() => {
     let mounted = true;
     setPreviewUrl(null);
@@ -759,7 +805,7 @@ const FotoLokasiAutoPreview = ({
                 setPreviewUrl(null);
               }}
             />
-            {/* [Baru] Overlay icon maximize saat hover */}
+            {/* Overlay icon maximize saat hover */}
             <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity">
               <Maximize2 className="text-white w-8 h-8 drop-shadow-md" />
             </div>
@@ -767,7 +813,7 @@ const FotoLokasiAutoPreview = ({
         )}
       </div>
 
-      {/* [Baru] Fullscreen Modal */}
+      {/* Fullscreen Modal */}
       {isFullscreen && previewUrl && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4 backdrop-blur-sm animate-in fade-in duration-200"

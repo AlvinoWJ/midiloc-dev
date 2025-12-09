@@ -4,6 +4,12 @@ import React, { useEffect, useState } from "react";
 import { CheckCircle, X, AlertCircle, Info, AlertTriangle } from "lucide-react";
 import { AlertProps } from "@/types/alert.types";
 
+/**
+ * Komponen Alert
+ * --------------
+ * Komponen toast/alert yang muncul di pojok kanan atas,
+ * mendukung auto-close dan manual close.
+ */
 const Alert: React.FC<AlertProps & { onClose?: () => void }> = ({
   type = "info",
   title,
@@ -13,24 +19,41 @@ const Alert: React.FC<AlertProps & { onClose?: () => void }> = ({
   actions,
   onClose,
 }) => {
+  // State untuk mengontrol visibilitas alert
   const [isVisible, setIsVisible] = useState(true);
 
+  /**
+   * Auto-close handler
+   * Menutup alert otomatis berdasarkan durasi
+   */
   useEffect(() => {
     if (autoClose && duration > 0) {
       const timer = setTimeout(() => {
         handleClose();
       }, duration);
-      return () => clearTimeout(timer);
+
+      return () => clearTimeout(timer); // cleanup
     }
   }, [autoClose, duration]);
 
+  /**
+   * Menutup alert secara manual maupun otomatis
+   */
   const handleClose = () => {
     setIsVisible(false);
-    if (onClose) onClose();
+    if (onClose) onClose(); // callback ketika alert ditutup
   };
 
+  // Jika alert tidak visible → hentikan render
   if (!isVisible) return null;
 
+  /**
+   * Style per jenis alert
+   * - Warna background
+   * - Border
+   * - Icon
+   * - Warna teks title & message
+   */
   const alertStyles = {
     success: {
       bg: "bg-green-50",
@@ -66,28 +89,42 @@ const Alert: React.FC<AlertProps & { onClose?: () => void }> = ({
 
   return (
     <div
-      className={`fixed top-4 right-4 max-w-md w-full ${style.bg} ${style.border} border rounded-lg shadow-lg z-50 animate-in slide-in-from-right-full duration-300`}
+      // Wrapper utama alert di pojok kanan atas + animasi
+      className={`fixed top-4 right-4 max-w-md w-full ${style.bg} ${style.border} 
+      border rounded-lg shadow-lg z-50 animate-in slide-in-from-right-full duration-300`}
     >
       <div className="p-4">
         <div className="flex items-start">
+          {/* Icon sesuai type (success/error/warning/info) */}
           <div className="flex-shrink-0">{style.icon}</div>
+
+          {/* Bagian teks dan tombol action */}
           <div className="ml-3 flex-1">
+            {/* Title alert */}
             {title && (
               <h3 className={`text-sm font-medium ${style.titleColor}`}>
                 {title}
               </h3>
             )}
+
+            {/* Pesan alert */}
             <p
               className={`text-sm ${style.messageColor} ${title ? "mt-1" : ""}`}
             >
               {message}
             </p>
+
+            {/* Aksi tambahan (Undo, Retry, dsb) */}
             {actions && <div className="mt-3 flex gap-2">{actions}</div>}
           </div>
+
+          {/* Tombol close */}
           <div className="ml-4 flex-shrink-0">
             <button
               onClick={handleClose}
-              className="inline-flex rounded-md p-1.5 hover:bg-opacity-20 hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+              className="inline-flex rounded-md p-1.5 hover:bg-opacity-20 
+              hover:bg-gray-900 focus:outline-none focus:ring-2 
+              focus:ring-offset-2 focus:ring-gray-500"
             >
               <X className="w-4 h-4" />
             </button>

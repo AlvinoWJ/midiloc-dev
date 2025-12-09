@@ -1,21 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { canUlokEksternal, getCurrentUser } from "@/lib/auth/acl";
+import { canUlokEksternal, getCurrentUser, POSITION } from "@/lib/auth/acl";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const BUCKET = "file_storage_eksternal";
-
-function roleFromPositionName(name?: string | null) {
-  if (!name) return undefined;
-  const key = name.trim().toLowerCase();
-  if (key === "regional manager") return "rm";
-  if (key === "branch manager") return "bm";
-  if (key === "location manager") return "lm";
-  if (key === "location specialist") return "ls";
-  return undefined;
-}
 
 function mimeFromExt(ext: string) {
   const e = ext.toLowerCase();
@@ -34,11 +24,16 @@ function mimeFromExt(ext: string) {
   return "application/octet-stream";
 }
 
+/**
+ * @route GET /api/ulok_eksternal/[id]/files
+ * @description Mengakses file `foto_lokasi` secara aman.
+ */
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -53,53 +48,40 @@ export async function GET(
 
     const supabase = await createClient();
 
+    // 1. Validate Access to Resource
     let query = supabase
       .from("ulok_eksternal")
       .select("id, foto_lokasi, penanggungjawab, branch_id") // Ambil field untuk validasi
-      .eq("id", params.id)
+      .eq("id", id)
       .limit(1);
 
     // Terapkan Logic "Role Filter" yang sama dengan endpoint data!
-    const role = roleFromPositionName(user.position_nama);
+    const role = user.position_nama?.toLowerCase();
 
-    if (role === "ls") {
-      // LS hanya boleh lihat file miliknya sendiri
+    if (role === POSITION.LOCATION_SPECIALIST) {
       query = query.eq("penanggungjawab", user.id);
-    } else if (role === "bm" || role === "lm") {
-      // BM/LM hanya boleh lihat file di cabangnya
-      if (user.branch_id) {
-        query = query.eq("branch_id", user.branch_id);
-      } else {
+    } else if (role === POSITION.LOCATION_MANAGER) {
+      if (!user.branch_id)
         return NextResponse.json(
-          { error: "User branch invalid" },
+          { error: "Forbidden: No branch" },
           { status: 403 }
         );
-      }
+      query = query.eq("branch_id", user.branch_id);
     }
-    // RM boleh akses semua (tidak perlu filter tambahan selain ID)
 
-    const { data: ulokEks, error: ulokErr } = await query.maybeSingle();
+    const { data: ulokEks, error } = await query.maybeSingle();
 
-    if (ulokErr) {
-      return NextResponse.json({ error: ulokErr.message }, { status: 400 });
-    }
-    if (!ulokEks) {
+    if (error)
+      return NextResponse.json({ error: "Database Error" }, { status: 500 });
+    if (!ulokEks)
       return NextResponse.json(
-        {
-          error: "Not found or Forbidden",
-          message: "File tidak ditemukan atau Anda tidak memiliki akses",
-        },
+        { error: "File not found or access denied" },
         { status: 404 }
       );
-    }
+    if (!ulokEks.foto_lokasi)
+      return NextResponse.json({ error: "No file available" }, { status: 404 });
 
-    if (!ulokEks.foto_lokasi) {
-      return NextResponse.json(
-        { error: "Not Found", message: "foto_lokasi belum tersedia" },
-        { status: 404 }
-      );
-    }
-
+    // 2. Serve File
     const path = ulokEks.foto_lokasi as string;
     const url = new URL(req.url);
     const mode = url.searchParams.get("mode") || "redirect"; // redirect | proxy
@@ -107,62 +89,39 @@ export async function GET(
     const expiresIn = Number(url.searchParams.get("expiresIn") || "300");
 
     if (mode === "proxy") {
-      const { data: fileData, error: dlErr } = await supabase.storage
+      const { data: fileBlob, error: dlErr } = await supabase.storage
         .from(BUCKET)
         .download(path);
-
-      if (dlErr || !fileData) {
-        return NextResponse.json(
-          {
-            error: "Download failed",
-            message: dlErr?.message || "File not found",
-          },
-          { status: 404 }
-        );
-      }
+      if (dlErr || !fileBlob)
+        return NextResponse.json({ error: "Download failed" }, { status: 404 });
 
       const filename = path.split("/").pop() || "file";
-      const extMatch = filename.match(/\.[a-z0-9]+$/i);
-      const ct = mimeFromExt(extMatch ? extMatch[0] : "");
-
-      return new Response(fileData, {
-        status: 200,
+      return new Response(fileBlob, {
         headers: {
-          "Content-Type": ct,
-          "Cache-Control": "private, max-age=60",
+          "Content-Type": mimeFromExt(filename),
           "Content-Disposition": `${
             forceDownload ? "attachment" : "inline"
           }; filename="${encodeURIComponent(filename)}"`,
+          "Cache-Control": "private, max-age=3600",
         },
       });
     }
 
-    // Mode redirect → create signed URL
-    const downloadName = forceDownload
-      ? path.split("/").pop() || "file"
-      : undefined;
-    const { data: signed, error: signErr } = await supabase.storage
+    // Default: Redirect (Signed URL)
+    const { data: signed } = await supabase.storage
       .from(BUCKET)
-      .createSignedUrl(
-        path,
-        Number.isFinite(expiresIn) && expiresIn > 0 ? expiresIn : 300,
-        { download: downloadName }
-      );
+      .createSignedUrl(path, expiresIn, {
+        download: forceDownload ? path.split("/").pop() : undefined,
+      });
 
-    if (signErr || !signed?.signedUrl) {
-      return NextResponse.json(
-        {
-          error: "Sign failed",
-          message: signErr?.message || "Object may not exist",
-        },
-        { status: 404 }
-      );
-    }
+    if (!signed?.signedUrl)
+      return NextResponse.json({ error: "Sign failed" }, { status: 500 });
 
     return NextResponse.redirect(signed.signedUrl, 302);
-  } catch (e: unknown) {
+  } catch (err) {
+    console.error("[ULOK_EKS_FILES_UNHANDLED]", err);
     return NextResponse.json(
-      { error: e instanceof Error ? e.message : "Unknown error" },
+      { error: "Internal Server Error" },
       { status: 500 }
     );
   }
