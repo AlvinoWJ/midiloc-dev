@@ -1,68 +1,72 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentUser, POSITION } from "@/lib/auth/acl";
-import { z } from "zod";
+import { getCurrentUser, InternalPositionName, POSITION } from "@/lib/auth/acl";
+import { assignPICSchema } from "@/lib/validations/ulok_eksternal_workflow";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const BodySchema = z.object({
-  penanggungjawab: z.string().uuid().nullable(), // bisa null untuk unassign
-  description: z.string().max(500).optional().nullable(),
-});
-
-function decodeError(detail: unknown): string {
-  if (typeof detail === "string") return detail;
-  if (detail && typeof detail === "object" && "message" in detail) {
-    // Supabase error object
-    // @ts-expect-error dynamic
-    return detail.message || "Unknown database error";
-  }
-  return "Unknown error";
-}
-
+/**
+ * @route PATCH /api/ulok_eksternal/[id]/assign-penanggungjawab
+ * @description Menetapkan Location Specialist (PIC) pada Ulok Eksternal.
+ * Hanya bisa dilakukan oleh LM atau BM pada cabang yang sama.
+ */
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const supabase = await createClient();
 
   try {
+    const { id } = await params;
     const me = await getCurrentUser();
-    if (!me) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized" },
-        { status: 401 }
-      );
-    }
+    // 1. Auth & Role Check
+    if (!me)
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    // Role check (mirroring logic but still validated again inside RPC)
-    const isManager = me.position_nama === POSITION.LOCATION_MANAGER;
-
-    if (!isManager) {
+    const allowedRoles = [POSITION.LOCATION_MANAGER];
+    if (!allowedRoles.includes(me.position_nama as InternalPositionName)) {
       return NextResponse.json(
-        { success: false, error: "Forbidden: hanya LM / BM" },
+        { error: "Forbidden: Only LM can assign PIC" },
         { status: 403 }
       );
     }
 
-    let body: unknown;
-    try {
-      body = await req.json();
-    } catch {
+    // 2. Validate Context (Branch Matching)
+    // Pastikan Ulok Eksternal ini milik cabang user yang sedang login
+    const { data: ulokMeta, error: metaErr } = await supabase
+      .from("ulok_eksternal")
+      .select("branch_id")
+      .eq("id", id)
+      .single();
+
+    if (metaErr || !ulokMeta) {
       return NextResponse.json(
-        { success: false, error: "Body harus JSON" },
-        { status: 400 }
+        { error: "Ulok Eksternal not found" },
+        { status: 404 }
       );
     }
 
-    const parsed = BodySchema.safeParse(body);
-    if (!parsed.success) {
-      const msg = parsed.error.issues
-        .map((i) => `${i.path.join(".")}: ${i.message}`)
-        .join("; ");
-      return NextResponse.json({ success: false, error: msg }, { status: 422 });
+    // Strict Branch Check
+    if (me.branch_id && ulokMeta.branch_id !== me.branch_id) {
+      return NextResponse.json(
+        { error: "Forbidden: Cross-branch assignment denied" },
+        { status: 403 }
+      );
     }
+
+    // 3. Parse Body
+    const body = await req.json().catch(() => null);
+    const parsed = assignPICSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Validation failed", detail: parsed.error.issues },
+        { status: 422 }
+      );
+    }
+
+    // 4. Execute RPC
 
     const { penanggungjawab, description } = parsed.data;
 
@@ -70,7 +74,7 @@ export async function PATCH(
       "fn_ulok_eksternal_assign_penanggungjawab",
       {
         p_actor_user_id: me.id,
-        p_ulok_eksternal_id: params.id,
+        p_ulok_eksternal_id: id,
         p_new_penanggungjawab: penanggungjawab,
         p_description: description ?? null,
       }
@@ -78,42 +82,26 @@ export async function PATCH(
 
     if (error) {
       return NextResponse.json(
-        { success: false, error: decodeError(error) },
+        { error: "Assign PIC Failed", detail: error.message },
         { status: 400 }
       );
     }
 
-    if (!data || typeof data !== "object") {
-      return NextResponse.json(
-        { success: false, error: "Unexpected RPC response" },
-        { status: 500 }
-      );
-    }
-
-    // Define the expected RPC response type
-    type RpcResponse = {
-      success: boolean;
-      error?: string;
-      [key: string]: unknown;
-    };
-
-    const rpcData = data as RpcResponse;
-
-    // Jika RPC sudah mengembalikan success=false di payload
+    // Check RPC logical error
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const rpcData = data as any;
     if (rpcData.success === false) {
       return NextResponse.json(
-        { success: false, error: rpcData.error || "RPC error" },
+        { error: rpcData.error || "RPC Logic Error" },
         { status: 400 }
       );
     }
 
     return NextResponse.json(data, { status: 200 });
-  } catch (e: unknown) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (e: any) {
     return NextResponse.json(
-      {
-        success: false,
-        error: e instanceof Error ? e.message : "Internal error",
-      },
+      { error: "Internal Server Error", detail: e.message },
       { status: 500 }
     );
   }

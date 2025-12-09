@@ -6,71 +6,61 @@ import { getCurrentUser, POSITION } from "@/lib/auth/acl";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+/**
+ * @route PATCH /api/ulok_eksternal/[id]/approval
+ * @description Melakukan approval pada Ulok Eksternal. Hanya untuk LS.
+ */
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const me = await getCurrentUser();
     if (!me)
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    if (me.position_nama !== POSITION.LOCATION_SPECIALIST) {
+    // Role Check: Hanya LS
+    if (me.position_nama?.toLowerCase() !== POSITION.LOCATION_SPECIALIST) {
       return NextResponse.json(
-        {
-          error:
-            "Forbidden: hanya Location Specialist yang dapat melakukan approval",
-        },
+        { error: "Forbidden: Only LS can approve" },
         { status: 403 }
       );
     }
 
     const supabase = await createClient();
 
-    // Ambil ulok_eksternal untuk validasi kepemilikan tugas
+    // 1. Validate Ownership
     const { data: ulokEks, error: findErr } = await supabase
       .from("ulok_eksternal")
       .select("id, branch_id, penanggungjawab, status_ulok_eksternal")
-      .eq("id", params.id)
+      .eq("id", id)
       .maybeSingle();
-
     if (findErr)
-      return NextResponse.json({ error: findErr.message }, { status: 400 });
+      return NextResponse.json({ error: "Database Error" }, { status: 500 });
     if (!ulokEks)
       return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-    if (!ulokEks.penanggungjawab) {
-      return NextResponse.json(
-        { error: "Penanggungjawab belum ditetapkan" },
-        { status: 409 }
-      );
-    }
-
     if (ulokEks.penanggungjawab !== me.id) {
       return NextResponse.json(
-        { error: "Forbidden: Anda bukan penanggungjawab ulok ini" },
+        { error: "Forbidden: Not assigned to you" },
         { status: 403 }
       );
     }
 
-    let json: unknown;
-    try {
-      json = await req.json();
-    } catch {
-      return NextResponse.json({ error: "Body harus JSON" }, { status: 400 });
-    }
-
-    const parsed = approveSchema.safeParse(json);
+    // 2. Parse Body
+    const body = await req.json().catch(() => ({}));
+    const parsed = approveSchema.safeParse(body);
     if (!parsed.success) {
-      const msg = parsed.error.issues
-        .map((e) => `${e.path.join(".")}: ${e.message}`)
-        .join("; ");
-      return NextResponse.json({ error: msg }, { status: 422 });
+      return NextResponse.json(
+        { error: "Validation failed", detail: parsed.error.issues },
+        { status: 422 }
+      );
     }
 
-    const nextStatus = parsed.data.status_ulok_eksternal;
+    const nextStatus = parsed.data.status_ulok_eksternal; // "OK" | "NOK"
 
-    // Jika OK, pastikan prasyarat lengkap (DB juga enforce via CHECK, ini validasi dini)
+    // 3. Pre-condition Check
     if (nextStatus === "OK") {
       if (!ulokEks.branch_id) {
         return NextResponse.json(
@@ -88,30 +78,31 @@ export async function PATCH(
         status_ulok_eksternal: nextStatus,
         updated_at: new Date().toISOString(),
       })
-      .eq("id", params.id)
+      .eq("id", id)
       .select("*")
       .single();
 
-    if (error)
-      return NextResponse.json({ error: error.message }, { status: 400 });
+    if (error) {
+      console.error("[ULOK_EKS_APPROVE_DB]", error);
+      return NextResponse.json({ error: "Approval failed" }, { status: 500 });
+    }
 
-    // Jika OK, coba ambil ulok yang terbentuk untuk dikembalikan id-nya
-    let ulokCreated: { id: string } | null = null;
+    // 5. Fetch Created Ulok (If Approved)
+    let ulokCreated = null;
     if (nextStatus === "OK") {
-      const { data: u, error: uErr } = await supabase
+      const { data: u } = await supabase
         .from("ulok")
         .select("id")
-        .eq("ulok_eksternal_id", params.id)
+        .eq("ulok_eksternal_id", id)
         .maybeSingle();
-      if (!uErr && u) {
-        ulokCreated = u;
-      }
+      ulokCreated = u;
     }
 
     return NextResponse.json({ data, ulok: ulokCreated });
-  } catch (e: unknown) {
+  } catch (err) {
+    console.error("[ULOK_EKS_APPROVE_UNHANDLED]", err);
     return NextResponse.json(
-      { error: e instanceof Error ? e.message : "Unknown error" },
+      { error: "Internal Server Error" },
       { status: 500 }
     );
   }

@@ -1,29 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentUser } from "@/lib/auth/acl";
+import { getCurrentUser, POSITION } from "@/lib/auth/acl";
 
-function isRM(posName?: string | null) {
-  return (posName || "").trim().toLowerCase() === "regional manager";
-}
-
+/**
+ * @route GET /api/ulok_eksternal/branch
+ * @description Mengambil daftar branch aktif. Khusus Regional Manager.
+ */
 export async function GET(req: NextRequest) {
   const supabase = await createClient();
   const me = await getCurrentUser();
+
+  // 1. Auth & Role Check
   if (!me) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const myPositionName = me.position_nama as string | undefined;
-
-  if (!isRM(myPositionName)) {
+  if (me.position_nama !== POSITION.REGIONAL_MANAGER) {
     return NextResponse.json(
-      {
-        error: "Forbidden",
-        message: "Only Regional Manager can list branches",
-      },
+      { error: "Forbidden: Only RM can access this list" },
       { status: 403 }
     );
   }
 
-  // Pagination (tanpa pencarian)
+  // 2. Pagination & Filter Params
   const url = new URL(req.url);
   const page = Math.max(1, Number(url.searchParams.get("page") || "1"));
   const limit = Math.max(
@@ -32,7 +28,10 @@ export async function GET(req: NextRequest) {
   );
   const onlyActive = (url.searchParams.get("active") ?? "1") === "1"; // default hanya aktif
   const region = url.searchParams.get("region"); // optional region_code filter
+  const from = (page - 1) * limit;
+  const to = from + limit - 1;
 
+  // 3. Query
   let query = supabase.from("branch").select("*", { count: "exact" });
   if (onlyActive) query = query.eq("is_active", true);
   if (region) {
@@ -40,8 +39,6 @@ export async function GET(req: NextRequest) {
     if (Number.isFinite(regionNum)) query = query.eq("region_code", regionNum);
   }
 
-  const from = (page - 1) * limit;
-  const to = from + limit - 1;
   query = query.order("nama", { ascending: true }).range(from, to);
 
   const { data, error, count } = await query;
